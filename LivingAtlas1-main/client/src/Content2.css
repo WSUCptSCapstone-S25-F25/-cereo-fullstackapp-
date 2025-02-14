@@ -1,0 +1,39 @@
+#content-2 {
+  background-color: #ddd;
+  padding: 20px;
+}
+
+/* In this CSS file, we created a card-container class that uses CSS grid to organize the Card components in a grid format. 
+The grid-template-columns property sets the size and number of columns, while the grid-gap property sets the gap between the columns and rows. */
+
+
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-gap: 20px;
+  justify-items: center;
+}
+
+/* The CSS code inside @media screen and (max-width: 767px) applies to screens with a maximum width of 767 pixels. It is used to adjust the layout of the .card-container and .card elements when the screen size is smaller than the specified maximum width.
+
+Inside the media query, the grid-template-columns property of .card-container is set to repeat(auto-fit, minmax(150px, 1fr)), which means the grid columns will automatically adjust to fit the available space, with each column having a minimum width of 150 pixels and a maximum width of 1 fractional unit.
+
+The grid-gap property of .card-container is also set to 10px to add some space between the grid items.
+
+For .card, the max-width is set to 200px and the padding is set to 10px, which makes the card smaller and more compact on smaller screens.
+
+These changes in CSS allow the cards to be more responsive to smaller screens, making them more user-friendly on mobile devices */
+
+@media screen and (max-width: 767px) {
+  .card-container {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-gap: 10px;
+  }
+
+  .card {
+    max-width: 200px;
+    padding: 10px;
+  }
+
+
+}

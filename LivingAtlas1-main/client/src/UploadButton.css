@@ -1,0 +1,23 @@
+.UploadButton {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.UploadButton input[type="file"] {
+    margin-bottom: 10px;
+}
+
+.UploadButton button {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #008CBA;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.UploadButton button:hover {
+    background-color: #0077A5;
+}
