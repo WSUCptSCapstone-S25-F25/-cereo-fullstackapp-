@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "living-atlas-406719",
+  "private_key_id": "61f55b62f26c895f54cb6496da16e6e612a260e4",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCtz7WEUdfm9+eA\nwYV9U+UqhWhCwT6PtfKnARL0MZrzEwrjbQVVGU4ctqDBTJIaD8qCtP/x3mpEtZEz\nWlgWH4j3DuSTwdpAasHz6qrIlLIayq6Bl5IH3lN9jactTEkitiDyZV3aIuOnfugj\ntn5BLNAkm3ER3Wm+tvBgwr8KxPu3XXC0H7LBYdOZ9dtqA1wSvSsFHtIgKAIcdOxH\nnYEuoMnBmeiC+6H18+hroDfJMkSZ3BdN6CCvwZ843PVwF6XwEsNSgw8rArj2q7yW\nqqQ/+PaujjPofsWD7iJ5uBaR5nlwJIKsV/uTDp3uEzeSRVXPOJFUN2Ek89HCM2tD\nTRgpcESNAgMBAAECggEABx4bIQ7H8FulBYsHOCVkHExnw1oOAY0SIYAkAk94uK0G\nNF99ySkW34qkBR5pWjtcz+LxGzrAL82eo1N3CXrjnThlKF7XHO2yQRaSRVH/hCTa\nJhDqqDtUwG65UpvN3+fE7CA2Cm2E1JJYF8RMoccfw+wAoppmTurHZ7L550s/Qpg1\n2KJRnBEEg9breQMJw2KFU9+zFsTPB8yZKgODZIsmBBDC9UJpsgceqLh3ZO8BpMtI\nDnedi1cvadG+45H3dbcTEJS37iRCCbBpC7mdyx24laP3U48N6dI7dOOjuozyLFes\nEc3oWEQvLgG5PkYzf93oqHDz2gdWClV2T3Pvs6s9gQKBgQDra26to/Txs2mkKuym\nbcKyK/fzFqajtbcgOtYKPyObzv5SLtjUmpksEzU98QiV3xD//rZxtZjZcD7K7fzu\np1Z14TpGZCIq8efHMySNMMz3fXevW2pACw4DNIezcsYo6xWYBetDrG9skMyzW03k\nfWTRipKfU2pmTf3KfZsikEhTgQKBgQC9AYP/PFG2cNH2iBWDyYhwLYtqKjWsRq2u\nChditSecJi/LpiisQzb+p+meHRc9wrGi71wI+xddHiSGew8x46TVf/6wm+8n7wWQ\nT7D3M3dJiWnLoyZ1B4ogWww5OkufpCVdgCbtWYnzOV7phJg36bHucniu7uwqHsO+\nZgtS8zuHDQKBgA9uk2q+fKf7YsloJush9slHKJG+wl2o48AxGybAzMzB3Nn2SDBn\nkfLZr3vH+RAZ9ztQrxT1Gnfma7dRsmrSfVBs2y0SE0tNYCwmpha7RDRU/St5ipV4\nJAsBvoN82pCEGH5GpQ1imEs9kq2PJqP7tEgoFURsa2UZZ7GGWk0BuDwBAoGBAJeC\nOoSEnuAHqlfcmJqPF/8Mk2BkO6hA9AK6diqbGwhyGAhAxwPn0ZLrmTs1CKdqhake\nBQHx/bWYbyEaToDogf7fXpPGPD0fvq8DItHWgL4DGDq0KyTPCWuMcM0DLRHorEc6\nbnn/N7UwfSPmNXtEq2yAeLuKLOhKxxC+jj9NWZ+VAoGAVv24x7hLYSoqvH5FlSnI\noj+5WkDxR5R8JIa7DTY3S7ULZabntVpHXETQ9QFJLEQD+DQVzBrfhp0mZvKM4D9q\nsuQchqOM6wV1wbVNJs48kP7qaP8xtCltMcVEIYG7VfF2CM3GYn4W0B3ZnN9J/vPg\ndxOEEhxOtyjvfig6huCsGRU=\n-----END PRIVATE KEY-----\n",
+  "client_email": "la-cloudstorage@living-atlas-406719.iam.gserviceaccount.com",
+  "client_id": "105217282834068512847",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/la-cloudstorage%40living-atlas-406719.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
