@@ -49,6 +49,35 @@ bash
 Copy
 Edit
 python manage.py loaddata seed_data.json
+
+### Running the Application Locally
+
+Ensure the following are installed:
+- Python 3  
+- Pip (for backend dependencies)  
+- Node.js (enables npm commands)  
+
+#### Starting the Frontend  
+1. Navigate to `/client` and open a terminal.  
+2. Run `npm install` to install dependencies.  
+3. Start the frontend with `npm start` (runs on port 3000).  
+
+#### Starting the Backend  
+1. Open a terminal and go to `/backend`.  
+2. Run `pip install -r requirements.txt` to install dependencies.  
+3. Start the backend with `uvicorn main:app --reload` (runs on port 8000).  
+   - If this fails, try `python .\main.py` instead.  
+4. Access API docs at http://localhost:8000/docs.  
+
+#### Connecting Frontend to Local Backend  
+1. Open `/client/src/api.js`.  
+2. Comment out hosted `baseURL` lines.  
+3. Uncomment `baseURL: 'http://localhost:8000'`.  
+
+#### Stopping the Application  
+Press **Ctrl + C** in each terminal to free ports 3000 and 8000. If not stopped, `npm start` may prompt using port 3001 instead.  
+
+
 ## Functionality
 The Living Atlas supports the following features:
 
