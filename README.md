@@ -53,9 +53,10 @@ python manage.py loaddata seed_data.json
 ### Running the Application Locally
 
 Ensure the following are installed:
-- Python 3  
+- Python 3.12 or higher  
 - Pip (for backend dependencies)  
-- Node.js (enables npm commands)  
+- Node.js (enables npm commands)
+- Postgresql
 
 #### Starting the Frontend  
 1. Navigate to `/client` and open a terminal.  
