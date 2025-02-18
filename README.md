@@ -66,7 +66,7 @@ Ensure the following are installed:
 #### Starting the Backend  
 1. Open a terminal and go to `/backend`.  
 2. Run `pip install -r requirements.txt` to install dependencies. 
-   - If it prompts pg_config-related errors, make sure PostgreSQL is installed, then run `setx PATH "%PATH%;C:\Program Files\PostgreSQL\17\bin` in terminal.
+   - If it prompts pg_config-related errors, make sure PostgreSQL is installed, then run `setx PATH "%PATH%;C:\Program Files\PostgreSQL\17\bin` in terminal as an administrator.
 3. Start the backend with `uvicorn main:app --reload` (runs on port 8000).  
    - If this fails, try `python .\main.py` instead.  
 4. Access API docs at http://localhost:8000/docs.  
