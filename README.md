@@ -53,9 +53,10 @@ python manage.py loaddata seed_data.json
 ### Running the Application Locally
 
 Ensure the following are installed:
-- Python 3  
+- Python 3.12 or higher
 - Pip (for backend dependencies)  
-- Node.js (enables npm commands)  
+- Node.js (enables npm commands)
+- PostgreSQL 17
 
 #### Starting the Frontend  
 1. Navigate to `/client` and open a terminal.  
@@ -64,7 +65,8 @@ Ensure the following are installed:
 
 #### Starting the Backend  
 1. Open a terminal and go to `/backend`.  
-2. Run `pip install -r requirements.txt` to install dependencies.  
+2. Run `pip install -r requirements.txt` to install dependencies. 
+   - If it prompts pg_config-related errors, make sure PostgreSQL is installed, then run `setx PATH "%PATH%;C:\Program Files\PostgreSQL\17\bin` in terminal.
 3. Start the backend with `uvicorn main:app --reload` (runs on port 8000).  
    - If this fails, try `python .\main.py` instead.  
 4. Access API docs at http://localhost:8000/docs.  
