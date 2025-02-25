@@ -50,6 +50,14 @@ Copy
 Edit
 python manage.py loaddata seed_data.json
 
+### Usage Instructions
+- Launch the application by running the backend and frontend servers.
+- Access the application via `http://localhost:3000` locally or visit `https://willowy-twilight-157839.netlify.app/` in your browser.
+- Log in or create an account to contribute data.
+- Use the map interface to explore datasets or upload new geospatial information.
+- Click on 'Add Custom Filters' button add a new filter by tag
+- Click on the 'upload' button on the navigation bar to upload a new card
+
 ### Running the Application Locally
 
 Ensure the following are installed:
@@ -69,7 +77,7 @@ Ensure the following are installed:
    - If it prompts pg_config-related errors, make sure PostgreSQL is installed, then run `setx PATH "%PATH%;C:\Program Files\PostgreSQL\17\bin` in terminal as an administrator.
 3. Start the backend with `uvicorn main:app --reload` (runs on port 8000).  
    - If this fails, try `python .\main.py` instead.  
-4. Access API docs at http://localhost:8000/docs.  
+4. Access API docs at `http://localhost:8000/docs`.  
 
 #### Connecting Frontend to Local Backend  
 1. Open `/client/src/api.js`.  
@@ -83,16 +91,12 @@ Press **Ctrl + C** in each terminal to free ports 3000 and 8000. If not stopped,
 ## Functionality
 The Living Atlas supports the following features:
 
-Interactive map visualization for water quality and environmental datasets.
-User-contributed data with dynamic updates.
-Advanced filtering options for geospatial data.
-Automated workflows for user account management and data input.
-Scalability to handle larger datasets and more concurrent users.
-Usage Instructions
-Launch the application by running the backend and frontend servers.
-Access the application via http://localhost:3000 in your browser.
-Log in or create an account to contribute data.
-Use the map interface to explore datasets or upload new geospatial information.
+- Interactive map visualization for water quality and environmental datasets.
+- User-contributed data with dynamic updates.
+- Advanced filtering options for geospatial data.
+- Automated workflows for user account management and data input.
+- Scalability to handle larger datasets and more concurrent users.
+
 ## Known Problems
 Performance under high load: Scaling tests are in progress to address potential issues with large datasets.
 UI responsiveness: Some pages may load slowly during heavy operations; optimizations are planned.
