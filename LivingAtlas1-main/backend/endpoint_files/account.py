@@ -15,6 +15,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from database import conn, cur
 import urllib.parse
+import requests
 
 # Email configuration for Gmail
 SMTP_SERVER = "smtp.gmail.com"
@@ -96,12 +97,12 @@ async def reset_password(request: ResetPasswordRequest):
         email = request.email
         new_password = request.new_password
 
-        # # Check if the email exists in the database
-        # cur.execute("SELECT userid FROM users WHERE email = %s", (email,))
-        # user = cur.fetchone()
+        # Check if the email exists in the database
+        cur.execute("SELECT userid FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
 
-        # if not user:
-        #     raise HTTPException(status_code=400, detail="Invalid email")
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid email")
 
         # Generate a new salt for the new password
         new_salt = os.urandom(32)
@@ -122,6 +123,18 @@ async def reset_password(request: ResetPasswordRequest):
         return {"success": False, "message": str(e)}
 
 
+def get_short_url(long_url):
+    # Using Bitly's API
+    BITLY_API_URL = "https://api-ssl.bitly.com/v4/shorten"
+    headers = {"Authorization": "Bearer 9b023a4be0d1aa1f667eae09b3b7e959af52acf2", "Content-Type": "application/json"}
+    data = {"long_url": long_url}
+    response = requests.post(BITLY_API_URL, json=data, headers=headers)
+    if response.status_code == 200 or response.status_code == 201:
+        return response.json()["link"]
+    else:
+        print("Error shortening URL:", response.text)
+        return long_url  # Fallback to long URL
+    
 # Helper function to send the recovery email
 def send_recovery_email(recipient_email):
     try:
@@ -135,10 +148,13 @@ def send_recovery_email(recipient_email):
         # URL for the password reset link, using the email
         # reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
 
-        # Generate the dynamic URL by appending recipient_name as a query parameter
-        base_short_url = "https://tinyurl.com/ye2xysz9"
-        encoded_name = urllib.parse.quote(recipient_email)  # Encode special characters
-        reset_url = f"{base_short_url}?name={encoded_name}"
+        # Construct the long URL with the recipient's email
+        encoded_email = urllib.parse.quote(recipient_email)
+        long_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={encoded_email}"
+        
+        # Get a short URL from the dynamic URL shortener (e.g., Bitly)
+        short_reset_url = get_short_url(long_url)
+
 
         # Email body content with hyperlink
         body = f"""
@@ -146,12 +162,13 @@ def send_recovery_email(recipient_email):
             <body>
                 <p>Hi,<br><br>
                 You requested a password reset. Click the link below to reset your password:<br><br>
-                <a href="{reset_url}">Reset Password</a><br><br>
+                <a href="{short_reset_url}">Reset Password</a><br><br>
                 If you did not request this, please ignore this email.
                 </p>
             </body>
         </html>
         """
+
         msg.attach(MIMEText(body, 'html'))  # Set content type to 'html' for the email body
 
         # Send the email using Gmail's SMTP server
@@ -170,64 +187,6 @@ def send_recovery_email(recipient_email):
         print(f"SMTP error occurred: {smtp_error}")  # Catch SMTP-specific errors
     except Exception as e:
         print(f"Failed to send email: {e}")  # Catch all other errors
-
-
-# def send_recovery_email(recipient_email):
-#     try:
-#         print(f"Preparing to send email to {recipient_email}...")
-
-#         # Generate password reset link
-#         reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
-
-#         # ✅ Modified plain text email body (to avoid spam filters)
-#         body = f"""Hello,
-
-# We received a request regarding your Living Atlas account.
-
-# To continue, follow this link:
-
-
-
-# If you did not make this request, you can ignore this message.
-
-# Best,
-# The Living Atlas Team
-# """
-
-#         # Create a plain text email message
-#         msg = MIMEText(body, "plain")
-#         msg["From"] = SENDER_EMAIL
-#         msg["To"] = recipient_email
-#         msg["Subject"] = "Your Account Notification"
-
-#         # Connect to SMTP server
-#         print(f"Connecting to SMTP server {SMTP_SERVER}:{SMTP_PORT}...")
-#         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-#         server.starttls()  # Enable TLS encryption
-#         print("TLS encryption enabled.")
-
-#         # Login to the SMTP server
-#         print(f"Logging in as {SENDER_EMAIL}...")
-#         server.login(SENDER_EMAIL, SENDER_PASSWORD)
-#         print(f"Logged into SMTP server as {SENDER_EMAIL}")
-
-#         # Send email and log the response
-#         print(f"Sending email to {recipient_email}...")
-#         response = server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
-#         print(f"SMTP Response: {response}")
-
-#         # Close the connection
-#         server.quit()
-#         print(f"Email sent successfully to {recipient_email}!")
-
-#     except smtplib.SMTPRecipientsRefused:
-#         print(f"Error: The recipient {recipient_email} was refused. Email might be blocked.")
-#     except smtplib.SMTPAuthenticationError:
-#         print("Error: Authentication failed. Check your email credentials or enable App Passwords.")
-#     except smtplib.SMTPException as smtp_error:
-#         print(f"SMTP error occurred: {smtp_error}")
-#     except Exception as e:
-#         print(f"General failure: {e}")
 
 # Password recovery endpoint
 # Create a model for the request body
