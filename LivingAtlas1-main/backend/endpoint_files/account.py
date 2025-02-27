@@ -170,34 +170,18 @@ def send_recovery_email(recipient_email):
     try:
         print(f"Preparing to send email to {recipient_email}...")  # Debug logging
 
-        # Create email message
-        msg = MIMEMultipart()
+        # Simple plain text email body (matches GMass test)
+        body = "Test message"
+
+        # Create a MIMEText message (plain text format)
+        msg = MIMEText(body, "plain")
         msg["From"] = SENDER_EMAIL
         msg["To"] = recipient_email
-        msg["Subject"] = "Password Reset Request"
-
-        # URL for the password reset link
-        reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
-        
-        # ✅ Plain text email body
-        body = f"""Hi,
-
-You requested a password reset. Click the link below to reset your password:
-
-{reset_url}
-
-If you did not request this, please ignore this email.
-
-Best,
-The Living Atlas Team
-"""
-
-        msg.attach(MIMEText(body, "plain"))  # ✅ Set content type to 'plain' for text-only emails
+        msg["Subject"] = "SMTP Test from Python"
 
         # Connect to SMTP server
         print(f"Connecting to SMTP server {SMTP_SERVER}:{SMTP_PORT}...")
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.set_debuglevel(1)  # Enable verbose debugging output
         server.starttls()  # Enable TLS encryption
         print("TLS encryption enabled.")
 
@@ -209,20 +193,20 @@ The Living Atlas Team
         # Send email and log the response
         print(f"Sending email to {recipient_email}...")
         response = server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
-        print(f"SMTP Response: {response}")  # Logs the response from the SMTP server
+        print(f"SMTP Response: {response}")
 
         # Close the connection
         server.quit()
-        print(f"Recovery email sent successfully to {recipient_email}!")
+        print(f"Test email sent successfully to {recipient_email}!")
 
     except smtplib.SMTPRecipientsRefused:
         print(f"Error: The recipient {recipient_email} was refused. Email might be blocked.")
     except smtplib.SMTPAuthenticationError:
         print("Error: Authentication failed. Check your email credentials or enable App Passwords.")
     except smtplib.SMTPException as smtp_error:
-        print(f"SMTP error occurred: {smtp_error}")  # Catch SMTP-specific errors
+        print(f"SMTP error occurred: {smtp_error}")
     except Exception as e:
-        print(f"General failure: {e}")  # Catch all other errors
+        print(f"General failure: {e}")
 
 # Password recovery endpoint
 # Create a model for the request body
