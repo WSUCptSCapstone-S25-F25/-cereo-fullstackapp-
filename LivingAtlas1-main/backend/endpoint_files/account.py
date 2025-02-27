@@ -17,9 +17,14 @@ from database import conn, cur
 
 # Email configuration for Gmail
 SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 465
-SENDER_EMAIL = "cereofullstack@gmail.com"
-SENDER_PASSWORD = "ljun kiiz ngod ypjv"
+SMTP_PORT = 587
+SENDER_EMAIL = "cereo.atlas@gmail.com"
+SENDER_PASSWORD = "yqbr duhc ytcv ydjq"
+
+# SMTP_SERVER = "smtp.gmail.com"
+# SMTP_PORT = 465
+# SENDER_EMAIL = "cereofullstack@gmail.com"
+# SENDER_PASSWORD = "ljun kiiz ngod ypjv"
 
 account_router = APIRouter()
 
@@ -167,26 +172,27 @@ def send_recovery_email(recipient_email):
 
         # Create email message
         msg = MIMEMultipart()
-        msg['From'] = SENDER_EMAIL
-        msg['To'] = recipient_email
-        msg['Subject'] = "Password Reset Request"
+        msg["From"] = SENDER_EMAIL
+        msg["To"] = recipient_email
+        msg["Subject"] = "Password Reset Request"
 
         # URL for the password reset link
         reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
         
-        # Email body content
-        body = f"""
-        <html>
-            <body>
-                <p>Hi,<br><br>
-                You requested a password reset. Click the link below to reset your password:<br><br>
-                <a href="{reset_url}">Reset Password</a><br><br>
-                If you did not request this, please ignore this email.
-                </p>
-            </body>
-        </html>
-        """
-        msg.attach(MIMEText(body, 'html'))  # Set content type to 'html' for the email body
+        # ✅ Plain text email body
+        body = f"""Hi,
+
+You requested a password reset. Click the link below to reset your password:
+
+{reset_url}
+
+If you did not request this, please ignore this email.
+
+Best,
+The Living Atlas Team
+"""
+
+        msg.attach(MIMEText(body, "plain"))  # ✅ Set content type to 'plain' for text-only emails
 
         # Connect to SMTP server
         print(f"Connecting to SMTP server {SMTP_SERVER}:{SMTP_PORT}...")
