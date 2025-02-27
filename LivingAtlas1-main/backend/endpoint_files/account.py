@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from database import conn, cur
+import urllib.parse
 
 # Email configuration for Gmail
 SMTP_SERVER = "smtp.gmail.com"
@@ -121,92 +122,112 @@ async def reset_password(request: ResetPasswordRequest):
         return {"success": False, "message": str(e)}
 
 
-# # Helper function to send the recovery email
-# def send_recovery_email(recipient_email):
-#     try:
-#         print(f"Preparing to send email to {recipient_email}...")  # Debug logging
-        
-#         msg = MIMEMultipart()
-#         msg['From'] = SENDER_EMAIL
-#         msg['To'] = recipient_email
-#         msg['Subject'] = "Password Reset Request"
-
-#         # URL for the password reset link, using the email
-#         reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
-
-#         # Email body content with hyperlink
-#         body = f"""
-#         <html>
-#             <body>
-#                 <p>Hi,<br><br>
-#                 You requested a password reset. Click the link below to reset your password:<br><br>
-#                 <a href="{reset_url}">Reset Password</a><br><br>
-#                 If you did not request this, please ignore this email.
-#                 </p>
-#             </body>
-#         </html>
-#         """
-#         msg.attach(MIMEText(body, 'html'))  # Set content type to 'html' for the email body
-
-#         # Send the email using Gmail's SMTP server
-#         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-#         server.starttls()  # Enable TLS encryption
-#         server.login(SENDER_EMAIL, SENDER_PASSWORD)
-
-#         print(f"Logged into SMTP server as {SENDER_EMAIL}")  # Debug logging
-
-#         server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
-        
-#         server.quit()
-
-#         print(f"Recovery email sent successfully to {recipient_email}!")
-#     except smtplib.SMTPException as smtp_error:
-#         print(f"SMTP error occurred: {smtp_error}")  # Catch SMTP-specific errors
-#     except Exception as e:
-#         print(f"Failed to send email: {e}")  # Catch all other errors
-
-
+# Helper function to send the recovery email
 def send_recovery_email(recipient_email):
     try:
         print(f"Preparing to send email to {recipient_email}...")  # Debug logging
+        
+        msg = MIMEMultipart()
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = recipient_email
+        msg['Subject'] = "Password Reset Request"
 
-        # Simple plain text email body (matches GMass test)
-        body = "Test message"
+        # URL for the password reset link, using the email
+        # reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
 
-        # Create a MIMEText message (plain text format)
-        msg = MIMEText(body, "plain")
-        msg["From"] = SENDER_EMAIL
-        msg["To"] = recipient_email
-        msg["Subject"] = "SMTP Test from Python"
+        # Generate the dynamic URL by appending recipient_name as a query parameter
+        base_short_url = "https://tinyurl.com/ye2xysz9"
+        encoded_name = urllib.parse.quote(recipient_email)  # Encode special characters
+        reset_url = f"{base_short_url}?name={encoded_name}"
 
-        # Connect to SMTP server
-        print(f"Connecting to SMTP server {SMTP_SERVER}:{SMTP_PORT}...")
+        # Email body content with hyperlink
+        body = f"""
+        <html>
+            <body>
+                <p>Hi,<br><br>
+                You requested a password reset. Click the link below to reset your password:<br><br>
+                <a href="{reset_url}">Reset Password</a><br><br>
+                If you did not request this, please ignore this email.
+                </p>
+            </body>
+        </html>
+        """
+        msg.attach(MIMEText(body, 'html'))  # Set content type to 'html' for the email body
+
+        # Send the email using Gmail's SMTP server
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()  # Enable TLS encryption
-        print("TLS encryption enabled.")
-
-        # Login to the SMTP server
-        print(f"Logging in as {SENDER_EMAIL}...")
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        print(f"Logged into SMTP server as {SENDER_EMAIL}")
 
-        # Send email and log the response
-        print(f"Sending email to {recipient_email}...")
-        response = server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
-        print(f"SMTP Response: {response}")
+        print(f"Logged into SMTP server as {SENDER_EMAIL}")  # Debug logging
 
-        # Close the connection
+        server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        
         server.quit()
-        print(f"Test email sent successfully to {recipient_email}!")
 
-    except smtplib.SMTPRecipientsRefused:
-        print(f"Error: The recipient {recipient_email} was refused. Email might be blocked.")
-    except smtplib.SMTPAuthenticationError:
-        print("Error: Authentication failed. Check your email credentials or enable App Passwords.")
+        print(f"Recovery email sent successfully to {recipient_email}!")
     except smtplib.SMTPException as smtp_error:
-        print(f"SMTP error occurred: {smtp_error}")
+        print(f"SMTP error occurred: {smtp_error}")  # Catch SMTP-specific errors
     except Exception as e:
-        print(f"General failure: {e}")
+        print(f"Failed to send email: {e}")  # Catch all other errors
+
+
+# def send_recovery_email(recipient_email):
+#     try:
+#         print(f"Preparing to send email to {recipient_email}...")
+
+#         # Generate password reset link
+#         reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
+
+#         # ✅ Modified plain text email body (to avoid spam filters)
+#         body = f"""Hello,
+
+# We received a request regarding your Living Atlas account.
+
+# To continue, follow this link:
+
+
+
+# If you did not make this request, you can ignore this message.
+
+# Best,
+# The Living Atlas Team
+# """
+
+#         # Create a plain text email message
+#         msg = MIMEText(body, "plain")
+#         msg["From"] = SENDER_EMAIL
+#         msg["To"] = recipient_email
+#         msg["Subject"] = "Your Account Notification"
+
+#         # Connect to SMTP server
+#         print(f"Connecting to SMTP server {SMTP_SERVER}:{SMTP_PORT}...")
+#         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+#         server.starttls()  # Enable TLS encryption
+#         print("TLS encryption enabled.")
+
+#         # Login to the SMTP server
+#         print(f"Logging in as {SENDER_EMAIL}...")
+#         server.login(SENDER_EMAIL, SENDER_PASSWORD)
+#         print(f"Logged into SMTP server as {SENDER_EMAIL}")
+
+#         # Send email and log the response
+#         print(f"Sending email to {recipient_email}...")
+#         response = server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+#         print(f"SMTP Response: {response}")
+
+#         # Close the connection
+#         server.quit()
+#         print(f"Email sent successfully to {recipient_email}!")
+
+#     except smtplib.SMTPRecipientsRefused:
+#         print(f"Error: The recipient {recipient_email} was refused. Email might be blocked.")
+#     except smtplib.SMTPAuthenticationError:
+#         print("Error: Authentication failed. Check your email credentials or enable App Passwords.")
+#     except smtplib.SMTPException as smtp_error:
+#         print(f"SMTP error occurred: {smtp_error}")
+#     except Exception as e:
+#         print(f"General failure: {e}")
 
 # Password recovery endpoint
 # Create a model for the request body
