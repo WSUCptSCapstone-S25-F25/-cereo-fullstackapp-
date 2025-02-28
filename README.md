@@ -60,16 +60,26 @@ python manage.py loaddata seed_data.json
 
 ### Running the Application Locally
 
-Ensure the following are installed:
+Before running the application, ensure the following are installed:
 - Python 3.12 or higher
 - Pip (for backend dependencies)  
 - Node.js (enables npm commands)
 - PostgreSQL 17
 
-#### Starting the Frontend  
-1. Navigate to `/client` and open a terminal.  
-2. Run `npm install` to install dependencies.  
-3. Start the frontend with `npm start` (runs on port 3000).  
+If you want to directly downloading the application and run it, follow the steps below:
+
+1. Download the ZIP file by clicking on `Download ZIP` option.
+2. Extract the zip file named `-cereo-fullstackapp--main.zip`.
+3. Open your the folder where you extract the zip, navigate to directory `/LivingAtlas1-main`.
+4. Right click anywhere in that directory, select `Open in Terminal` option.
+   
+Now you can follow the steps in the following sections to start the frontend or the backend.
+
+#### Starting the Frontend
+1. Navitage to `/client`. In terminal, you can simply enter `cd ./client`
+2. Navigate to `/client` and open a terminal.  
+3. Run `npm install` to install dependencies.  
+4. Start the frontend with `npm start` (runs on port 3000).  
 
 #### Starting the Backend  
 1. Open a terminal and go to `/backend`.  
