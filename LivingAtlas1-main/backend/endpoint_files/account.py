@@ -14,12 +14,19 @@ from pydantic import BaseModel
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from database import conn, cur
+import urllib.parse
+import requests
 
 # Email configuration for Gmail
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SENDER_EMAIL = "cereo.atlas@gmail.com"
 SENDER_PASSWORD = "yqbr duhc ytcv ydjq"
+
+# SMTP_SERVER = "smtp.gmail.com"
+# SMTP_PORT = 465
+# SENDER_EMAIL = "cereofullstack@gmail.com"
+# SENDER_PASSWORD = "ljun kiiz ngod ypjv"
 
 account_router = APIRouter()
 
@@ -116,6 +123,18 @@ async def reset_password(request: ResetPasswordRequest):
         return {"success": False, "message": str(e)}
 
 
+def get_short_url(long_url):
+    # Using Bitly's API
+    BITLY_API_URL = "https://api-ssl.bitly.com/v4/shorten"
+    headers = {"Authorization": "Bearer 9b023a4be0d1aa1f667eae09b3b7e959af52acf2", "Content-Type": "application/json"}
+    data = {"long_url": long_url}
+    response = requests.post(BITLY_API_URL, json=data, headers=headers)
+    if response.status_code == 200 or response.status_code == 201:
+        return response.json()["link"]
+    else:
+        print("Error shortening URL:", response.text)
+        return long_url  # Fallback to long URL
+    
 # Helper function to send the recovery email
 def send_recovery_email(recipient_email):
     try:
@@ -127,7 +146,15 @@ def send_recovery_email(recipient_email):
         msg['Subject'] = "Password Reset Request"
 
         # URL for the password reset link, using the email
-        reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
+        # reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
+
+        # Construct the long URL with the recipient's email
+        encoded_email = urllib.parse.quote(recipient_email)
+        long_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={encoded_email}"
+        
+        # Get a short URL from the dynamic URL shortener (e.g., Bitly)
+        short_reset_url = get_short_url(long_url)
+
 
         # Email body content with hyperlink
         body = f"""
@@ -135,12 +162,13 @@ def send_recovery_email(recipient_email):
             <body>
                 <p>Hi,<br><br>
                 You requested a password reset. Click the link below to reset your password:<br><br>
-                <a href="{reset_url}">Reset Password</a><br><br>
+                <a href="{short_reset_url}">Reset Password</a><br><br>
                 If you did not request this, please ignore this email.
                 </p>
             </body>
         </html>
         """
+
         msg.attach(MIMEText(body, 'html'))  # Set content type to 'html' for the email body
 
         # Send the email using Gmail's SMTP server
@@ -151,6 +179,7 @@ def send_recovery_email(recipient_email):
         print(f"Logged into SMTP server as {SENDER_EMAIL}")  # Debug logging
 
         server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        
         server.quit()
 
         print(f"Recovery email sent successfully to {recipient_email}!")
@@ -158,8 +187,6 @@ def send_recovery_email(recipient_email):
         print(f"SMTP error occurred: {smtp_error}")  # Catch SMTP-specific errors
     except Exception as e:
         print(f"Failed to send email: {e}")  # Catch all other errors
-
-
 
 # Password recovery endpoint
 # Create a model for the request body

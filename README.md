@@ -60,6 +60,12 @@ python manage.py loaddata seed_data.json
 
 ### Running the Application Locally
 
+Ensure the following are installed:
+- Python 3.12 or higher  
+- Pip (for backend dependencies)  
+- Node.js (enables npm commands)
+- Postgresql
+
 Before running the application, ensure the following are installed:
 - Python 3.12 or higher
 - Pip (for backend dependencies)  
