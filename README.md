@@ -50,6 +50,14 @@ Copy
 Edit
 python manage.py loaddata seed_data.json
 
+### Usage Instructions
+- Launch the application by running the backend and frontend servers.
+- Access the application via `http://localhost:3000` locally or visit `https://willowy-twilight-157839.netlify.app/` in your browser.
+- Log in or create an account to contribute data.
+- Use the map interface to explore datasets or upload new geospatial information.
+- Click on 'Add Custom Filters' button add a new filter by tag
+- Click on the 'upload' button on the navigation bar to upload a new card
+
 ### Running the Application Locally
 
 Ensure the following are installed:
@@ -58,17 +66,34 @@ Ensure the following are installed:
 - Node.js (enables npm commands)
 - Postgresql
 
-#### Starting the Frontend  
-1. Navigate to `/client` and open a terminal.  
-2. Run `npm install` to install dependencies.  
-3. Start the frontend with `npm start` (runs on port 3000).  
+Before running the application, ensure the following are installed:
+- Python 3.12 or higher
+- Pip (for backend dependencies)  
+- Node.js (enables npm commands)
+- PostgreSQL 17
+
+If you want to directly downloading the application and run it, follow the steps below:
+
+1. Download the ZIP file by clicking on `Download ZIP` option.
+2. Extract the zip file named `-cereo-fullstackapp--main.zip`.
+3. Open your the folder where you extract the zip, navigate to directory `/LivingAtlas1-main`.
+4. Right click anywhere in that directory, select `Open in Terminal` option.
+   
+Now you can follow the steps in the following sections to start the frontend or the backend.
+
+#### Starting the Frontend
+1. Navitage to `/client`. On a terminal console, you can do it by simply typing `cd ./client`
+2. Navigate to `/client` and open a terminal.  
+3. Run `npm install` to install dependencies.  
+4. Start the frontend with `npm start` (runs on port 3000).  
 
 #### Starting the Backend  
-1. Open a terminal and go to `/backend`.  
-2. Run `pip install -r requirements.txt` to install dependencies.  
+1. Open a terminal and go to `/backend`. On a terminal console, you can do it by simply typing `cd ./backend`
+2. Run `pip install -r requirements.txt` to install dependencies. 
+   - If it prompts pg_config-related errors, make sure PostgreSQL is installed, then run `setx PATH "%PATH%;C:\Program Files\PostgreSQL\17\bin` in terminal as an administrator.
 3. Start the backend with `uvicorn main:app --reload` (runs on port 8000).  
    - If this fails, try `python .\main.py` instead.  
-4. Access API docs at http://localhost:8000/docs.  
+4. Access API docs at `http://localhost:8000/docs`.  
 
 #### Connecting Frontend to Local Backend  
 1. Open `/client/src/api.js`.  
@@ -82,16 +107,12 @@ Press **Ctrl + C** in each terminal to free ports 3000 and 8000. If not stopped,
 ## Functionality
 The Living Atlas supports the following features:
 
-Interactive map visualization for water quality and environmental datasets.
-User-contributed data with dynamic updates.
-Advanced filtering options for geospatial data.
-Automated workflows for user account management and data input.
-Scalability to handle larger datasets and more concurrent users.
-Usage Instructions
-Launch the application by running the backend and frontend servers.
-Access the application via http://localhost:3000 in your browser.
-Log in or create an account to contribute data.
-Use the map interface to explore datasets or upload new geospatial information.
+- Interactive map visualization for water quality and environmental datasets.
+- User-contributed data with dynamic updates.
+- Advanced filtering options for geospatial data.
+- Automated workflows for user account management and data input.
+- Scalability to handle larger datasets and more concurrent users.
+
 ## Known Problems
 Performance under high load: Scaling tests are in progress to address potential issues with large datasets.
 UI responsiveness: Some pages may load slowly during heavy operations; optimizations are planned.
