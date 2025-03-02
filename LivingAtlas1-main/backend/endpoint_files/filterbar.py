@@ -103,7 +103,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None):
     # Add tag filter with case-insensitivity
     if tagString:
         tags = tagString.split(',')
-        tags = ', '.join(f"LOWER('{tag.strip()}')" for tag in tags)
+        tags = ', '.join(f"'{(tag.strip()).lower()}'" for tag in tags)
         tag_count = len(tags.split(','))
         justWHERE_TAG = (f"""
             (SELECT COUNT(*) 

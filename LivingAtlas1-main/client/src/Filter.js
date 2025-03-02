@@ -5,8 +5,9 @@ function allTagsFound(allTags, filters) {
         return false;
     }
     else { 
+    allTags = allTags.toLowerCase();
     for (const filter of filters) {
-      if (allTags.indexOf(filter) === -1) {
+      if (allTags.indexOf(filter.toLowerCase()) === -1) {
         return false;
       }
     }
