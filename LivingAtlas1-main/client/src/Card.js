@@ -185,7 +185,6 @@ function Card(props) {
         if (!description) return '';
         return description.length > charLimit ? description.substring(0, charLimit) + '...' : description;
     };
-
     return (
         <div className="card" style={{ backgroundColor: determineBackgroundColor() }}>
             <img src="/CEREO-logo.png" alt="Description of image" />
@@ -349,6 +348,17 @@ function Card(props) {
                             }))}
                         />
                     </label>
+                    <label> Remove attached file:
+                        <input 
+                            type="checkbox" 
+                            name="remove-attached-file-checkbox" 
+                            value="0"
+                            onChange={(e) => setFormData(prevState => ({
+                                ...prevState, 
+                                removeFile: e.target.checked}))}
+                        />
+                    </label>
+                    <br></br>
                     <button type="submit" className="card-button" disabled={loading}>
                         {loading ? 'Saving...' : 'Save'}
                     </button>
