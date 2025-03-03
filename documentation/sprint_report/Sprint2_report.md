@@ -1,6 +1,6 @@
 # Sprint 2 Report (2/02/25 - 3/02/2025)
 
-# Link to the demo video
+## Link to the demo video
 * [Sprint 2 Video](https://youtu.be/2GDj7hvlmkg)
 
 ## What's New (User Facing)
