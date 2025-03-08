@@ -70,7 +70,7 @@ def tagList():
 
 #This endpoint gives all the data with the labels in the return from the filtered tag that was selected
 @filterbar_router.get("/allCardsByTag")
-async def allCardsByTag(categoryString: str = None, tagString: str = None):
+async def allCardsByTag(categoryString: str = None, tagString: str = None, sortString: str = None):
 
     # if parameters are empty then cut this endpoint off fast
     if categoryString is None and tagString is None:
@@ -80,40 +80,63 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None):
     finalQUERY = ("""
         SELECT u.Username, u.Email, c.Title, cat.CategoryLabel, c.DatePosted, c.Description, c.Organization, c.Funding, c.Link, 
         STRING_AGG(t.TagLabel, ', ') AS TagLabels, c.Latitude, c.Longitude, f.FileExtension, f.FileID
+    """)
+
+    if sortString:
+        sortSplit = sortString.split(',')
+        if sortSplit[0] == "ClosestToMe":
+            print("test")
+            latitude = sortSplit[1]
+            longitude = sortSplit[2]
+            finalQUERY += (f""", SQRT(POWER(c.Latitude - {latitude}, 2) + POWER(c.Longitude - {longitude}, 2)) AS distance
+            """)
+
+
+    finalQUERY += ("""
         FROM Users u
         JOIN Cards c ON u.UserID = c.UserID
         JOIN CardTags ct ON c.CardID = ct.CardID
         JOIN Tags t ON ct.TagID = t.TagID
         JOIN Categories cat ON c.CategoryID = cat.CategoryID
         LEFT JOIN Files f ON c.CardID = f.CardID
-        WHERE 
     """)
 
-    botStringQuery = """
+    botStringQuery = ("""
         GROUP BY c.CardID, u.Username, u.Email, c.Title, cat.CategoryLabel, c.DatePosted, c.Description, 
         c.Organization, c.Funding, c.Link, c.Latitude, c.Longitude, f.FileExtension, f.FileID
-    """
+    """)
 
-    # Add category filter with case-insensitivity
-    if categoryString:
-        finalQUERY += f"LOWER(cat.CategoryLabel) = LOWER('{categoryString}')"
+    if categoryString or tagString:
+        finalQUERY += """
+            WHERE 
+        """
+        # Add category filter with case-insensitivity
+        if categoryString:
+            finalQUERY += f"LOWER(cat.CategoryLabel) = LOWER('{categoryString}')"
+            if tagString:
+                finalQUERY += "\nAND "
+
+        # Add tag filter with case-insensitivity
         if tagString:
-            finalQUERY += "\nAND "
-
-    # Add tag filter with case-insensitivity
-    if tagString:
-        tags = tagString.split(',')
-        tags = ', '.join(f"'{(tag.strip()).lower()}'" for tag in tags)
-        tag_count = len(tags.split(','))
-        justWHERE_TAG = (f"""
-            (SELECT COUNT(*) 
-            FROM CardTags ct2
-            JOIN Tags t2 ON ct2.TagID = t2.TagID
-            WHERE ct2.CardID = c.CardID AND LOWER(t2.TagLabel) IN ({tags})) = {tag_count}
-        """)
-        finalQUERY += justWHERE_TAG
+            tags = tagString.split(',')
+            tags = ', '.join(f"LOWER('{tag.strip()}')" for tag in tags)
+            tag_count = len(tags.split(','))
+            justWHERE_TAG = (f"""
+                (SELECT COUNT(*) 
+                FROM CardTags ct2
+                JOIN Tags t2 ON ct2.TagID = t2.TagID
+                WHERE ct2.CardID = c.CardID AND LOWER(t2.TagLabel) IN ({tags})) = {tag_count}
+            """)
+            finalQUERY += justWHERE_TAG
 
     finalQUERY += botStringQuery
+
+    if sortString:
+        sortSplit = sortString.split(',')
+        if sortSplit[0] == "ClosestToMe":
+            finalQUERY += """
+            ORDER BY distance ASC;
+            """
 
     cur.execute(finalQUERY)
     rows = cur.fetchall()
