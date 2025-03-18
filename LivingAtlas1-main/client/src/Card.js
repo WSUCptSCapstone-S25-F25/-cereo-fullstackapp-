@@ -8,6 +8,8 @@ function Card(props) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [formData, setFormData] = useState(props.formData);
     const [loading, setLoading] = useState(false); // Added state for loading
+    const [isFavorited, setIsFavorited] = useState(false); // Track favorite state
+
 
     const handleLearnMore = () => {
         setIsModalOpen(true);
@@ -23,6 +25,10 @@ function Card(props) {
             ...prevState,
             [name]: value,
         }));
+    };
+
+    const handleFavoriteClick = () => {
+        setIsFavorited((prev) => !prev);
     };
 
     const validateForm = () => {
@@ -188,6 +194,15 @@ function Card(props) {
 
     return (
         <div className="card" style={{ backgroundColor: determineBackgroundColor() }}>
+            {/* Favorite Star Icon */}
+            <span 
+                className="favorite-icon"
+                onClick={handleFavoriteClick}
+                title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+            >
+                {isFavorited ? '⭐' : '☆'}
+            </span>
+
             <img src="/CEREO-logo.png" alt="Description of image" />
             <h2 className="card-title">{props.formData.title}</h2>
             <p className="card-text">{truncateDescription(props.formData.description, 100)}</p>
