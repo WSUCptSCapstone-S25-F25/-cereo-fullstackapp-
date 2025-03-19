@@ -1,14 +1,19 @@
-
-
 import psycopg2
 from psycopg2 import OperationalError, errorcodes, errors
 
 conn = None  # Ensure conn is always defined
 
 try:
-    # Aiven database connection
-    conn = psycopg2.connect('postgres://avnadmin:AVNS_vBiPLJt2YvOvpq0V7Ha@pg-1b73eb6f-livingatlas-livingatlasdb.l.aivencloud.com:13918/defaultdb?sslmode=require')
-    print('Connection Success!')
+    # Azure PostgreSQL database connection
+    conn = psycopg2.connect(
+        dbname="postgres", 
+        user="CereoAtlas",
+        password="LivingAtlas25$",
+        host="cereo-livingatlas-db.postgres.database.azure.com",
+        port="5432",
+        sslmode="require"  # Required for Azure PostgreSQL
+    )
+    print("Database Connection Success!")
     connectionsucceeded = True
 
 except OperationalError as e:
