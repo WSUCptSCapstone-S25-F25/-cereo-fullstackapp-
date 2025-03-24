@@ -8,7 +8,7 @@ function Card(props) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [formData, setFormData] = useState(props.formData);
     const [loading, setLoading] = useState(false); // Added state for loading
-    const [isFavorited, setIsFavorited] = useState(false); // Track favorite state
+    const [isFavorited, setIsFavorited] = useState(props.isFavorited || false); // Track favorite state
 
 
     const handleLearnMore = () => {

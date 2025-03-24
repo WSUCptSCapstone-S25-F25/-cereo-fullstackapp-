@@ -19,7 +19,6 @@ function Content2(props) {
     const didMount = useDidMount();
     const didMountRef = useRef(false);
 
-
     // Edited by Flavio: same code used to load the cards based on filter. Made it into a function in order to call it under searchConditions being reset to ''
     // That way our team is able to show the cards again once the user closes out of the marker.
     function loadCardsByCriteria() {
@@ -107,6 +106,7 @@ function Content2(props) {
     }
 
     const [cards, setCards] = useState([]);
+    const [bookmarkedTitles, setBookmarkedTitles] = useState(new Set());
     const [filterCondition, setFilterCondition] = useState(props.filterCondition);
     const [searchCondition, setSearchCondition] = useState(props.searchCondition);
     // const isInitialMount = useRef(true);
@@ -227,6 +227,22 @@ function Content2(props) {
     }, [props.searchCondition]); // Only run if props.searchCondition changes
 
 
+    useEffect(() => {
+        const fetchBookmarks = async () => {
+            try {
+                const res = await api.get('/getBookmarkedCards', {
+                    params: { username: 'your-logged-in-username' } // Replace or get from props
+                });
+    
+                const titles = new Set(res.data.bookmarkedCards.map(card => card.title));
+                setBookmarkedTitles(titles);
+            } catch (err) {
+                console.error("Failed to fetch bookmarks:", err);
+            }
+        };
+    
+        fetchBookmarks();
+    }, []);
 
 
     useEffect(() => {
@@ -315,7 +331,13 @@ function Content2(props) {
         <section id="content-2">
             <div className="card-container" style={{ maxHeight: '700px', overflowY: 'auto' }}>
                 {cards.map((card, index) => (
-                    <Card key={`${card.title}-${index}`} formData={card} />
+                    // <Card key={`${card.title}-${index}`} formData={card} />
+                    <Card
+                        key={`${card.title}-${index}`}
+                        formData={card}
+                        isFavorited={bookmarkedTitles.has(card.title)}
+                        username={'your-logged-in-username'} // Replace or pass via props
+                    />
                 ))}
             </div>
         </section>
