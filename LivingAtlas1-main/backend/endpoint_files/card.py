@@ -123,7 +123,23 @@ async def bookmark_card(username: str = Form(...), title: str = Form(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Deleting a bookmark
+@card_router.post("/unbookmarkCard")
+async def unbookmark_card(username: str = Form(...), title: str = Form(...)):
+    try:
+        cur.execute("SELECT UserID FROM Users WHERE Username = %s", (username,))
+        user_id = cur.fetchone()
+        cur.execute("SELECT CardID FROM Cards WHERE Title = %s", (title,))
+        card_id = cur.fetchone()
 
+        if not user_id or not card_id:
+            raise HTTPException(status_code=404, detail="User or card not found")
+
+        cur.execute("DELETE FROM Favorites WHERE UserID = %s AND CardID = %s", (user_id[0], card_id[0]))
+        conn.commit()
+        return {"message": "Card removed from bookmarks"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
