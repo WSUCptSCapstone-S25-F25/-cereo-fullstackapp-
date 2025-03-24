@@ -27,8 +27,18 @@ function Card(props) {
         }));
     };
 
-    const handleFavoriteClick = () => {
-        setIsFavorited((prev) => !prev);
+    const handleFavoriteClick = async () => {
+        setIsFavorited(prev => !prev);
+        try {
+            const endpoint = !isFavorited ? '/bookmarkCard' : '/unbookmarkCard';
+            const formData = new FormData();
+            formData.append('username', props.formData.username);
+            formData.append('title', props.formData.title);
+    
+            await api.post(endpoint, formData);
+        } catch (error) {
+            console.error('Error toggling bookmark:', error);
+        }
     };
 
     const validateForm = () => {

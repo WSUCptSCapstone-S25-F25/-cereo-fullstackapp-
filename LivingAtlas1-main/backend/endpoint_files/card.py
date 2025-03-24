@@ -141,6 +141,7 @@ async def unbookmark_card(username: str = Form(...), title: str = Form(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Get bookmarked cards for a user
 @card_router.get("/getBookmarkedCards")
 def get_bookmarked_cards(username: str):
     try:
