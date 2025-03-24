@@ -103,7 +103,25 @@ async def deleteCard(username: str, title: str):
 
 
 
+# Add a bookmark
+@card_router.post("/bookmarkCard")
+async def bookmark_card(username: str = Form(...), title: str = Form(...)):
+    try:
+        cur.execute("SELECT UserID FROM Users WHERE Username = %s", (username,))
+        user_id = cur.fetchone()
+        if not user_id:
+            raise HTTPException(status_code=404, detail="User not found")
 
+        cur.execute("SELECT CardID FROM Cards WHERE Title = %s", (title,))
+        card_id = cur.fetchone()
+        if not card_id:
+            raise HTTPException(status_code=404, detail="Card not found")
+
+        cur.execute("INSERT INTO Favorites (UserID, CardID) VALUES (%s, %s) ON CONFLICT DO NOTHING", (user_id[0], card_id[0]))
+        conn.commit()
+        return {"message": "Card bookmarked successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
