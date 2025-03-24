@@ -141,6 +141,24 @@ async def unbookmark_card(username: str = Form(...), title: str = Form(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@card_router.get("/getBookmarkedCards")
+def get_bookmarked_cards(username: str):
+    try:
+        cur.execute("SELECT UserID FROM Users WHERE Username = %s", (username,))
+        user_id = cur.fetchone()
+        if not user_id:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        cur.execute("""
+            SELECT c.*
+            FROM Favorites f
+            JOIN Cards c ON f.CardID = c.CardID
+            WHERE f.UserID = %s
+        """, (user_id[0],))
+        rows = cur.fetchall()
+        return {"bookmarkedCards": rows}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
