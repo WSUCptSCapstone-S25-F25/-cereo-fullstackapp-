@@ -385,3 +385,11 @@ function Card(props) {
 }
 
 export default Card;
+
+
+// CREATE TABLE Favorites (
+//     FavoriteID SERIAL PRIMARY KEY,
+//     UserID INT REFERENCES Users(UserID),
+//     CardID INT REFERENCES Cards(CardID),
+//     UNIQUE(UserID, CardID)  -- Prevent duplicate bookmarks
+// );
