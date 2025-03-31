@@ -113,7 +113,7 @@ function Header(props) {
         }
         else {
             console.log(`${sortValue} applied`);
-            if (sortValue = "ClosestToMe")
+            if (sortValue == "ClosestToMe")
             {
                 if (curLocationCoordinates.lat === 0 && curLocationCoordinates.lng === 0)
                 {
@@ -123,6 +123,10 @@ function Header(props) {
                 {
                     props.setSortCondition(sortValue + ',' + curLocationCoordinates.lat + ',' + curLocationCoordinates.lng);
                 }
+            }
+            else
+            {
+                props.setSortCondition(sortValue);
             }
         }
     }
@@ -181,6 +185,7 @@ function Header(props) {
                 <select onChange={handleSortChange} className='sort-by'>
                     <option value="">Sort By...</option>
                     <option value="ClosestToMe">Closest To Me</option>
+                    <option value="RecentlyAdded">Recently Added</option>
                 </select>
 
                 {/* {isAddFilterOpen && (

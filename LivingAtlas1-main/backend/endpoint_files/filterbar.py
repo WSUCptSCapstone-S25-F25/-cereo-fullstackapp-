@@ -85,7 +85,6 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
     if sortString:
         sortSplit = sortString.split(',')
         if sortSplit[0] == "ClosestToMe":
-            print("test")
             latitude = sortSplit[1]
             longitude = sortSplit[2]
             finalQUERY += (f""", SQRT(POWER(c.Latitude - {latitude}, 2) + POWER(c.Longitude - {longitude}, 2)) AS distance
@@ -136,6 +135,10 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
         if sortSplit[0] == "ClosestToMe":
             finalQUERY += """
             ORDER BY distance ASC;
+            """
+        elif sortSplit[0] == "RecentlyAdded":
+            finalQUERY += """
+            ORDER BY c.DatePosted DESC;
             """
 
     cur.execute(finalQUERY)
