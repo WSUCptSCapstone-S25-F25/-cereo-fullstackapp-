@@ -5,6 +5,10 @@ import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
 import api from './api.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
+
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
 function Content2(props) {
 
@@ -18,6 +22,15 @@ function Content2(props) {
 
     const didMount = useDidMount();
     const didMountRef = useRef(false);
+    
+    // Collapse card container
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    const toggleCollapse = () => {
+        setIsCollapsed(!isCollapsed);
+    };
+
+
 
     // Edited by Flavio: same code used to load the cards based on filter. Made it into a function in order to call it under searchConditions being reset to ''
     // That way our team is able to show the cards again once the user closes out of the marker.
@@ -328,16 +341,14 @@ function Content2(props) {
 
 
     return (
-        <section id="content-2">
-            <div className="card-container" style={{ maxHeight: '700px', overflowY: 'auto' }}>
+        <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
+            <div className="collapse-toggle" onClick={toggleCollapse}>
+                <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
+            </div>
+
+            <div className="card-container" style={{ display: isCollapsed ? 'none' : 'block' }}>
                 {cards.map((card, index) => (
-                    // <Card key={`${card.title}-${index}`} formData={card} />
-                    <Card
-                        key={`${card.title}-${index}`}
-                        formData={card}
-                        isFavorited={bookmarkedTitles.has(card.title)}
-                        username={'your-logged-in-username'} // Replace or pass via props
-                    />
+                    <Card key={`${card.title}-${index}`} formData={card} />
                 ))}
             </div>
         </section>
