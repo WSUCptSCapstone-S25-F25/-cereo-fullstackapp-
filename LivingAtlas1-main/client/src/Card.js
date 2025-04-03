@@ -209,7 +209,7 @@ function Card(props) {
         <div className="card" style={{ backgroundColor: determineBackgroundColor() }}>
             {/* Favorite Star Icon */}
             <span 
-                className="favorite-icon"
+                className={`favorite-icon ${isFavorited ? 'filled' : ''}`}
                 onClick={handleFavoriteClick}
                 title={isFavorited ? "Remove from favorites" : "Add to favorites"}
                 >

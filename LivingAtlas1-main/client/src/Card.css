@@ -180,3 +180,17 @@
 .favorite-icon:hover {
     color: gold;
 }
+
+/* Differentiate styles for empty and filled FontAwesome stars */
+.favorite-icon svg {
+    stroke-width: 20;
+    stroke: #999;
+    color: white;
+  }
+  
+  .favorite-icon.filled svg {
+    color: gold;
+    stroke: gold;
+  }
+
+  
