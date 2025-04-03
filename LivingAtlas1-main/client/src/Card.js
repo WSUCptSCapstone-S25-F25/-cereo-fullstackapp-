@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import api from './api.js';
 import './Card.css'; // Importing the CSS for card
@@ -9,11 +10,21 @@ import { faStar as regularStar } from '@fortawesome/free-regular-svg-icons';
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [formData, setFormData] = useState(props.formData);
+    const [formData, setFormData] = useState(props.formData || {});
     const [loading, setLoading] = useState(false); // Added state for loading
-    const [isFavorited, setIsFavorited] = useState(props.isFavorited || false); // Track favorite state
+    const [isFavorited, setIsFavorited] = useState(false);
 
+    useEffect(() => {
+        setIsFavorited(props.isFavorited);      // Sync isFavorited prop with local state when prop changes (especially after refresh)
 
+    }, [props.isFavorited]);
+
+    useEffect(() => {
+        if (props.formData) {
+            setFormData(props.formData);
+        }
+    }, [props.formData]);
+    
     const handleLearnMore = () => {
         setIsModalOpen(true);
     };
@@ -31,18 +42,49 @@ function Card(props) {
     };
 
     const handleFavoriteClick = async () => {
+        const cardID = formData.cardID;
+        const username = formData.viewerUsername;
+    
+        console.log("cardID being sent:", cardID);
+        console.log("username being sent:", username);
+    
+        if (!cardID) {
+            console.error("Missing cardID");
+            return;
+        }
+
         setIsFavorited(prev => !prev);
+
+        if (!username) {
+            console.error("Missing username");
+            return;
+        }
+    
+        setIsFavorited(prev => !prev);
+    
         try {
             const endpoint = !isFavorited ? '/bookmarkCard' : '/unbookmarkCard';
             const formData = new FormData();
-            formData.append('username', props.formData.username);
-            formData.append('title', props.formData.title);
+            formData.append('username', username);
+            formData.append('cardID', cardID);
+
+            console.log("[Bookmarking] Sending cardID:", cardID, "username:", username);
+
     
             await api.post(endpoint, formData);
+
+            // Refresh bookmark data to keep UI in sync
+            if (props.fetchBookmarks) {
+                props.fetchBookmarks();
+            }
+
         } catch (error) {
             console.error('Error toggling bookmark:', error);
         }
     };
+    
+    
+    
 
     const validateForm = () => {
         const requiredFields = ['username', 'email', 'title', 'category', 'latitude', 'longitude'];
@@ -204,6 +246,8 @@ function Card(props) {
         if (!description) return '';
         return description.length > charLimit ? description.substring(0, charLimit) + '...' : description;
     };
+    
+    console.log("🔥 formData in Card:", formData);
 
     return (
         <div className="card" style={{ backgroundColor: determineBackgroundColor() }}>

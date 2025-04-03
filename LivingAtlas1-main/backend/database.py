@@ -1,39 +1,31 @@
-
-
-
-
-
-# database.py
-
 import psycopg2
 from psycopg2 import OperationalError, errorcodes, errors
 
-try:
-    # Old ElephantSQL database
-    # conn = psycopg2.connect('postgres://tgpxaiud:5MBj7NqaMmQuFAS6iVHk8dmThMl3oc1M@bubble.db.elephantsql.com/tgpxaiud')
+conn = None  # Ensure conn is always defined
 
-    # Aiven database
-    # conn = psycopg2.connect('postgres://avnadmin:AVNS_vBiPLJt2YvOvpq0V7Ha@pg-1b73eb6f-livingatlas-livingatlasdb.l.aivencloud.com:13918/defaultdb?sslmode=require')
+try:
+    # psql "host=cereo-livingatlas-db.postgres.database.azure.com port=5432 dbname=postgres user=CereoAtlas password=LivingAtlas25$ sslmode=require"
     
-    # Azure database
+    # Azure PostgreSQL database connection
     conn = psycopg2.connect(
-        host="cereo-livingatlas-db.postgres.database.azure.com",
-        port=5432,
-        dbname="postgres",
+        dbname="postgres", 
         user="CereoAtlas",
         password="LivingAtlas25$",
-        sslmode="require"
+        host="cereo-livingatlas-db.postgres.database.azure.com",
+        port="5432",
+        sslmode="require"  # Required for Azure PostgreSQL
     )
-    print('Connection Success!')
+    print("Database Connection Success!")
     connectionsucceeded = True
 
-except:
-   print("Unable to connect to the database")
-   print(f"Error: {e}")
-   connectionsucceeded = False
+except OperationalError as e:
+    print("Unable to connect to the database")
+    print(f"Error: {e}")
+    if conn:
+        conn.rollback()  # Force rollback if stuck in error state
+    connectionsucceeded = False
 
-
-# Open a cursor to execute SQL queries
+# Ensure cursor is only created if connection succeeded
 if conn:
     cur = conn.cursor()
 else:

@@ -7,6 +7,7 @@ The grid-template-columns property sets the size and number of columns, while th
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   grid-gap: 20px;
+  padding-top: 20px;
   justify-items: center;
 }
 
@@ -63,8 +64,8 @@ These changes in CSS allow the cards to be more responsive to smaller screens, m
   border-radius: 4px 0 0 4px;
   z-index: 10;
   display: flex;
-  align-items: center;     /* ✅ vertical center */
-  justify-content: center; /* ✅ horizontal center */
+  align-items: center;     /* vertical center */
+  justify-content: center; /* horizontal center */
   transition: background-color 0.3s ease;
 }
 
@@ -75,4 +76,36 @@ These changes in CSS allow the cards to be more responsive to smaller screens, m
 
 #content-2.collapsed .card-container {
   display: none;
+}
+
+
+
+
+.favorites-toggle-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  padding: 6px;
+  background-color: #ddd; /* match container bg */
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: 10px;
+  padding-bottom: 10px;
+  padding-right: 10px;
+
+}
+
+.favorites-toggle-icon svg {
+  font-size: 18px;
+}
+
+.favorites-toggle-icon:hover {
+  background-color: rgba(255, 255, 255, 0.35); /* subtle hover */
+}
+
+.favorites-toggle-icon.active {
+  background-color: rgba(200, 200, 200, 0.4); /* slightly darker on toggle */
+  border-radius: 8px;
 }

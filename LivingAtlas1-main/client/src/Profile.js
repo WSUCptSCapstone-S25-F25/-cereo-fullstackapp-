@@ -6,6 +6,9 @@ import { Link } from 'react-router-dom';
 import './Profile.css';
 import api from './api.js';
 import Register from './Register'; // Import the Register component
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
+
 
 function Profile(props) {
     const [cards, setCards] = useState([]);
@@ -19,7 +22,11 @@ function Profile(props) {
     const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(false);
     const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
     const [message, setMessage] = useState('');
-    
+    const [bookmarkedCardIDs, setBookmarkedCardIDs] = useState(new Set());
+    const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
+
+    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
 
     // Function to toggle the register form visibility
     function handleOpenRegister() {
@@ -30,6 +37,24 @@ function Profile(props) {
         setShowRegister(false);
     }
 
+    const fetchBookmarks = async () => {
+        try {
+            const res = await api.get('/getBookmarkedCards', {
+                params: { username: props.username }
+            });
+    
+            const cardIDs = new Set(
+                res.data.bookmarkedCards.map(card =>
+                    card.cardID || card.cardid || card.CardID
+                )
+            );
+    
+            setBookmarkedCardIDs(cardIDs);
+            setBookmarksLoaded(true);
+        } catch (error) {
+            console.error("Error fetching bookmarks:", error);
+        }
+    };
 
     // Handles Forgot Password request
     const handleForgotPasswordSubmit = (e) => {
@@ -57,33 +82,77 @@ function Profile(props) {
             });
     };
 
-    useEffect(() => {
-        // Check if the user is an admin
-        const isAdmin = props.isAdmin; // Assuming isAdmin prop is passed from parent component
+    // useEffect(() => {
+    //     // Check if the user is an admin
+    //     const isAdmin = props.isAdmin; // Assuming isAdmin prop is passed from parent component
 
-        if (isAdmin) {
-            // Fetch all cards
-            api.get('/allCards')
-                .then(response => {
-                    setCards(response.data.data);
-                    setLastDeletedCard(false);
-                })
-                .catch(error => {
-                    console.error(error);
+    //     if (isAdmin) {
+    //         // Fetch all cards
+    //         api.get('/allCards')
+    //             .then(response => {
+    //                 setCards(response.data.data);
+    //                 setLastDeletedCard(false);
+    //             })
+    //             .catch(error => {
+    //                 console.error(error);
+    //             });
+    //     } else {
+    //         // Fetch user's profile cards
+    //         api.get(`/profileCards?username=${props.username}`)
+    //             .then(response => {
+    //                 setCards(response.data.data);
+    //                 setLastDeletedCard(false);
+    //             })
+    //             .catch(error => {
+    //                 console.error(error);
+    //             });
+    //     }
+    //     // fetchBookmarks();
+    // }, [props.isAdmin, props.username, lastDeletedCard]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const isAdmin = props.isAdmin;
+                let cardResponse;
+    
+                if (isAdmin) {
+                    cardResponse = await api.get('/allCards');
+                } else {
+                    cardResponse = await api.get(`/profileCards?username=${props.username}`);
+                }
+    
+                const cardData = cardResponse.data.data;
+    
+                // Fetch bookmarks
+                const bookmarkRes = await api.get('/getBookmarkedCards', {
+                    params: { username: props.username }
                 });
-        } else {
-            // Fetch user's profile cards
-            api.get(`/profileCards?username=${props.username}`)
-                .then(response => {
-                    setCards(response.data.data);
-                    setLastDeletedCard(false);
-                })
-                .catch(error => {
-                    console.error(error);
-                });
-        }
+    
+                const bookmarkedIDs = new Set(
+                    bookmarkRes.data.bookmarkedCards.map(card =>
+                        card.cardID || card.cardid || card.CardID
+                    )
+                );
+    
+                // Optionally log for debugging
+                console.log("[Profile] Final bookmarked set:", bookmarkedIDs);
+    
+                // Set state
+                setBookmarkedCardIDs(bookmarkedIDs);
+                setCards(cardData);
+                setBookmarksLoaded(true);
+                setLastDeletedCard(false);
+    
+            } catch (error) {
+                console.error("Profile fetch error:", error);
+            }
+        };
+    
+        fetchData();
     }, [props.isAdmin, props.username, lastDeletedCard]);
 
+    
     return (
         <div>
             <div className="about">
@@ -136,10 +205,38 @@ function Profile(props) {
             </div>
             <section id="content-2">
                 <div className="card-container">
-                    {cards.map(card => (
-                        <Card key={card.title} formData={card} email={props.userEmail} username={props.username} onCardDelete={setLastDeletedCard} />
+                    {/* {cards.map(card => (
+                        <Card key={card.title} formData={card} isFavorited={bookmarkedCardIDs.has(card.cardID)} email={props.userEmail} username={props.username} onCardDelete={setLastDeletedCard} />
+                        ))} */}
+                    {cards
+                        .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
+                        .map((card, index) => (
+                            <Card
+                            key={`${card.cardID}-${index}`}
+                            formData={{
+                                ...card,
+                                cardID: card.cardID,
+                                cardOwner: card.username,
+                                viewerUsername: props.username
+                            }}
+                            isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                            username={props.username}
+                            onCardDelete={setLastDeletedCard}
+                            />
                     ))}
                 </div>
+
+                <div className="favorites-toggle-wrapper-profile">
+                    <div
+                        className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
+                        onClick={() => setShowFavoritesOnly(prev => !prev)}
+                        title="Favorites"
+                    >
+                        <FontAwesomeIcon icon={faStarHalfStroke} style={{ marginRight: '8px' }} />
+                        Favorites
+                    </div>
+                </div>
+
             </section>
         </div>
     );

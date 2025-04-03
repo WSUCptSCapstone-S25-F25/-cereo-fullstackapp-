@@ -26,6 +26,7 @@ function Main(props) {
                 setboundCondition={props.setboundCondition}
                 CategoryCondition={props.CategoryCondition}
                 setCategoryConditionCondition={props.setCategoryConditionCondition}
+                username={props.username} // pass username to Content2
             />
         </main>
     );

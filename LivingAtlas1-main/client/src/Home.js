@@ -42,6 +42,7 @@ function Home(props) {
                 CategoryCondition={CategoryCondition}
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 isAdmin={props.isAdmin} // Pass isAdmin down to Main
+                username={props.username} // Pass username down to Main
             />
             {props.isLoggedIn && props.isAdmin && <p>Welcome, admin user!</p>}
         </div>

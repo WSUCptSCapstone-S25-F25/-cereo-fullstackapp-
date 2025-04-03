@@ -103,65 +103,106 @@ async def deleteCard(username: str, title: str):
 
 
 
-# Add a bookmark
+
 @card_router.post("/bookmarkCard")
-async def bookmark_card(username: str = Form(...), title: str = Form(...)):
+async def bookmark_card(username: str = Form(...), cardID: int = Form(...)):
     try:
-        cur.execute("SELECT UserID FROM Users WHERE Username = %s", (username,))
-        user_id = cur.fetchone()
-        if not user_id:
-            raise HTTPException(status_code=404, detail="User not found")
+        print(f"[BOOKMARK] Incoming request: username={username}, cardID={cardID}")
+        
+        cur.execute("""
+            INSERT INTO Favorites (UserID, CardID)
+            SELECT u.UserID, %s
+            FROM Users u
+            WHERE LOWER(u.Username) = LOWER(%s)
+            ON CONFLICT DO NOTHING
+        """, (cardID, username))
 
-        cur.execute("SELECT CardID FROM Cards WHERE Title = %s", (title,))
-        card_id = cur.fetchone()
-        if not card_id:
-            raise HTTPException(status_code=404, detail="Card not found")
-
-        cur.execute("INSERT INTO Favorites (UserID, CardID) VALUES (%s, %s) ON CONFLICT DO NOTHING", (user_id[0], card_id[0]))
         conn.commit()
+
+        # Check if the bookmark was inserted
+        cur.execute("""
+            SELECT * FROM Favorites
+            WHERE CardID = %s AND UserID = (
+                SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)
+            )
+        """, (cardID, username))
+        result = cur.fetchone()
+        print(f"[BOOKMARK] DB insert result: {result}")
+
         return {"message": "Card bookmarked successfully"}
     except Exception as e:
+        print(f"[BOOKMARK ERROR] {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Deleting a bookmark
+
 @card_router.post("/unbookmarkCard")
-async def unbookmark_card(username: str = Form(...), title: str = Form(...)):
+async def unbookmark_card(username: str = Form(...), cardID: int = Form(...)):
     try:
-        cur.execute("SELECT UserID FROM Users WHERE Username = %s", (username,))
-        user_id = cur.fetchone()
-        cur.execute("SELECT CardID FROM Cards WHERE Title = %s", (title,))
-        card_id = cur.fetchone()
-
-        if not user_id or not card_id:
-            raise HTTPException(status_code=404, detail="User or card not found")
-
-        cur.execute("DELETE FROM Favorites WHERE UserID = %s AND CardID = %s", (user_id[0], card_id[0]))
-        conn.commit()
-        return {"message": "Card removed from bookmarks"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Get bookmarked cards for a user
-@card_router.get("/getBookmarkedCards")
-def get_bookmarked_cards(username: str):
-    try:
-        cur.execute("SELECT UserID FROM Users WHERE Username = %s", (username,))
-        user_id = cur.fetchone()
-        if not user_id:
-            raise HTTPException(status_code=404, detail="User not found")
+        print(f"[UNBOOKMARK] Incoming request: username={username}, card_id={cardID}")
 
         cur.execute("""
-            SELECT c.*
+            DELETE FROM Favorites
+            WHERE UserID = (SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s))
+              AND CardID = %s
+        """, (username, cardID))
+
+        conn.commit()
+
+        # Verify deletion
+        cur.execute("""
+            SELECT * FROM Favorites
+            WHERE CardID = %s AND UserID = (
+                SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)
+            )
+        """, (cardID, username))
+        result = cur.fetchone()
+        print(f"[UNBOOKMARK] Post-delete DB check (should be None): {result}")
+
+        return {"message": "Card removed from bookmarks"}
+    except Exception as e:
+        print(f"[UNBOOKMARK ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@card_router.get("/getBookmarkedCards")
+def get_bookmarked_cards(username: str):
+    print(f"[DEBUG] Connected to DB: {conn.dsn}")
+
+    cur.execute("SELECT Username FROM Users")
+    print("[DEBUG] All users in DB:", cur.fetchall())
+
+    try:
+        username = username.strip()
+        print(f"[DEBUG] Raw username input after strip: '{username}'")
+
+        cur.execute("SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)", (username,))
+        result = cur.fetchone()
+
+        if not result:
+            print("[WARN] No user found for:", username)
+            return {"bookmarkedCards": []}
+
+        user_id = result[0]
+        print(f"[DEBUG] UserID fetched for bookmark: {user_id}")
+
+        cur.execute("""
+            SELECT c.CardID AS "cardID"
             FROM Favorites f
             JOIN Cards c ON f.CardID = c.CardID
             WHERE f.UserID = %s
-        """, (user_id[0],))
+        """, (user_id,))
+
         rows = cur.fetchall()
-        return {"bookmarkedCards": rows}
+        print(f"[DEBUG] Bookmarked cards found: {len(rows)}")
+        print("[BOOKMARK] Result rows:", rows)
+
+        columns = ["cardID"]
+        data = [dict(zip(columns, row)) for row in rows]
+        return {"bookmarkedCards": data}
+
     except Exception as e:
+        print(f"[EXCEPTION] {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
 
 
 @card_router.get("/downloadFile")
@@ -196,7 +237,7 @@ async def downloadFile(fileID: int):
 def allCards():
     try:
         cur.execute("""
-            SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
+            SELECT Users.Username, Users.Email, Cards.title, Cards.CardID, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
             FROM Cards
             INNER JOIN Categories
             ON Cards.CategoryID = Categories.CategoryID
@@ -213,7 +254,7 @@ def allCards():
         """)
 
         rows = cur.fetchall()
-        columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
+        columns = ["username", "email", "title", "cardID", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
         data = [dict(zip(columns, row)) for row in rows]
         
         return {"data": data}
