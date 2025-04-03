@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import Modal from 'react-modal';
 import api from './api.js';
 import './Card.css'; // Importing the CSS for card
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faStar as solidStar } from '@fortawesome/free-solid-svg-icons';
+import { faStar as regularStar } from '@fortawesome/free-regular-svg-icons';
 
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -209,8 +212,8 @@ function Card(props) {
                 className="favorite-icon"
                 onClick={handleFavoriteClick}
                 title={isFavorited ? "Remove from favorites" : "Add to favorites"}
-            >
-                {isFavorited ? '⭐' : '☆'}
+                >
+                <FontAwesomeIcon icon={isFavorited ? solidStar : regularStar} />
             </span>
 
             <img src="/CEREO-logo.png" alt="Description of image" />
@@ -385,11 +388,3 @@ function Card(props) {
 }
 
 export default Card;
-
-
-// CREATE TABLE Favorites (
-//     FavoriteID SERIAL PRIMARY KEY,
-//     UserID INT REFERENCES Users(UserID),
-//     CardID INT REFERENCES Cards(CardID),
-//     UNIQUE(UserID, CardID)  -- Prevent duplicate bookmarks
-// );

@@ -13,7 +13,17 @@ try:
     # conn = psycopg2.connect('postgres://tgpxaiud:5MBj7NqaMmQuFAS6iVHk8dmThMl3oc1M@bubble.db.elephantsql.com/tgpxaiud')
 
     # Aiven database
-    conn = psycopg2.connect('postgres://avnadmin:AVNS_vBiPLJt2YvOvpq0V7Ha@pg-1b73eb6f-livingatlas-livingatlasdb.l.aivencloud.com:13918/defaultdb?sslmode=require')
+    # conn = psycopg2.connect('postgres://avnadmin:AVNS_vBiPLJt2YvOvpq0V7Ha@pg-1b73eb6f-livingatlas-livingatlasdb.l.aivencloud.com:13918/defaultdb?sslmode=require')
+    
+    # Azure database
+    conn = psycopg2.connect(
+        host="cereo-livingatlas-db.postgres.database.azure.com",
+        port=5432,
+        dbname="postgres",
+        user="CereoAtlas",
+        password="LivingAtlas25$",
+        sslmode="require"
+    )
     print('Connection Success!')
     connectionsucceeded = True
 
