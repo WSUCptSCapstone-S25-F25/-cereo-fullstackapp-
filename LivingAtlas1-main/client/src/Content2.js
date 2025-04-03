@@ -242,9 +242,15 @@ function Content2(props) {
 
     useEffect(() => {
         const fetchBookmarks = async () => {
+            if (!props.username) {
+                console.error("Username is not provided.");
+                // Handle the missing username scenario appropriately
+                return;
+            }
+    
             try {
                 const res = await api.get('/getBookmarkedCards', {
-                    params: { username: 'your-logged-in-username' } // Replace or get from props
+                    params: { username: props.username }
                 });
     
                 const titles = new Set(res.data.bookmarkedCards.map(card => card.title));
@@ -255,7 +261,8 @@ function Content2(props) {
         };
     
         fetchBookmarks();
-    }, []);
+    }, [props.username]);
+    
 
 
     useEffect(() => {

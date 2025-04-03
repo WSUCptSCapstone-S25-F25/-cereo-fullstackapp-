@@ -29,6 +29,12 @@ try:
 
 except:
    print("Unable to connect to the database")
+   print(f"Error: {e}")
+   connectionsucceeded = False
+
 
 # Open a cursor to execute SQL queries
-cur = conn.cursor()
+if conn:
+    cur = conn.cursor()
+else:
+    cur = None
