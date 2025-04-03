@@ -7,71 +7,72 @@ card
 
 """
 
-
-
 from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Response
 from database import conn, cur
 from io import BytesIO
 from typing import Optional
 from fastapi.responses import FileResponse
-from google.cloud import storage #pip install google-cloud-storage
+from google.cloud import storage
 import psycopg2
 import os
 
-
 card_router = APIRouter()
 
-
-#Google Cloud Access Code for UploadCard endpoint
-
-# Connects to the google cloud account
+# Google Cloud Storage setup
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'ServiceKey_GoogleCloud.json'
-# Creates a client object to interact with GCS
 storage_client = storage.Client()
-# Create a new bucket
-bucket_name = 'cereo_data_bucket' # can't have spaces in bucket names or uppercase
+bucket_name = "cereo_data_bucket"
 bucket = storage_client.bucket(bucket_name)
-# Check if the bucket already exists
-if not bucket.exists():
-   print("CREATING NEW BUCKET")
-   bucket = storage_client.create_bucket(bucket, location='US')
-# # Prints the bucket instance information
-#print(vars(bucket))
-#print("\n\n")
-# Accessing the bucket
-my_bucket = storage_client.get_bucket('cereo_data_bucket')
-#print(vars(my_bucket))
 
-
-
-#Delete Files from Google Cloud
+# Function to delete files from Google Cloud
 def delete_from_bucket(blob_name):
-   try:
-       bucket = storage_client.get_bucket(bucket_name)
-       blob = bucket.blob(blob_name)
-       blob.delete()
-       print(f"File:  {blob_name}  deleted.")
-   except Exception as e:
-       print(e)
-       return
+    try:
+        bucket = storage_client.get_bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+        blob.delete()
+        print(f"File: {blob_name} deleted.")
+    except Exception as e:
+        print(e)
+        return
 
-#Upload Files to Google Cloud
+# Function to upload files to Google Cloud
 def upload_to_bucket(blob_name, file_obj, file_type, bucket_name):
- try:
-     bucket = storage_client.get_bucket(bucket_name)
-     blob = bucket.blob(blob_name)
-     blob.content_type = file_type # Set the content type to the MIME type of the file
-     blob.upload_from_file(file_obj)
-     return True
- except Exception as e:
-     print(e)
-     return False
+    try:
+        bucket = storage_client.get_bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+        blob.content_type = file_type
+        blob.upload_from_file(file_obj)
+        return True
+    except Exception as e:
+        print(e)
+        return False
 
+# Function to upload an image to Google Cloud Storage and return its URL
+def upload_image(file: UploadFile):
+    if not file:
+        return None
+    
+    allowed_extensions = {"png", "jpg", "jpeg", "gif"}
+    if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Invalid file type. Allowed: PNG, JPG, JPEG, GIF")
+    
+    blob = bucket.blob(f"thumbnails/{file.filename}")
+    blob.upload_from_file(file.file, content_type=file.content_type)
+    blob.make_public()
+    return blob.public_url
 
+@card_router.post("/create-card")
+async def create_card(
+    title: str = Form(...),
+    description: str = Form(...),
+    thumbnail: UploadFile = File(None)
+):
+    thumbnail_url = upload_image(thumbnail) if thumbnail else None
+    cur.execute("INSERT INTO Cards (title, description, thumbnail_url) VALUES (%s, %s, %s)",
+                (title, description, thumbnail_url))
+    conn.commit()
+    return {"message": "Card created successfully", "thumbnail_url": thumbnail_url}
 
-
-
-#This takes in the username and card title and deletes that card
 @card_router.delete("/deleteCard")
 async def deleteCard(username: str, title: str):
     if username is None or title is None:
@@ -79,65 +80,37 @@ async def deleteCard(username: str, title: str):
     if not isinstance(username, str) or not isinstance(title, str):
         raise HTTPException(status_code=422, detail="Username and title must be strings")
 
-    
-    #print(username, title)
-    cur.execute("SELECT Cards.CardID FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.Username = %s AND Cards.Title = %s", (username, title))
-    cardID = cur.fetchone()[0]
+    cur.execute("SELECT Cards.CardID, Cards.thumbnail_url FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.Username = %s AND Cards.Title = %s", (username, title))
+    result = cur.fetchone()
+    if result is None:
+        raise HTTPException(status_code=404, detail="Card not found")
+    cardID, thumbnail_url = result
 
-    #This gets me the FileID, DirectoryPath values from db
-    cur.execute("SELECT Files.FileID, Files.DirectoryPath FROM Cards JOIN Files ON Cards.CardID = Files.CardID WHERE Cards.CardID = %s", (cardID,))
-    temp = cur.fetchall()
-    if temp:
-        fileID, directoryPath = temp[0]
-        if fileID != None and directoryPath != None:
-            #Deleting from Google Cloud
-            fileTitle = str(fileID) + '/' + directoryPath
-            delete_from_bucket(fileTitle)
+    if thumbnail_url:
+        delete_from_bucket(thumbnail_url.replace(f"https://storage.googleapis.com/{bucket_name}/", ""))
 
-    #Deleting the data from the Database
     cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
     cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
     cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
     conn.commit()
     return {"Success": "The card is deleted"}
 
-
-
-
-
-
-
-
-
-
-
 @card_router.get("/downloadFile")
 async def downloadFile(fileID: int):
-
-    #Query the DB for file information like directoryPath
     cur.execute("SELECT DirectoryPath FROM Files WHERE fileID = %s", (fileID,))
     result = cur.fetchone()
     if result is None:
         raise HTTPException(status_code=422, detail="File is not in the database")
-        #return {"error": "File not found"}
     directoryPath = result[0]
 
-    #Files are stored in google storage by this format to avoid overwriting duplicate data because users can submit a file with the same name but different contents so we use the unique values of FileID that is in the database: FileID/DirectoryPath
-    #Apparently google storage can handle up to 5 trillion items in a single bucket so while this solution doesn't solve the problem this project wont ever meet that edge case
-    #So i need to create that string so my download code can locate it
     fileTitle = str(fileID) + '/' + directoryPath
-
-    #This retireves the file from google cloud and then sends the bytes to the users client as a file response
-    blob = my_bucket.blob(fileTitle)
+    blob = bucket.blob(fileTitle)
     if blob.exists():
-        # Download the file from GCS to a BytesIO object
         file_content = BytesIO()
         storage_client.download_blob_to_file(blob, file_content)
-        file_content.seek(0) # Go back to the start of the file
+        file_content.seek(0)
         return Response(file_content.read(), media_type="application/octet-stream", headers={"Content-Disposition": f"attachment; filename={directoryPath}"})
     return {"error": "File doesn't exist"}
-
-
 
 @card_router.get("/allCards")
 def allCards():
