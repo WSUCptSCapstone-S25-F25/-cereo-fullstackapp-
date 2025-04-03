@@ -9,6 +9,7 @@ The grid-template-columns property sets the size and number of columns, while th
   grid-gap: 20px;
   padding-top: 20px;
   justify-items: center;
+  z-index: 1;
 }
 
 /* The CSS code inside @media screen and (max-width: 767px) applies to screens with a maximum width of 767 pixels. It is used to adjust the layout of the .card-container and .card elements when the screen size is smaller than the specified maximum width.
@@ -25,11 +26,13 @@ These changes in CSS allow the cards to be more responsive to smaller screens, m
   .card-container {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     grid-gap: 10px;
+    z-index: 1;
   }
 
   .card {
     max-width: 200px;
     padding: 10px;
+    z-index: 10;
   }
 
 
@@ -43,7 +46,7 @@ These changes in CSS allow the cards to be more responsive to smaller screens, m
   max-height: 700px;
   overflow-y: auto;
   margin-left: auto;
-  z-index: 100;
+  z-index: 0;
   width: 100%;
 }
 

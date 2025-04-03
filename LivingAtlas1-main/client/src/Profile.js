@@ -82,6 +82,24 @@ function Profile(props) {
             });
     };
 
+    const handleBookmarkChange = async () => {
+        try {
+            const res = await api.get('/getBookmarkedCards', {
+                params: { username: props.username }
+            });
+    
+            const cardIDs = new Set(
+                res.data.bookmarkedCards.map(card =>
+                    card.cardID || card.cardid || card.CardID
+                )
+            );
+    
+            setBookmarkedCardIDs(cardIDs);
+        } catch (error) {
+            console.error("Error updating bookmark status:", error);
+        }
+    };
+
     // useEffect(() => {
     //     // Check if the user is an admin
     //     const isAdmin = props.isAdmin; // Assuming isAdmin prop is passed from parent component
@@ -222,6 +240,7 @@ function Profile(props) {
                             isFavorited={bookmarkedCardIDs.has(card.cardID)}
                             username={props.username}
                             onCardDelete={setLastDeletedCard}
+                            onBookmarkChange={handleBookmarkChange}
                             />
                     ))}
                 </div>

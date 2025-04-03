@@ -77,6 +77,10 @@ function Card(props) {
             if (props.fetchBookmarks) {
                 props.fetchBookmarks();
             }
+            
+            if (props.onBookmarkChange) {
+                props.onBookmarkChange();
+            }
 
         } catch (error) {
             console.error('Error toggling bookmark:', error);
