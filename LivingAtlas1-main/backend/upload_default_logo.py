@@ -3,7 +3,7 @@ import os
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'ServiceKey_GoogleCloud.json'
 
-bucket_name = "cereo_data_bucket"
+bucket_name = "cereo_atlas_storage"
 storage_client = storage.Client()
 bucket = storage_client.bucket(bucket_name)
 
