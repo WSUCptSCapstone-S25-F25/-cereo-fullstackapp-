@@ -6,6 +6,7 @@ import FormModal from './FormModal.js';
 import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom';
 import { useState } from 'react';
 import Modal from 'react-modal';
+import { curLocationCoordinates, turnOnCurrentLocation } from './Content1.js';
 
 function Header(props) {
     // beginning of custom filter popup
@@ -26,6 +27,7 @@ function Header(props) {
     // end of custom filter popup
 
     const [activeFilters, setActiveFilters] = useState([]);
+    const [activeSort, setActiveSort] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
 
@@ -101,7 +103,33 @@ function Header(props) {
         }
         closeFilterPopup();
     };
-    
+
+    const handleSortChange = (event) => {
+        let sortValue = event.target.value;
+        setActiveSort(sortValue);
+        if (sortValue === "") {
+            console.log(`Sorts removed`);
+            props.setSortCondition(sortValue);
+        }
+        else {
+            console.log(`${sortValue} applied`);
+            if (sortValue == "ClosestToMe")
+            {
+                if (curLocationCoordinates.lat === 0 && curLocationCoordinates.lng === 0)
+                {
+                    alert("Please turn on your current location to use this feature");
+                }
+                else
+                {
+                    props.setSortCondition(sortValue + ',' + curLocationCoordinates.lat + ',' + curLocationCoordinates.lng);
+                }
+            }
+            else
+            {
+                props.setSortCondition(sortValue);
+            }
+        }
+    }
 
     return (
         <header>
@@ -135,7 +163,7 @@ function Header(props) {
                 {/* <button onClick={addCustomFilter} className='custom-filter'>Add Custom filters</button> */}
                 {/* New Custom Filter popup */}
                 <button onClick={openFilterPopup}>Add Custom Filters</button>
-                
+
                 {/* Modal for Add Customer Filter */}
                 <Modal
                     isOpen={isAddFilterOpen}
@@ -153,6 +181,12 @@ function Header(props) {
                             </div>           
                         )}    
                 </Modal>
+
+                <select onChange={handleSortChange} className='sort-by'>
+                    <option value="">Sort By...</option>
+                    <option value="ClosestToMe">Closest To Me</option>
+                    <option value="RecentlyAdded">Recently Added</option>
+                </select>
 
                 {/* {isAddFilterOpen && (
                     <div className="modal" style={{ paddingLeft: '10px', zIndex: 1, }} >

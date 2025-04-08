@@ -77,6 +77,83 @@ function Card(props) {
         }
     };
 
+  /*
+    const downloadFile = async () => {
+        const fileID = props.formData.fileID; // Adjust as necessary
+        if (!fileID) {
+            alert("No file available to download.");
+            return;
+        }
+
+        try {
+            const response = await api.get('/downloadFile', {
+                params: { fileID },
+                responseType: 'blob', // Important for file download
+            });
+
+            const contentDisposition = response.headers["content-disposition"];
+            let fileName = 'file' + (props.formData.fileEXT || '.txt'); // Default file extension
+
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename="?(.+)"?/);
+                if (fileNameMatch.length > 1) {
+                    fileName = fileNameMatch[1];
+                }
+            }
+
+            const fileURL = window.URL.createObjectURL(new Blob([response.data]));
+            const fileLink = document.createElement('a');
+            fileLink.href = fileURL;
+            fileLink.setAttribute('download', fileName);
+            document.body.appendChild(fileLink);
+            fileLink.click();
+            fileLink.parentNode.removeChild(fileLink);
+            window.URL.revokeObjectURL(fileURL);
+        } catch (error) {
+            if (error.response && error.response.status === 422) {
+                alert('File is not in the database');
+            } else {
+                alert('An error occurred while downloading the file');
+            }
+        }
+    };
+
+    const handleDelete = () => {
+        api.delete(`/deleteCard`, {
+            params: {
+                username: props.formData.username,
+                title: props.formData.title,
+            }
+        })
+            .then(response => {
+                alert("Card deleted successfully");
+                props.onCardDelete(true);
+            })
+            .catch(error => {
+                alert("Failed to delete the card");
+            });
+    };
+
+    const determineBackgroundColor = () => {
+        const category = props.formData.category;
+        if (category) {
+            if (category === 'River') {
+                return '#99ccff';
+            } else if (category === 'Watershed') {
+                return '#ccff99';
+            } else if (category === 'Places') {
+                return '#ffff99';
+            }
+        }
+        return '#fff';
+    };
+
+    const truncateDescription = (description, charLimit) => {
+        if (!description) return '';
+        return description.length > charLimit ? description.substring(0, charLimit) + '...' : description;
+    };
+  */
+  
     return (
         <div className="card">
             <img src={preview} alt="Card Thumbnail" />
