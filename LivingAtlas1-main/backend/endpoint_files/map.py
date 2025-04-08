@@ -51,33 +51,56 @@ def getMarkers():
 
 
 
-
-#returns the same data as allCards but within a lat long section of space
 @map_router.post("/updateBoundry")
 def updateBoundry(NEpoint: Point, SWpoint: Point):
     cur.execute("""
-        SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
+        SELECT Users.Username, Users.Email, Cards.title, Cards.CardID, Categories.CategoryLabel, Cards.dateposted, 
+               Cards.description, Cards.organization, Cards.funding, Cards.link, 
+               STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, 
+               Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
         FROM Cards
-        INNER JOIN Categories
-        ON Cards.CategoryID = Categories.CategoryID
-        LEFT JOIN Files
-        ON Cards.CardID = Files.CardID
-        LEFT JOIN CardTags
-        ON Cards.CardID = CardTags.CardID
-        LEFT JOIN Tags
-        ON CardTags.TagID = Tags.TagID
-        INNER JOIN Users
-        ON Cards.UserID = Users.UserID
+        INNER JOIN Categories ON Cards.CategoryID = Categories.CategoryID
+        LEFT JOIN Files ON Cards.CardID = Files.CardID
+        LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
+        LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
+        INNER JOIN Users ON Cards.UserID = Users.UserID
         WHERE Cards.latitude BETWEEN %s AND %s
-        AND Cards.longitude BETWEEN %s AND %s
+          AND Cards.longitude BETWEEN %s AND %s
         GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Users.Username, Users.Email
+        ORDER BY Cards.CardID DESC
     """, (SWpoint.lat, NEpoint.lat, SWpoint.long, NEpoint.long))
 
-
+    columns = ["username", "email", "title", "cardID", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
     rows = cur.fetchall()
-    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
+
+# #returns the same data as allCards but within a lat long section of space
+# @map_router.post("/updateBoundry")
+# def updateBoundry(NEpoint: Point, SWpoint: Point):
+#     cur.execute("""
+#         SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
+#         FROM Cards
+#         INNER JOIN Categories
+#         ON Cards.CategoryID = Categories.CategoryID
+#         LEFT JOIN Files
+#         ON Cards.CardID = Files.CardID
+#         LEFT JOIN CardTags
+#         ON Cards.CardID = CardTags.CardID
+#         LEFT JOIN Tags
+#         ON CardTags.TagID = Tags.TagID
+#         INNER JOIN Users
+#         ON Cards.UserID = Users.UserID
+#         WHERE Cards.latitude BETWEEN %s AND %s
+#         AND Cards.longitude BETWEEN %s AND %s
+#         GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Users.Username, Users.Email
+#     """, (SWpoint.lat, NEpoint.lat, SWpoint.long, NEpoint.long))
+
+
+#     rows = cur.fetchall()
+#     columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
+#     data = [dict(zip(columns, row)) for row in rows]
+#     return {"data": data}
 
 """
 #Here is a test react call to this endpoint

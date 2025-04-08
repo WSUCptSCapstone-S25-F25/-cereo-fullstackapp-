@@ -5,6 +5,12 @@ import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
 import api from './api.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
+import { useLocation } from 'react-router-dom';
+import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
+
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
 function Content2(props) {
 
@@ -18,7 +24,18 @@ function Content2(props) {
 
     const didMount = useDidMount();
     const didMountRef = useRef(false);
+    
+    // Collapse card container
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
+    const toggleCollapse = () => {
+        setIsCollapsed(!isCollapsed);
+    };
+
+    const location = useLocation();
+    const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
+
+    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
     // Edited by Flavio: same code used to load the cards based on filter. Made it into a function in order to call it under searchConditions being reset to ''
     // That way our team is able to show the cards again once the user closes out of the marker.
@@ -34,7 +51,7 @@ function Content2(props) {
             api.get('/allCards')
 
                 .then(response => {
-                    console.log(response.data.data);
+                    console.log("Fetched cards:", response.data.data);
                     setCards(response.data.data);
 
                 })
@@ -121,13 +138,20 @@ function Content2(props) {
     }
 
     const [cards, setCards] = useState([]);
+    const [bookmarkedCardIDs, setBookmarkedCardIDs] = useState(new Set());
+    const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
     const [filterCondition, setFilterCondition] = useState(props.filterCondition);
     const [searchCondition, setSearchCondition] = useState(props.searchCondition);
     const [sortCondition, setSortCondition] = useState(props.sortCondition);
     // const isInitialMount = useRef(true);
 
 
-
+    useEffect(() => {
+        if (resolvedUsername) {
+            localStorage.setItem("username", resolvedUsername);
+            fetchBookmarks();
+        }
+    }, [resolvedUsername]);
 
     useEffect(() => {
 
@@ -171,6 +195,7 @@ function Content2(props) {
                 })
                     .then(response => {
                         setCards(response.data.data); // Update the cards state with the new data
+                        console.log("🧩 Incoming card data:", response.data.data);
                     })
                     .catch(error => {
                         console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
@@ -257,8 +282,39 @@ function Content2(props) {
         }
     }, [props.searchCondition]); // Only run if props.searchCondition changes
 
+    const fetchBookmarks = async () => {
+        console.log("📌 Fetching bookmarks for:", resolvedUsername);
 
+        if (!resolvedUsername) {
+            console.warn("⚠️ [fetchBookmarks] resolvedUsername is null or undefined, skipping API call.");
+            return;
+        }
+        console.log("🚀 [fetchBookmarks] Sending GET /getBookmarkedCards request...");
 
+        try {
+            const res = await api.get('/getBookmarkedCards', {
+                params: { username: resolvedUsername }
+            });
+    
+            console.log("✅ [fetchBookmarks] API call successful. Response:");
+            console.log(res);
+    
+            console.log("✅ [fetchBookmarks] Raw bookmarked data:", res.data.bookmarkedCards);
+
+            const cardIDs = new Set(
+                res.data.bookmarkedCards.map(card =>
+                    card.cardID || card.cardid || card.CardID
+                )
+            );
+    
+            console.log("✅ [fetchBookmarks] Parsed Set of bookmarked IDs:", cardIDs);
+    
+            setBookmarkedCardIDs(cardIDs);
+            setBookmarksLoaded(true);
+        } catch (error) {
+            console.error("❌ [fetchBookmarks] Error fetching bookmarks:", error);
+        }
+    };
 
     useEffect(() => {
         let isMounted = true; // Track whether the component is mounted
@@ -287,23 +343,16 @@ function Content2(props) {
                     const response = await api.post('/updateBoundry', data);
                     if (isMounted) { // Only update state if the component is still mounted
                         // Check if the first card's title is not a number
-                        if (response.data.data.length > 0 && typeof response.data.data[0].title === 'string' && isNaN(Number(response.data.data[0].title))) {
-                            console.log('Success:', response.data);
-                            setCards(response.data.data);
-                        } else {
-                            // Handle the case where the first title is not as expected
-                            console.error('Invalid card data: First title is a number or not a string', response.data.data);
-                            if (isfetched) {
-                                isfetched = false;
-                                // const response = await api.get('/allCards');
-                                // if (isMounted) {
-                                //     console.log('Success:', response.data);
-                                //     setCards(response.data.data);
-                                // }
-                                fetchData();
-
+                        if (response.data.data.length > 0) {
+                            const first = response.data.data[0];
+                            if (typeof first.title === 'string' && isNaN(Number(first.title))) {
+                                console.log("🧩 Incoming card data from updateBoundry:", response.data.data);
+                                setCards(response.data.data);
+                            } else {
+                                console.error('Invalid card data: title is number or invalid:', first);
                             }
-
+                        } else {
+                            console.warn('No data returned from updateBoundry:', response.data.data);
                         }
                     }
                 } catch (error) {
@@ -342,15 +391,67 @@ function Content2(props) {
 
 
 
+    // return (
+    //     <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
+    //         <div className="collapse-toggle" onClick={toggleCollapse}>
+    //             <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
+    //         </div>
+    
+    //         <div className="card-container" style={{ display: isCollapsed ? 'none' : 'block' }}>
+    //             {bookmarksLoaded && cards.map((card, index) => (
+    //                 <Card
+    //                     key={`${card.cardID}-${index}`}
+    //                     formData={{
+    //                         ...card,
+    //                         cardOwner: card.username,
+    //                         viewerUsername: resolvedUsername,
+    //                         cardID: card.cardID
+    //                     }}
+    //                     isFavorited={bookmarkedCardIDs.has(card.cardID)}
+    //                     username={resolvedUsername}
+    //                 />
+    //             ))}
+    //         </div>
+    //     </section>
+    // );
+
     return (
-        <section id="content-2">
-            <div className="card-container" style={{ maxHeight: '700px', overflowY: 'auto' }}>
-                {cards.map((card, index) => (
-                    <Card key={`${card.title}-${index}`} formData={card} />
-                ))}
+        <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
+            <div className="collapse-toggle" onClick={toggleCollapse}>
+                <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
+            </div>
+    
+            {!isCollapsed && (
+                <div 
+                    className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
+                    onClick={() => setShowFavoritesOnly(prev => !prev)}
+                    title="Favorites"
+                >
+                    <FontAwesomeIcon icon={faStarHalfStroke} />
+                </div>
+            )}
+    
+            <div className="card-container" style={{ display: isCollapsed ? 'none' : 'grid' }}>
+                {cards
+                    .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
+                    .map((card, index) => (
+                        <Card
+                            key={`${card.cardID}-${index}`}
+                            formData={{
+                                ...card,
+                                cardOwner: card.username,
+                                viewerUsername: resolvedUsername,
+                                cardID: card.cardID
+                            }}
+                            isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                            username={resolvedUsername}
+                            fetchBookmarks={fetchBookmarks}
+                        />
+                    ))}
             </div>
         </section>
     );
+
 }
 
 export default Content2;

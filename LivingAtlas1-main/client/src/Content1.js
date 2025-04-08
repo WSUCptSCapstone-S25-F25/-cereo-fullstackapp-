@@ -192,7 +192,12 @@ const Content1 = (props) => {
 
           var x = new mapboxgl.Marker(el);
           //"did", "title", "description", "longitude", "latitude"
-          x.setLngLat([feature.longitude, feature.latitude]);
+          if (!isNaN(feature.longitude) && !isNaN(feature.latitude)) {
+            x.setLngLat([feature.longitude, feature.latitude]);
+          } else {
+              console.warn("Skipping invalid marker:", feature);
+              continue;
+          }
           x.setPopup(
             new mapboxgl.Popup({ offset: 25 })
               .setHTML(

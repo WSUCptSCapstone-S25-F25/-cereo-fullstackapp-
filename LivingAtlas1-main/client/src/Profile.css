@@ -1,0 +1,28 @@
+.favorites-toggle-wrapper-profile {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+  }
+  
+  .favorites-toggle-icon {
+    display: flex;
+    align-items: center;
+    background-color: rgba(245, 245, 245, 0.6);
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .favorites-toggle-icon.active {
+    background-color: #e0e0e0;
+  }
+  
+  .favorites-toggle-icon i {
+    margin-right: 8px;
+    font-size: 18px;
+  }
+  
