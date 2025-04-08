@@ -11,44 +11,32 @@ The Living Atlas is a vital tool developed by the Center for Environmental Resea
 
 ## Installation
 ### Prerequisites
-Git: Ensure Git is installed on your machine.
-Python: Python 3.8 or higher is required.
-PostgreSQL: Version 13 or higher with PostGIS extension enabled.
-Node.js: Version 16 or higher for frontend dependencies.
+Git: Ensure Git is installed on your machine. <br>
+Python: Python 3.8 or higher is required. <br>
+PostgreSQL: Version 13 or higher with PostGIS extension enabled. <br>
+Node.js: Version 16 or higher for frontend dependencies. <br>
 pipenv: For managing Python dependencies.
-### Add-ons
-Mapbox: For geospatial data visualization and advanced mapping features.
-React: Frontend framework for building a dynamic and responsive user interface.
-FastAPI: Backend framework for efficient server-side operations.
+### Add-ons 
+Mapbox: For geospatial data visualization and advanced mapping features. <br>
+React: Frontend framework for building a dynamic and responsive user interface. <br>
+FastAPI: Backend framework for efficient server-side operations. <br>
 PostGIS: Geospatial database extension for PostgreSQL to store and query spatial data.
 ### Installation Steps
-Clone the repository:
-bash
-Copy
-Edit
-git clone https://github.com/yourusername/cereo-living-atlas.git
-cd cereo-living-atlas
-Set up the backend:
-bash
-Copy
-Edit
-cd backend
-pipenv install
-pipenv shell
-python manage.py migrate
-python manage.py runserver
-Set up the frontend:
-bash
-Copy
-Edit
-cd frontend
-npm install
-npm start
-Seed the database (optional):
-bash
-Copy
-Edit
-python manage.py loaddata seed_data.json
+* Clone the repository: <br>
+git clone https://github.com/yourusername/cereo-living-atlas.git <br>
+cd cereo-living-atlas <br>
+* Set up the backend: <br>
+cd backend <br>
+pipenv install <br>
+pipenv shell <br>
+python manage.py migrate <br>
+python manage.py runserver <br>
+* Set up the frontend: <br>
+cd frontend <br>
+npm install <br>
+npm start <br>
+* Seed the database (optional): <br>
+python manage.py loaddata seed_data.json <br>
 
 ### Usage Instructions
 - Launch the application by running the backend and frontend servers.
@@ -114,29 +102,21 @@ The Living Atlas supports the following features:
 - Scalability to handle larger datasets and more concurrent users.
 
 ## Known Problems
-Performance under high load: Scaling tests are in progress to address potential issues with large datasets.
-UI responsiveness: Some pages may load slowly during heavy operations; optimizations are planned.
-Map rendering bugs: Occasional glitches with rendering layers; debugging in progress.
-## Contributing
-Fork it!
-Create your feature branch:
-bash
-Copy
-Edit
-git checkout -b my-new-feature
-Commit your changes:
-bash
-Copy
-Edit
-git commit -am 'Add some feature'
-Push to the branch:
-bash
-Copy
-Edit
-git push origin my-new-feature
-Submit a pull request! 🎉
-## Additional Documentation
-Sprint Reports: docs/sprint-reports.md
-User Manual: docs/user-manual.md
-## License
+Performance under high load: Scaling tests are in progress to address potential issues with large datasets. <br>
+UI responsiveness: Some pages may load slowly during heavy operations; optimizations are planned. <br>
+Map rendering bugs: Occasional glitches with rendering layers; debugging in progress. 
 
+## Contributing
+* Fork it!
+* Create your feature branch: `git checkout -b my-new-feature`
+* Commit your changes: `git commit -am 'Add some feature'`
+* Push to the branch: `git push origin my-new-feature`
+* Submit a pull request! 🎉
+
+## Additional Documentation
+[All Documentation](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/tree/main/documentation) <br>
+[Sprint Reports](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/tree/main/documentation/sprint_report) <br>
+[Client Meeting Reports](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/tree/main/documentation/client_report)
+
+## License
+https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/blob/main/LICENSE.txt
