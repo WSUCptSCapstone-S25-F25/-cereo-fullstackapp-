@@ -44,7 +44,7 @@ function Content2(props) {
         if (!didMountRef.current) {
             return;
         }
-        if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '') {
+        if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter 199" + props.filterCondition);
             showAll();
 
@@ -68,13 +68,14 @@ function Content2(props) {
                 console.log("running category " + props.CategoryCondition);
                 // filter markers
                 showAll();
-                filterCategory(props.CategoryCondition)
+                filterCategory(props.CategoryCondition);
+                let params = {categoryString: props.CategoryCondition};
+                if (props.sortCondition) {
+                    params.sortString = props.sortCondition;
+                }
 
                 api.get('/allCardsByTag', {
-
-                    params: {
-                        categoryString: props.CategoryCondition,
-                    }
+                    params: params
                 })
                     .then(response => {
                         setCards(response.data.data); // Update the cards state with the new data
@@ -87,12 +88,13 @@ function Content2(props) {
                 console.log("running filter 196 " + props.filterCondition);
                 showAll();
                 filterTag(props.filterCondition);
+                let params = {tagString: props.filterCondition};
+                if (props.sortCondition) {
+                    params.sortString = props.sortCondition;
+                }
 
                 api.get('/allCardsByTag', {
-
-                    params: {
-                        tagString: props.filterCondition
-                    }
+                    params: params
                 })
                     .then(response => {
                         setCards(response.data.data); // Update the cards state with the new data
@@ -101,16 +103,17 @@ function Content2(props) {
                         console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
                     });
                 //alert("Underconstruction");
-            } else {
+            } else if (props.CategoryCondition !== '' && props.filterCondition !== '') {
                 showAll();
                 filterCategoryAndTag(props.CategoryCondition, props.filterCondition)
+                let params = {categoryString: props.CategoryCondition,
+                                tagString: props.filterCondition};
+                if (props.sortCondition) {
+                    params.sortString = props.sortCondition;
+                }
 
                 api.get('/allCardsByTag', {
-
-                    params: {
-                        categoryString: props.CategoryCondition,
-                        tagString: props.filterCondition
-                    }
+                    params: params
                 })
                     .then(response => {
                         setCards(response.data.data); // Update the cards state with the new data
@@ -119,6 +122,17 @@ function Content2(props) {
                         console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
                     });
                 //alert("Underconstruction");
+            } else if (props.sortCondition != '') {
+                showAll();
+                api.get('/allCardsByTag', {
+                    params: {sortString: props.sortCondition}
+                })
+                    .then(response => {
+                        setCards(response.data.data); // Update the cards state with the new data
+                    })
+                    .catch(error => {
+                        console.error('Error fetching cards by tag:', props.sortCondition); // Log any error that occurs during the fetch
+                    });
             }
         }
     }
@@ -128,6 +142,7 @@ function Content2(props) {
     const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
     const [filterCondition, setFilterCondition] = useState(props.filterCondition);
     const [searchCondition, setSearchCondition] = useState(props.searchCondition);
+    const [sortCondition, setSortCondition] = useState(props.sortCondition);
     // const isInitialMount = useRef(true);
 
 
@@ -145,7 +160,7 @@ function Content2(props) {
         }
 
 
-        if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '') {
+        if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter193" + props.filterCondition);
             showAll();
 
@@ -171,11 +186,12 @@ function Content2(props) {
                 showAll();
                 filterCategory(props.CategoryCondition)
 
+                let params = {categoryString: props.CategoryCondition};
+                if (props.sortCondition) {
+                    params.sortString = props.sortCondition;
+                }
                 api.get('/allCardsByTag', {
-
-                    params: {
-                        categoryString: props.CategoryCondition,
-                    }
+                    params: params
                 })
                     .then(response => {
                         setCards(response.data.data); // Update the cards state with the new data
@@ -190,11 +206,13 @@ function Content2(props) {
                 showAll();
                 filterTag(props.filterCondition);
 
-                api.get('/allCardsByTag', {
+                let params = {tagString: props.filterCondition};
+                if (props.sortCondition) {
+                    params.sortString = props.sortCondition;
+                }
 
-                    params: {
-                        tagString: props.filterCondition
-                    }
+                api.get('/allCardsByTag', {
+                    params: params
                 })
                     .then(response => {
                         setCards(response.data.data); // Update the cards state with the new data
@@ -203,27 +221,40 @@ function Content2(props) {
                         console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
                     });
                 //alert("Underconstruction");
-            } else {
+            } else if (props.CategoryCondition !== '' && props.filterCondition !== '') {
                 showAll();
                 filterCategoryAndTag(props.CategoryCondition, props.filterCondition)
 
-                api.get('/allCardsByTag', {
+                let params = {categoryString: props.CategoryCondition,
+                tagString: props.filterCondition};
+                if (props.sortCondition) {
+                    params.sortString = props.sortCondition;
+                }
 
-                    params: {
-                        categoryString: props.CategoryCondition,
-                        tagString: props.filterCondition
-                    }
+                api.get('/allCardsByTag', {
+                    params: params
+                })
+                .then(response => {
+                    setCards(response.data.data); // Update the cards state with the new data
+                })
+                .catch(error => {
+                    console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
+                });
+                //alert("Underconstruction");
+            } else if (props.sortCondition !== '') {
+                showAll();
+                api.get('/allCardsByTag', {
+                    params: {sortString: props.sortCondition}
                 })
                     .then(response => {
                         setCards(response.data.data); // Update the cards state with the new data
                     })
                     .catch(error => {
-                        console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
+                        console.error('Error fetching cards by tag:', props.sortCondition); // Log any error that occurs during the fetch
                     });
-                //alert("Underconstruction");
             }
         }
-    }, [props.filterCondition, props.CategoryCondition]); // Only run if props.filterCondition changes
+    }, [props.filterCondition, props.CategoryCondition, props.sortCondition]); // Only run if props.filterCondition changes
 
     useEffect(() => {
         if (props.searchCondition != '') {

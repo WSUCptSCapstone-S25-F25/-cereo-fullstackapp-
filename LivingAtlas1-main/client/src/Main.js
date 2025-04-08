@@ -12,6 +12,8 @@ function Main(props) {
                 setboundCondition={props.setboundCondition}
                 searchCondition={props.searchCondition}
                 setSearchCondition={props.setSearchCondition}
+                sortCondition={props.sortCondition}
+                setSortCondition={props.setSortCondition}
                 CategoryCondition={props.CategoryCondition}
                 setCategoryConditionCondition={props.setCategoryConditionCondition}
                 filterCondition={props.filterCondition}
@@ -22,6 +24,8 @@ function Main(props) {
                 setFilterCondition={props.setFilterCondition}
                 searchCondition={props.searchCondition}
                 setSearchCondition={props.setSearchCondition}
+                sortCondition={props.sortCondition}
+                setSortCondition={props.setSortCondition}
                 boundCondition={props.boundCondition}
                 setboundCondition={props.setboundCondition}
                 CategoryCondition={props.CategoryCondition}
