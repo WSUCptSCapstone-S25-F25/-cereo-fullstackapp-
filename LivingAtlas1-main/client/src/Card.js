@@ -229,7 +229,7 @@ function Card(props) {
 
     */
   
-    console.log("🔥 formData in Card:", formData);
+    console.log("formData in Card:", formData);
 
 
     return (
@@ -244,10 +244,15 @@ function Card(props) {
                 <FontAwesomeIcon icon={isFavorited ? solidStar : regularStar} />
             </span>
 
-            <img src="/CEREO-logo.png" alt="Description of image" />
-        
-            <img src={preview} alt="Card Thumbnail" />
-
+            <img
+                src={
+                    formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
+                    ? formData.thumbnail_link
+                    : "/CEREO-logo.png"
+                }
+                alt="Card Thumbnail"
+                className="card-thumbnail"
+            />
             <h2 className="card-title">{props.formData.title}</h2>
             <p className="card-text">{props.formData.description}</p>
             <button className="card-button" onClick={handleLearnMore}>Learn More</button>
