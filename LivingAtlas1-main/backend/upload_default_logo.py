@@ -11,7 +11,7 @@ def upload_default_logo():
     blob = bucket.blob("thumbnails/default_cereo_thumbnail.png")
     with open("default_cereo_thumbnail.png", "rb") as img:
         blob.upload_from_file(img, content_type="image/png")
-    blob.make_public()
+    # blob.make_public()   -This line is not needed with the uniform level access that our cloud storage uses
     print("Default logo uploaded. URL:")
     print(blob.public_url)
 

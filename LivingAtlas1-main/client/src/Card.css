@@ -54,6 +54,10 @@
     max-width: 200px;
     height: auto;
     margin-bottom: 20px;
+    display: block;
+    border-radius: 5px;
+    object-fit: contain;
+    background-color: #f5f5f5;
 }
 
 

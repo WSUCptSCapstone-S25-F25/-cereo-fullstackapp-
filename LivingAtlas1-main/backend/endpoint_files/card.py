@@ -15,14 +15,17 @@ from fastapi.responses import FileResponse
 from google.cloud import storage
 import psycopg2
 import os
+import uuid
+
 
 card_router = APIRouter()
 
 # Google Cloud Storage setup
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'ServiceKey_GoogleCloud.json'
 storage_client = storage.Client()
-bucket_name = "cereo_data_bucket"
+bucket_name = "cereo_atlas_storage"
 bucket = storage_client.bucket(bucket_name)
+DEFAULT_THUMBNAIL_URL = "https://storage.googleapis.com/cereo_atlas_storage/thumbnails/default_cereo_thumbnail.png"
 
 # Function to delete files from Google Cloud
 def delete_from_bucket(blob_name):
@@ -48,18 +51,26 @@ def upload_to_bucket(blob_name, file_obj, file_type, bucket_name):
         return False
 
 # Function to upload an image to Google Cloud Storage and return its URL
-def upload_image(file: UploadFile):
+def upload_image(file: Optional[UploadFile]) -> str:
     if not file:
-        return None
-    
+        return DEFAULT_THUMBNAIL_URL
+
     allowed_extensions = {"png", "jpg", "jpeg", "gif"}
-    if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
-        raise HTTPException(status_code=400, detail="Invalid file type. Allowed: PNG, JPG, JPEG, GIF")
-    
-    blob = bucket.blob(f"thumbnails/{file.filename}")
-    blob.upload_from_file(file.file, content_type=file.content_type)
-    blob.make_public()
-    return blob.public_url
+    if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Invalid thumbnail file type. Allowed: PNG, JPG, JPEG, GIF")
+
+    try:
+        # Generate unique filename
+        unique_filename = f"{uuid.uuid4()}_{file.filename}"
+        blob = bucket.blob(f"thumbnails/{unique_filename}")
+        blob.upload_from_file(file.file, content_type=file.content_type)
+
+        # Instead of setting ACL, just construct the public URL manually:
+        public_url = f"https://storage.googleapis.com/{bucket_name}/thumbnails/{unique_filename}"
+        return public_url
+    except Exception as e:
+        print(f"Thumbnail upload error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload thumbnail image.")
 
 @card_router.post("/create-card")
 async def create_card(
@@ -67,11 +78,11 @@ async def create_card(
     description: str = Form(...),
     thumbnail: UploadFile = File(None)
 ):
-    thumbnail_url = upload_image(thumbnail) if thumbnail else None
-    cur.execute("INSERT INTO Cards (title, description, thumbnail_url) VALUES (%s, %s, %s)",
-                (title, description, thumbnail_url))
+    thumbnail_link = upload_image(thumbnail) if thumbnail else None
+    cur.execute("INSERT INTO Cards (title, description, thumbnail_link) VALUES (%s, %s, %s)",
+                (title, description, thumbnail_link))
     conn.commit()
-    return {"message": "Card created successfully", "thumbnail_url": thumbnail_url}
+    return {"message": "Card created successfully", "thumbnail_link": thumbnail_link}
 
 @card_router.delete("/deleteCard")
 async def deleteCard(username: str, title: str):
@@ -80,14 +91,14 @@ async def deleteCard(username: str, title: str):
     if not isinstance(username, str) or not isinstance(title, str):
         raise HTTPException(status_code=422, detail="Username and title must be strings")
 
-    cur.execute("SELECT Cards.CardID, Cards.thumbnail_url FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.Username = %s AND Cards.Title = %s", (username, title))
+    cur.execute("SELECT Cards.CardID, Cards.thumbnail_link FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.Username = %s AND Cards.Title = %s", (username, title))
     result = cur.fetchone()
     if result is None:
         raise HTTPException(status_code=404, detail="Card not found")
-    cardID, thumbnail_url = result
+    cardID, thumbnail_link = result
 
-    if thumbnail_url:
-        delete_from_bucket(thumbnail_url.replace(f"https://storage.googleapis.com/{bucket_name}/", ""))
+    if thumbnail_link:
+        delete_from_bucket(thumbnail_link.replace(f"https://storage.googleapis.com/{bucket_name}/", ""))
 
     cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
     cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
@@ -116,7 +127,12 @@ async def downloadFile(fileID: int):
 def allCards():
     try:
         cur.execute("""
-            SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
+            SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted,
+                   Cards.description, Cards.organization, Cards.funding, Cards.link,
+                   STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
+                   Cards.latitude, Cards.longitude,
+                   Cards.thumbnail_link,  
+                   Files.FileExtension, Files.FileID
             FROM Cards
             INNER JOIN Categories
             ON Cards.CategoryID = Categories.CategoryID
@@ -132,33 +148,37 @@ def allCards():
             ORDER BY Cards.CardID DESC;
         """)
 
+        columns = [
+            "username", "email", "title", "category", "date", "description", "org", "funding", "link",
+            "tags", "latitude", "longitude", "thumbnail_link",  # Added thumbnail link
+            "fileEXT", "fileID"
+        ]
+
         rows = cur.fetchall()
-        columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
         data = [dict(zip(columns, row)) for row in rows]
         
         return {"data": data}
     except Exception as e:
-        # Handle database errors gracefully
         print(f"An error occurred while fetching all cards: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 
-
 @card_router.post("/uploadForm")
-async def submit_form(
-    name: str = Form(...),
-    email: str = Form(...),
+async def upload_form(
     title: str = Form(...),
+    email: str = Form(...),
+    name: str = Form(...),
     category: str = Form(...),
+    latitude: str = Form(...),
+    longitude: str = Form(...),
     description: Optional[str] = Form(None),
     funding: Optional[str] = Form(None),
     org: Optional[str] = Form(None),
     link: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
-    latitude: float = Form(...),
-    longitude: float = Form(...),
-    file: UploadFile = File(None)
+    file: Optional[UploadFile] = File(None),
+    thumbnail: Optional[UploadFile] = File(None)  # 👈 THIS IS IMPORTANT
 ):
     #The ... means that the input is required
     # print(f"name: {name}")
@@ -220,22 +240,22 @@ async def submit_form(
         raise HTTPException(status_code=400, detail="Title exceeds 255 characters")
 
     try:
-        if not (-90 <= latitude <= 90):
+        latitude_val = float(latitude)
+        if not (-90 <= latitude_val <= 90):
             raise HTTPException(status_code=400, detail="Latitude is out of bounds (-90 to 90)")
+        if len(str(latitude_val).split('.')[-1]) > 8:
+            raise HTTPException(status_code=400, detail="Latitude decimal places exceed 8")
     except ValueError:
         raise HTTPException(status_code=400, detail="Latitude is not a valid decimal number")
-
-    if len(str(latitude).split('.')[-1]) > latitude_limit[1]:
-        raise HTTPException(status_code=400, detail=f"Latitude decimal places exceed {latitude_limit[1]}")
-
+    
     try:
-        if not (-180 <= longitude <= 180):
+        longitude_val = float(longitude)
+        if not (-180 <= longitude_val <= 180):
             raise HTTPException(status_code=400, detail="Longitude is out of bounds (-180 to 180)")
+        if len(str(longitude_val).split('.')[-1]) > 8:
+            raise HTTPException(status_code=400, detail="Longitude decimal places exceed 8")
     except ValueError:
         raise HTTPException(status_code=400, detail="Longitude is not a valid decimal number")
-
-    if len(str(longitude).split('.')[-1]) > longitude_limit[1]:
-        raise HTTPException(status_code=400, detail=f"Longitude decimal places exceed {longitude_limit[1]}")
 
     if description != None:
         if len(description) > description_limit:
@@ -265,13 +285,17 @@ async def submit_form(
     #4th Files
 
 
-    # Inserting Card Data
+    
+    # Upload thumbnail (custom or default)
+    thumbnail_url = upload_image(thumbnail)
+
+    # Inserting Card Data (updated to include thumbnail_url)
     try:
         enable_commits = False
-        insert_script = 'INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-        insert_value = (nextcardid, userID[0], title, latitude, longitude, categoryID, description, org, funding, link)
+        insert_script = '''INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
+        insert_value = (nextcardid, userID[0], title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
         cur.execute(insert_script, insert_value)
-
 
         print("Ready to commit CARDS to DB")
         enable_commits = True

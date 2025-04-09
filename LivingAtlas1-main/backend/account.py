@@ -149,31 +149,34 @@ async def make_account(
 
 
 
-
 @account_router.get("/profileCards")
 def profileCards(username: str):
-    cur.execute(f"""
-            SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
-            FROM Cards
-            INNER JOIN Categories
-            ON Cards.CategoryID = Categories.CategoryID
-            LEFT JOIN Files
-            ON Cards.CardID = Files.CardID
-            LEFT JOIN CardTags
-            ON Cards.CardID = CardTags.CardID
-            LEFT JOIN Tags
-            ON CardTags.TagID = Tags.TagID
-            INNER JOIN Users
-            ON Cards.UserID = Users.UserID
-            WHERE Users.Username = '{username}'
-            GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Users.Username, Users.Email
-            ORDER BY Cards.CardID DESC;
-            
-            """)
-            #LIMIT 6;
+    cur.execute("""
+        SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted,
+               Cards.description, Cards.organization, Cards.funding, Cards.link,
+               STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
+               Cards.latitude, Cards.longitude,
+               Cards.thumbnail_link,  -- added
+               Files.FileExtension, Files.FileID
+        FROM Cards
+        INNER JOIN Categories ON Cards.CategoryID = Categories.CategoryID
+        LEFT JOIN Files ON Cards.CardID = Files.CardID
+        LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
+        LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
+        INNER JOIN Users ON Cards.UserID = Users.UserID
+        WHERE Users.Username = %s
+        GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID,
+                 Users.Username, Users.Email, Cards.thumbnail_link  -- added to GROUP BY
+        ORDER BY Cards.CardID DESC;
+    """, (username,))
+
+    columns = [
+        "username", "email", "title", "category", "date", "description", "org", "funding", "link",
+        "tags", "latitude", "longitude", "thumbnail_link",  # added here
+        "fileEXT", "fileID"
+    ]
 
     rows = cur.fetchall()
-    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
 

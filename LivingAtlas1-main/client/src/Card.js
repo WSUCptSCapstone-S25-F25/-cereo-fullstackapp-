@@ -9,7 +9,13 @@ function Card(props) {
     const [formData, setFormData] = useState(props.formData);
     const [loading, setLoading] = useState(false);
     const [thumbnail, setThumbnail] = useState(null);
-    const [preview, setPreview] = useState(formData.thumbnail_url || "/CEREO-logo.png");
+    const [preview, setPreview] = useState(
+        formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
+            ? formData.thumbnail_link
+            : "/CEREO-logo.png"
+    );
+    console.log("Resolved preview image:", preview);
+    console.log("Form data thumbnail_link:", formData.thumbnail_link);
 
     const handleLearnMore = () => setIsModalOpen(true);
     const handleEdit = () => setIsEditModalOpen(true);
