@@ -27,7 +27,13 @@ function Card(props) {
     }, [props.formData]);
     
     const [thumbnail, setThumbnail] = useState(null);
-    const [preview, setPreview] = useState(formData.thumbnail_url || "/CEREO-logo.png");
+    const [preview, setPreview] = useState(
+        formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
+            ? formData.thumbnail_link
+            : "/CEREO-logo.png"
+    );
+    console.log("Resolved preview image:", preview);
+    console.log("Form data thumbnail_link:", formData.thumbnail_link);
 
     const handleLearnMore = () => setIsModalOpen(true);
     const handleEdit = () => setIsEditModalOpen(true);

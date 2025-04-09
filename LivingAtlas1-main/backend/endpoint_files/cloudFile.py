@@ -40,7 +40,7 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'ServiceKey_GoogleCloud.json'
 storage_client = storage.Client()
 
 # Create a new bucket
-bucket_name = 'cereo_data_bucket' # can't have spaces in bucket names or uppercase
+bucket_name = 'cereo_atlas_storage' # can't have spaces in bucket names or uppercase
 bucket = storage_client.bucket(bucket_name)
 
 # Check if the bucket already exists

@@ -11,4 +11,4 @@ const api = axios.create({
   //https://verdant-smakager-ef450d.netlify.app    //Netlify Frontend Link
 });
 
-export default api;
+export default api; 
