@@ -6,6 +6,7 @@ function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
     const [CategoryCondition, setCategoryConditionCondition] = useState('');
     const [searchCondition, setSearchCondition] = useState('');
+    const [sortCondition, setSortCondition] = useState('');
     const coordinates = {
         NE: {
             Lng: -116.5981,
@@ -26,6 +27,8 @@ function Home(props) {
                 setFilterCondition={setFilterCondition}
                 searchCondition={searchCondition}
                 setSearchCondition={setSearchCondition}
+                sortCondition={sortCondition}
+                setSortCondition={setSortCondition}
                 CategoryCondition={CategoryCondition}
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 email={props.email}
@@ -37,11 +40,14 @@ function Home(props) {
                 setFilterCondition={setFilterCondition}
                 searchCondition={searchCondition}
                 setSearchCondition={setSearchCondition}
+                sortCondition={sortCondition}
+                setSortCondition={setSortCondition}
                 boundCondition={boundCondition}
                 setboundCondition={setboundCondition}
                 CategoryCondition={CategoryCondition}
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 isAdmin={props.isAdmin} // Pass isAdmin down to Main
+                username={props.username} // Pass username down to Main
             />
             {props.isLoggedIn && props.isAdmin && <p>Welcome, admin user!</p>}
         </div>

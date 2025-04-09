@@ -1,13 +1,31 @@
-import React, { useState } from 'react';
+// import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import api from './api.js';
 import './Card.css'; // Importing the CSS for card
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faStar as solidStar } from '@fortawesome/free-solid-svg-icons';
+import { faStar as regularStar } from '@fortawesome/free-regular-svg-icons';
 
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [formData, setFormData] = useState(props.formData);
-    const [loading, setLoading] = useState(false);
+
+    const [formData, setFormData] = useState(props.formData || {});
+    const [loading, setLoading] = useState(false); // Added state for loading
+    const [isFavorited, setIsFavorited] = useState(false);
+
+    useEffect(() => {
+        setIsFavorited(props.isFavorited);      // Sync isFavorited prop with local state when prop changes (especially after refresh)
+
+    }, [props.isFavorited]);
+
+    useEffect(() => {
+        if (props.formData) {
+            setFormData(props.formData);
+        }
+    }, [props.formData]);
+    
     const [thumbnail, setThumbnail] = useState(null);
     const [preview, setPreview] = useState(
         formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
@@ -19,6 +37,7 @@ function Card(props) {
 
     const handleLearnMore = () => setIsModalOpen(true);
     const handleEdit = () => setIsEditModalOpen(true);
+
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -34,6 +53,55 @@ function Card(props) {
             alert("Invalid file type. Please upload a PNG, JPG, or GIF.");
         }
     };
+
+    const handleFavoriteClick = async () => {
+        const cardID = formData.cardID;
+        const username = formData.viewerUsername;
+    
+        console.log("cardID being sent:", cardID);
+        console.log("username being sent:", username);
+    
+        if (!cardID) {
+            console.error("Missing cardID");
+            return;
+        }
+
+        setIsFavorited(prev => !prev);
+
+        if (!username) {
+            console.error("Missing username");
+            return;
+        }
+    
+        setIsFavorited(prev => !prev);
+    
+        try {
+            const endpoint = !isFavorited ? '/bookmarkCard' : '/unbookmarkCard';
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('cardID', cardID);
+
+            console.log("[Bookmarking] Sending cardID:", cardID, "username:", username);
+
+    
+            await api.post(endpoint, formData);
+
+            // Refresh bookmark data to keep UI in sync
+            if (props.fetchBookmarks) {
+                props.fetchBookmarks();
+            }
+            
+            if (props.onBookmarkChange) {
+                props.onBookmarkChange();
+            }
+
+        } catch (error) {
+            console.error('Error toggling bookmark:', error);
+        }
+    };
+    
+    
+    
 
     const validateForm = () => {
         const requiredFields = ['username', 'email', 'title', 'category', 'latitude', 'longitude'];
@@ -83,9 +151,103 @@ function Card(props) {
         }
     };
 
+  /*
+    const downloadFile = async () => {
+        const fileID = props.formData.fileID; // Adjust as necessary
+        if (!fileID) {
+            alert("No file available to download.");
+            return;
+        }
+
+        try {
+            const response = await api.get('/downloadFile', {
+                params: { fileID },
+                responseType: 'blob', // Important for file download
+            });
+
+            const contentDisposition = response.headers["content-disposition"];
+            let fileName = 'file' + (props.formData.fileEXT || '.txt'); // Default file extension
+
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename="?(.+)"?/);
+                if (fileNameMatch.length > 1) {
+                    fileName = fileNameMatch[1];
+                }
+            }
+
+            const fileURL = window.URL.createObjectURL(new Blob([response.data]));
+            const fileLink = document.createElement('a');
+            fileLink.href = fileURL;
+            fileLink.setAttribute('download', fileName);
+            document.body.appendChild(fileLink);
+            fileLink.click();
+            fileLink.parentNode.removeChild(fileLink);
+            window.URL.revokeObjectURL(fileURL);
+        } catch (error) {
+            if (error.response && error.response.status === 422) {
+                alert('File is not in the database');
+            } else {
+                alert('An error occurred while downloading the file');
+            }
+        }
+    };
+
+    const handleDelete = () => {
+        api.delete(`/deleteCard`, {
+            params: {
+                username: props.formData.username,
+                title: props.formData.title,
+            }
+        })
+            .then(response => {
+                alert("Card deleted successfully");
+                props.onCardDelete(true);
+            })
+            .catch(error => {
+                alert("Failed to delete the card");
+            });
+    };
+
+    const determineBackgroundColor = () => {
+        const category = props.formData.category;
+        if (category) {
+            if (category === 'River') {
+                return '#99ccff';
+            } else if (category === 'Watershed') {
+                return '#ccff99';
+            } else if (category === 'Places') {
+                return '#ffff99';
+            }
+        }
+        return '#fff';
+    };
+
+    const truncateDescription = (description, charLimit) => {
+        if (!description) return '';
+        return description.length > charLimit ? description.substring(0, charLimit) + '...' : description;
+    };
+
+    */
+  
+    console.log("🔥 formData in Card:", formData);
+
+
     return (
+//         <div className="card" style={{ backgroundColor: determineBackgroundColor() }}>
         <div className="card">
+            {/* Favorite Star Icon */}
+            <span 
+                className={`favorite-icon ${isFavorited ? 'filled' : ''}`}
+                onClick={handleFavoriteClick}
+                title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                >
+                <FontAwesomeIcon icon={isFavorited ? solidStar : regularStar} />
+            </span>
+
+            <img src="/CEREO-logo.png" alt="Description of image" />
+        
             <img src={preview} alt="Card Thumbnail" />
+
             <h2 className="card-title">{props.formData.title}</h2>
             <p className="card-text">{props.formData.description}</p>
             <button className="card-button" onClick={handleLearnMore}>Learn More</button>

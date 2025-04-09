@@ -106,6 +106,111 @@ async def deleteCard(username: str, title: str):
     conn.commit()
     return {"Success": "The card is deleted"}
 
+
+
+
+@card_router.post("/bookmarkCard")
+async def bookmark_card(username: str = Form(...), cardID: int = Form(...)):
+    try:
+        print(f"[BOOKMARK] Incoming request: username={username}, cardID={cardID}")
+        
+        cur.execute("""
+            INSERT INTO Favorites (UserID, CardID)
+            SELECT u.UserID, %s
+            FROM Users u
+            WHERE LOWER(u.Username) = LOWER(%s)
+            ON CONFLICT DO NOTHING
+        """, (cardID, username))
+
+        conn.commit()
+
+        # Check if the bookmark was inserted
+        cur.execute("""
+            SELECT * FROM Favorites
+            WHERE CardID = %s AND UserID = (
+                SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)
+            )
+        """, (cardID, username))
+        result = cur.fetchone()
+        print(f"[BOOKMARK] DB insert result: {result}")
+
+        return {"message": "Card bookmarked successfully"}
+    except Exception as e:
+        print(f"[BOOKMARK ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@card_router.post("/unbookmarkCard")
+async def unbookmark_card(username: str = Form(...), cardID: int = Form(...)):
+    try:
+        print(f"[UNBOOKMARK] Incoming request: username={username}, card_id={cardID}")
+
+        cur.execute("""
+            DELETE FROM Favorites
+            WHERE UserID = (SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s))
+              AND CardID = %s
+        """, (username, cardID))
+
+        conn.commit()
+
+        # Verify deletion
+        cur.execute("""
+            SELECT * FROM Favorites
+            WHERE CardID = %s AND UserID = (
+                SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)
+            )
+        """, (cardID, username))
+        result = cur.fetchone()
+        print(f"[UNBOOKMARK] Post-delete DB check (should be None): {result}")
+
+        return {"message": "Card removed from bookmarks"}
+    except Exception as e:
+        print(f"[UNBOOKMARK ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@card_router.get("/getBookmarkedCards")
+def get_bookmarked_cards(username: str):
+    print(f"[DEBUG] Connected to DB: {conn.dsn}")
+
+    cur.execute("SELECT Username FROM Users")
+    print("[DEBUG] All users in DB:", cur.fetchall())
+
+    try:
+        username = username.strip()
+        print(f"[DEBUG] Raw username input after strip: '{username}'")
+
+        cur.execute("SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)", (username,))
+        result = cur.fetchone()
+
+        if not result:
+            print("[WARN] No user found for:", username)
+            return {"bookmarkedCards": []}
+
+        user_id = result[0]
+        print(f"[DEBUG] UserID fetched for bookmark: {user_id}")
+
+        cur.execute("""
+            SELECT c.CardID AS "cardID"
+            FROM Favorites f
+            JOIN Cards c ON f.CardID = c.CardID
+            WHERE f.UserID = %s
+        """, (user_id,))
+
+        rows = cur.fetchall()
+        print(f"[DEBUG] Bookmarked cards found: {len(rows)}")
+        print("[BOOKMARK] Result rows:", rows)
+
+        columns = ["cardID"]
+        data = [dict(zip(columns, row)) for row in rows]
+        return {"bookmarkedCards": data}
+
+    except Exception as e:
+        print(f"[EXCEPTION] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 @card_router.get("/downloadFile")
 async def downloadFile(fileID: int):
     cur.execute("SELECT DirectoryPath FROM Files WHERE fileID = %s", (fileID,))

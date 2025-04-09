@@ -31,6 +31,7 @@ let allMarkers = [];
 let blueMarkers = [];
 let greenMarkers = [];
 let yellowMarkers = [];
+let curLocationCoordinates = { lat: 0, lng: 0 };
 
 const Content1 = (props) => {
   const mapContainerRef = useRef(null);
@@ -144,19 +145,25 @@ const Content1 = (props) => {
     map.addControl(new mapboxgl.NavigationControl(), 'top-left');
 
     // Add current location (user's)
-    map.addControl(
-      new mapboxgl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true
-        },
+    const currentLocation = new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true
+      },
 
-        // When active the map will receive updates to the device's location as it changes.
-        trackUserLocation: true,
-        // Draw an arrow next to the location dot to indicate which direction the device is heading.
-        showUserHeading: true
-      }), 'top-left'
+      // When active the map will receive updates to the device's location as it changes.
+      trackUserLocation: true,
+      // Draw an arrow next to the location dot to indicate which direction the device is heading.
+      showUserHeading: true
+    });
+    map.addControl(
+      currentLocation, 'top-left'
     );
 
+    // UNDER CONSTRUCTION
+    currentLocation.on('geolocate', (e) => {
+      const { latitude, longitude } = e.coords;
+      curLocationCoordinates = { lat: latitude, lng: longitude };
+    });
 
     async function fetchData() {
       try {
@@ -185,7 +192,12 @@ const Content1 = (props) => {
 
           var x = new mapboxgl.Marker(el);
           //"did", "title", "description", "longitude", "latitude"
-          x.setLngLat([feature.longitude, feature.latitude]);
+          if (!isNaN(feature.longitude) && !isNaN(feature.latitude)) {
+            x.setLngLat([feature.longitude, feature.latitude]);
+          } else {
+              console.warn("Skipping invalid marker:", feature);
+              continue;
+          }
           x.setPopup(
             new mapboxgl.Popup({ offset: 25 })
               .setHTML(
@@ -432,7 +444,7 @@ const Content1 = (props) => {
 
 };
 
-export { allMarkers, draw, blueMarkers, greenMarkers, yellowMarkers };
+export { allMarkers, draw, blueMarkers, greenMarkers, yellowMarkers, curLocationCoordinates};
 export default Content1;
 
 
