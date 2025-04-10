@@ -20,8 +20,14 @@ import uuid
 
 card_router = APIRouter()
 
-# Google Cloud Storage setup
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'ServiceKey_GoogleCloud.json'
+import os, base64
+
+# Decode the GCP credentials from the environment variable and write to file
+gcs_key = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
+if gcs_key:
+    with open("ServiceKey_GoogleCloud.json", "wb") as f:
+        f.write(base64.b64decode(gcs_key))
+        
 storage_client = storage.Client()
 bucket_name = "cereo_atlas_storage"
 bucket = storage_client.bucket(bucket_name)
