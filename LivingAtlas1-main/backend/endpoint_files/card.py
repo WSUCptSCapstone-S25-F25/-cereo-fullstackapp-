@@ -71,7 +71,10 @@ def upload_image(file: Optional[UploadFile]) -> str:
         blob = bucket.blob(f"thumbnails/{unique_filename}")
         blob.upload_from_file(file.file, content_type=file.content_type)
 
-        public_url = f"https://storage.googleapis.com/{bucket_name}/thumbnails/{unique_filename}"
+        #This actually makes the file publicly accessible
+        blob.make_public()
+
+        public_url = blob.public_url
         print(f"[THUMBNAIL UPLOAD] Success: {public_url}")
         return public_url
 
