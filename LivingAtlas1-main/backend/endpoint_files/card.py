@@ -66,7 +66,7 @@ def upload_image(file: Optional[UploadFile]) -> str:
         raise HTTPException(status_code=400, detail="Invalid thumbnail file type. Allowed: PNG, JPG, JPEG, GIF")
 
     try:
-        # 🔄 Rewind the file pointer to ensure it's readable
+        # Rewind the file pointer to ensure it's readable
         file.file.seek(0)
 
         # Generate unique filename
