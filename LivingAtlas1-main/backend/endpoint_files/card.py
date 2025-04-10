@@ -66,12 +66,14 @@ def upload_image(file: Optional[UploadFile]) -> str:
         raise HTTPException(status_code=400, detail="Invalid thumbnail file type. Allowed: PNG, JPG, JPEG, GIF")
 
     try:
+        # 🔄 Rewind the file pointer to ensure it's readable
+        file.file.seek(0)
+
         # Generate unique filename
         unique_filename = f"{uuid.uuid4()}_{file.filename}"
         blob = bucket.blob(f"thumbnails/{unique_filename}")
         blob.upload_from_file(file.file, content_type=file.content_type)
 
-        # Instead of setting ACL, just construct the public URL manually:
         public_url = f"https://storage.googleapis.com/{bucket_name}/thumbnails/{unique_filename}"
         return public_url
     except Exception as e:
