@@ -7,7 +7,16 @@
 -- 1/11/23 - 12/10/23
 """
 
+import base64
 
+# Decode base64 service account key from environment variable
+gcs_key = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
+if gcs_key:
+    with open("temp_service_key.json", "wb") as f:
+        f.write(base64.b64decode(gcs_key))
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'temp_service_key.json'
+else:
+    raise Exception("Missing GOOGLE_CREDENTIALS_BASE64 environment variable")
 
 #importing libraries for the backend
 import uvicorn
