@@ -66,18 +66,18 @@ def upload_image(file: Optional[UploadFile]) -> str:
         raise HTTPException(status_code=400, detail="Invalid thumbnail file type. Allowed: PNG, JPG, JPEG, GIF")
 
     try:
-        # 🔄 Rewind the file pointer to ensure it's readable
         file.file.seek(0)
-
-        # Generate unique filename
         unique_filename = f"{uuid.uuid4()}_{file.filename}"
         blob = bucket.blob(f"thumbnails/{unique_filename}")
         blob.upload_from_file(file.file, content_type=file.content_type)
 
         public_url = f"https://storage.googleapis.com/{bucket_name}/thumbnails/{unique_filename}"
+        print(f"[THUMBNAIL UPLOAD] Success: {public_url}")
         return public_url
+
     except Exception as e:
-        print(f"Thumbnail upload error: {e}")
+        print(f"[THUMBNAIL UPLOAD ERROR] Filename: {file.filename}, Type: {file.content_type}")
+        print(f"[THUMBNAIL UPLOAD ERROR] Exception: {e}")
         raise HTTPException(status_code=500, detail="Failed to upload thumbnail image.")
 
 @card_router.post("/create-card")
