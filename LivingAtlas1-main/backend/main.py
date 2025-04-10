@@ -6,7 +6,9 @@
 -- Joshua Long, Mitchell Kolb (Author of Backend), Sierra Svetlik
 -- 1/11/23 - 12/10/23
 """
-
+import os
+import json
+from google.cloud import storage
 import base64
 
 # Decode base64 service account key from environment variable
