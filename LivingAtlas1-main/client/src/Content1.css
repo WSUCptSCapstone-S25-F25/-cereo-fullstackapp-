@@ -87,3 +87,11 @@
   color: #222;
   background: #fff;
   }
+
+  .gold-marker {
+    background-image: url('../public/star.png');
+    background-size: cover;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
