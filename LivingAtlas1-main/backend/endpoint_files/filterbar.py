@@ -94,8 +94,8 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
     finalQUERY += ("""
         FROM Users u
         JOIN Cards c ON u.UserID = c.UserID
-        JOIN CardTags ct ON c.CardID = ct.CardID
-        JOIN Tags t ON ct.TagID = t.TagID
+        LEFT JOIN CardTags ct ON c.CardID = ct.CardID
+        LEFT JOIN Tags t ON ct.TagID = t.TagID
         JOIN Categories cat ON c.CategoryID = cat.CategoryID
         LEFT JOIN Files f ON c.CardID = f.CardID
     """)
