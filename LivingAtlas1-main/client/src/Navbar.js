@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import './Navbar.css';
 
-function Navbar({ isLoggedIn, isAdmin }) {
+function Navbar({ isLoggedIn, isAdmin, username }) {
   const location = useLocation();
 
   return (
@@ -44,6 +44,7 @@ function Navbar({ isLoggedIn, isAdmin }) {
           <li className="profile-button">
             <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>
               <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+              <span className="username">{username}</span>
             </Link>
           </li>
         )}
