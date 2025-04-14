@@ -1,11 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import './Navbar.css';
 
-function Navbar({ isLoggedIn, isAdmin, username }) {
+function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
   const location = useLocation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+  };
+
+  const handleLogout = () => {
+    onLogout(); // Call the logout function
+    setIsModalOpen(false); // Close the modal
+  };
 
   return (
     <nav className="navbar">
@@ -41,14 +51,29 @@ function Navbar({ isLoggedIn, isAdmin, username }) {
           </Link>
         </li>
         {isLoggedIn && (
-          <li className="profile-button">
-            <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>
-              <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
-              <span className="username">{username}</span>
-            </Link>
+          <li className="profile-button" onClick={toggleModal}>
+            <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+            <span className="username">{username}</span>
           </li>
         )}
       </ul>
+      {isModalOpen && (
+        <div className="profile-modal">
+          <ul>
+            <li>
+              <Link to="/login" onClick={() => setIsModalOpen(false)}>Switch Account</Link>
+            </li>
+            <li>
+              <button onClick={handleLogout}>Logout</button>
+            </li>
+            {isAdmin && (
+              <li>
+                <Link to="/administration" onClick={() => setIsModalOpen(false)}>Administration</Link>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
     </nav>
   );
 }
