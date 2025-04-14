@@ -18,6 +18,8 @@ function Main(props) {
                 setCategoryConditionCondition={props.setCategoryConditionCondition}
                 filterCondition={props.filterCondition}
                 setFilterCondition={props.setFilterCondition}
+                showFavoritesOnly={props.showFavoritesOnly}
+                bookmarkedCardIDs={props.bookmarkedCardIDs}
             />
             <Content2
                 filterCondition={props.filterCondition}
@@ -30,7 +32,12 @@ function Main(props) {
                 setboundCondition={props.setboundCondition}
                 CategoryCondition={props.CategoryCondition}
                 setCategoryConditionCondition={props.setCategoryConditionCondition}
-                username={props.username} // pass username to Content2
+
+                username={props.username}
+                showFavoritesOnly={props.showFavoritesOnly}
+                setShowFavoritesOnly={props.setShowFavoritesOnly}
+                bookmarkedCardIDs={props.bookmarkedCardIDs}
+                setBookmarkedCardIDs={props.setBookmarkedCardIDs}
             />
         </main>
     );

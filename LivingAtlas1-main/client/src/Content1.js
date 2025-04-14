@@ -25,6 +25,7 @@ const draw = new MapboxDraw({
     trash: true
   }
 });
+
 let marker_clicked = false;
 let stream_clicked = false;
 let allMarkers = [];
@@ -34,7 +35,9 @@ let yellowMarkers = [];
 let curLocationCoordinates = { lat: 0, lng: 0 };
 
 const Content1 = (props) => {
+  
   const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
   const [lng, setLng] = useState(-117.181738);
   const [lat, setLat] = useState(46.729777);
   const [zoom, setZoom] = useState(9);
@@ -46,8 +49,83 @@ const Content1 = (props) => {
   const [bounds, setBounds] = useState({});
 
   // Initialize map when component mounts
+  const fetchData = async () => {
+    try {
+        console.log("📌 showFavoritesOnly:", props.showFavoritesOnly);
+        console.log("📌 bookmarkedCardIDs:", props.bookmarkedCardIDs);
+
+        if (props.showFavoritesOnly && bookmarkedSet.size === 0) {
+          console.warn("⚠️ showFavoritesOnly is ON but no bookmarks available.");
+        }
+
+        const bookmarkedSet = props.bookmarkedCardIDs instanceof Set
+            ? props.bookmarkedCardIDs
+            : new Set();
+      
+
+        const response = await api.get('/getMarkers');
+        const data = response.data.data;
+
+        allMarkers.forEach(marker => marker.remove());
+        allMarkers = [];
+        greenMarkers = [];
+        blueMarkers = [];
+        yellowMarkers = [];
+
+        for (let feature of data) {
+            if (props.showFavoritesOnly && !bookmarkedSet.has(feature.cardID)) continue;
+
+            const el = document.createElement('div');
+            if (feature.category === "River") {
+                el.className = 'blue-marker';
+                blueMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+            } else if (feature.category === "Watershed") {
+                el.className = 'green-marker';
+                greenMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+            } else {
+                el.className = 'yellow-marker';
+                yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+            }
+
+            if (
+                typeof feature.longitude !== 'number' ||
+                typeof feature.latitude !== 'number' ||
+                isNaN(feature.longitude) ||
+                isNaN(feature.latitude)
+            ) {
+                console.warn("⛔ Skipping invalid coordinate:", feature);
+                continue;
+            }
+
+            const marker = new mapboxgl.Marker(el)
+                .setLngLat([feature.longitude, feature.latitude])
+                .setPopup(
+                    new mapboxgl.Popup({ offset: 25 }).setHTML(`
+                        <br><h3>${feature.title}</h3>
+                        <p><b>Category:</b> ${feature.category}</p>
+                        <p><b>Tags:</b> ${feature.tags}</p><br>
+                    `)
+                );
+
+            marker.getElement().addEventListener('click', () => {
+                marker_clicked = true;
+                props.setSearchCondition(feature.title);
+            });
+
+            marker.getPopup().on('close', () => {
+                marker_clicked = false;
+                props.setSearchCondition("");
+            });
+
+            marker.addTo(mapRef.current);
+            allMarkers.push(marker);
+        }
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
+  };
+
   useEffect(() => {
-    // create map
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
@@ -55,38 +133,24 @@ const Content1 = (props) => {
       zoom: zoom
     });
 
-    // Needed for the map to have bounds defined on startup
-    setBounds(map.getBounds())
+    mapRef.current = map;
+    setBounds(map.getBounds());
     props.setboundCondition(map.getBounds());
 
-    // Update lat,long,zoom sidebar
     map.on('move', () => {
       setLng(map.getCenter().lng.toFixed(4));
       setLat(map.getCenter().lat.toFixed(4));
       setZoom(map.getZoom().toFixed(2));
-      // To update the state of the bounds with the current map view
-      //setBounds(map.getBounds());
     });
 
-    // Given a query in the form "lng, lat" or "lat, lng"
-    // returns the matching geographic coordinate(s)
     const coordinatesGeocoder = function (query) {
-
-      // Match anything which looks like
-      // decimal degrees coordinate pair.
       const matches = query.match(/^[ ]*(?:Lat: )?(-?\d+\.?\d*)[, ]+(?:Lng: )?(-?\d+\.?\d*)[ ]*$/i);
-      if (!matches) {
-        return null;
-      }
+      if (!matches) return null;
 
       function coordinateFeature(lng, lat) {
         return {
           center: [lng, lat],
-          geometry: {
-            type: 'Point',
-            coordinates: [lng, lat]
-          },
-
+          geometry: { type: 'Point', coordinates: [lng, lat] },
           place_name: 'Lat: ' + lat + ' Lng: ' + lng,
           place_type: ['coordinate'],
           properties: {},
@@ -99,188 +163,57 @@ const Content1 = (props) => {
       const geocodes = [];
 
       if (coord1 < -90 || coord1 > 90) {
-        // must be lng, lat
         geocodes.push(coordinateFeature(coord1, coord2));
       }
-
       if (coord2 < -90 || coord2 > 90) {
-        // must be lat, lng
         geocodes.push(coordinateFeature(coord2, coord1));
       }
-
       if (geocodes.length === 0) {
-        // else could be either lng, lat or lat, lng
         geocodes.push(coordinateFeature(coord1, coord2));
         geocodes.push(coordinateFeature(coord2, coord1));
       }
       return geocodes;
     };
 
-    // Search
-    map.addControl(
-      new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        localGeocoder: coordinatesGeocoder,
-        // zoom: 6,
-        placeholder: 'Address or LAT, LONG',
-        mapboxgl: mapboxgl,
-        reverseGeocode: true,
-        marker: {
-          color: 'green'
-        }
-      })
-    );
+    map.addControl(new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      localGeocoder: coordinatesGeocoder,
+      placeholder: 'Address or LAT, LONG',
+      mapboxgl: mapboxgl,
+      reverseGeocode: true,
+      marker: { color: 'green' }
+    }));
 
     map.addControl(draw);
-
-    // updateMarkers() will be the function for polygon filtering
     map.on('draw.create', updateMarkers);
     map.on('draw.delete', showAll);
     map.on('draw.update', updateMarkers);
-
-    // Add full screen function to the map
     map.addControl(new mapboxgl.FullscreenControl(), 'top-left');
-
-    // Add zoom function to the map
     map.addControl(new mapboxgl.NavigationControl(), 'top-left');
 
-    // Add current location (user's)
     const currentLocation = new mapboxgl.GeolocateControl({
-      positionOptions: {
-        enableHighAccuracy: true
-      },
-
-      // When active the map will receive updates to the device's location as it changes.
+      positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true,
-      // Draw an arrow next to the location dot to indicate which direction the device is heading.
       showUserHeading: true
     });
-    map.addControl(
-      currentLocation, 'top-left'
-    );
 
-    // UNDER CONSTRUCTION
+    map.addControl(currentLocation, 'top-left');
+
     currentLocation.on('geolocate', (e) => {
       const { latitude, longitude } = e.coords;
       curLocationCoordinates = { lat: latitude, lng: longitude };
     });
 
-    async function fetchData() {
-      try {
-        const response = await api.get('/getMarkers');
-        var data = response.data;
-
-        // Assign the parsed GeoJSON data to a variable
-        for (let i = 0; i < data.data.length; i++) {
-          const feature = data.data[i];
-          const el = document.createElement('div');
-          if (feature.category == "River") {
-            // blue
-            el.className = 'blue-marker';
-            blueMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]])
-          }
-          else if (feature.category == "Watershed") {
-            // green
-            el.className = 'green-marker';
-            greenMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]])
-          }
-          else {
-            // yellow for places
-            el.className = 'yellow-marker';
-            yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]])
-          }
-
-          var x = new mapboxgl.Marker(el);
-          //"did", "title", "description", "longitude", "latitude"
-          if (!isNaN(feature.longitude) && !isNaN(feature.latitude)) {
-            x.setLngLat([feature.longitude, feature.latitude]);
-          } else {
-              console.warn("Skipping invalid marker:", feature);
-              continue;
-          }
-          x.setPopup(
-            new mapboxgl.Popup({ offset: 25 })
-              .setHTML(
-                `<br><h3>${feature.title}</h3><p><b>Category: </b>${feature.category}</p><p><b>Tags: </b>${feature.tags}</p><br>`
-              )
-          );
-          x.getElement().addEventListener('click', function (e) {
-            // Update the search bar when the marker is clicked
-            marker_clicked = true;
-            console.log("CLICKED ON MARKER:", feature.title);
-            props.setSearchCondition(feature.title);
-          });
-          x.getPopup().on('close', () => {
-            // reset search bar
-            marker_clicked = false;
-            props.setSearchCondition("");
-          });
-
-          x.addTo(map); // comment out when zoom function is uncommented
-          allMarkers.push(x);
-        }
-      }
-      catch (error) {
-        console.error('Error fetching data:', error);
-        throw error;
-      }
-    }
-
-    fetchData();
-
-    // Update the lat/long values once the zoom ends
     map.on('zoomend', () => {
-      // set bounds 
-      setBounds(map.getBounds())
+      setBounds(map.getBounds());
       props.setboundCondition(map.getBounds());
     });
 
-    function updateVisibility() {
-      if (allMarkers.length == 0) {
-        // reset arrays to reload data
-        allMarkers = [];
-        greenMarkers = [];
-        blueMarkers = [];
-        yellowMarkers = [];
-        // re-fetch data
-        fetchData();
-      }
-      // get bounds
-      const bounds = map.getBounds(); // Get the current map bounds
-
-      // filter markers
-      const filteredMarkers = allMarkers.filter(marker => {
-        // Check if the marker coordinates are within the map bounds
-        return bounds.contains(marker.getLngLat());
-      });
-
-      // hide everything
-      for (let i = 0; i < allMarkers.length; i++) {
-        allMarkers[i].remove();
-      }
-
-      // show only what satisfied the filter criteria
-      for (let i = 0; i < filteredMarkers.length; i++) {
-        filteredMarkers[i].addTo(map);
-      }
-
-    }
-
-    // Attach an event listener to the map's 'moveend' event, which fires when the map's position or zoom changes.
-    map.on('moveend', () => {
-      if (props.CategoryCondition === '' && props.filterCondition === '') {
-        updateVisibility();
-      }
-    });
-
-    updateVisibility();
-    // Change the lat/long values once the user is done dragging the view
     map.on('dragend', () => {
       setBounds(map.getBounds());
       props.setboundCondition(map.getBounds());
     });
 
-    // update cursor with coordinates
     map.on('mousemove', (e) => {
       setMouseCoordinates({
         lat: e.lngLat.lat.toFixed(4),
@@ -288,179 +221,34 @@ const Content1 = (props) => {
       });
     });
 
-    // Load river stream data and urban area from using vector tileset from mapbox studio
     map.on('load', function () {
-      // Add a layer for NHD_stream
-      map.addLayer({
-        id: 'vector-tileset',
-        type: 'fill',
-        source: {
-          type: 'vector',
-          // Tileset URL or ID from mapbox studio
-          url: 'mapbox://livingatlas.71vcn3c7',
-        },
-        // Get the source layer name from tileset on mapbox studio
-        'source-layer': 'NHD_streams-6qjkxa',
-        paint: {
-          'fill-color': 'blue',
-          'fill-opacity': 0.5,
-        },
-      });
+    });
 
-      // Add another layer for Urban area 
-      map.addLayer({
-        id: 'urban-areas-fill',
-        type: 'fill',
-        source: {
-          type: 'vector',
-          // Tileset URL or ID from mapbox studio
-          url: 'mapbox://livingatlas.78fvgfpd',
-        },
-        // Source name from tileset on mapbox studio
-        'source-layer': 'Washington_State_City_Urban_G-0e7hes',
-        paint: {
-          'fill-color': 'red', // Set the fill color to red
-          'fill-opacity': 0.4,
-        },
-      });
+    fetchData();
 
-      // Add urban area outline
-      map.addLayer({
-        id: 'urban-areas-outline',
-        type: 'line',
-        source: {
-          type: 'vector',
-          // Tileset URL or ID from mapbox studio
-          url: 'mapbox://phearakboth.6pnz5bgy',
-        },
-        // Source name from tileset on mapbox studio
-        'source-layer': 'Washington_State_City_Urban_G-48j9h8',
-        paint: {
-          'line-color': 'white',
-          'line-width': 1,
-        },
-
-      })
-
-      // Create an event listener (when we click on the stream)
-      map.on('click', 'vector-tileset', (e) => {
-        // Set stream_clicked to true when it is clicked
-        stream_clicked = true;
-        const features = map.queryRenderedFeatures(e.point, {
-          layers: ['vector-tileset']
-        });
-
-        if (!features.length) {
-          return;
-        }
-
-        const feature = features[0];
-        // We display a pop for some important features of the NHD streams
-        // new mapboxgl.Popup({ offset: 30 })
-        var stream_popup = new mapboxgl.Popup({ offset: 30 })
-          .setLngLat(e.lngLat)
-          .setHTML(`
-                          <br><ul><strong>GNIS Name: </strong>${feature.properties.GNIS_Name}</ul>
-                          <ul><strong>Object ID: </strong>${feature.properties.OBJECTID}</ul>
-                          <ul><strong>Length in KM: </strong>${feature.properties.LengthKM}</ul>
-                          <ul><strong>GNIS ID: </strong>${feature.properties.GNIS_ID}</ul>
-                      `)
-          .addTo(map);
-        stream_popup.on('close', () => {
-          stream_clicked = false;
-        });
-      });
-
-      // Add event listener for urban area
-      map.on('click', 'urban-areas-fill', (e) => {
-        // Only display the popup for urban area when Markers or water stream aren't clicked 
-        // This will prevent showing popups for everything when only 1 element is clicked
-        if (!marker_clicked && !stream_clicked) {
-          const features = map.queryRenderedFeatures(e.point, {
-            layers: ['urban-areas-fill']
-          });
-          if (!features.length) {
-            return;
-          }
-          const feature = features[0];
-          // We display a pop for the important description of the urban area
-          new mapboxgl.Popup({ offset: 30 })
-            .setLngLat(e.lngLat)
-            .setHTML(`
-                          <br><h3><strong>${feature.properties.CITY_NM}</h3></strong>
-                          <ul><strong>OBJECTID:</strong> ${feature.properties.OBJECTID}</ul>
-                          <ul><strong>UGA_NM:</strong> ${feature.properties.UGA_NM}</ul>
-                          <ul><strong>UGA_NM2:</strong> ${feature.properties.UGA_NM2}</ul>
-                          <ul><strong>COUNTY_NM:</strong> ${feature.properties.COUNTY_NM}</ul>
-                          <ul><strong>GMA:</strong> ${feature.properties.GMA}</ul>
-                          <ul><strong>FIPS_PLC:</strong> ${feature.properties.FIPS_PLC}</ul>
-                          <ul><strong>INCORP:</strong> ${feature.properties.INCORP}</ul>
-                          <ul><strong>ORIGIN:</strong> ${feature.properties.ORIGIN}</ul>
-                          <ul><strong>DATEMOD:</strong> ${feature.properties.DATEMOD}</ul>
-                      `)
-            .addTo(map);
-        }
-      });
-    })
-    // Clean up on unmount
     return () => map.remove();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
+  useEffect(() => {
+    if (mapRef.current) {
+      fetchData();
+    }
+  }, [props.showFavoritesOnly, JSON.stringify(Array.from(props.bookmarkedCardIDs || []))]);
 
   return (
-    // set zIndex to '0' so that the map will be displayed below other components (like modals for example)
     <div style={{ zIndex: '0' }}>
-
-
-
       <div className='map-container' ref={mapContainerRef} />
       <div className='sidebarStyle'>
-        <div>
-          Map Center - Lat: {lat} | Long: {lng} | Zoom: {zoom}
-        </div>
-        <div>
-          Mouse Coordinates - Lat: {mouseCoordinates.lat} | Long: {mouseCoordinates.lng}
-        </div>
-      </div>
-
-      {/* Giving credit to the authors of the map icons used. */}
-      <div>
-        <a>Map icons by </a><a href="https://icons8.com/icon/" title="marker icons">icons8. </a>
-      </div>
-      {/* There's no need for the user to see the bounds */}
-      {/* Get the bounds of the map (the rectangular area on map defined by Northeast & Southwest corners) */}
-      {/* <div>
-        Bounds:
-      </div> */}
-      {/* <div>
-        NE: {bounds.getNorthEast ? `Lng: ${bounds.getNorthEast().lng.toFixed(4)}, Lat: ${bounds.getNorthEast().lat.toFixed(4)}` : ''}
+        <div>Map Center - Lat: {lat} | Long: {lng} | Zoom: {zoom}</div>
+        <div>Mouse Coordinates - Lat: {mouseCoordinates.lat} | Long: {mouseCoordinates.lng}</div>
       </div>
       <div>
-        SW: {bounds.getSouthWest ? `Lng: ${bounds.getSouthWest().lng.toFixed(4)}, Lat: ${bounds.getSouthWest().lat.toFixed(4)}` : ''}
-      </div> */}
+        <a>Map icons by </a>
+        <a href="https://icons8.com/icon/" title="marker icons">icons8.</a>
+      </div>
     </div>
-
   );
-
 };
 
-export { allMarkers, draw, blueMarkers, greenMarkers, yellowMarkers, curLocationCoordinates};
+export { allMarkers, draw, blueMarkers, greenMarkers, yellowMarkers, curLocationCoordinates };
 export default Content1;
-
-
-// import React from 'react';
-// import './Content1.css';
-
-
-// function Content1() {
-//     return (
-//         <section id="content-1">
-//             <h1>Content Area 1</h1>
-//             <p>
-//                 Below is a map that shows all the data points in our system. Each marker represents a unique data point, and you can click on each marker to view more information about that point.
-//             </p>
-//         </section>
-//     );
-// }
-
-// export default Content1;

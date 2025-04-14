@@ -20,6 +20,17 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [searchCondition, setSearchCondition] = useState('');
+  const [bookmarkedCardIDs, setBookmarkedCardIDs] = useState(new Set());
+  const defaultCoordinates = {
+    _ne: { lat: 47.0114, lng: -116.5981 },
+    _sw: { lat: 46.4466, lng: -117.7654 }
+  };
+  
+  const [boundCondition, setboundCondition] = useState(defaultCoordinates);
+  const [CategoryCondition, setCategoryConditionCondition] = useState('');
+  const [filterCondition, setFilterCondition] = useState('');
 
   // Load login state from localStorage on component mount
   useEffect(() => {
@@ -27,6 +38,7 @@ function App() {
     const savedEmail = localStorage.getItem('email');
     const savedUsername = localStorage.getItem('username');
     const savedIsAdmin = JSON.parse(localStorage.getItem('isAdmin'));
+
 
     if (savedIsLoggedIn) {
       setIsLoggedIn(savedIsLoggedIn);
@@ -49,7 +61,23 @@ function App() {
       <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
       <Switch>
         <Route exact path="/">
-          <Home isLoggedIn={isLoggedIn} username={username} email={email} isAdmin={isAdmin} />
+          <Home
+            isLoggedIn={isLoggedIn}
+            username={username}
+            email={email}
+            isAdmin={isAdmin}
+
+            showFavoritesOnly={showFavoritesOnly}
+            setShowFavoritesOnly={setShowFavoritesOnly}
+            bookmarkedCardIDs={bookmarkedCardIDs}
+            setBookmarkedCardIDs={setBookmarkedCardIDs}
+
+            boundCondition={boundCondition}
+            setboundCondition={setboundCondition}
+
+            searchCondition={searchCondition}
+            setSearchCondition={setSearchCondition}
+          />
         </Route>
         <Route path="/about" component={About} />
         <Route path="/contact" component={Contact} />

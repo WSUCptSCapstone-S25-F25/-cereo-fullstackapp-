@@ -81,8 +81,14 @@ function filterTag(tag){
 }
 
 function filterCategoryAndTag(category, tag) {
+    if (!category || !tag || typeof tag !== 'string') {
+        console.warn("⚠️ Invalid category/tag in filterCategoryAndTag:", category, tag);
+        showAll();
+        return;
+    }
     let substrings = tag.split(",");
     filterCategory(category);
+      
     if (category == "River"){
         let rivers = document.getElementsByClassName("blue-marker");
         for (let i = 0; i < blueMarkers.length; i++) {
@@ -118,6 +124,10 @@ function filterCategoryAndTag(category, tag) {
             }
         }
     }
+
+    
+      const categories = category.split(',');
+      const tags = tag.split(',');
 }
 
 function showAll() {

@@ -13,7 +13,16 @@ import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
 function Content2(props) {
+    const effectiveFilter = props.filterCondition || '';
+    const effectiveCategory = props.CategoryCondition || '';
+    const effectiveSort = props.sortCondition || '';
 
+    console.log("🧠 Content2 props:", props);
+
+    if (typeof props.setShowFavoritesOnly !== 'function') {
+        console.warn("⚠️ props.setShowFavoritesOnly is NOT a function!");
+    }
+    
     function useDidMount() {
         const mountRef = useRef(false);
 
@@ -35,17 +44,25 @@ function Content2(props) {
     const location = useLocation();
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
 
-    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+    // const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
     // Edited by Flavio: same code used to load the cards based on filter. Made it into a function in order to call it under searchConditions being reset to ''
     // That way our team is able to show the cards again once the user closes out of the marker.
     function loadCardsByCriteria() {
 
-        if (!didMountRef.current) {
+        if (!didMountRef.current) return;
+        
+        // 📌 Check if favorites toggle is on
+        if (props.showFavoritesOnly) {
+            // only show bookmarked cards
+            showAll(); // clear all filters
+            const filtered = cards.filter(card => bookmarkedCardIDs.has(card.cardID));
+            setCards(filtered);
             return;
         }
-        if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
-            console.log("running filter 199" + props.filterCondition);
+
+        if (effectiveFilter === '' && props.searchCondition === '' && effectiveCategory === '' && props.sortCondition === '') {
+            console.log("running filter 199" + effectiveFilter);
             showAll();
 
             api.get('/allCards')
@@ -60,16 +77,16 @@ function Content2(props) {
                 });
         }
         else {
-            // Fetch cards when props.filterCondition changes
-            console.log("running filter 197" + props.filterCondition);
+            // Fetch cards when effectiveFilter changes
+            console.log("running filter 197" + effectiveFilter);
             //http://20.252.115.56/allCardsByTag
             //http://localhost:8000/allCardsByTag
-            if (props.filterCondition === '') {
-                console.log("running category " + props.CategoryCondition);
+            if (effectiveFilter === '') {
+                console.log("running category " + effectiveCategory);
                 // filter markers
                 showAll();
-                filterCategory(props.CategoryCondition);
-                let params = {categoryString: props.CategoryCondition};
+                filterCategory(effectiveCategory);
+                let params = {categoryString: effectiveCategory};
                 if (props.sortCondition) {
                     params.sortString = props.sortCondition;
                 }
@@ -84,11 +101,11 @@ function Content2(props) {
                         console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
                     });
                 //alert("Underconstruction");
-            } else if (props.CategoryCondition === '') {
-                console.log("running filter 196 " + props.filterCondition);
+            } else if (effectiveCategory === '') {
+                console.log("running filter 196 " + effectiveFilter);
                 showAll();
-                filterTag(props.filterCondition);
-                let params = {tagString: props.filterCondition};
+                filterTag(effectiveFilter);
+                let params = {tagString: effectiveFilter};
                 if (props.sortCondition) {
                     params.sortString = props.sortCondition;
                 }
@@ -103,11 +120,11 @@ function Content2(props) {
                         console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
                     });
                 //alert("Underconstruction");
-            } else if (props.CategoryCondition !== '' && props.filterCondition !== '') {
+            } else if (effectiveCategory !== '' && effectiveFilter !== '') {
                 showAll();
-                filterCategoryAndTag(props.CategoryCondition, props.filterCondition)
-                let params = {categoryString: props.CategoryCondition,
-                                tagString: props.filterCondition};
+                filterCategoryAndTag(effectiveCategory, effectiveFilter)
+                let params = {categoryString: effectiveCategory,
+                                tagString: effectiveFilter};
                 if (props.sortCondition) {
                     params.sortString = props.sortCondition;
                 }
@@ -140,11 +157,12 @@ function Content2(props) {
     const [cards, setCards] = useState([]);
     const [bookmarkedCardIDs, setBookmarkedCardIDs] = useState(new Set());
     const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
-    const [filterCondition, setFilterCondition] = useState(props.filterCondition);
+    const [filterCondition, setFilterCondition] = useState(effectiveFilter);
     const [searchCondition, setSearchCondition] = useState(props.searchCondition);
     const [sortCondition, setSortCondition] = useState(props.sortCondition);
     // const isInitialMount = useRef(true);
 
+    
 
     useEffect(() => {
         if (resolvedUsername) {
@@ -160,8 +178,8 @@ function Content2(props) {
         }
 
 
-        if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
-            console.log("running filter193" + props.filterCondition);
+        if (effectiveFilter === '' && props.searchCondition === '' && effectiveCategory === '' && props.sortCondition === '') {
+            console.log("running filter193" + effectiveFilter);
             showAll();
 
             api.get('/allCards')
@@ -176,17 +194,17 @@ function Content2(props) {
                 });
         }
         else {
-            // Fetch cards when props.filterCondition changes
-            console.log("running filter194" + props.filterCondition);
+            // Fetch cards when effectiveFilter changes
+            console.log("running filter194" + effectiveFilter);
             //http://20.252.115.56/allCardsByTag
             //http://localhost:8000/allCardsByTag
-            if (props.filterCondition === '') {
-                console.log("running category " + props.CategoryCondition);
+            if (effectiveFilter === '') {
+                console.log("running category " + effectiveCategory);
                 // filter markers
                 showAll();
-                filterCategory(props.CategoryCondition)
+                filterCategory(effectiveCategory)
 
-                let params = {categoryString: props.CategoryCondition};
+                let params = {categoryString: effectiveCategory};
                 if (props.sortCondition) {
                     params.sortString = props.sortCondition;
                 }
@@ -201,12 +219,12 @@ function Content2(props) {
                         console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
                     });
                 //alert("Underconstruction");
-            } else if (props.CategoryCondition === '') {
-                console.log("running filter 195" + props.filterCondition);
+            } else if (effectiveCategory === '') {
+                console.log("running filter 195" + effectiveFilter);
                 showAll();
-                filterTag(props.filterCondition);
+                filterTag(effectiveFilter);
 
-                let params = {tagString: props.filterCondition};
+                let params = {tagString: effectiveFilter};
                 if (props.sortCondition) {
                     params.sortString = props.sortCondition;
                 }
@@ -221,12 +239,12 @@ function Content2(props) {
                         console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
                     });
                 //alert("Underconstruction");
-            } else if (props.CategoryCondition !== '' && props.filterCondition !== '') {
+            } else if (effectiveCategory !== '' && effectiveFilter !== '') {
                 showAll();
-                filterCategoryAndTag(props.CategoryCondition, props.filterCondition)
+                filterCategoryAndTag(effectiveCategory, effectiveFilter)
 
-                let params = {categoryString: props.CategoryCondition,
-                tagString: props.filterCondition};
+                let params = {categoryString: effectiveCategory,
+                tagString: effectiveFilter};
                 if (props.sortCondition) {
                     params.sortString = props.sortCondition;
                 }
@@ -254,7 +272,7 @@ function Content2(props) {
                     });
             }
         }
-    }, [props.filterCondition, props.CategoryCondition, props.sortCondition]); // Only run if props.filterCondition changes
+    }, [effectiveFilter, effectiveCategory, props.sortCondition]); // Only run if effectiveFilter changes
 
     useEffect(() => {
         if (props.searchCondition != '') {
@@ -280,7 +298,7 @@ function Content2(props) {
             console.log("Not running search" + props.searchCondition);
             loadCardsByCriteria();
         }
-    }, [props.searchCondition]); // Only run if props.searchCondition changes
+    }, [props.searchCondition, props.showFavoritesOnly]); // Only run if props.searchCondition changes
 
     const fetchBookmarks = async () => {
         console.log("📌 Fetching bookmarks for:", resolvedUsername);
@@ -311,9 +329,12 @@ function Content2(props) {
     
             setBookmarkedCardIDs(cardIDs);
             setBookmarksLoaded(true);
+            props.setBookmarkedCardIDs(cardIDs);
         } catch (error) {
             console.error("❌ [fetchBookmarks] Error fetching bookmarks:", error);
         }
+
+        
     };
 
     useEffect(() => {
@@ -423,8 +444,14 @@ function Content2(props) {
     
             {!isCollapsed && (
                 <div 
-                    className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
-                    onClick={() => setShowFavoritesOnly(prev => !prev)}
+                    className={`favorites-toggle-icon ${props.showFavoritesOnly ? 'active' : ''}`}
+                    onClick={() => {
+                        props.setShowFavoritesOnly(prev => {
+                            const newVal = !prev;
+                            props.setboundCondition({ ...props.boundCondition });
+                            return newVal;
+                        });
+                    }}
                     title="Favorites"
                 >
                     <FontAwesomeIcon icon={faStarHalfStroke} />
@@ -433,7 +460,7 @@ function Content2(props) {
     
             <div className="card-container" style={{ display: isCollapsed ? 'none' : 'grid' }}>
                 {cards
-                    .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
+                    .filter(card => !props.showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
                     .map((card, index) => (
                         <Card
                             key={`${card.cardID}-${index}`}

@@ -35,7 +35,7 @@ function Home(props) {
                 username={props.username}
                 isAdmin={props.isAdmin}
             />
-            <Main
+            {/* <Main
                 filterCondition={filterCondition}
                 setFilterCondition={setFilterCondition}
                 searchCondition={searchCondition}
@@ -48,6 +48,23 @@ function Home(props) {
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 isAdmin={props.isAdmin} // Pass isAdmin down to Main
                 username={props.username} // Pass username down to Main
+            /> */}
+            <Main
+                showFavoritesOnly={props.showFavoritesOnly}
+                setShowFavoritesOnly={props.setShowFavoritesOnly}
+                bookmarkedCardIDs={props.bookmarkedCardIDs}
+                setBookmarkedCardIDs={props.setBookmarkedCardIDs}
+                filterCondition={props.filterCondition}
+                setFilterCondition={props.setFilterCondition}
+                searchCondition={props.searchCondition}
+                setSearchCondition={props.setSearchCondition}
+                sortCondition={props.sortCondition}
+                setSortCondition={props.setSortCondition}
+                CategoryCondition={props.CategoryCondition}
+                setCategoryConditionCondition={props.setCategoryConditionCondition}
+                username={props.username}
+                boundCondition={props.boundCondition}
+                setboundCondition={props.setboundCondition}
             />
             {props.isLoggedIn && props.isAdmin && <p>Welcome, admin user!</p>}
         </div>

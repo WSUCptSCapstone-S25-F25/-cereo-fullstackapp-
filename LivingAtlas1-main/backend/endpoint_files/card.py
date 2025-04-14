@@ -198,6 +198,29 @@ def get_bookmarked_cards(username: str):
         print(f"[EXCEPTION] {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@card_router.get("/getFavoritedCards")
+def get_favorited_cards(username: str):
+    cur.execute("""
+        SELECT Users.Username, Users.Email, Cards.title, Cards.CardID, Categories.CategoryLabel, Cards.dateposted, 
+               Cards.description, Cards.organization, Cards.funding, Cards.link, 
+               STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, 
+               Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
+        FROM Favorites f
+        JOIN Users ON f.UserID = Users.UserID
+        JOIN Cards ON f.CardID = Cards.CardID
+        JOIN Categories ON Cards.CategoryID = Categories.CategoryID
+        LEFT JOIN Files ON Cards.CardID = Files.CardID
+        LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
+        LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
+        WHERE LOWER(Users.Username) = LOWER(%s)
+        GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Users.Username, Users.Email
+        ORDER BY Cards.CardID DESC
+    """, (username,))
+
+    columns = ["username", "email", "title", "cardID", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
+    rows = cur.fetchall()
+    data = [dict(zip(columns, row)) for row in rows]
+    return {"data": data}
 
 
 @card_router.get("/downloadFile")
