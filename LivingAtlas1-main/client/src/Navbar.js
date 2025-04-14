@@ -1,8 +1,12 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import './Navbar.css';
 
 function Navbar({ isLoggedIn, isAdmin }) {
+  const location = useLocation();
+
   return (
     <nav className="navbar">
       <a href="/">
@@ -12,13 +16,37 @@ function Navbar({ isLoggedIn, isAdmin }) {
         <img src="/CEREO-logo.png" alt="CEREO Logo" style={{ width: '140px', height: '50px', float: 'left' }}></img>
       </a>
       <ul>
-        <li><Link to="/">Home</Link></li>
-        <li><Link to="/about">About</Link></li>
-        <li><Link to="/contact">Contact</Link></li>
-        {!isLoggedIn && <li><Link to="/signup">Register</Link></li>}
-        <li><Link to="/login">{isLoggedIn ? 'Logout' : 'Login'}</Link></li>
-        {isLoggedIn && isAdmin && <li><Link to="/administration">Administration</Link></li>}
-        {isLoggedIn && <li><Link to="/profile">Profile</Link></li>}
+        <li>
+          <Link to="/" className={location.pathname === '/' ? 'active' : ''}>Home</Link>
+        </li>
+        <li>
+          <Link to="/about" className={location.pathname === '/about' ? 'active' : ''}>About</Link>
+        </li>
+        <li>
+          <Link to="/contact" className={location.pathname === '/contact' ? 'active' : ''}>Contact</Link>
+        </li>
+        {!isLoggedIn && (
+          <li>
+            <Link to="/signup" className={location.pathname === '/signup' ? 'active' : ''}>Register</Link>
+          </li>
+        )}
+        {isLoggedIn && isAdmin && (
+          <li>
+            <Link to="/administration" className={location.pathname === '/administration' ? 'active' : ''}>Administration</Link>
+          </li>
+        )}
+        <li>
+          <Link to="/login" className={location.pathname === '/login' ? 'active' : ''}>
+            {isLoggedIn ? 'Logout' : 'Login'}
+          </Link>
+        </li>
+        {isLoggedIn && (
+          <li className="profile-button">
+            <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>
+              <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+            </Link>
+          </li>
+        )}
       </ul>
     </nav>
   );
