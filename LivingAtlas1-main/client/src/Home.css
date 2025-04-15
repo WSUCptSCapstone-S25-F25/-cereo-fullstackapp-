@@ -1,0 +1,74 @@
+.home-container {
+    display: block; /* Use block layout to avoid interference with child elements */
+    margin-top: 65px; /* Ensure content starts below the navbar */
+    width: 100%; /* Ensure the container takes up the full width */
+    overflow: hidden; /* Prevent content overflow */
+}
+
+.sidebar {
+    width: 60px;
+    background-color: #333;
+    color: white;
+    height: calc(100vh - 65px); /* Subtract navbar height */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: fixed;
+    top: 65px; /* Place the sidebar below the navbar */
+    left: 0;
+    z-index: 1000;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.sidebar.open {
+    width: 300px;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+.sidebar-content {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: #444;
+    color: white;
+    height: calc(100vh - 85px); /* Subtract navbar and top button height */
+    overflow-y: auto;
+}
+
+.sidebar-content .search-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.main {
+    display: grid; /* Use grid layout */
+    grid-template-columns: repeat(2, 1fr); /* Two columns with equal width */
+    grid-gap: 20px; /* Set spacing between grid items */
+    padding: 20px;
+    margin: 0 auto; /* Center align */
+    width: calc(100% - 60px); /* Ensure width adapts */
+    box-sizing: border-box;
+    transition: margin-left 0.3s ease; /* Smooth transition effect */
+}
+
+.sidebar.open + .main {
+    margin-left: 300px; /* Adjust main content offset when sidebar is open */
+    width: calc(100% - 300px); /* Adjust width to fit the sidebar */
+}
+
+.sidebar + .main {
+    margin-left: 60px; /* Adjust main content offset when sidebar is closed */
+    width: calc(100% - 60px); /* Adjust width to fit the sidebar */
+}

@@ -286,3 +286,62 @@ nav ul li a {
     background-color: #cc7a00; /* Even darker orange when active */
     transform: scale(0.98); /* Slightly shrink on click */
 }
+
+.home-container {
+    display: flex;
+    flex-direction: row;
+    margin-top: 65px; /* 确保内容从 navbar 下方开始 */
+}
+
+.sidebar {
+    width: 60px;
+    background-color: #333;
+    color: white;
+    height: calc(100vh - 65px); /* 减去 navbar 的高度 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: fixed;
+    top: 65px; /* 将侧边栏放置在 navbar 下方 */
+    left: 0;
+    z-index: 1000;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.sidebar.open {
+    width: 300px;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+.sidebar-content {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: #444;
+    color: white;
+    height: calc(100vh - 85px); /* 减去 navbar 和顶部按钮的高度 */
+    overflow-y: auto;
+}
+
+.sidebar-content .search-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.main {
+    flex: 1;
+    padding: 20px;
+    transition: margin-left 0.3s ease;
+}

@@ -416,42 +416,85 @@ function Content2(props) {
     // );
 
     return (
-        <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
-            <div className="collapse-toggle" onClick={toggleCollapse}>
-                <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
-            </div>
-    
-            {!isCollapsed && (
-                <div 
-                    className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
-                    onClick={() => setShowFavoritesOnly(prev => !prev)}
-                    title="Favorites"
-                >
-                    <FontAwesomeIcon icon={faStarHalfStroke} />
+        <>
+            <div id="right-sidebar">
+                <div className="collapse-toggle" onClick={toggleCollapse}>
+                    <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
                 </div>
-            )}
-    
-            <div className="card-container" style={{ display: isCollapsed ? 'none' : 'grid' }}>
-                {cards
-                    .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
-                    .map((card, index) => (
-                        <Card
-                            key={`${card.cardID}-${index}`}
-                            formData={{
-                                ...card,
-                                cardOwner: card.username,
-                                viewerUsername: resolvedUsername,
-                                cardID: card.cardID
-                            }}
-                            isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                            username={resolvedUsername}
-                            fetchBookmarks={fetchBookmarks}
-                        />
-                    ))}
             </div>
-        </section>
+    
+            <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
+                    
+                {!isCollapsed && (
+                    <div 
+                        className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
+                        onClick={() => setShowFavoritesOnly(prev => !prev)}
+                        title="Favorites"
+                    >
+                        <FontAwesomeIcon icon={faStarHalfStroke} />
+                    </div>
+                )}
+
+                <div className="card-container" style={{ display: isCollapsed ? 'none' : 'grid' }}>
+                    {cards
+                        .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
+                        .map((card, index) => (
+                            <Card
+                                key={`${card.cardID}-${index}`}
+                                formData={{
+                                    ...card,
+                                    cardOwner: card.username,
+                                    viewerUsername: resolvedUsername,
+                                    cardID: card.cardID
+                                }}
+                                isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                username={resolvedUsername}
+                                fetchBookmarks={fetchBookmarks}
+                            />
+                        ))}
+                </div>
+            </section>
+        </>
     );
 
+    // return (
+
+    //     <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
+    //         <div className="collapse-toggle" onClick={toggleCollapse}>
+    //             <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
+    //         </div>
+    
+    //         {!isCollapsed && (
+    //             <div 
+    //                 className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
+    //                 onClick={() => setShowFavoritesOnly(prev => !prev)}
+    //                 title="Favorites"
+    //             >
+    //                 <FontAwesomeIcon icon={faStarHalfStroke} />
+    //             </div>
+    //         )}
+    
+    //         <div className="card-container" style={{ display: isCollapsed ? 'none' : 'grid' }}>
+    //             {cards
+    //                 .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
+    //                 .map((card, index) => (
+    //                     <Card
+    //                         key={`${card.cardID}-${index}`}
+    //                         formData={{
+    //                             ...card,
+    //                             cardOwner: card.username,
+    //                             viewerUsername: resolvedUsername,
+    //                             cardID: card.cardID
+    //                         }}
+    //                         isFavorited={bookmarkedCardIDs.has(card.cardID)}
+    //                         username={resolvedUsername}
+    //                         fetchBookmarks={fetchBookmarks}
+    //                     />
+    //                 ))}
+    //         </div>
+    //     </section>
+    // );
+    
 }
 
 export default Content2;
