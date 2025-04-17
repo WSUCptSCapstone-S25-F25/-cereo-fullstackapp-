@@ -25,6 +25,19 @@ function Card(props) {
             setFormData(props.formData);
         }
     }, [props.formData]);
+
+    useEffect(() => {
+        if ((!formData.thumbnail_link || formData.thumbnail_link === "") && formData.cardID) {
+            api.get(`/card/${formData.cardID}`).then((res) => {
+                if (res.data.thumbnail_link) {
+                    setFormData((prev) => ({ ...prev, thumbnail_link: res.data.thumbnail_link }));
+                    setPreview(res.data.thumbnail_link);
+                }
+            }).catch((err) => {
+                console.error("Error fetching thumbnail from card ID:", err);
+            });
+        }
+    }, [formData.thumbnail_link, formData.cardID]);
     
     const [thumbnail, setThumbnail] = useState(null);
     const [preview, setPreview] = useState(
