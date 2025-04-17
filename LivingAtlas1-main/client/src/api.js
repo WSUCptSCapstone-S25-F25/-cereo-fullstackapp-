@@ -2,9 +2,9 @@ import axios from "axios";
 
 const api = axios.create({
 
-  baseURL: 'https://cereo-backend.onrender.com' //CEREO's Render.com Backend Link
-  //baseURL: 'https://living-atlas-render.onrender.com', // Josh's Render.com Backend
-  // baseURL: 'http://localhost:8000', 
+
+  baseURL: 'https://cereo-backend.onrender.com', // New backend URL
+  // baseURL: 'http://localhost:8000', //Local Backend (Uncommit if running locally)
 
 
 

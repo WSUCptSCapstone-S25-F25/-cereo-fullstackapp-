@@ -1,24 +1,26 @@
 import hashlib
 import os
 
-# Input values
-username = "Zach"
-email = "zachary.garoutte@wsu.edu"
-password = "Awesomezg02$"  # replace with the password you want to use
-pepper = "xe5Dx93xefx16x9ax12wy"
+def generate_admin_user_sql(username, email, password):
+    # Generate 32-byte salt
+    salt = os.urandom(32)
 
-# Generate a 32-byte salt
-salt = os.urandom(32)
+    # Define hardcoded pepper (should match your backend)
+    pepper = b"xe5Dx93xefx16x9ax12wy"
 
-# Hash the password + salt + pepper
-hashed_password = hashlib.sha256(
-    password.encode('utf-8') + salt + pepper.encode('utf-8')
-).hexdigest()
+    # Hash the password using SHA-256 with salt + pepper
+    hashpass = hashlib.sha256(password.encode('utf-8') + salt + pepper).hexdigest()
 
-# Format salt as bytea literal for Postgres
-bytea_salt = f"\\x{salt.hex()}"
+    # Format salt for PostgreSQL (hex representation)
+    salt_hex = "\\x" + salt.hex()
 
-# Output the full SQL insert command
-print("\nCopy and run this SQL insert command in psql:\n")
-print(f"""INSERT INTO Users (UserID, Username, Email, HashedPassword, Salt)
-VALUES (NEXTVAL('users_userid_seq'), '{username}', '{email}', '{hashed_password}', '{bytea_salt}');""")
+    print("\nUse the following SQL command to insert an admin user:\n")
+    print(f"""INSERT INTO users (userid, username, email, hashedpassword, salt, is_admin)
+VALUES (NEXTVAL('users_userid_seq'), '{username}', '{email}', '{hashpass}', '{salt_hex}', TRUE);""")
+
+
+generate_admin_user_sql(
+    username="Jan Boll",
+    email="j.boll@wsu.edu",
+    password="1234C5"
+)
