@@ -195,7 +195,7 @@ function Content2(props) {
                 })
                     .then(response => {
                         setCards(response.data.data); // Update the cards state with the new data
-                        console.log("🧩 Incoming card data:", response.data.data);
+                        console.log("Incoming card data:", response.data.data);
                     })
                     .catch(error => {
                         console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
@@ -283,23 +283,23 @@ function Content2(props) {
     }, [props.searchCondition]); // Only run if props.searchCondition changes
 
     const fetchBookmarks = async () => {
-        console.log("📌 Fetching bookmarks for:", resolvedUsername);
+        console.log("Fetching bookmarks for:", resolvedUsername);
 
         if (!resolvedUsername) {
-            console.warn("⚠️ [fetchBookmarks] resolvedUsername is null or undefined, skipping API call.");
+            console.warn("[fetchBookmarks] resolvedUsername is null or undefined, skipping API call.");
             return;
         }
-        console.log("🚀 [fetchBookmarks] Sending GET /getBookmarkedCards request...");
+        console.log("[fetchBookmarks] Sending GET /getBookmarkedCards request...");
 
         try {
             const res = await api.get('/getBookmarkedCards', {
                 params: { username: resolvedUsername }
             });
     
-            console.log("✅ [fetchBookmarks] API call successful. Response:");
+            console.log("[fetchBookmarks] API call successful. Response:");
             console.log(res);
     
-            console.log("✅ [fetchBookmarks] Raw bookmarked data:", res.data.bookmarkedCards);
+            console.log("[fetchBookmarks] Raw bookmarked data:", res.data.bookmarkedCards);
 
             const cardIDs = new Set(
                 res.data.bookmarkedCards.map(card =>
@@ -307,12 +307,12 @@ function Content2(props) {
                 )
             );
     
-            console.log("✅ [fetchBookmarks] Parsed Set of bookmarked IDs:", cardIDs);
+            console.log("[fetchBookmarks] Parsed Set of bookmarked IDs:", cardIDs);
     
             setBookmarkedCardIDs(cardIDs);
             setBookmarksLoaded(true);
         } catch (error) {
-            console.error("❌ [fetchBookmarks] Error fetching bookmarks:", error);
+            console.error("[fetchBookmarks] Error fetching bookmarks:", error);
         }
     };
 
@@ -346,7 +346,7 @@ function Content2(props) {
                         if (response.data.data.length > 0) {
                             const first = response.data.data[0];
                             if (typeof first.title === 'string' && isNaN(Number(first.title))) {
-                                console.log("🧩 Incoming card data from updateBoundry:", response.data.data);
+                                console.log("Incoming card data from updateBoundry:", response.data.data);
                                 setCards(response.data.data);
                             } else {
                                 console.error('Invalid card data: title is number or invalid:', first);
