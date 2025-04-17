@@ -39,49 +39,6 @@ nav ul li a {
 }
 
 
-/* Search bar styles */
-.search-bar {
-    display: flex;
-    align-items: flex-end;
-    margin-bottom: 20px;
-    gap: 0px;
-}
-
-.search-bar input[type="text"] {
-    padding: 10px;
-    border-right: none;
-    border-radius: 5px 0 0 5px;
-    font-size: 14px;
-    border: none;
-    margin-right: 1px;
-    width: 20%;
-    max-width: 400px;
-    border: 1px solid #ccc;
-    height: 40px;
-}
-
-.search-button {
-    padding: 10px;
-    background-color: #333;
-    color: #fff;
-    border: 1px solid #333;
-    border-radius: 0 5px 5px 0;
-    padding: 0 15px;
-    cursor: pointer;
-    display: flex;
-    margin-left: 0px;
-    align-items: center;
-    justify-content: center;
-    height: 40px;
-}
-
-.search-button:hover {
-    background-color: lightgray;
-}
-
-.search-button svg {
-    font-size: 16px;
-}
 
 /* Styling for "Select Category" */
 .custom-category {
@@ -290,20 +247,20 @@ nav ul li a {
 .home-container {
     display: flex;
     flex-direction: row;
-    margin-top: 65px; /* 确保内容从 navbar 下方开始 */
+    margin-top: 65px;
 }
 
-.sidebar {
+/* .sidebar {
     width: 60px;
     background-color: #333;
     color: white;
-    height: calc(100vh - 65px); /* 减去 navbar 的高度 */
+    height: calc(100vh - 65px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     position: fixed;
-    top: 65px; /* 将侧边栏放置在 navbar 下方 */
+    top: 65px;
     left: 0;
     z-index: 1000;
     transition: width 0.3s ease;
@@ -330,7 +287,7 @@ nav ul li a {
     box-sizing: border-box;
     background-color: #444;
     color: white;
-    height: calc(100vh - 85px); /* 减去 navbar 和顶部按钮的高度 */
+    height: calc(100vh - 85px);
     overflow-y: auto;
 }
 
@@ -338,7 +295,7 @@ nav ul li a {
     display: flex;
     flex-direction: column;
     gap: 10px;
-}
+} */
 
 .main {
     flex: 1;

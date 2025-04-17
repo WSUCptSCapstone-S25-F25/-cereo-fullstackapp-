@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './Header.css';
+import './SearchBar.css';
 import UploadButton from './UploadButton.js';
 import ModalButton from './ModalButton.js';
 import FormModal from './FormModal.js';
@@ -146,10 +147,10 @@ function Header(props) {
                 <button onClick={executeSearch} className="search-button">
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
+            </div>
 
-                {/* <div className="nav-buttons"> */}
-
-                <select onChange={handleFilterChange} className='custom-category'>
+            {/* <div className="nav-buttons"> */}
+            <select onChange={handleFilterChange} className='custom-category'>
                     <option value="">Select a Category...</option>
                     <option value="River">River</option>
                     <option value="Watershed">Watershed</option>
@@ -217,7 +218,6 @@ function Header(props) {
 
                 {/* </div> */}
 
-            </div>
             <div>
                 {activeFilters.map(filter => (
                     <span key={filter} className="filter-tag">

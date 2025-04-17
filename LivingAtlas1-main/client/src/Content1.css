@@ -12,14 +12,6 @@
   overflow: hidden;
 }
 
-.sidebarStyle {
-  display: inline-block;
-  background-color: #404040;
-  color: #ffffff;
-  z-index: 1 !important;
-  padding: 6px;
-  font-weight: bold;
-}
 
 .marker {
   background-image: url('../public/mapbox-icon.png');

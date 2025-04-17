@@ -1,0 +1,92 @@
+/* Main styles for sidebars and their elements */
+.sidebarStyle {
+    display: inline-block;
+    background-color: #404040;
+    color: #ffffff;
+    z-index: 1 !important;
+    padding: 6px;
+    font-weight: bold;
+  }
+/*============================================================================================*/
+
+/* Left sidebar styles */
+.left-sidebar {
+    width: 60px;
+    background-color: #333;
+    color: white;
+    height: calc(100vh - 65px); /* Subtract navbar height */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: fixed;
+    top: 65px; /* Place the sidebar below the navbar */
+    left: 0;
+    z-index: 1000;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.left-sidebar.open {
+    width: 300px;
+}
+
+.left-sidebar-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+.left-sidebar-content {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: #444;
+    color: white;
+    height: calc(100vh - 85px); /* Subtract navbar and top button height */
+    overflow-y: auto;
+}
+
+.left-sidebar-content .search-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: right; 
+    gap: 0px;
+    width: 100%;
+    margin-bottom: 20px; /* Adjusted to fit the sidebar content */
+}
+
+.left-sidebar.open + .main {
+    margin-left: 300px; /* Adjust main content offset when sidebar is open */
+    width: calc(100% - 300px); /* Adjust width to fit the sidebar */
+}
+
+.left-sidebar + .main {
+    margin-left: 60px; /* Adjust main content offset when sidebar is closed */
+    width: calc(100% - 60px); /* Adjust width to fit the sidebar */
+}
+
+
+  
+/*============================================================================================*/
+
+/* Right sidebar styles */
+#right-sidebar {
+    position: fixed; /* Fixed on the right side of the page */
+    top: 65px; /* Ensures it does not overlap with the navbar */
+    right: 0;
+    width: 60px; /* Width of the right sidebar */
+    height: calc(100vh - 65px); /* Height adapts to the viewport minus the navbar height */
+    background-color: #333; /* Background color */
+    display: flex;
+    flex-direction: column; /* Vertical alignment of child elements */
+    align-items: center;
+    justify-content: flex-start;
+    z-index: 1000; /* Ensures it is above the map */
+    transition: width 0.3s ease; /* Smooth transition effect */
+  }
+  

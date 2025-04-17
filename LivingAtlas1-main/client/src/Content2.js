@@ -1,5 +1,6 @@
 import React from 'react';
 import './Content2.css';
+import './Sidebars.css';
 import Card from './Card.js';
 import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';

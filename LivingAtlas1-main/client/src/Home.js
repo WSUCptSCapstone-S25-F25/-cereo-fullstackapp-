@@ -5,6 +5,7 @@ import Content2 from './Content2';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
+import './Sidebars.css';
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -24,12 +25,12 @@ function Home(props) {
 
     return (
         <div className="home-container">
-            <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-                <button className="sidebar-toggle" onClick={toggleSidebar}>
+            <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+                <button className="left-sidebar-toggle" onClick={toggleSidebar}>
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
                 {isSidebarOpen && (
-                    <div className="sidebar-content">
+                    <div className="left-sidebar-content">
                         <Header
                             isLoggedIn={props.isLoggedIn}
                             filterCondition={filterCondition}

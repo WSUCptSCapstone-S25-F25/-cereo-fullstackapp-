@@ -27,39 +27,6 @@ It adjusts the layout of the .card-container and .card elements for smaller scre
   }
 }
 
-/* Right sidebar styles */
-#right-sidebar {
-  position: fixed; /* Fixed on the right side of the page */
-  top: 65px; /* Ensures it does not overlap with the navbar */
-  right: 0;
-  width: 60px; /* Width of the right sidebar */
-  height: calc(100vh - 65px); /* Height adapts to the viewport minus the navbar height */
-  background-color: #333; /* Background color */
-  display: flex;
-  flex-direction: column; /* Vertical alignment of child elements */
-  align-items: center;
-  justify-content: flex-start;
-  z-index: 1000; /* Ensures it is above the map */
-  transition: width 0.3s ease; /* Smooth transition effect */
-}
-
-.collapse-toggle {
-  position: absolute; /* Absolute positioning */
-  top: 10px; /* 10px from the top */
-  right: 10px; /* 10px from the right inside the sidebar */
-  width: 40px;
-  height: 40px;
-  background-color: rgba(0, 0, 0, 0.2);
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-  border-radius: 4px;
-  display: flex;
-  align-items: center; /* Vertically centered */
-  justify-content: center; /* Horizontally centered */
-  transition: background-color 0.3s ease;
-  z-index: 1001; /* Ensures the button is above all content */
-}
 
 /* Card container styles */
 #content-2 {
@@ -79,6 +46,26 @@ It adjusts the layout of the .card-container and .card elements for smaller scre
 #content-2.collapsed {
   transform: translateX(100%); /* Hides the card container */
 }
+
+
+.collapse-toggle {
+  position: absolute; /* Absolute positioning */
+  top: 10px; /* 10px from the top */
+  right: 10px; /* 10px from the right inside the sidebar */
+  width: 40px;
+  height: 40px;
+  background-color: rgba(0, 0, 0, 0.2);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center; /* Vertically centered */
+  justify-content: center; /* Horizontally centered */
+  transition: background-color 0.3s ease;
+  z-index: 1001; /* Ensures the button is above all content */
+}
+
 
 /* Collapse/expand button styles */
 .collapse-toggle {
