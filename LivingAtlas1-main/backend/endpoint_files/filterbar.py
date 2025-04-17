@@ -17,18 +17,18 @@ def allCards():
     cur.execute("""
         SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description,
                Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
-               Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID, Files.thumbnail_link
+               Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID, Files.Thumbnail_Link
         FROM Cards
         INNER JOIN Categories ON Cards.CategoryID = Categories.CategoryID
         LEFT JOIN Files ON Cards.CardID = Files.CardID
         LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
         LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
         INNER JOIN Users ON Cards.UserID = Users.UserID
-        GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Files.thumbnail_link, Users.Username, Users.Email
+        GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Files.Thumbnail_Link, Users.Username, Users.Email
         ORDER BY Cards.CardID DESC;
     """)
     # CHANGED: Added 'thumbnail_link' to the columns list below
-    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID", "thumbnail_link"]
+    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID", "Thumbnail_Link"]
     rows = cur.fetchall()
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
@@ -52,7 +52,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
     finalQUERY = ("""
         SELECT u.Username, u.Email, c.Title, cat.CategoryLabel, c.DatePosted, c.Description, c.Organization,
                c.Funding, c.Link, STRING_AGG(t.TagLabel, ', ') AS TagLabels,
-               c.Latitude, c.Longitude, f.FileExtension, f.FileID, f.thumbnail_link
+               c.Latitude, c.Longitude, f.FileExtension, f.FileID, f.Thumbnail_Link
     """)
 
     if sortString:
@@ -74,7 +74,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
     botStringQuery = ("""
         GROUP BY c.CardID, u.Username, u.Email, c.Title, cat.CategoryLabel, c.DatePosted,
                  c.Description, c.Organization, c.Funding, c.Link, c.Latitude, c.Longitude,
-                 f.FileExtension, f.FileID, f.thumbnail_link
+                 f.FileExtension, f.FileID, f.Thumbnail_Link
     """)
 
     if categoryString or tagString:
@@ -107,7 +107,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
 
     cur.execute(finalQUERY)
     # CHANGED: Added 'thumbnail_link' to the columns list below
-    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID", "thumbnail_link"]
+    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID", "Thumbnail_Link"]
     rows = cur.fetchall()
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
@@ -118,7 +118,7 @@ def searchBar(titleSearch: str):
         SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted,
                Cards.description, Cards.organization, Cards.funding, Cards.link,
                STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude,
-               Files.FileExtension, Files.FileID, Files.thumbnail_link
+               Files.FileExtension, Files.FileID, Files.Thumbnail_Link
         FROM Cards
         INNER JOIN Categories ON Cards.CategoryID = Categories.CategoryID
         LEFT JOIN Files ON Cards.CardID = Files.CardID
@@ -126,10 +126,10 @@ def searchBar(titleSearch: str):
         LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
         INNER JOIN Users ON Cards.UserID = Users.UserID
         WHERE Cards.title ILIKE %s
-        GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Files.thumbnail_link, Users.Username, Users.Email
+        GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Files.Thumbnail_Link, Users.Username, Users.Email
     """, ('%' + titleSearch + '%',))
     # CHANGED: Added 'thumbnail_link' to the columns list below
-    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID", "thumbnail_link"]
+    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID", "Thumbnail_Link"]
     rows = cur.fetchall()
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}

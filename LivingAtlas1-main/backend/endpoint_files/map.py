@@ -58,7 +58,7 @@ def updateBoundry(NEpoint: Point, SWpoint: Point):
             WHERE Cards.latitude BETWEEN %s AND %s
               AND Cards.longitude BETWEEN %s AND %s
             GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension,
-                     Files.FileID, Users.Username, Users.Email, Cards.thumbnail_link
+                     Files.FileID, Users.Username, Users.Email, Cards.Thumbnail_link
         """, (SWpoint.lat, NEpoint.lat, SWpoint.long, NEpoint.long))
 
         # Fix psycopg2.ProgrammingError when nothing is returned
