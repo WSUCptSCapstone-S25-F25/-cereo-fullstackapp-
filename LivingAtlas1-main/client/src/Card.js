@@ -289,14 +289,59 @@ function Card(props) {
             <Modal isOpen={isEditModalOpen} onRequestClose={() => setIsEditModalOpen(false)} className="Modal">
                 <h2>Edit Card</h2>
                 <form onSubmit={(e) => { e.preventDefault(); saveEdits(); }}>
-                    <label>Title: <input type="text" name="title" value={formData.title} onChange={handleInputChange} required /></label>
-                    <label>Description: <textarea name="description" value={formData.description} onChange={handleInputChange} /></label>
-                    <label>Thumbnail: <input type="file" accept="image/png, image/jpeg, image/gif" onChange={handleImageChange} /></label>
-                    {preview && <img src={preview} alt="Thumbnail Preview" width="100" />}
-                    <button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
+
+                    <label>Title:
+                    <input type="text" name="title" value={formData.title || ''} onChange={handleInputChange} required />
+                    </label>
+
+                    <label>Description:
+                    <textarea name="description" value={formData.description || ''} onChange={handleInputChange} />
+                    </label>
+
+                    <label>Email:
+                    <input type="email" name="email" value={formData.email || ''} onChange={handleInputChange} />
+                    </label>
+
+                    <label>Organization:
+                    <input type="text" name="org" value={formData.org || ''} onChange={handleInputChange} />
+                    </label>
+
+                    <label>Funding:
+                    <input type="text" name="funding" value={formData.funding || ''} onChange={handleInputChange} />
+                    </label>
+
+                    <label>Link:
+                    <input type="text" name="link" value={formData.link || ''} onChange={handleInputChange} />
+                    </label>
+
+                    <label>Category:
+                    <input type="text" name="category" value={formData.category || ''} onChange={handleInputChange} />
+                    </label>
+
+                    <label>Tags:
+                    <input type="text" name="tags" value={formData.tags || ''} onChange={handleInputChange} />
+                    </label>
+
+                    <label>Latitude:
+                    <input type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} />
+                    </label>
+
+                    <label>Longitude:
+                    <input type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
+                    </label>
+
+                    <label>Thumbnail:
+                    <input type="file" accept="image/png, image/jpeg, image/gif" onChange={handleImageChange} />
+                    </label>
+
+                    {preview && <img src={preview} alt="Thumbnail Preview" width="100" style={{ margin: '10px 0' }} />}
+
+                    <button type="submit" disabled={loading}>
+                    {loading ? 'Saving...' : 'Save'}
+                    </button>
                     <button onClick={() => setIsEditModalOpen(false)}>Close</button>
                 </form>
-            </Modal>
+                </Modal>
         </div>
     );
 }
