@@ -119,46 +119,71 @@ function Card(props) {
     const validateForm = () => {
         const requiredFields = ['username', 'email', 'title', 'category', 'latitude', 'longitude'];
         for (const field of requiredFields) {
-            if (!formData[field] || formData[field].trim() === '') {
+            const value = formData[field];
+    
+            // Safely convert everything to string before trimming
+            if (value === undefined || value === null || value.toString().trim() === '') {
                 alert(`Please fill out the ${field} field.`);
                 return false;
             }
+    
+            // Additional numeric checks
+            if (field === 'latitude' && (Number(value) < -90 || Number(value) > 90)) {
+                alert('Latitude must be between -90 and 90.');
+                return false;
+            }
+    
+            if (field === 'longitude' && (Number(value) < -180 || Number(value) > 180)) {
+                alert('Longitude must be between -180 and 180.');
+                return false;
+            }
         }
-        if (formData.latitude < -90 || formData.latitude > 90) {
-            alert('Latitude must be between -90 and 90.');
-            return false;
-        }
-        if (formData.longitude < -180 || formData.longitude > 180) {
-            alert('Longitude must be between -180 and 180.');
-            return false;
-        }
+    
         return true;
     };
 
     const saveEdits = async () => {
         if (!validateForm()) return;
-
+    
         const formDataToSend = new FormData();
-        Object.keys(formData).forEach(key => formDataToSend.append(key, formData[key]));
-        if (thumbnail) formDataToSend.append('thumbnail', thumbnail);
-
+    
+        // Append all form fields
+        Object.keys(formData).forEach((key) => {
+            if (formData[key] !== undefined && formData[key] !== null) {
+                formDataToSend.append(key, formData[key]);
+            }
+        });
+    
+        // Append thumbnail if selected
+        if (thumbnail) {
+            formDataToSend.append('thumbnail', thumbnail);
+        }
+    
         setLoading(true);
         try {
-            await api.post('/uploadForm', formDataToSend, { headers: { 'Content-Type': 'multipart/form-data' } });
-            await api.delete(`/deleteCard`, {
-                params: { username: props.formData.username, title: props.formData.title }
+            // DO NOT set Content-Type manually — let Axios handle it
+            await api.post('/uploadForm', formDataToSend);
+    
+            // Optionally delete the old version
+            await api.delete('/deleteCard', {
+                params: {
+                    username: props.formData.username,
+                    title: props.formData.title,
+                },
             });
-
-            alert("Card Information Saved. Please reload the page.");
+    
+            alert('Card Information Saved. Please reload the page.');
             setIsEditModalOpen(false);
+    
+            // Call card update handler if provided
             if (typeof props.onCardUpdate === 'function') {
                 props.onCardUpdate();
             } else {
                 window.location.reload();
             }
         } catch (error) {
-            console.error("Failed to save the card:", error);
-            alert("Failed to save the card. Please try again.");
+            console.error('Failed to save the card:', error);
+            alert('Failed to save the card. Please try again.');
         } finally {
             setLoading(false);
         }

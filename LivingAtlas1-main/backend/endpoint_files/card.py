@@ -281,7 +281,7 @@ def allCards():
 async def upload_form(
     title: str = Form(...),
     email: str = Form(...),
-    name: str = Form(...),
+    username: str = Form(...),
     category: str = Form(...),
     latitude: str = Form(...),
     longitude: str = Form(...),
@@ -291,7 +291,7 @@ async def upload_form(
     link: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
-    thumbnail: Optional[UploadFile] = File(None)  # 👈 THIS IS IMPORTANT
+    thumbnail: Optional[UploadFile] = File(None)  # THIS IS IMPORTANT
 ):
     #The ... means that the input is required
     # print(f"name: {name}")
@@ -322,7 +322,7 @@ async def upload_form(
     #print(nextcardid, (type(nextcardid)))
 
     #Get UserID of submitted card from db
-    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (name, email))
+    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (username, email))
     userID = cur.fetchone()
     #print(userID, (type(userID)))
 
