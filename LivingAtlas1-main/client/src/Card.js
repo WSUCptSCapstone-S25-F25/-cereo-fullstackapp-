@@ -229,23 +229,35 @@ function Card(props) {
             }
         }
     };
-
+*/
     const handleDelete = () => {
+        if (!formData.username || !formData.title) {
+            alert("Missing username or title — cannot delete card.");
+            return;
+        }
+
+        if (!window.confirm("Are you sure you want to delete this card?")) return;
+
         api.delete(`/deleteCard`, {
             params: {
-                username: props.formData.username,
-                title: props.formData.title,
+                username: formData.username,
+                title: formData.title,
             }
         })
-            .then(response => {
-                alert("Card deleted successfully");
+        .then(() => {
+            alert("Card deleted successfully.");
+            if (typeof props.onCardDelete === "function") {
                 props.onCardDelete(true);
-            })
-            .catch(error => {
-                alert("Failed to delete the card");
-            });
+            } else {
+                window.location.reload();
+            }
+        })
+        .catch((error) => {
+            console.error("Delete failed:", error);
+            alert("Failed to delete the card.");
+        });
     };
-
+/*
     const determineBackgroundColor = () => {
         const category = props.formData.category;
         if (category) {
@@ -296,7 +308,13 @@ function Card(props) {
             <button className="card-button" onClick={handleLearnMore}>Learn More</button>
             {props.username && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px' }}>
-                    <button className="card-button" style={{ marginBottom: '10px', backgroundColor: 'red' }} onClick={props.onDelete}>Delete</button>
+                    <button 
+                        className="card-button" 
+                        style={{ marginBottom: '10px', 
+                        backgroundColor: 'red' }} 
+                        onClick={handleDelete}>
+                            Delete
+                        </button>
                     <button className="card-button" style={{ backgroundColor: 'blue' }} onClick={handleEdit}>Edit</button>
                 </div>
             )}

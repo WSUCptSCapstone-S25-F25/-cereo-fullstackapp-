@@ -105,7 +105,7 @@ async def deleteCard(username: str, title: str):
         raise HTTPException(status_code=404, detail="Card not found")
     cardID, thumbnail_link = result
 
-    if thumbnail_link:
+    if thumbnail_link and thumbnail_link != DEFAULT_THUMBNAIL_URL:
         delete_from_bucket(thumbnail_link.replace(f"https://storage.googleapis.com/{bucket_name}/", ""))
 
     cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))

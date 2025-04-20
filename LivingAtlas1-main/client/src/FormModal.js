@@ -8,7 +8,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const FormModal = (props) => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [formData, setFormData] = useState({
-        name: props.username,
+        username: props.username,
         email: props.email,
         title: '',
         category: '',
@@ -71,6 +71,9 @@ const FormModal = (props) => {
             return;
         }
 
+        // Re-enforce username (name) from props before submitting
+        formData.name = props.username;
+
         const formData2 = new FormData();
         Object.entries(formData).forEach(([key, value]) => {
             if (value) {
@@ -80,6 +83,8 @@ const FormModal = (props) => {
 
         if (selectedFile) formData2.append('file', selectedFile);
         if (thumbnailFile) formData2.append('thumbnail', thumbnailFile);
+
+        console.log("Uploading FormData:", [...formData2.entries()]);
 
         api.post('/uploadForm', formData2, {
             headers: { 'Content-Type': 'multipart/form-data' }
@@ -107,7 +112,7 @@ const FormModal = (props) => {
                 <h2>Upload Document</h2>
                 <form onSubmit={handleSubmit}>
                     <label>Name (required):</label>
-                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
+                    <input type="text" name="name" value={formData.name} readOnly />
 
                     <label>Email (required):</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
