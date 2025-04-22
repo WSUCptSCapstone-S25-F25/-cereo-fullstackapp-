@@ -21,12 +21,18 @@ function Home(props) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
 
     const toggleSearchModal = () => {
         setIsSearchModalOpen(!isSearchModalOpen);
+    };
+
+    const toggleCollapse = () => {
+        setIsCollapsed(!isCollapsed);
     };
 
     return (
@@ -89,6 +95,13 @@ function Home(props) {
                 </div>
             )}
 
+            {/* Right Sidebar */}
+            {/* <div id="right-sidebar">
+                <div className="collapse-toggle" onClick={toggleCollapse}>
+                    <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
+                </div>
+            </div> */}
+
             <Main
                 filterCondition={filterCondition}
                 setFilterCondition={setFilterCondition}
@@ -115,6 +128,7 @@ function Home(props) {
                 CategoryCondition={CategoryCondition}
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 username={props.username}
+                isCollapsed={isCollapsed}
             />
             {props.isLoggedIn && props.isAdmin && <p>Welcome, admin user!</p>}
         </div>

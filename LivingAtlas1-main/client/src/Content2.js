@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './Content2.css';
 import './Sidebars.css';
 import Card from './Card.js';
-import { useEffect, useState, useRef } from 'react';
+import FormModal from './FormModal';
 import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
 import api from './api.js';
@@ -10,10 +10,16 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
 function Content2(props) {
+
+    const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
+
+    const openModal = () => setIsModalOpen(true);
+    const closeModal = () => setIsModalOpen(false);
 
     function useDidMount() {
         const mountRef = useRef(false);
@@ -388,41 +394,33 @@ function Content2(props) {
 
 
 
-
-
-
-
-    // return (
-    //     <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
-    //         <div className="collapse-toggle" onClick={toggleCollapse}>
-    //             <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
-    //         </div>
-    
-    //         <div className="card-container" style={{ display: isCollapsed ? 'none' : 'block' }}>
-    //             {bookmarksLoaded && cards.map((card, index) => (
-    //                 <Card
-    //                     key={`${card.cardID}-${index}`}
-    //                     formData={{
-    //                         ...card,
-    //                         cardOwner: card.username,
-    //                         viewerUsername: resolvedUsername,
-    //                         cardID: card.cardID
-    //                     }}
-    //                     isFavorited={bookmarkedCardIDs.has(card.cardID)}
-    //                     username={resolvedUsername}
-    //                 />
-    //             ))}
-    //         </div>
-    //     </section>
-    // );
-
     return (
         <>
+            {/* <div id="right-sidebar">
+                <div className="collapse-toggle" onClick={toggleCollapse}>
+                    <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
+                </div>
+            </div> */}
+
             <div id="right-sidebar">
                 <div className="collapse-toggle" onClick={toggleCollapse}>
                     <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
                 </div>
+                <button 
+                    className="add-card-button" 
+                    onClick={openModal} 
+                    title="Add Card"
+                >
+                    <FontAwesomeIcon icon={faPlus} />
+                </button>
             </div>
+
+            <FormModal 
+                username={resolvedUsername} 
+                email={props.email} 
+                isOpen={isModalOpen} 
+                onRequestClose={closeModal} 
+            />
     
             <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
                     
@@ -458,43 +456,6 @@ function Content2(props) {
         </>
     );
 
-    // return (
-
-    //     <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
-    //         <div className="collapse-toggle" onClick={toggleCollapse}>
-    //             <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
-    //         </div>
-    
-    //         {!isCollapsed && (
-    //             <div 
-    //                 className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
-    //                 onClick={() => setShowFavoritesOnly(prev => !prev)}
-    //                 title="Favorites"
-    //             >
-    //                 <FontAwesomeIcon icon={faStarHalfStroke} />
-    //             </div>
-    //         )}
-    
-    //         <div className="card-container" style={{ display: isCollapsed ? 'none' : 'grid' }}>
-    //             {cards
-    //                 .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
-    //                 .map((card, index) => (
-    //                     <Card
-    //                         key={`${card.cardID}-${index}`}
-    //                         formData={{
-    //                             ...card,
-    //                             cardOwner: card.username,
-    //                             viewerUsername: resolvedUsername,
-    //                             cardID: card.cardID
-    //                         }}
-    //                         isFavorited={bookmarkedCardIDs.has(card.cardID)}
-    //                         username={resolvedUsername}
-    //                         fetchBookmarks={fetchBookmarks}
-    //                     />
-    //                 ))}
-    //         </div>
-    //     </section>
-    // );
     
 }
 
