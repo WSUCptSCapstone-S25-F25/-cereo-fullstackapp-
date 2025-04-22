@@ -19,17 +19,30 @@ function Home(props) {
     };
     const [boundCondition, setboundCondition] = useState(coordinates);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
 
+    const toggleSearchModal = () => {
+        setIsSearchModalOpen(!isSearchModalOpen);
+    };
+
     return (
         <div className="home-container">
             <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`}>
-            <button className="left-sidebar-toggle" onClick={toggleSidebar}>
-                <FontAwesomeIcon icon={isSidebarOpen ? faAngleDoubleLeft : faAngleDoubleRight} />
-            </button>
+                {/* Left Sidebar Search Button */}
+                <button className="left-sidebar-search-button" onClick={toggleSearchModal}>
+                        <FontAwesomeIcon icon={faSearch} />
+                </button>
+
+                {/* Left Sidebar toggle Button */}
+                <button className="left-sidebar-toggle" onClick={toggleSidebar}>
+                    <FontAwesomeIcon icon={isSidebarOpen ? faAngleDoubleLeft : faAngleDoubleRight} />
+                </button>
+
+                {/* Expanded Left Sidebar Content */}
                 {isSidebarOpen && (
                     <div className="left-sidebar-content">
                         <Header
@@ -49,6 +62,33 @@ function Home(props) {
                     </div>
                 )}
             </div>
+
+           {/* Search Modal */}
+           {isSearchModalOpen && (
+                <div className="search-modal">
+                    <div className="search-modal-content">
+                        <button className="close-modal" onClick={toggleSearchModal}>
+                            &times;
+                        </button>
+                        {/* Reuse the Header component */}
+                        <Header
+                            isLoggedIn={props.isLoggedIn}
+                            filterCondition={filterCondition}
+                            setFilterCondition={setFilterCondition}
+                            searchCondition={searchCondition}
+                            setSearchCondition={setSearchCondition}
+                            sortCondition={sortCondition}
+                            setSortCondition={setSortCondition}
+                            CategoryCondition={CategoryCondition}
+                            setCategoryConditionCondition={setCategoryConditionCondition}
+                            email={props.email}
+                            username={props.username}
+                            isAdmin={props.isAdmin}
+                        />
+                    </div>
+                </div>
+            )}
+
             <Main
                 filterCondition={filterCondition}
                 setFilterCondition={setFilterCondition}
