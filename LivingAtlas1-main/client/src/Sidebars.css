@@ -98,10 +98,11 @@
 
 /* Search Modal */
 .search-modal {
-    position: absolute;
+    /* position: absolute; */
+    position: fixed;
     left: 65px;
     width: 300px;
-    top: 115px;
+    top: 70px;
     height: 35%;
     background-color: lightgray;
     color: white;
