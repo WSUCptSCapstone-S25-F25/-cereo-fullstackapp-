@@ -5,6 +5,9 @@
     align-items: flex-end;
     margin-bottom: 20px;
     gap: 0px;
+    /* position: absolute;
+    width: calc(100% - 20px);
+    bottom: 10px; */
 }
 
 .left-sidebar-content .search-bar input[type="text"] {
@@ -41,4 +44,15 @@
 
 .left-sidebar-content .search-button svg {
     font-size: 16px;
+}
+
+.left-sidebar-toggle {
+    position: absolute;
+    bottom: 0px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
 }

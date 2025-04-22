@@ -82,3 +82,7 @@
   color: #222;
   background: #fff;
   }
+
+  .left-sidebar.open .left-sidebar-toggle {
+    right: 0px;
+}
