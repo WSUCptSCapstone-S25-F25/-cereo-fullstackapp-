@@ -98,8 +98,10 @@ const FormModal = (props) => {
         <div>
             <button className="open-form-button" onClick={() => setModalIsOpen(true)}>Upload</button>
             <Modal
-                isOpen={modalIsOpen}
-                onRequestClose={() => setModalIsOpen(false)}
+                isOpen={props.isOpen} // Use the isOpen prop from the parent
+                onRequestClose={props.onRequestClose} // Use the onRequestClose prop from the parent
+                // isOpen={modalIsOpen}
+                // onRequestClose={() => setModalIsOpen(false)}
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
                 ariaHideApp={false}
