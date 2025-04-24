@@ -8,11 +8,13 @@
     border-radius: 5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     z-index: 9999;
-    width: 400px;
-    max-height: 70vh;
-    overflow-y: auto;
-    background-color: lightgray;
+
+    width: 90vw;               /* responsive width */
+    max-width: 500px;          /* limit width on large screens */
+    max-height: 90vh;          /* fit inside the screen vertically */
+    overflow-y: auto;          /* allow scrolling inside modal */
 }
+
 
 .form-modal h2 {
     margin-top: 0;
