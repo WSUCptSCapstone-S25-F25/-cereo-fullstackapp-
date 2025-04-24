@@ -4,19 +4,14 @@
 }
 
 .map-container {
-  position: absolute;
-  height: 600px;
+  position: relative;
+  height: 100%;
   width: 100%;
+
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.sidebarStyle {
-  display: inline-block;
-  background-color: #404040;
-  color: #ffffff;
-  z-index: 1 !important;
-  padding: 6px;
-  font-weight: bold;
-}
 
 .marker {
   background-image: url('../public/mapbox-icon.png');
@@ -87,3 +82,7 @@
   color: #222;
   background: #fff;
   }
+
+  .left-sidebar.open .left-sidebar-toggle {
+    right: 0px;
+}
