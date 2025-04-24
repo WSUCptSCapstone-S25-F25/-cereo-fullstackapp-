@@ -46,7 +46,7 @@ function App() {
 
   return (
     <Router>
-      <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} username={username}/>
+      <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} username={username} />
       <Switch>
         <Route exact path="/">
           <Home isLoggedIn={isLoggedIn} username={username} email={email} isAdmin={isAdmin} />

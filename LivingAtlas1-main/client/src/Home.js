@@ -130,7 +130,8 @@ function Home(props) {
                 username={props.username}
                 isCollapsed={isCollapsed}
             />
-            {props.isLoggedIn && props.isAdmin && <p>Welcome, admin user!</p>}
+            {props.isLoggedIn && props.isAdmin}
+            {/* {<p>Welcome, admin user!</p>} */}
         </div>
     );
 }

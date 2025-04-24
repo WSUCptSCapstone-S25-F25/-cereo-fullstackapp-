@@ -78,8 +78,14 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
               <Link to="/login" onClick={() => setIsModalOpen(false)}>Switch Account</Link>
             </li>
 
-            <li>
+            {/* <li>
               <button onClick={handleLogout}>Logout</button>
+            </li> */}
+
+            <li>
+              <Link to="/login" onClick={() => setIsModalOpen(false)} className="logout-button">
+                Logout
+              </Link>
             </li>
 
           </ul>
