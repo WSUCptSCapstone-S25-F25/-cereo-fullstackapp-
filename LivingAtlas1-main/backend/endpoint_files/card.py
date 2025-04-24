@@ -247,7 +247,7 @@ async def downloadFile(fileID: int):
 def allCards():
     try:
         cur.execute("""
-            SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted,
+            SELECT Users.Username, Users.Email, Cards.title, Cards.CardID, Categories.CategoryLabel, Cards.dateposted,
                    Cards.description, Cards.organization, Cards.funding, Cards.link,
                    STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
                    Cards.latitude, Cards.longitude,
@@ -269,7 +269,7 @@ def allCards():
         """)
 
         columns = [
-            "username", "email", "title", "category", "date", "description", "org", "funding", "link",
+            "username", "email", "title","cardID", "category", "date", "description", "org", "funding", "link",
             "tags", "latitude", "longitude", "thumbnail_link",  # Added thumbnail link
             "fileEXT", "fileID"
         ]
