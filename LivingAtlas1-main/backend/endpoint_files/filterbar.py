@@ -15,7 +15,7 @@ filterbar_router = APIRouter()
 @filterbar_router.get("/allCards")
 def allCards():
     cur.execute(f"""
-                SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
+                SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Cards.thumbnail_link, Files.FileExtension, Files.FileID
                 FROM Cards
                 INNER JOIN Categories
                 ON Cards.CategoryID = Categories.CategoryID
@@ -34,7 +34,7 @@ def allCards():
                 #LIMIT 6;
     
     rows = cur.fetchall()
-    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
+    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "fileEXT", "fileID"]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
 
@@ -67,31 +67,33 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
 
     # Define the query strings
     finalQUERY = ("""
-        SELECT u.Username, u.Email, c.Title, cat.CategoryLabel, c.DatePosted, c.Description, c.Organization, c.Funding, c.Link, 
-        STRING_AGG(t.TagLabel, ', ') AS TagLabels, c.Latitude, c.Longitude, f.FileExtension, f.FileID
+        SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, 
+        STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Cards.thumbnail_link, Files.FileExtension, Files.FileID
     """)
+        # SELECT u.Username, u.Email, c.Title, cat.CategoryLabel, c.DatePosted, c.Description, c.Organization, c.Funding, c.Link, 
+        # STRING_AGG(t.TagLabel, ', ') AS TagLabels, c.Latitude, c.Longitude, f.FileExtension, f.FileID
 
     if sortString:
         sortSplit = sortString.split(',')
         if sortSplit[0] == "ClosestToMe":
             latitude = sortSplit[1]
             longitude = sortSplit[2]
-            finalQUERY += (f""", SQRT(POWER(c.Latitude - {latitude}, 2) + POWER(c.Longitude - {longitude}, 2)) AS distance
+            finalQUERY += (f""", SQRT(POWER(Cards.Latitude - {latitude}, 2) + POWER(Cards.Longitude - {longitude}, 2)) AS distance
             """)
 
 
     finalQUERY += ("""
-        FROM Users u
-        JOIN Cards c ON u.UserID = c.UserID
-        LEFT JOIN CardTags ct ON c.CardID = ct.CardID
-        LEFT JOIN Tags t ON ct.TagID = t.TagID
-        JOIN Categories cat ON c.CategoryID = cat.CategoryID
-        LEFT JOIN Files f ON c.CardID = f.CardID
+        FROM Users
+        JOIN Cards ON Users.UserID = Cards.UserID
+        LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
+        LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
+        JOIN Categories ON Cards.CategoryID = Categories.CategoryID
+        LEFT JOIN Files ON Cards.CardID = Files.CardID
     """)
 
     botStringQuery = ("""
-        GROUP BY c.CardID, u.Username, u.Email, c.Title, cat.CategoryLabel, c.DatePosted, c.Description, 
-        c.Organization, c.Funding, c.Link, c.Latitude, c.Longitude, f.FileExtension, f.FileID
+        GROUP BY Cards.CardID, Users.Username, Users.Email, Cards.Title, Categories.CategoryLabel, Cards.DatePosted, Cards.Description, 
+        Cards.Organization, Cards.Funding, Cards.Link, Cards.Latitude, Cards.Longitude, Files.FileExtension, Files.FileID
     """)
 
     if categoryString or tagString:
@@ -100,7 +102,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
         """
         # Add category filter with case-insensitivity
         if categoryString:
-            finalQUERY += f"LOWER(cat.CategoryLabel) = LOWER('{categoryString}')"
+            finalQUERY += f"LOWER(Categories.CategoryLabel) = LOWER('{categoryString}')"
             if tagString:
                 finalQUERY += "\nAND "
 
@@ -111,9 +113,9 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
             tag_count = len(tags.split(','))
             justWHERE_TAG = (f"""
                 (SELECT COUNT(*) 
-                FROM CardTags ct2
-                JOIN Tags t2 ON ct2.TagID = t2.TagID
-                WHERE ct2.CardID = c.CardID AND LOWER(t2.TagLabel) IN ({tags})) = {tag_count}
+                FROM CardTags
+                JOIN Tags ON CardTags.TagID = Tags.TagID
+                WHERE CardTags.CardID = Cards.CardID AND LOWER(Tags.TagLabel) IN ({tags})) = {tag_count}
             """)
             finalQUERY += justWHERE_TAG
 
@@ -127,12 +129,12 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
             """
         elif sortSplit[0] == "RecentlyAdded":
             finalQUERY += """
-            ORDER BY c.DatePosted DESC;
+            ORDER BY Cards.DatePosted DESC;
             """
 
     cur.execute(finalQUERY)
     rows = cur.fetchall()
-    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
+    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "fileEXT", "fileID"]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
 
@@ -145,7 +147,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
 @filterbar_router.get("/searchBar")
 def searchBar(titleSearch: str):
    cur.execute("""
-           SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Files.FileExtension, Files.FileID
+           SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Cards.thumbnail_link, Files.FileExtension, Files.FileID
            FROM Cards
            INNER JOIN Categories
            ON Cards.CategoryID = Categories.CategoryID
@@ -163,7 +165,7 @@ def searchBar(titleSearch: str):
            """, ('%' + titleSearch + '%',))
    
    rows = cur.fetchall()
-   columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "fileEXT", "fileID"]
+   columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "fileEXT", "fileID"]
    data = [dict(zip(columns, row)) for row in rows]
    return {"data": data}
 
