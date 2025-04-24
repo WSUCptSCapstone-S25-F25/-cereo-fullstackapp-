@@ -35,26 +35,30 @@ let curLocationCoordinates = { lat: 0, lng: 0 };
 
 const Content1 = (props) => {
   const mapContainerRef = useRef(null);
+  const mapRef = useRef(null); // Store map instance
   const [lng, setLng] = useState(-117.181738);
   const [lat, setLat] = useState(46.729777);
   const [zoom, setZoom] = useState(9);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
-
-  // Added this for the map bounds
-  //NE: Lng: -116.5981, Lat: 47.0114
-  //SW: Lng: -117.7654, Lat: 46.4466
   const [bounds, setBounds] = useState({});
 
-  // Initialize map when component mounts
+  // Resize map when content2 collapses
   useEffect(() => {
-    // create map
+    if (mapRef.current) {
+      mapRef.current.resize();
+    }
+  }, [props.isCollapsed]);
+
+  useEffect(() => {
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [lng, lat],
       zoom: zoom
     });
+    mapRef.current = map;
 
+    
     // Needed for the map to have bounds defined on startup
     setBounds(map.getBounds())
     props.setboundCondition(map.getBounds());
