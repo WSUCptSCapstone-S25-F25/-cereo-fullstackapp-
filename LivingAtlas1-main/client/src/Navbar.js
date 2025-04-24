@@ -9,6 +9,7 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const toggleModal = () => {
+    console.log("Toggling modal. Current state:", isModalOpen);
     setIsModalOpen(!isModalOpen);
   };
 
@@ -16,6 +17,8 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
     onLogout(); // Call the logout function
     setIsModalOpen(false); // Close the modal
   };
+
+  console.log("Username:", username);
 
   return (
     <nav className="navbar">
@@ -51,26 +54,34 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
           </Link>
         </li>
         {isLoggedIn && (
-          <li className="profile-button" onClick={toggleModal}>
+          <li
+              className={`profile-button ${isModalOpen ? 'active' : ''}`}
+              onClick={toggleModal}
+          >
             <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
             <span className="username">{username}</span>
+            
           </li>
         )}
       </ul>
       {isModalOpen && (
+        console.log("Profile modal is opened."),
         <div className="profile-modal">
           <ul>
-            <li>
-              <Link to="/login" onClick={() => setIsModalOpen(false)}>Switch Account</Link>
-            </li>
-            <li>
-              <button onClick={handleLogout}>Logout</button>
-            </li>
             {isAdmin && (
               <li>
                 <Link to="/administration" onClick={() => setIsModalOpen(false)}>Administration</Link>
               </li>
             )}
+
+            <li>
+              <Link to="/login" onClick={() => setIsModalOpen(false)}>Switch Account</Link>
+            </li>
+
+            <li>
+              <button onClick={handleLogout}>Logout</button>
+            </li>
+
           </ul>
         </div>
       )}
