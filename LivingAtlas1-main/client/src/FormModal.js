@@ -110,7 +110,12 @@ const FormModal = (props) => {
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
                 ariaHideApp={false}
+
             >
+
+                <button className="close-modal-button" onClick={props.onRequestClose}>
+                    &times;
+                </button>
                 <h2>Upload Document</h2>
                 <form onSubmit={handleSubmit}>
                     <label>Name (required):</label>
