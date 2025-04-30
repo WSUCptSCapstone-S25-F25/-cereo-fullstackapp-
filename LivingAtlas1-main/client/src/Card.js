@@ -226,7 +226,12 @@ function Card(props) {
                 <p><strong>Funding:</strong> {props.formData.funding}</p>
                 <p><strong>Organization:</strong> {props.formData.org}</p>
                 <p><strong>Title:</strong> {props.formData.title}</p>
-                <p><strong>Link:</strong> {props.formData.link}</p>
+                <p>
+                    <strong>Link:</strong>{' '}
+                    <a href={props.formData.link} target="_blank" rel="noopener noreferrer">
+                        {props.formData.link}
+                    </a>
+                </p>
                 <p><strong>Description:</strong> {props.formData.description}</p>
                 <p><strong>Category:</strong> {props.formData.category}</p>
                 <p><strong>Tags:</strong> {props.formData.tags}</p>
