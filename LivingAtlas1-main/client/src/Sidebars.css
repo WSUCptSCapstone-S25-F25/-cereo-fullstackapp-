@@ -1,0 +1,237 @@
+/* Main styles for sidebars and their elements */
+.sidebarStyle {
+    display: inline-block;
+    background-color: #404040;
+    color: #ffffff;
+    z-index: 1 !important;
+    padding: 6px;
+    font-weight: bold;
+  }
+/*============================================================================================*/
+
+/* Left sidebar styles */
+.left-sidebar {
+    width: 60px;
+    background-color: #333;
+    color: white;
+    height: calc(100vh - 65px); /* Subtract navbar height */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: fixed;
+    top: 65px; /* Place the sidebar below the navbar */
+    left: 0;
+    z-index: 1000;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.left-sidebar.open {
+    width: 300px;
+}
+
+.left-sidebar-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+.left-sidebar-content {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: #444;
+    color: white;
+    height: calc(100vh - 85px); /* Subtract navbar and top button height */
+    overflow-y: auto;
+}
+
+.left-sidebar-content .search-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: right; 
+    gap: 0px;
+    width: 100%;
+    margin-bottom: 20px; /* Adjusted to fit the sidebar content */
+}
+
+.left-sidebar.open + .main {
+    margin-left: 300px; /* Adjust main content offset when sidebar is open */
+    width: calc(100% - 300px); /* Adjust width to fit the sidebar */
+}
+
+.left-sidebar + .main {
+    margin-left: 60px; /* Adjust main content offset when sidebar is closed */
+    width: calc(100% - 60px); /* Adjust width to fit the sidebar */
+}
+
+/* Left Sidebar Toggle Button */
+.left-sidebar-toggle {
+    position: absolute;
+    bottom: 0px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+
+/* Search Button */
+.left-sidebar-search-button {
+    position: absolute;
+    /* top: 10px;
+    left: 10px; */
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+/* Search Modal */
+.search-modal {
+    /* position: absolute; */
+    position: fixed;
+    left: 65px;
+    width: 300px;
+    top: 70px;
+    height: 35%;
+    background-color: lightgray;
+    color: white;
+    z-index: 1002;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    padding-top: 40px;
+    box-sizing: border-box;
+}
+
+/* Modal Content */
+.search-modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 50%;
+}
+
+.search-modal .search-bar {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 20px;
+    gap: 0px;
+    /* position: absolute;
+    width: calc(100% - 20px);
+    bottom: 10px; */
+}
+
+.search-modal .search-bar input[type="text"] {
+    padding: 10px;
+    border-right: none;
+    border-radius: 5px 0 0 5px;
+    font-size: 14px;
+    border: none;
+    margin-right: 1px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #ccc;
+    height: 40px;
+}
+
+.search-modal .search-button {
+    padding: 10px;
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 0 5px 5px 0;
+    padding: 0 15px;
+    cursor: pointer;
+    display: flex;
+    margin-left: 0px;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+}
+
+.search-modal .search-button:hover {
+    background-color: lightgray;
+}
+
+.search-modal .search-button svg {
+    font-size: 16px;
+}
+
+/* Close Button */
+.close-modal {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    align-self: flex-end;
+    padding-top: 10px;
+    z-index: 1003;
+}
+
+/* Buttons in Modal */
+.search-bar input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.search-bar .left-sidebar-search-button {
+    background-color: #333;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+  
+/*============================================================================================*/
+
+/* Right sidebar styles */
+#right-sidebar {
+    position: fixed; /* Fixed on the right side of the page */
+    top: 65px; /* Ensures it does not overlap with the navbar */
+    right: 0;
+    width: 60px; /* Width of the right sidebar */
+    height: calc(100vh - 65px); /* Height adapts to the viewport minus the navbar height */
+    background-color: #333; /* Background color */
+    display: flex;
+    flex-direction: column; /* Vertical alignment of child elements */
+    align-items: center;
+    justify-content: flex-start;
+    z-index: 1000; /* Ensures it is above the map */
+    transition: width 0.3s ease; /* Smooth transition effect */
+  }
+  
+.add-card-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
+    position: absolute;
+    transition: color 0.3s ease;
+}
+
+.add-card-button:hover {
+    color: lightgray;
+}

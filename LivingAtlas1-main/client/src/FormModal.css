@@ -8,6 +8,11 @@
     border-radius: 5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     z-index: 9999;
+    
+    width: 90vw;               /* responsive width */
+    max-width: 500px;          /* limit width on large screens */
+    max-height: 90vh;          /* fit inside the screen vertically */
+    overflow-y: auto;          /* allow scrolling inside modal */
 }
 
 .form-modal h2 {
@@ -97,4 +102,22 @@
 .form-modal input[type="file"] {
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+.close-modal-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+    z-index: 1001;
+    /* transition: color 0.3s ease; */
+}
+
+.close-modal-button:hover {
+    color: #333;
 }

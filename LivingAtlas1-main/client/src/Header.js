@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './Header.css';
+import './SearchBar.css';
 import UploadButton from './UploadButton.js';
 import ModalButton from './ModalButton.js';
 import FormModal from './FormModal.js';
@@ -7,6 +8,8 @@ import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom';
 import { useState } from 'react';
 import Modal from 'react-modal';
 import { curLocationCoordinates, turnOnCurrentLocation } from './Content1.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 
 function Header(props) {
     // beginning of custom filter popup
@@ -139,12 +142,15 @@ function Header(props) {
                     placeholder="Search..."
                     value={searchTerm}
                     onChange={handleSearchTermChange}
+                    className="search-input"
                 />
-                <button onClick={executeSearch}>Search</button>
+                <button onClick={executeSearch} className="search-button">
+                    <FontAwesomeIcon icon={faSearch} />
+                </button>
+            </div>
 
-                {/* <div className="nav-buttons"> */}
-
-                <select onChange={handleFilterChange} className='custom-category'>
+            {/* <div className="nav-buttons"> */}
+            <select onChange={handleFilterChange} className='custom-category'>
                     <option value="">Select a Category...</option>
                     <option value="River">River</option>
                     <option value="Watershed">Watershed</option>
@@ -162,7 +168,7 @@ function Header(props) {
 
                 {/* <button onClick={addCustomFilter} className='custom-filter'>Add Custom filters</button> */}
                 {/* New Custom Filter popup */}
-                <button onClick={openFilterPopup}>Add Custom Filters</button>
+                <button onClick={openFilterPopup} className="add-custom-filters-button">Add Custom Filters</button>
 
                 {/* Modal for Add Customer Filter */}
                 <Modal
@@ -212,7 +218,6 @@ function Header(props) {
 
                 {/* </div> */}
 
-            </div>
             <div>
                 {activeFilters.map(filter => (
                     <span key={filter} className="filter-tag">

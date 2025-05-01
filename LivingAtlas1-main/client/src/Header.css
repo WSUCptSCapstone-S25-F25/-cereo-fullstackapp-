@@ -1,5 +1,5 @@
 header {
-    background-color: #333;
+    background-color: gray;
     color: #fff;
     padding: 10px;
 }
@@ -39,31 +39,6 @@ nav ul li a {
 }
 
 
-/* Search bar styles */
-.search-bar {
-    display: flex;
-    align-items: flex-end;
-    margin-bottom: 20px;
-}
-
-.search-bar input[type="text"] {
-    padding: 10px;
-    border-radius: 5px;
-    border: none;
-    margin-right: 10px;
-    width: 100%;
-    max-width: 400px;
-}
-
-.search-bar button {
-    padding: 10px;
-    background-color: #4CAF50;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-left: 10px
-}
 
 /* Styling for "Select Category" */
 .custom-category {
@@ -245,4 +220,85 @@ nav ul li a {
 .filter-tag button:hover {
     background-color: #b0b3b8;
     /* even darker gray for hover effect */
+}
+
+
+.add-custom-filters-button {
+    background-color: #ff9800; /* Orange background */
+    color: white; /* White text */
+    border: none;
+    padding: 10px 15px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-left: 10px; /* Add spacing from other elements */
+}
+
+.add-custom-filters-button:hover {
+    background-color: #e68900; /* Darker orange on hover */
+}
+
+.add-custom-filters-button:active {
+    background-color: #cc7a00; /* Even darker orange when active */
+    transform: scale(0.98); /* Slightly shrink on click */
+}
+
+.home-container {
+    display: flex;
+    flex-direction: row;
+    margin-top: 65px;
+}
+
+/* .sidebar {
+    width: 60px;
+    background-color: #333;
+    color: white;
+    height: calc(100vh - 65px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: fixed;
+    top: 65px;
+    left: 0;
+    z-index: 1000;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.sidebar.open {
+    width: 300px;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+.sidebar-content {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: #444;
+    color: white;
+    height: calc(100vh - 85px);
+    overflow-y: auto;
+}
+
+.sidebar-content .search-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+} */
+
+.main {
+    flex: 1;
+    padding: 20px;
+    transition: margin-left 0.3s ease;
 }

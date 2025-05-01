@@ -7,6 +7,15 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const FormModal = (props) => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
+    const isModalOpen = modalIsOpen || props.isOpen;
+
+    const handleCloseModal = () => {
+        setModalIsOpen(false);
+        if (props.onRequestClose) {
+            props.onRequestClose();
+        }
+    };
+
     const [formData, setFormData] = useState({
         username: props.username,
         email: props.email,
@@ -97,22 +106,30 @@ const FormModal = (props) => {
             console.error("Upload error:", error.response?.data || error.message);
             alert("Upload failed.");
         });
+        handleCloseModal(); 
     };
 
     return (
         <div>
             <button className="open-form-button" onClick={() => setModalIsOpen(true)}>Upload</button>
             <Modal
-                isOpen={modalIsOpen}
-                onRequestClose={() => setModalIsOpen(false)}
+                // isOpen={props.isOpen} // Use the isOpen prop from the parent
+                // onRequestClose={props.onRequestClose} // Use the onRequestClose prop from the parent
+                isOpen={isModalOpen}
+                onRequestClose={handleCloseModal}
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
                 ariaHideApp={false}
+
             >
+
+                <button className="close-modal-button"  onClick={handleCloseModal}>
+                    &times;
+                </button>
                 <h2>Upload Document</h2>
                 <form onSubmit={handleSubmit}>
                     <label>Name (required):</label>
-                    <input type="text" name="name" value={formData.name} readOnly />
+                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
 
                     <label>Email (required):</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />

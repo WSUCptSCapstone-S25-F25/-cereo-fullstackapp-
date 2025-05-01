@@ -79,8 +79,6 @@ function Card(props) {
             return;
         }
 
-        setIsFavorited(prev => !prev);
-
         if (!username) {
             console.error("Missing username");
             return;

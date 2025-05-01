@@ -1,0 +1,20 @@
+.home-container {
+    display: block; /* Use block layout to avoid interference with child elements */
+    margin-top: 65px; /* Ensure content starts below the navbar */
+    width: 100%; /* Ensure the container takes up the full width */
+    overflow: hidden; /* Prevent content overflow */
+}
+
+
+
+.main {
+    display: grid; /* Use grid layout */
+    grid-template-columns: repeat(2, 1fr); /* Two columns with equal width */
+    grid-gap: 20px; /* Set spacing between grid items */
+    padding: 20px;
+    margin: 0 auto; /* Center align */
+    width: calc(100% - 60px); /* Ensure width adapts */
+    box-sizing: border-box;
+    transition: margin-left 0.3s ease; /* Smooth transition effect */
+}
+
