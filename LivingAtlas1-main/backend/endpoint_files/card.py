@@ -24,6 +24,7 @@ import os, base64
 
 # Decode the GCP credentials from the environment variable and write to file
 # COMMENT OUT IF RUNNING LOCALLY
+"""
 gcs_key = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
 if gcs_key:
     with open("ServiceKey_GoogleCloud.json", "wb") as f:
@@ -33,7 +34,6 @@ if gcs_key:
 # COMMENT OUT IF RUNNING ON RENDER
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
 # _______________________________________
-"""
         
 storage_client = storage.Client()
 bucket_name = "cereo_atlas_storage"
