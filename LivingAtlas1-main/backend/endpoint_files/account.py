@@ -13,7 +13,7 @@ from fastapi import APIRouter, Form
 from pydantic import BaseModel
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from database import conn, cur
+from database import conn, cur, get_db_cursor
 import urllib.parse
 import requests
 
@@ -92,6 +92,7 @@ def hash_password(password: str, salt: bytes) -> str:
 # Reset password endpoint
 @account_router.post("/reset-password")
 async def reset_password(request: ResetPasswordRequest):
+    conn, cur = get_db_cursor()  # Get a new connection and cursor
     try:
         # Extract email and new_password from the request
         email = request.email
@@ -150,8 +151,9 @@ def send_recovery_email(recipient_email):
 
         # Construct the long URL with the recipient's email
         encoded_email = urllib.parse.quote(recipient_email)
-        long_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={encoded_email}"
-        
+        # long_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={encoded_email}"
+        long_url = f"http://localhost:3000/reset-password?email={encoded_email}"
+
         # Get a short URL from the dynamic URL shortener (e.g., Bitly)
         short_reset_url = get_short_url(long_url)
 

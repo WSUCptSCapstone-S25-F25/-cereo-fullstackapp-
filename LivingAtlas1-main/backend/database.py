@@ -34,3 +34,14 @@ if conn:
     cur = conn.cursor()
 else:
     cur = None
+
+def get_db_cursor():
+    conn = psycopg2.connect(
+        dbname="postgres", 
+        user="CereoAtlas",
+        password="LivingAtlas25$",
+        host="cereo-livingatlas-db.postgres.database.azure.com",
+        port="5432",
+        sslmode="require"
+    )
+    return conn, conn.cursor()

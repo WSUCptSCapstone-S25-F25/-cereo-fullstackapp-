@@ -276,6 +276,8 @@ def allCards():
 
         rows = cur.fetchall()
         data = [dict(zip(columns, row)) for row in rows]
+
+        print("[DEBUG] Fetched card data:", data)
         
         return {"data": data}
     except Exception as e:

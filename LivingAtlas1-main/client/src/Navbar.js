@@ -68,7 +68,13 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
         console.log("Profile modal is opened."),
         <div className="profile-modal">
           <ul>
+            
+            <li>
+              <Link to="/profile" onClick={() => setIsModalOpen(false)}>Profile</Link>
+            </li>
+
             {isAdmin && (
+
               <li>
                 <Link to="/administration" onClick={() => setIsModalOpen(false)}>Administration</Link>
               </li>

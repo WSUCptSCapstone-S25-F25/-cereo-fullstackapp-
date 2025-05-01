@@ -221,42 +221,47 @@ function Profile(props) {
                 )}
 
             </div>
-            <section id="content-2">
-                <div className="card-container">
-                    {/* {cards.map(card => (
-                        <Card key={card.title} formData={card} isFavorited={bookmarkedCardIDs.has(card.cardID)} email={props.userEmail} username={props.username} onCardDelete={setLastDeletedCard} />
-                        ))} */}
-                    {cards
-                        .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
-                        .map((card, index) => (
-                            <Card
-                            key={`${card.cardID}-${index}`}
-                            formData={{
-                                ...card,
-                                cardID: card.cardID,
-                                cardOwner: card.username,
-                                viewerUsername: props.username
-                            }}
-                            isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                            username={props.username}
-                            onCardDelete={setLastDeletedCard}
-                            onBookmarkChange={handleBookmarkChange}
-                            />
-                    ))}
-                </div>
-
-                <div className="favorites-toggle-wrapper-profile">
-                    <div
-                        className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
-                        onClick={() => setShowFavoritesOnly(prev => !prev)}
-                        title="Favorites"
-                    >
-                        <FontAwesomeIcon icon={faStarHalfStroke} style={{ marginRight: '8px' }} />
-                        Favorites
+            <div className='profile-card-container'>
+                <section id="content-2-profile">
+                    <div className="card-container">
+                        {/* {cards.map(card => (
+                            <Card key={card.title} formData={card} isFavorited={bookmarkedCardIDs.has(card.cardID)} email={props.userEmail} username={props.username} onCardDelete={setLastDeletedCard} />
+                            ))} */}
+                        {cards
+                            .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
+                            .map((card, index) => (
+                                <Card
+                                key={`${card.cardID}-${index}`}
+                                formData={{
+                                    ...card,
+                                    cardID: card.cardID,
+                                    cardOwner: card.username,
+                                    viewerUsername: props.username
+                                }}
+                                isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                username={props.username}
+                                onCardDelete={setLastDeletedCard}
+                                onBookmarkChange={handleBookmarkChange}
+                                />
+                        ))}
                     </div>
-                </div>
 
-            </section>
+                    <div className="favorites-toggle-wrapper-profile">
+                        <div
+                            className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
+                            onClick={() => setShowFavoritesOnly(prev => !prev)}
+                            title="Favorites"
+                        >
+                            <FontAwesomeIcon icon={faStarHalfStroke} style={{ marginRight: '8px' }} />
+                            Favorites
+                        </div>
+                    </div>
+
+                </section>
+
+            </div>
+
+            
         </div>
     );
 }

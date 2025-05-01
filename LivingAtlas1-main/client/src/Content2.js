@@ -53,17 +53,24 @@ function Content2(props) {
         }
         if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter 199" + props.filterCondition);
+            console.log("Fetching all cards...");
             showAll();
 
             api.get('/allCards')
 
                 .then(response => {
                     console.log("Fetched cards:", response.data.data);
+
+                    // Log to check if each card contains cardID
+                    response.data.data.forEach((card, index) => {
+                        console.log(`[Card ${index}] cardID:`, card.cardID);
+                    });
+
                     setCards(response.data.data);
 
                 })
                 .catch(error => {
-                    console.error(error);
+                    console.error("Error fetching cards:", error);
                 });
         }
         else {
@@ -169,17 +176,24 @@ function Content2(props) {
 
         if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter193" + props.filterCondition);
+            console.log("Fetching all cards...");
             showAll();
 
             api.get('/allCards')
 
                 .then(response => {
                     console.log(response.data.data);
+
+                    // Log to check if each card contains cardID
+                    response.data.data.forEach((card, index) => {
+                        console.log(`[Card ${index}] cardID:`, card.cardID);
+                    });
+
                     setCards(response.data.data);
 
                 })
                 .catch(error => {
-                    console.error(error);
+                    console.error("Error fetching cards:", error);
                 });
         }
         else {
@@ -266,7 +280,7 @@ function Content2(props) {
     useEffect(() => {
         if (props.searchCondition != '') {
             console.log("running search" + props.searchCondition);
-
+            
 
             api.get('/searchBar', {
 
