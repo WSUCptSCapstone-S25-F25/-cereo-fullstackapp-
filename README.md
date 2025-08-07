@@ -64,7 +64,7 @@ If you want to directly downloading the application and run it, follow the steps
 
 1. Download the ZIP file by clicking on `Download ZIP` option.
 2. Extract the zip file named `-cereo-fullstackapp--main.zip`.
-3. Open your the folder where you extract the zip, navigate to directory `/LivingAtlas1-main`.
+3. Open your the folder where you extract the zip, navigate to directory `/LivingAtlas1-main` by entering `cd ./LivingAtlas1-main`.
 4. Right click anywhere in that directory, select `Open in Terminal` option.
    
 Now you can follow the steps in the following sections to start the frontend or the backend.
