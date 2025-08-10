@@ -28,10 +28,25 @@
 }
 
 .card-text {
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-bottom: 16px;
+    max-height: 150px;               /* Set a maximum height */
+    overflow: hidden;                /* Hide anything beyond it */
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 10;           /* Show only 6 lines */
+    -webkit-box-orient: vertical;
+    position: relative;
 }
+
+/*fade effect to indicate cut-off */
+.card-text::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 40px;
+    width: 100%;
+    background: linear-gradient(to bottom, transparent, white);
+  }
 
 /* .card-button {
     background-color: #0077cc;
@@ -92,8 +107,6 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 10000 !important;
-
-
 }
 
 .Modal h2 {

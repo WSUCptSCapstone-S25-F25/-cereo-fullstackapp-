@@ -186,6 +186,7 @@ async def unbookmark_card(username: str = Form(...), cardID: int = Form(...)):
 
 @card_router.get("/getBookmarkedCards")
 def get_bookmarked_cards(username: str):
+
     print(f"[DEBUG] Connected to DB: {conn.dsn}")
 
     cur.execute("SELECT Username FROM Users")
@@ -197,6 +198,7 @@ def get_bookmarked_cards(username: str):
 
         cur.execute("SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)", (username,))
         result = cur.fetchone()
+        print(f"[DEBUG] Result: {result}")
 
         if not result:
             print("[WARN] No user found for:", username)
@@ -224,8 +226,6 @@ def get_bookmarked_cards(username: str):
         print(f"[EXCEPTION] {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-
 @card_router.get("/downloadFile")
 async def downloadFile(fileID: int):
     cur.execute("SELECT DirectoryPath FROM Files WHERE fileID = %s", (fileID,))
@@ -247,7 +247,7 @@ async def downloadFile(fileID: int):
 def allCards():
     try:
         cur.execute("""
-            SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted,
+            SELECT Users.Username, Users.Email, Cards.title, Cards.CardID, Categories.CategoryLabel, Cards.dateposted,
                    Cards.description, Cards.organization, Cards.funding, Cards.link,
                    STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
                    Cards.latitude, Cards.longitude,
@@ -269,7 +269,7 @@ def allCards():
         """)
 
         columns = [
-            "username", "email", "title", "category", "date", "description", "org", "funding", "link",
+            "username", "email", "title","cardID", "category", "date", "description", "org", "funding", "link",
             "tags", "latitude", "longitude", "thumbnail_link",  # Added thumbnail link
             "fileEXT", "fileID"
         ]
