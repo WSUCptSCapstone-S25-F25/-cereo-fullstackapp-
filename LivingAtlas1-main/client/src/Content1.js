@@ -434,13 +434,15 @@ const Content1 = (props) => {
   return (
     // set zIndex to '0' so that the map will be displayed below other components (like modals for example)
     <div style={{ zIndex: '0' }}>
-      <div className='map-container' ref={mapContainerRef} />
-      <div className='sidebarStyle'>
-        <div>
-          Map Center - Lat: {lat} | Long: {lng} | Zoom: {zoom}
-        </div>
-        <div>
-          Mouse Coordinates - Lat: {mouseCoordinates.lat} | Long: {mouseCoordinates.lng}
+      <div className='map-container' ref={mapContainerRef}>
+        {/* Map info box now inside map-container */}
+        <div className="map-info-bottomleft">
+          <div>
+            Map Center - Lat: {lat} | Long: {lng} | Zoom: {zoom}
+          </div>
+          <div>
+            Mouse Coordinates - Lat: {mouseCoordinates.lat} | Long: {mouseCoordinates.lng}
+          </div>
         </div>
       </div>
 
