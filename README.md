@@ -64,19 +64,19 @@ If you want to directly downloading the application and run it, follow the steps
 
 1. Download the ZIP file by clicking on `Download ZIP` option.
 2. Extract the zip file named `-cereo-fullstackapp--main.zip`.
-3. Open your the folder where you extract the zip, navigate to directory `/LivingAtlas1-main` by entering `cd ./LivingAtlas1-main`.
+3. Open your the folder where you extract the zip, navigate to directory `-cereo-fullstackapp-`.
 4. Right click anywhere in that directory, select `Open in Terminal` option.
    
 Now you can follow the steps in the following sections to start the frontend or the backend.
 
 #### Starting the Frontend
-1. Navitage to `/client`. On a terminal console, you can do it by simply typing `cd ./client`
+1. Navitage to `/client`. On a terminal console, you can do it by simply entering `cd ./LivingAtlas1-main/client`
 2. Navigate to `/client` and open a terminal.  
 3. Run `npm install` to install dependencies.  
 4. Start the frontend with `npm start` (runs on port 3000).  
 
 #### Starting the Backend  
-1. Open a terminal and go to `/backend`. On a terminal console, you can do it by simply typing `cd ./backend`
+1. Open a terminal and go to `/backend`. On a terminal console, you can do it by simply entering `cd ./LivingAtlas1-main/backend`
 2. Run `pip install -r requirements.txt` to install dependencies. 
    - If it prompts pg_config-related errors, make sure PostgreSQL is installed, then run `setx PATH "%PATH%;C:\Program Files\PostgreSQL\17\bin` in terminal as an administrator.
 3. Start the backend with `uvicorn main:app --reload` (runs on port 8000).  
