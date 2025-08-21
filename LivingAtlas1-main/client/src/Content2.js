@@ -17,7 +17,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
 
 function Content2(props) {
     const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
-    const [containerWidth, setContainerWidth] = useState(350); // Default width in px
+    const [containerWidth, setContainerWidth] = useState(300); // Default width in px
     const containerRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const startX = useRef(0);
