@@ -44,7 +44,9 @@ function Card(props) {
         }
     }, [formData.thumbnail_link, formData.cardID]);
 
-    const handleLearnMore = () => setIsModalOpen(true);
+    const handleLearnMore = () => {
+        setIsModalOpen(true);
+    };
     const handleEdit = () => setIsEditModalOpen(true);
 
     const handleInputChange = (e) => {
@@ -207,16 +209,14 @@ function Card(props) {
                 alt="Card Thumbnail"
                 className="card-thumbnail"
             />
-            <h2 className="card-title">{props.formData.title}</h2>
-            <p className="card-text">{props.formData.description}</p>
-            <button className="card-button" onClick={handleLearnMore}>Learn More</button>
+            <h2 className="card-title" style={{ marginBottom: '18px' }}>{props.formData.title}</h2>
+            {/* <p className="card-text">{props.formData.description}</p> */}
 
-            {props.username && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px' }}>
-                    <button className="card-button" style={{ marginBottom: '10px', backgroundColor: 'red' }} onClick={handleDelete}>Delete</button>
-                    <button className="card-button" style={{ backgroundColor: 'blue' }} onClick={handleEdit}>Edit</button>
-                </div>
-            )}
+            <div className="card-button-row">
+                <button className="card-button card-learn-more" onClick={handleLearnMore}><span className="learn-more-text">Learn More</span></button>
+                <button className="card-button card-edit" onClick={handleEdit}>Edit</button>
+                <button className="card-button card-delete" onClick={handleDelete}>Delete</button>
+            </div>
 
             {/* Learn More Modal */}
             <Modal isOpen={isModalOpen} onRequestClose={() => setIsModalOpen(false)} className="Modal">
