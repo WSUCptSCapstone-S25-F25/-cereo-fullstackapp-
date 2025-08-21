@@ -14,30 +14,64 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
-function Content2(props) {
 
+function Content2(props) {
     const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
+    const [containerWidth, setContainerWidth] = useState(500); // Default width in px
+    const containerRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const startX = useRef(0);
+    const startWidth = useRef(500);
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
 
     function useDidMount() {
         const mountRef = useRef(false);
-
         useEffect(() => { mountRef.current = true }, []);
-
         return () => mountRef.current;
     }
 
     const didMount = useDidMount();
     const didMountRef = useRef(false);
-    
+
     // Collapse card container
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed);
     };
+
+    // Drag handlers for resizing
+    const onMouseDown = (e) => {
+        e.preventDefault(); // Prevent text selection
+        setIsDragging(true);
+        startX.current = e.clientX;
+        startWidth.current = containerWidth;
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
+    };
+
+    useEffect(() => {
+        if (!isDragging) return;
+        const onMouseMove = (e) => {
+            const dx = startX.current - e.clientX;
+            let newWidth = startWidth.current + dx;
+            newWidth = Math.max(250, Math.min(newWidth, 900));
+            setContainerWidth(newWidth);
+        };
+        const onMouseUp = () => {
+            setIsDragging(false);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+    }, [isDragging]);
 
     const location = useLocation();
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
@@ -440,7 +474,26 @@ function Content2(props) {
                 onRequestClose={closeModal} 
             />
     
-            <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
+            <section
+                id="content-2"
+                className={isCollapsed ? 'collapsed' : ''}
+                ref={containerRef}
+                style={{ width: containerWidth }}
+            >
+                {/* Draggable left edge handle */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        width: '6px',
+                        height: '100%',
+                        cursor: 'ew-resize',
+                        zIndex: 1002,
+                        background: 'transparent',
+                    }}
+                    onMouseDown={onMouseDown}
+                />
                     
                 {!isCollapsed && (
                     <div 
