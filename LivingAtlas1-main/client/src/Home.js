@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from './Header';
 import Main from './Main';
 import Content2 from './Content2';
+import Content1 from './Content1';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
@@ -20,9 +21,16 @@ function Home(props) {
     const [boundCondition, setboundCondition] = useState(coordinates);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-
     const [isCollapsed, setIsCollapsed] = useState(false);
-    
+
+    // State to track selected card coordinates
+    const [selectedCardCoords, setSelectedCardCoords] = useState(null);
+
+    const handleCardClick = (coords) => {
+        console.log('[Home] handleCardClick received coords:', coords);
+        setSelectedCardCoords(coords);
+    };
+
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
@@ -37,7 +45,7 @@ function Home(props) {
 
     return (
         <div className="home-container">
-            <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+            <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`}> 
                 {/* Left Sidebar Search Button */}
                 <button className="left-sidebar-search-button" onClick={toggleSearchModal}>
                         <FontAwesomeIcon icon={faSearch} />
@@ -115,6 +123,7 @@ function Home(props) {
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 isAdmin={props.isAdmin}
                 username={props.username}
+                selectedCardCoords={selectedCardCoords}
             />
             <Content2
                 filterCondition={filterCondition}
@@ -129,6 +138,7 @@ function Home(props) {
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 username={props.username}
                 isCollapsed={isCollapsed}
+                onCardClick={handleCardClick}
             />
             {props.isLoggedIn && props.isAdmin}
             {/* {<p>Welcome, admin user!</p>} */}

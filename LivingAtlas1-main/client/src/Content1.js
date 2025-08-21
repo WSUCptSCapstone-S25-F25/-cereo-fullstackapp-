@@ -33,6 +33,7 @@ let greenMarkers = [];
 let yellowMarkers = [];
 let curLocationCoordinates = { lat: 0, lng: 0 };
 
+
 const Content1 = (props) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null); // Store map instance
@@ -41,6 +42,24 @@ const Content1 = (props) => {
   const [zoom, setZoom] = useState(9);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
+
+  // Move map when selectedCardCoords changes
+  React.useEffect(() => {
+    if (
+      mapRef.current &&
+      props.selectedCardCoords &&
+      typeof props.selectedCardCoords.latitude === 'number' &&
+      typeof props.selectedCardCoords.longitude === 'number'
+    ) {
+      console.log('[Content1] Moving map to:', props.selectedCardCoords);
+      mapRef.current.flyTo({
+        center: [props.selectedCardCoords.longitude, props.selectedCardCoords.latitude],
+        zoom: 13
+      });
+    } else if (props.selectedCardCoords) {
+      console.warn('[Content1] Invalid selectedCardCoords:', props.selectedCardCoords);
+    }
+  }, [props.selectedCardCoords]);
 
   // Resize map when content2 collapses
   useEffect(() => {
@@ -411,12 +430,10 @@ const Content1 = (props) => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 
+
   return (
     // set zIndex to '0' so that the map will be displayed below other components (like modals for example)
     <div style={{ zIndex: '0' }}>
-
-
-
       <div className='map-container' ref={mapContainerRef} />
       <div className='sidebarStyle'>
         <div>
@@ -431,19 +448,10 @@ const Content1 = (props) => {
       <div>
         <a>Map icons by </a><a href="https://icons8.com/icon/" title="marker icons">icons8. </a>
       </div>
-      {/* There's no need for the user to see the bounds */}
-      {/* Get the bounds of the map (the rectangular area on map defined by Northeast & Southwest corners) */}
-      {/* <div>
-        Bounds:
-      </div> */}
-      {/* <div>
-        NE: {bounds.getNorthEast ? `Lng: ${bounds.getNorthEast().lng.toFixed(4)}, Lat: ${bounds.getNorthEast().lat.toFixed(4)}` : ''}
-      </div>
-      <div>
-        SW: {bounds.getSouthWest ? `Lng: ${bounds.getSouthWest().lng.toFixed(4)}, Lat: ${bounds.getSouthWest().lat.toFixed(4)}` : ''}
-      </div> */}
-    </div>
 
+      {/* Render Content2 and pass onCardClick
+      {props.renderContent2 && props.renderContent2({ onCardClick: handleCardClick })} */}
+    </div>
   );
 
 };

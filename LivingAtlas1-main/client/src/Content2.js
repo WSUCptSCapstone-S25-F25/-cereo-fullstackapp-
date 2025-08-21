@@ -394,6 +394,24 @@ function Content2(props) {
 
 
 
+
+    // Handler for card click
+    const handleCardClick = (card) => {
+        console.log('[Content2] Card clicked:', card);
+        if (props.onCardClick && card.latitude && card.longitude) {
+            console.log('[Content2] Calling onCardClick with:', {
+                latitude: Number(card.latitude),
+                longitude: Number(card.longitude)
+            });
+            props.onCardClick({
+                latitude: Number(card.latitude),
+                longitude: Number(card.longitude)
+            });
+        } else {
+            console.warn('[Content2] Card missing lat/lng or onCardClick not provided:', card);
+        }
+    };
+
     return (
         <>
             {/* <div id="right-sidebar">
@@ -438,18 +456,23 @@ function Content2(props) {
                     {cards
                         .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
                         .map((card, index) => (
-                            <Card
+                            <div
                                 key={`${card.cardID}-${index}`}
-                                formData={{
-                                    ...card,
-                                    cardOwner: card.username,
-                                    viewerUsername: resolvedUsername,
-                                    cardID: card.cardID
-                                }}
-                                isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                                username={resolvedUsername}
-                                fetchBookmarks={fetchBookmarks}
-                            />
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => handleCardClick(card)}
+                            >
+                                <Card
+                                    formData={{
+                                        ...card,
+                                        cardOwner: card.username,
+                                        viewerUsername: resolvedUsername,
+                                        cardID: card.cardID
+                                    }}
+                                    isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                    username={resolvedUsername}
+                                    fetchBookmarks={fetchBookmarks}
+                                />
+                            </div>
                         ))}
                 </div>
             </section>
