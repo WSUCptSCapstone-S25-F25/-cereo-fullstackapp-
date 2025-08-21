@@ -432,11 +432,9 @@ const Content1 = (props) => {
 
 
   return (
-    // set zIndex to '0' so that the map will be displayed below other components (like modals for example)
-    <div style={{ zIndex: '0' }}>
-      <div className='map-container' ref={mapContainerRef}>
-        {/* Map info box now inside map-container */}
-        <div className="map-info-bottomleft">
+    <div className="AtlasMap">
+      <div className="AtlasMap__container" ref={mapContainerRef}>
+        <div className="AtlasMap__info-bottomleft">
           <div>
             Map Center - Lat: {lat} | Long: {lng} | Zoom: {zoom}
           </div>
@@ -445,14 +443,9 @@ const Content1 = (props) => {
           </div>
         </div>
       </div>
-
-      {/* Giving credit to the authors of the map icons used. */}
-      <div>
+      <div className="AtlasMap__credit">
         <a>Map icons by </a><a href="https://icons8.com/icon/" title="marker icons">icons8. </a>
       </div>
-
-      {/* Render Content2 and pass onCardClick
-      {props.renderContent2 && props.renderContent2({ onCardClick: handleCardClick })} */}
     </div>
   );
 
