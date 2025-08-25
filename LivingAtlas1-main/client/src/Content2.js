@@ -12,7 +12,8 @@ import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-s
 import { useLocation } from 'react-router-dom';
 import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
-import { faLayerGroup } from '@fortawesome/free-solid-svg-icons'; // Add this import
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
+import { faBook } from '@fortawesome/free-solid-svg-icons'; // <-- Add this import for the new button icon
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
@@ -38,7 +39,7 @@ function Content2(props) {
     const didMountRef = useRef(false);
 
     // Collapse card container
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed);
@@ -474,6 +475,15 @@ function Content2(props) {
                     style={{ top: '50px', position: 'absolute' }}
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
+                </button>
+                {/* New: Open Card Container Button */}
+                <button
+                    className="open-card-container-button"
+                    onClick={toggleCollapse}
+                    title={isCollapsed ? "Open Card Container" : "Collapse Card Container"}
+                    style={{ top: '100px', position: 'absolute' }}
+                >
+                    <FontAwesomeIcon icon={faBook} />
                 </button>
             </div>
 
