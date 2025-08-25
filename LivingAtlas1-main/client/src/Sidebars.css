@@ -230,6 +230,7 @@
     z-index: 1001;
     position: absolute;
     transition: color 0.3s ease;
+    border-bottom: 10px;
 }
 
 .add-card-button:hover {
@@ -246,6 +247,7 @@
     z-index: 1001;
     position: absolute;
     transition: color 0.3s ease;
+    border-bottom: 10px;
 }
 
 .layer-panel-button:hover {
@@ -261,6 +263,7 @@
     z-index: 1001;
     position: absolute;
     transition: color 0.3s ease;
+    border-bottom: 10px;
 }
 
 .open-card-container-button:hover {
