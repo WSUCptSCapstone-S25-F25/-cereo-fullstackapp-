@@ -14,6 +14,8 @@ import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { faBook } from '@fortawesome/free-solid-svg-icons'; // <-- Add this import for the new button icon
+import LayerPanel from './LayerPanel';
+import { applyAreaVisibility } from './AreaFilter';
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
@@ -487,43 +489,7 @@ function Content2(props) {
 
     // Show/hide colored areas (vector tile layers)
     useEffect(() => {
-        // Wait for mapbox map to be available
-        const mapboxMap = window?.atlasMapInstance; // See note below
-        if (!mapboxMap) return;
-
-        // River area (vector-tileset)
-        if (mapboxMap.getLayer('vector-tileset')) {
-            mapboxMap.setLayoutProperty(
-                'vector-tileset',
-                'visibility',
-                areaVisibility.River ? 'visible' : 'none'
-            );
-        }
-        // Watershed area (add your watershed layer id if you have one)
-        // Example: 'watershed-areas-fill'
-        if (mapboxMap.getLayer('watershed-areas-fill')) {
-            mapboxMap.setLayoutProperty(
-                'watershed-areas-fill',
-                'visibility',
-                areaVisibility.Watershed ? 'visible' : 'none'
-            );
-        }
-        // Places area (urban-areas-fill)
-        if (mapboxMap.getLayer('urban-areas-fill')) {
-            mapboxMap.setLayoutProperty(
-                'urban-areas-fill',
-                'visibility',
-                areaVisibility.Places ? 'visible' : 'none'
-            );
-        }
-        // Places outline (urban-areas-outline)
-        if (mapboxMap.getLayer('urban-areas-outline')) {
-            mapboxMap.setLayoutProperty(
-                'urban-areas-outline',
-                'visibility',
-                areaVisibility.Places ? 'visible' : 'none'
-            );
-        }
+        applyAreaVisibility(areaVisibility);
     }, [areaVisibility]);
 
     // Update marker visibility when checkboxes change
@@ -586,80 +552,14 @@ function Content2(props) {
             </div>
 
             {/* Layer Panel */}
-            {isLayerPanelOpen && (
-                <div
-                    className="layer-panel"
-                >
-                    <div className="layer-panel-header">
-                        <h3 style={{ margin: 0 }}>Layers</h3>
-                        <button
-                            className="layer-panel-close-btn"
-                            onClick={() => setIsLayerPanelOpen(false)}
-                            title="Close"
-                        >
-                            &times;
-                        </button>
-                    </div>
-                    <div style={{ marginTop: 20 }}>
-                        {/* Card marker checkboxes */}
-                        <div style={{ marginBottom: 16 }}>
-                            <strong>Card Markers</strong>
-                            <label style={{ display: "block", marginBottom: 8, marginTop: 8 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={layerVisibility.River}
-                                    onChange={() => handleLayerCheckbox("River")}
-                                />{" "}
-                                River Card
-                            </label>
-                            <label style={{ display: "block", marginBottom: 8 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={layerVisibility.Watershed}
-                                    onChange={() => handleLayerCheckbox("Watershed")}
-                                />{" "}
-                                Watershed Card
-                            </label>
-                            <label style={{ display: "block", marginBottom: 8 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={layerVisibility.Places}
-                                    onChange={() => handleLayerCheckbox("Places")}
-                                />{" "}
-                                Places Card
-                            </label>
-                        </div>
-                        {/* Colored area checkboxes */}
-                        <div>
-                            <strong>Colored Areas</strong>
-                            <label style={{ display: "block", marginBottom: 8, marginTop: 8 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={areaVisibility.River}
-                                    onChange={() => handleAreaCheckbox("River")}
-                                />{" "}
-                                River Area
-                            </label>
-                            <label style={{ display: "block", marginBottom: 8 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={areaVisibility.Watershed}
-                                    onChange={() => handleAreaCheckbox("Watershed")}
-                                />{" "}
-                                Watershed Area
-                            </label>
-                            <label style={{ display: "block", marginBottom: 8 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={areaVisibility.Places}
-                                    onChange={() => handleAreaCheckbox("Places")}
-                                />{" "}
-                                Places Area
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <LayerPanel
+                isOpen={isLayerPanelOpen}
+                onClose={() => setIsLayerPanelOpen(false)}
+                layerVisibility={layerVisibility}
+                areaVisibility={areaVisibility}
+                handleLayerCheckbox={handleLayerCheckbox}
+                handleAreaCheckbox={handleAreaCheckbox}
+            />
 
             <FormModal 
                 username={resolvedUsername} 
