@@ -85,15 +85,15 @@
 
 /* Search Button */
 .left-sidebar-search-button {
-    position: absolute;
-    /* top: 10px;
-    left: 10px; */
     background: none;
     border: none;
     color: white;
     font-size: 24px;
     cursor: pointer;
     z-index: 1001;
+    margin: 12px 0 0 0; /* Add vertical spacing */
+    position: static;    /* Remove absolute positioning */
+    display: block;
 }
 
 /* Search Modal */
@@ -268,4 +268,120 @@
 
 .open-card-container-button:hover {
     color: lightgray;
+}
+
+.left-sidebar-upload-button {
+    background: none;
+    border: none;
+    color: white;   /* <-- Change from #333 to white */
+    font-size: 22px;
+    cursor: pointer;
+    margin: 8px 0 0 8px;
+    display: block;
+    top: 60px;
+}
+
+/* Upload Panel: attaches to right of left sidebar */
+.upload-panel {
+    position: fixed;
+    top: 65px; /* below navbar */
+    left: 60px; /* right edge of left sidebar */
+    height: calc(100vh - 65px);
+    width: 340px;
+    background: #f7f7f7;
+    border-left: 1px solid #ddd;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.07);
+    z-index: 1200;
+    padding: 18px 18px 18px 18px;
+    font-size: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    color: #222; /* Make text dark */
+}
+
+.upload-panel * {
+    color: #222 !important; /* Force dark text for all children */
+}
+
+.upload-panel-close-btn {
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    color: #333 !important;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1201;
+    border-radius: 0 8px 8px 0;
+    transition: background 0.2s;
+}
+.upload-panel-close-btn:hover {
+    background: #e0e0e0;
+}
+
+.upload-folder,
+.upload-item {
+    cursor: pointer;
+    font-weight: bold;
+    margin: 8px 0 4px 0;
+    padding: 4px 0 4px 4px;
+    border-radius: 4px;
+    background: #ececec;
+    transition: background 0.2s;
+    color: #222 !important;
+}
+.upload-folder:hover,
+.upload-item:hover {
+    background: #e0e0e0;
+}
+
+.upload-panel ul {
+    padding-left: 16px;
+    margin: 0 0 8px 0;
+}
+
+.upload-panel li {
+    margin: 2px 0;
+    font-size: 14px;
+    color: #222;
+}
+
+.upload-panel .legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px;
+    gap: 8px;
+}
+
+.upload-panel .legend-item img {
+    width: 20px;
+    height: 20px;
+    margin-right: 6px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+}
+
+.upload-panel .legend-layer-title {
+    font-weight: 600;
+    margin: 8px 0 2px 0;
+    font-size: 15px;
+    color: #333;
+    padding-left: 2px;
+}
+
+.upload-layer-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 15px;
+    gap: 8px;
+}
+.upload-layer-row input[type="checkbox"] {
+    accent-color: #1976d2;
 }
