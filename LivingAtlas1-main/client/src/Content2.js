@@ -452,6 +452,50 @@ function Content2(props) {
     // State for layer panel
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
 
+    // Layer visibility state
+    const [layerVisibility, setLayerVisibility] = useState({
+        River: true,
+        Watershed: true,
+        Places: true,
+    });
+
+    // Helper to show/hide markers by class
+    const updateLayerVisibility = (visibility) => {
+        // Rivers
+        const rivers = document.getElementsByClassName("blue-marker");
+        for (let i = 0; i < rivers.length; i++) {
+            rivers[i].style.visibility = visibility.River ? "visible" : "hidden";
+        }
+        // Watersheds
+        const watersheds = document.getElementsByClassName("green-marker");
+        for (let i = 0; i < watersheds.length; i++) {
+            watersheds[i].style.visibility = visibility.Watershed ? "visible" : "hidden";
+        }
+        // Places
+        const places = document.getElementsByClassName("yellow-marker");
+        for (let i = 0; i < places.length; i++) {
+            places[i].style.visibility = visibility.Places ? "visible" : "hidden";
+        }
+    };
+
+    // Update marker visibility when checkboxes change
+    useEffect(() => {
+        // If all are checked, show all
+        if (layerVisibility.River && layerVisibility.Watershed && layerVisibility.Places) {
+            showAll();
+        } else {
+            updateLayerVisibility(layerVisibility);
+        }
+    }, [layerVisibility]);
+
+    // Checkbox handler
+    const handleLayerCheckbox = (category) => {
+        setLayerVisibility((prev) => ({
+            ...prev,
+            [category]: !prev[category],
+        }));
+    };
+
     return (
         <>
             {/* Right Sidebar */}
@@ -503,8 +547,33 @@ function Content2(props) {
                         </button>
                     </div>
                     <div style={{ marginTop: 20 }}>
-                        {/* Future layer functionality goes here */}
-                        <p>Layer functionality will be implemented later...</p>
+                        {/* Layer checkboxes */}
+                        <div>
+                            <label style={{ display: "block", marginBottom: 8 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={layerVisibility.River}
+                                    onChange={() => handleLayerCheckbox("River")}
+                                />{" "}
+                                River
+                            </label>
+                            <label style={{ display: "block", marginBottom: 8 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={layerVisibility.Watershed}
+                                    onChange={() => handleLayerCheckbox("Watershed")}
+                                />{" "}
+                                Watershed
+                            </label>
+                            <label style={{ display: "block", marginBottom: 8 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={layerVisibility.Places}
+                                    onChange={() => handleLayerCheckbox("Places")}
+                                />{" "}
+                                Places
+                            </label>
+                        </div>
                     </div>
                 </div>
             )}
