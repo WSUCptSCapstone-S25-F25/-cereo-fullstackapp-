@@ -452,8 +452,15 @@ function Content2(props) {
     // State for layer panel
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
 
-    // Layer visibility state
+    // Card marker visibility state
     const [layerVisibility, setLayerVisibility] = useState({
+        River: true,
+        Watershed: true,
+        Places: true,
+    });
+
+    // Colored area (vector tile) visibility state
+    const [areaVisibility, setAreaVisibility] = useState({
         River: true,
         Watershed: true,
         Places: true,
@@ -478,6 +485,47 @@ function Content2(props) {
         }
     };
 
+    // Show/hide colored areas (vector tile layers)
+    useEffect(() => {
+        // Wait for mapbox map to be available
+        const mapboxMap = window?.atlasMapInstance; // See note below
+        if (!mapboxMap) return;
+
+        // River area (vector-tileset)
+        if (mapboxMap.getLayer('vector-tileset')) {
+            mapboxMap.setLayoutProperty(
+                'vector-tileset',
+                'visibility',
+                areaVisibility.River ? 'visible' : 'none'
+            );
+        }
+        // Watershed area (add your watershed layer id if you have one)
+        // Example: 'watershed-areas-fill'
+        if (mapboxMap.getLayer('watershed-areas-fill')) {
+            mapboxMap.setLayoutProperty(
+                'watershed-areas-fill',
+                'visibility',
+                areaVisibility.Watershed ? 'visible' : 'none'
+            );
+        }
+        // Places area (urban-areas-fill)
+        if (mapboxMap.getLayer('urban-areas-fill')) {
+            mapboxMap.setLayoutProperty(
+                'urban-areas-fill',
+                'visibility',
+                areaVisibility.Places ? 'visible' : 'none'
+            );
+        }
+        // Places outline (urban-areas-outline)
+        if (mapboxMap.getLayer('urban-areas-outline')) {
+            mapboxMap.setLayoutProperty(
+                'urban-areas-outline',
+                'visibility',
+                areaVisibility.Places ? 'visible' : 'none'
+            );
+        }
+    }, [areaVisibility]);
+
     // Update marker visibility when checkboxes change
     useEffect(() => {
         // If all are checked, show all
@@ -488,9 +536,15 @@ function Content2(props) {
         }
     }, [layerVisibility]);
 
-    // Checkbox handler
+    // Checkbox handlers
     const handleLayerCheckbox = (category) => {
         setLayerVisibility((prev) => ({
+            ...prev,
+            [category]: !prev[category],
+        }));
+    };
+    const handleAreaCheckbox = (category) => {
+        setAreaVisibility((prev) => ({
             ...prev,
             [category]: !prev[category],
         }));
@@ -547,15 +601,16 @@ function Content2(props) {
                         </button>
                     </div>
                     <div style={{ marginTop: 20 }}>
-                        {/* Layer checkboxes */}
-                        <div>
-                            <label style={{ display: "block", marginBottom: 8 }}>
+                        {/* Card marker checkboxes */}
+                        <div style={{ marginBottom: 16 }}>
+                            <strong>Card Markers</strong>
+                            <label style={{ display: "block", marginBottom: 8, marginTop: 8 }}>
                                 <input
                                     type="checkbox"
                                     checked={layerVisibility.River}
                                     onChange={() => handleLayerCheckbox("River")}
                                 />{" "}
-                                River
+                                River Card
                             </label>
                             <label style={{ display: "block", marginBottom: 8 }}>
                                 <input
@@ -563,7 +618,7 @@ function Content2(props) {
                                     checked={layerVisibility.Watershed}
                                     onChange={() => handleLayerCheckbox("Watershed")}
                                 />{" "}
-                                Watershed
+                                Watershed Card
                             </label>
                             <label style={{ display: "block", marginBottom: 8 }}>
                                 <input
@@ -571,7 +626,35 @@ function Content2(props) {
                                     checked={layerVisibility.Places}
                                     onChange={() => handleLayerCheckbox("Places")}
                                 />{" "}
-                                Places
+                                Places Card
+                            </label>
+                        </div>
+                        {/* Colored area checkboxes */}
+                        <div>
+                            <strong>Colored Areas</strong>
+                            <label style={{ display: "block", marginBottom: 8, marginTop: 8 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={areaVisibility.River}
+                                    onChange={() => handleAreaCheckbox("River")}
+                                />{" "}
+                                River Area
+                            </label>
+                            <label style={{ display: "block", marginBottom: 8 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={areaVisibility.Watershed}
+                                    onChange={() => handleAreaCheckbox("Watershed")}
+                                />{" "}
+                                Watershed Area
+                            </label>
+                            <label style={{ display: "block", marginBottom: 8 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={areaVisibility.Places}
+                                    onChange={() => handleAreaCheckbox("Places")}
+                                />{" "}
+                                Places Area
                             </label>
                         </div>
                     </div>

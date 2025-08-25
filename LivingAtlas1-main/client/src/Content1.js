@@ -75,6 +75,7 @@ const Content1 = (props) => {
       center: [lng, lat],
       zoom: zoom
     });
+    window.atlasMapInstance = map; // <-- Add this line
     mapRef.current = map;
 
     
