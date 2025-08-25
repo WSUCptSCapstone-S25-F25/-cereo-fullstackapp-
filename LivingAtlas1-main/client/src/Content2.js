@@ -606,7 +606,7 @@ function Content2(props) {
                             <div
                                 key={`${card.cardID}-${index}`}
                                 style={{ cursor: 'pointer' }}
-                                onClick={() => handleCardClick(card)}
+                                onClick={() => handleCardClick(card)} // Always shift view on card click
                             >
                                 <Card
                                     formData={{
@@ -618,6 +618,7 @@ function Content2(props) {
                                     isFavorited={bookmarkedCardIDs.has(card.cardID)}
                                     username={resolvedUsername}
                                     fetchBookmarks={fetchBookmarks}
+                                    // No need to pass onLearnMore for fly-to
                                 />
                             </div>
                         ))}
