@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './Content2.css';
 import './Sidebars.css';
+import './LayerPanel.css';
 import Card from './Card.js';
 import FormModal from './FormModal';
 import axios from 'axios';
@@ -11,6 +12,7 @@ import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-s
 import { useLocation } from 'react-router-dom';
 import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons'; // Add this import
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
@@ -446,14 +448,12 @@ function Content2(props) {
         }
     };
 
+    // State for layer panel
+    const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
+
     return (
         <>
-            {/* <div id="right-sidebar">
-                <div className="collapse-toggle" onClick={toggleCollapse}>
-                    <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
-                </div>
-            </div> */}
-
+            {/* Right Sidebar */}
             <div id="right-sidebar">
                 <div className="collapse-toggle" onClick={toggleCollapse}>
                     <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
@@ -462,10 +462,42 @@ function Content2(props) {
                     className="add-card-button" 
                     onClick={openModal} 
                     title="Add Card"
+                    style={{ top: '0px', position: 'absolute' }}
                 >
                     <FontAwesomeIcon icon={faPlus} />
                 </button>
+                {/* New Layer Button */}
+                <button
+                    className="layer-panel-button"
+                    onClick={() => setIsLayerPanelOpen((prev) => !prev)}
+                    title="Layers"
+                    style={{ top: '50px', position: 'absolute' }}
+                >
+                    <FontAwesomeIcon icon={faLayerGroup} />
+                </button>
             </div>
+
+            {/* Layer Panel */}
+            {isLayerPanelOpen && (
+                <div
+                    className="layer-panel"
+                >
+                    <div className="layer-panel-header">
+                        <h3 style={{ margin: 0 }}>Layers</h3>
+                        <button
+                            className="layer-panel-close-btn"
+                            onClick={() => setIsLayerPanelOpen(false)}
+                            title="Close"
+                        >
+                            &times;
+                        </button>
+                    </div>
+                    <div style={{ marginTop: 20 }}>
+                        {/* Future layer functionality goes here */}
+                        <p>Layer functionality will be implemented later...</p>
+                    </div>
+                </div>
+            )}
 
             <FormModal 
                 username={resolvedUsername} 
