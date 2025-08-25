@@ -44,25 +44,50 @@ function Card(props) {
         }
     }, [formData.thumbnail_link, formData.cardID]);
 
-    const handleLearnMore = () => setIsModalOpen(true);
-    const handleEdit = () => setIsEditModalOpen(true);
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prevState => ({ ...prevState, [name]: value }));
+    const handleLearnMore = (e) => {
+        e.stopPropagation();
+        setIsModalOpen(true);
+        if (props.onLearnMore) props.onLearnMore();
     };
 
-    const handleImageChange = (event) => {
-        const file = event.target.files[0];
-        if (file && ["image/png", "image/jpeg", "image/gif"].includes(file.type)) {
-            setThumbnail(file);
-            setPreview(URL.createObjectURL(file));
-        } else {
-            alert("Invalid file type. Please upload a PNG, JPG, or GIF.");
+    const handleEdit = (e) => {
+        e.stopPropagation();
+        setIsEditModalOpen(true);
+    };
+
+    const handleDelete = (e) => {
+        e.stopPropagation();
+
+        if (!formData.username || !formData.title) {
+            alert("Missing username or title — cannot delete card.");
+            return;
         }
+
+        if (!window.confirm("Are you sure you want to delete this card?")) return;
+
+        api.delete(`/deleteCard`, {
+            params: {
+                username: formData.username,
+                title: formData.title,
+            }
+        })
+        .then(() => {
+            alert("Card deleted successfully.");
+            if (typeof props.onCardDelete === "function") {
+                props.onCardDelete(true);
+            } else {
+                window.location.reload();
+            }
+        })
+        .catch((error) => {
+            console.error("Delete failed:", error);
+            alert("Failed to delete the card.");
+        });
     };
 
-    const handleFavoriteClick = async () => {
+    const handleFavoriteClick = async (e) => {
+        e.stopPropagation();
+
         const cardID = formData.cardID || props.cardID;
         const username = formData.viewerUsername || formData.username || props.username;
 
@@ -159,32 +184,21 @@ function Card(props) {
         }
     };
 
-    const handleDelete = () => {
-        if (!formData.username || !formData.title) {
-            alert("Missing username or title — cannot delete card.");
-            return;
+    // Add these handlers to fix the ESLint errors
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setThumbnail(file);
+            setPreview(URL.createObjectURL(file));
         }
-
-        if (!window.confirm("Are you sure you want to delete this card?")) return;
-
-        api.delete(`/deleteCard`, {
-            params: {
-                username: formData.username,
-                title: formData.title,
-            }
-        })
-        .then(() => {
-            alert("Card deleted successfully.");
-            if (typeof props.onCardDelete === "function") {
-                props.onCardDelete(true);
-            } else {
-                window.location.reload();
-            }
-        })
-        .catch((error) => {
-            console.error("Delete failed:", error);
-            alert("Failed to delete the card.");
-        });
     };
 
     return (
@@ -207,16 +221,16 @@ function Card(props) {
                 alt="Card Thumbnail"
                 className="card-thumbnail"
             />
-            <h2 className="card-title">{props.formData.title}</h2>
-            <p className="card-text">{props.formData.description}</p>
-            <button className="card-button" onClick={handleLearnMore}>Learn More</button>
+            <h2 className="card-title" style={{ marginBottom: '18px' }}>{props.formData.title}</h2>
+            {/* <p className="card-text">{props.formData.description}</p> */}
 
-            {props.username && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px' }}>
-                    <button className="card-button" style={{ marginBottom: '10px', backgroundColor: 'red' }} onClick={handleDelete}>Delete</button>
-                    <button className="card-button" style={{ backgroundColor: 'blue' }} onClick={handleEdit}>Edit</button>
-                </div>
-            )}
+            <div className="card-button-row">
+                <button className="card-button card-learn-more" onClick={handleLearnMore}>
+                    <span className="learn-more-text">Learn More</span>
+                </button>
+                <button className="card-button card-edit" onClick={handleEdit}>Edit</button>
+                <button className="card-button card-delete" onClick={handleDelete}>Delete</button>
+            </div>
 
             {/* Learn More Modal */}
             <Modal isOpen={isModalOpen} onRequestClose={() => setIsModalOpen(false)} className="Modal">
@@ -242,13 +256,25 @@ function Card(props) {
                     <button className="card-button" onClick={() => props.downloadFile(props.formData.fileID)}>Download {props.formData.fileEXT}</button>
                 )}
 
-                <button className="close-button" onClick={() => setIsModalOpen(false)}>Close</button>
+                <button
+                    className="close-button"
+                    onClick={e => {
+                        e.stopPropagation();
+                        setIsModalOpen(false);
+                    }}
+                >
+                    Close
+                </button>
             </Modal>
 
             {/* Edit Modal */}
             <Modal isOpen={isEditModalOpen} onRequestClose={() => setIsEditModalOpen(false)} className="Modal">
                 <h2>Edit Card</h2>
-                <form onSubmit={(e) => { e.preventDefault(); saveEdits(); }}>
+                <form onSubmit={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); // Prevent bubbling to card container
+                    saveEdits(); 
+                }}>
                     <label>Title:<input type="text" name="title" value={formData.title || ''} onChange={handleInputChange} required /></label>
                     <label>Description:<textarea name="description" value={formData.description || ''} onChange={handleInputChange} /></label>
                     <label>Email:<input type="email" name="email" value={formData.email || ''} onChange={handleInputChange} /></label>
@@ -262,7 +288,14 @@ function Card(props) {
                     <label>Thumbnail:<input type="file" accept="image/png, image/jpeg, image/gif" onChange={handleImageChange} /></label>
                     {preview && <img src={preview} alt="Thumbnail Preview" width="100" style={{ margin: '10px 0' }} />}
                     <button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
-                    <button onClick={() => setIsEditModalOpen(false)}>Close</button>
+                    <button
+                        onClick={e => {
+                            e.stopPropagation();
+                            setIsEditModalOpen(false);
+                        }}
+                    >
+                        Close
+                    </button>
                 </form>
             </Modal>
         </div>

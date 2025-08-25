@@ -230,8 +230,42 @@
     z-index: 1001;
     position: absolute;
     transition: color 0.3s ease;
+    border-bottom: 10px;
 }
 
 .add-card-button:hover {
+    color: lightgray;
+}
+
+/* Layer Panel Button */
+.layer-panel-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
+    position: absolute;
+    transition: color 0.3s ease;
+    border-bottom: 10px;
+}
+
+.layer-panel-button:hover {
+    color: lightgray;
+}
+
+.open-card-container-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
+    position: absolute;
+    transition: color 0.3s ease;
+    border-bottom: 10px;
+}
+
+.open-card-container-button:hover {
     color: lightgray;
 }
