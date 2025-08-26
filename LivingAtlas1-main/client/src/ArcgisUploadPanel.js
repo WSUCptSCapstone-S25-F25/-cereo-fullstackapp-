@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import mapboxgl from 'mapbox-gl';
 
 function ArcgisUploadPanel({
     isOpen,
@@ -102,6 +103,26 @@ function ArcgisUploadPanel({
 
     // Effect for checked layers
     useEffect(() => {
+        const map = mapInstance();
+        if (!map) return;
+
+        // Remove all vector layers first
+        arcgisLayers.forEach(layer => {
+            const layerId = `arcgis-vector-layer-${layer.id}`;
+            const outlineId = `${layerId}-outline`;
+            const sourceId = `arcgis-vector-source-${layer.id}`;
+            if (map.getLayer(layerId)) map.removeLayer(layerId);
+            if (map.getLayer(outlineId)) map.removeLayer(outlineId);
+            if (map.getSource(sourceId)) map.removeSource(sourceId);
+        });
+
+        // Add vector layers for checked layers
+        checkedArcgisLayerIds.forEach(id => {
+            const layer = arcgisLayers.find(l => l.id === id);
+            if (layer) addArcgisVectorLayer(layer);
+        });
+
+        // Raster logic (as before)
         if (checkedArcgisLayerIds.length === 0) {
             if (arcgisLayerAdded) removeArcgisLayer();
         } else {
@@ -112,7 +133,103 @@ function ArcgisUploadPanel({
             }
         }
         // eslint-disable-next-line
-    }, [checkedArcgisLayerIds]);
+    }, [checkedArcgisLayerIds, arcgisLegend]);
+
+    // Add ArcGIS Vector Layer
+    const addArcgisVectorLayer = async (layer) => {
+        const map = mapInstance();
+        if (!map) return;
+
+        const sourceId = `arcgis-vector-source-${layer.id}`;
+        const fillLayerId = `arcgis-vector-layer-${layer.id}`;
+        const lineLayerId = `${fillLayerId}-outline`;
+
+        // Remove if already exists
+        if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
+        if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+        // ArcGIS FeatureServer GeoJSON endpoint
+        const geojsonUrl = `https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/${layer.id}/query?where=1=1&outFields=*&f=geojson`;
+
+        // Add source
+        map.addSource(sourceId, {
+            type: 'geojson',
+            data: geojsonUrl
+        });
+
+        // Add fully transparent fill layer for click detection
+        map.addLayer({
+            id: fillLayerId,
+            type: 'fill',
+            source: sourceId,
+            paint: {
+                'fill-color': 'rgba(0,0,0,0)',
+                'fill-opacity': 0
+            }
+        });
+
+        // Add fully transparent line layer for click detection
+        map.addLayer({
+            id: lineLayerId,
+            type: 'line',
+            source: sourceId,
+            paint: {
+                'line-color': 'rgba(0,0,0,0)',
+                'line-width': 1
+            }
+        });
+
+        // Click handler for fill
+        map.on('click', fillLayerId, async (e) => {
+            await showArcgisPopup(e, layer);
+        });
+        map.on('mouseenter', fillLayerId, () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', fillLayerId, () => { map.getCanvas().style.cursor = ''; });
+
+        // Click handler for line (for line-only features)
+        map.on('click', lineLayerId, async (e) => {
+            await showArcgisPopup(e, layer);
+        });
+        map.on('mouseenter', lineLayerId, () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', lineLayerId, () => { map.getCanvas().style.cursor = ''; });
+    };
+
+    // Helper to show popup
+    async function showArcgisPopup(e, layer) {
+        const feature = e.features[0];
+        let layerMeta = {};
+        try {
+            const resp = await fetch(`https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/${layer.id}?f=json`);
+            layerMeta = await resp.json();
+        } catch (err) {
+            layerMeta = {};
+        }
+        const layerName = layerMeta.name || layer.name || "Layer";
+        const layerDescription = layerMeta.description || "";
+
+        let html = `
+      <div style="min-width:240px;max-width:340px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="margin:0;font-size:1.1em;">${layerName}</h3>
+          <button onclick="this.closest('.mapboxgl-popup').remove()" style="background:none;border:none;font-size:1.3em;cursor:pointer;">&times;</button>
+        </div>
+        ${layerDescription ? `<div style="font-size:0.95em;color:#444;margin-bottom:6px;">${layerDescription}</div>` : ""}
+        <table style="width:100%;font-size:0.95em;">
+          <tbody>
+            ${Object.entries(feature.properties).map(([key, value]) =>
+              `<tr><td style="font-weight:bold;padding-right:6px;">${key}</td><td>${String(value)}</td></tr>`
+            ).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+        new mapboxgl.Popup({ offset: 20, closeButton: false })
+          .setLngLat(e.lngLat)
+          .setHTML(html)
+          .addTo(e.target._map || e.target); // fallback for map instance
+    }
 
     if (!isOpen) return null;
 

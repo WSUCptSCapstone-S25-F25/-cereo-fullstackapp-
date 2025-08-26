@@ -42,6 +42,8 @@ const Content1 = (props) => {
   const [zoom, setZoom] = useState(9);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalFeature, setModalFeature] = useState(null);
 
   // Move map when selectedCardCoords changes
   React.useEffect(() => {
@@ -425,6 +427,43 @@ const Content1 = (props) => {
             .addTo(map);
         }
       });
+
+      map.on('click', 'aq-maint-ozone-fill', async (e) => {
+        const feature = e.features[0];
+        // Fetch layer metadata dynamically
+        let layerMeta = {};
+        try {
+          const resp = await fetch('https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/3?f=json');
+          layerMeta = await resp.json();
+        } catch (err) {
+          layerMeta = {};
+        }
+        const layerName = layerMeta.name || "Layer";
+        const layerDescription = layerMeta.description || "";
+
+        // Build HTML for the popup
+        let html = `
+          <div style="min-width:240px;max-width:340px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h3 style="margin:0;font-size:1.1em;">${layerName}</h3>
+              <button onclick="this.closest('.mapboxgl-popup').remove()" style="background:none;border:none;font-size:1.3em;cursor:pointer;">&times;</button>
+            </div>
+            ${layerDescription ? `<div style="font-size:0.95em;color:#444;margin-bottom:6px;">${layerDescription}</div>` : ""}
+            <table style="width:100%;font-size:0.95em;">
+              <tbody>
+                ${Object.entries(feature.properties).map(([key, value]) =>
+                  `<tr><td style="font-weight:bold;padding-right:6px;">${key}</td><td>${String(value)}</td></tr>`
+                ).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        new mapboxgl.Popup({ offset: 20, closeButton: false })
+          .setLngLat(e.lngLat)
+          .setHTML(html)
+          .addTo(map);
+      });
     })
     // Clean up on unmount
     return () => map.remove();
@@ -447,6 +486,7 @@ const Content1 = (props) => {
       <div className="AtlasMap__credit">
         <a>Map icons by </a><a href="https://icons8.com/icon/" title="marker icons">icons8. </a>
       </div>
+      
     </div>
   );
 
@@ -455,20 +495,3 @@ const Content1 = (props) => {
 export { allMarkers, draw, blueMarkers, greenMarkers, yellowMarkers, curLocationCoordinates};
 export default Content1;
 
-
-// import React from 'react';
-// import './Content1.css';
-
-
-// function Content1() {
-//     return (
-//         <section id="content-1">
-//             <h1>Content Area 1</h1>
-//             <p>
-//                 Below is a map that shows all the data points in our system. Each marker represents a unique data point, and you can click on each marker to view more information about that point.
-//             </p>
-//         </section>
-//     );
-// }
-
-// export default Content1;
