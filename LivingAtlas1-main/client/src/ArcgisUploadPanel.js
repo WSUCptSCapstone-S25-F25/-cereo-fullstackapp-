@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import mapboxgl from 'mapbox-gl';
 
+const AUTHORITATIVE_BASE = "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative";
+
 function ArcgisUploadPanel({
     isOpen,
     onClose,
@@ -14,6 +16,7 @@ function ArcgisUploadPanel({
     const [arcgisLayers, setArcgisLayers] = useState([]);
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [checkedArcgisLayerIds, setCheckedArcgisLayerIds] = useState([]);
+    const [authoritativeServices, setAuthoritativeServices] = useState([]);
     const handlerRefs = React.useRef({});
 
     // Fetch layers and legend
