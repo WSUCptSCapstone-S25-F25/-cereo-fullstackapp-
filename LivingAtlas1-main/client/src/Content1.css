@@ -110,9 +110,17 @@
 }
 
 .mapboxgl-popup-content {
-  text-align: center;
-  text-overflow: ellipsis;
-  font-family: 'Open Sans', sans-serif;
+  min-width: 400px !important;
+  max-width: 900px !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-size: 1em;
+}
+
+.mapboxgl-popup table {
+  width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .mapboxgl-popup-close-button {
