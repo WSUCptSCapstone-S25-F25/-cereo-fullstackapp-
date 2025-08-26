@@ -177,6 +177,8 @@ function Home(props) {
                     isOpen={isUploadPanelOpen}
                     onClose={() => setIsUploadPanelOpen(false)}
                     mapInstance={getMapboxMap}
+                    arcgisLayerAdded={arcgisLayerAdded}
+                    setArcgisLayerAdded={setArcgisLayerAdded}
                 />
 
                 {/* Left Sidebar toggle Button */}

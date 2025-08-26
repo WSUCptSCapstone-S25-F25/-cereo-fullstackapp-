@@ -6,12 +6,13 @@ function ArcgisUploadPanel({
     isOpen,
     onClose,
     mapInstance,
+    arcgisLayerAdded: propArcgisLayerAdded,
+    setArcgisLayerAdded: setPropArcgisLayerAdded,
 }) {
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
     const [arcgisLayers, setArcgisLayers] = useState([]);
     const [arcgisLegend, setArcgisLegend] = useState(null);
-    const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [checkedArcgisLayerIds, setCheckedArcgisLayerIds] = useState([]);
     const handlerRefs = React.useRef({});
 
@@ -65,7 +66,7 @@ function ArcgisUploadPanel({
                 'raster-opacity': 0.35
             }
         });
-        setArcgisLayerAdded(true);
+        setPropArcgisLayerAdded(true);
     };
 
     // Remove ArcGIS Layer
@@ -74,7 +75,7 @@ function ArcgisUploadPanel({
         if (!map) return;
         if (map.getLayer('arcgis-raster-layer')) map.removeLayer('arcgis-raster-layer');
         if (map.getSource('arcgis-raster')) map.removeSource('arcgis-raster');
-        setArcgisLayerAdded(false);
+        setPropArcgisLayerAdded(false);
     };
 
     // Checkbox handlers
@@ -86,7 +87,7 @@ function ArcgisUploadPanel({
             newChecked = [...checkedArcgisLayerIds, layerId];
         }
         setCheckedArcgisLayerIds(newChecked);
-        if (arcgisLayerAdded) {
+        if (propArcgisLayerAdded) {
             addArcgisLayer(newChecked);
         }
     };
@@ -94,11 +95,11 @@ function ArcgisUploadPanel({
     const handleSelectAll = () => {
         if (checkedArcgisLayerIds.length === arcgisLayers.length) {
             setCheckedArcgisLayerIds([]);
-            if (arcgisLayerAdded) removeArcgisLayer();
+            if (propArcgisLayerAdded) removeArcgisLayer();
         } else {
             const allIds = arcgisLayers.map(l => l.id);
             setCheckedArcgisLayerIds(allIds);
-            if (arcgisLayerAdded) addArcgisLayer(allIds);
+            if (propArcgisLayerAdded) addArcgisLayer(allIds);
         }
     };
 
@@ -125,9 +126,9 @@ function ArcgisUploadPanel({
 
         // Raster logic (as before)
         if (checkedArcgisLayerIds.length === 0) {
-            if (arcgisLayerAdded) removeArcgisLayer();
+            if (propArcgisLayerAdded) removeArcgisLayer();
         } else {
-            if (!arcgisLayerAdded) {
+            if (!propArcgisLayerAdded) {
                 addArcgisLayer(checkedArcgisLayerIds);
             } else {
                 addArcgisLayer(checkedArcgisLayerIds);
@@ -312,7 +313,7 @@ function ArcgisUploadPanel({
                         <button
                             style={{
                                 marginLeft: "auto",
-                                background: arcgisLayerAdded ? "#e57373" : "#1976d2",
+                                background: propArcgisLayerAdded ? "#e57373" : "#1976d2",
                                 color: "white",
                                 border: "none",
                                 borderRadius: "4px",
@@ -322,7 +323,7 @@ function ArcgisUploadPanel({
                             }}
                             onClick={e => {
                                 e.stopPropagation();
-                                if (arcgisLayerAdded) {
+                                if (propArcgisLayerAdded) {
                                     removeArcgisLayer();
                                 } else {
                                     // Select all layers when adding
@@ -332,7 +333,7 @@ function ArcgisUploadPanel({
                                 }
                             }}
                         >
-                            {arcgisLayerAdded ? "Remove" : "Add"}
+                            {propArcgisLayerAdded ? "Remove" : "Add"}
                         </button>
                     </div>
                     {itemExpanded && (
