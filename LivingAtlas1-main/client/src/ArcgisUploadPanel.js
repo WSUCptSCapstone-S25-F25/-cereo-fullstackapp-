@@ -13,6 +13,7 @@ function ArcgisUploadPanel({
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [checkedArcgisLayerIds, setCheckedArcgisLayerIds] = useState([]);
+    const handlerRefs = React.useRef({});
 
     // Fetch layers and legend
     useEffect(() => {
@@ -149,6 +150,17 @@ function ArcgisUploadPanel({
         if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
         if (map.getSource(sourceId)) map.removeSource(sourceId);
 
+        // Remove previous event listeners to prevent duplicates
+        const refs = handlerRefs.current[layer.id];
+        if (refs) {
+            map.off('click', fillLayerId, refs.handleArcgisPopup);
+            map.off('mouseenter', fillLayerId, refs.handleCursorPointer);
+            map.off('mouseleave', fillLayerId, refs.handleCursorDefault);
+            map.off('click', lineLayerId, refs.handleArcgisPopup);
+            map.off('mouseenter', lineLayerId, refs.handleCursorPointer);
+            map.off('mouseleave', lineLayerId, refs.handleCursorDefault);
+        }
+
         // ArcGIS FeatureServer GeoJSON endpoint
         const geojsonUrl = `https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/${layer.id}/query?where=1=1&outFields=*&f=geojson`;
 
@@ -180,19 +192,20 @@ function ArcgisUploadPanel({
             }
         });
 
-        // Click handler for fill
-        map.on('click', fillLayerId, async (e) => {
-            await showArcgisPopup(e, layer);
-        });
-        map.on('mouseenter', fillLayerId, () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', fillLayerId, () => { map.getCanvas().style.cursor = ''; });
+        // Define handlers and store them in the ref
+        const handleArcgisPopup = (e) => showArcgisPopup(e, layer);
+        const handleCursorPointer = () => { map.getCanvas().style.cursor = 'pointer'; };
+        const handleCursorDefault = () => { map.getCanvas().style.cursor = ''; };
+        handlerRefs.current[layer.id] = { handleArcgisPopup, handleCursorPointer, handleCursorDefault };
 
-        // Click handler for line (for line-only features)
-        map.on('click', lineLayerId, async (e) => {
-            await showArcgisPopup(e, layer);
-        });
-        map.on('mouseenter', lineLayerId, () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', lineLayerId, () => { map.getCanvas().style.cursor = ''; });
+        // Add event listeners
+        map.on('click', fillLayerId, handleArcgisPopup);
+        map.on('mouseenter', fillLayerId, handleCursorPointer);
+        map.on('mouseleave', fillLayerId, handleCursorDefault);
+
+        map.on('click', lineLayerId, handleArcgisPopup);
+        map.on('mouseenter', lineLayerId, handleCursorPointer);
+        map.on('mouseleave', lineLayerId, handleCursorDefault);
     };
 
     // Helper to show popup
