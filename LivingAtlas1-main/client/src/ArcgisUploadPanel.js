@@ -17,6 +17,8 @@ function ArcgisUploadPanel({
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [checkedArcgisLayerIds, setCheckedArcgisLayerIds] = useState([]);
     const [authoritativeServices, setAuthoritativeServices] = useState([]);
+    const [serviceLayers, setServiceLayers] = useState({}); // { serviceName: [layers] }
+    const [serviceLegends, setServiceLegends] = useState({}); // { serviceName: legend }
     const handlerRefs = React.useRef({});
 
     // Fetch layers and legend
