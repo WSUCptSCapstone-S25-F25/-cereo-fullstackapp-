@@ -1,0 +1,536 @@
+[
+  {
+    "key": "ADS_eim_mc_MapServer",
+    "label": "eim_mc (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/eim_mc/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "ADS_eim_prod_insert_MapServer",
+    "label": "eim_prod_insert (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/eim_prod_insert/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "ADS_eim_prod_search_external_MapServer",
+    "label": "eim_prod_search_external (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/eim_prod_search_external/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "ADS_eim_prod_search_MapServer",
+    "label": "eim_prod_search (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/eim_prod_search/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "ADS_eimmap_wq_marine_MapServer",
+    "label": "eimmap_wq_marine (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/eimmap_wq_marine/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "ADS_eimmap_wq_MapServer",
+    "label": "eimmap_wq (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/eimmap_wq/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "ADS_eimmap_MapServer",
+    "label": "eimmap (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/eimmap/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "ADS_fs_mc_MapServer",
+    "label": "fs_mc (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/fs_mc/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "ADS_fsweb_mc_MapServer",
+    "label": "fsweb_mc (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/fsweb_mc/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "ADS_fsweb_prod_wm_MapServer",
+    "label": "fsweb_prod_wm (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/ADS/fsweb_prod_wm/MapServer",
+    "folder": "ADS"
+  },
+  {
+    "key": "AQ_AirQualityMonitoringHourlyResults_MapServer",
+    "label": "AirQualityMonitoringHourlyResults (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/AQ/AirQualityMonitoringHourlyResults/MapServer",
+    "folder": "AQ"
+  },
+  {
+    "key": "AQ_SmokeForecast_MapServer",
+    "label": "SmokeForecast (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/AQ/SmokeForecast/MapServer",
+    "folder": "AQ"
+  },
+  {
+    "key": "Authoritative_AQ_MapServer",
+    "label": "AQ (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer",
+    "folder": "Authoritative"
+  },
+  {
+    "key": "Authoritative_EAP_MapServer",
+    "label": "EAP (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/EAP/MapServer",
+    "folder": "Authoritative"
+  },
+  {
+    "key": "Authoritative_ECY_MapServer",
+    "label": "ECY (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/ECY/MapServer",
+    "folder": "Authoritative"
+  },
+  {
+    "key": "Authoritative_NHD_MapServer",
+    "label": "NHD (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/NHD/MapServer",
+    "folder": "Authoritative"
+  },
+  {
+    "key": "Authoritative_OCB_MapServer",
+    "label": "OCB (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/OCB/MapServer",
+    "folder": "Authoritative"
+  },
+  {
+    "key": "Authoritative_SEA_MapServer",
+    "label": "SEA (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/SEA/MapServer",
+    "folder": "Authoritative"
+  },
+  {
+    "key": "Authoritative_TCP_MapServer",
+    "label": "TCP (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/TCP/MapServer",
+    "folder": "Authoritative"
+  },
+  {
+    "key": "Authoritative_WQ_MapServer",
+    "label": "WQ (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/WQ/MapServer",
+    "folder": "Authoritative"
+  },
+  {
+    "key": "Authoritative_WR_MapServer",
+    "label": "WR (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/WR/MapServer",
+    "folder": "Authoritative"
+  },
+  {
+    "key": "CPR_CPR_MapServer",
+    "label": "CPR (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CPR/CPR/MapServer",
+    "folder": "CPR"
+  },
+  {
+    "key": "EAP_AccreditedLabLocations_MapServer",
+    "label": "AccreditedLabLocations (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/EAP/AccreditedLabLocations/MapServer",
+    "folder": "EAP"
+  },
+  {
+    "key": "EAP_CommercialLaboratories_MapServer",
+    "label": "CommercialLaboratories (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/EAP/CommercialLaboratories/MapServer",
+    "folder": "EAP"
+  },
+  {
+    "key": "EAP_InstreamFlowStations_MapServer",
+    "label": "InstreamFlowStations (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/EAP/InstreamFlowStations/MapServer",
+    "folder": "EAP"
+  },
+  {
+    "key": "GIS_AgBurn2_MapServer",
+    "label": "AgBurn2 (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/AgBurn2/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_AgBurn_MapServer",
+    "label": "AgBurn (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/AgBurn/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_CoastalAtlas_MSP_MapServer",
+    "label": "CoastalAtlas_MSP (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/CoastalAtlas_MSP/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_CoastalAtlas_MapServer",
+    "label": "CoastalAtlas (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/CoastalAtlas/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_EAGL_Editor_MapServer",
+    "label": "EAGL_Editor (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/EAGL_Editor/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_EAGL_MapServer",
+    "label": "EAGL (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/EAGL/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_ECY_Identify_MapServer",
+    "label": "ECY_Identify (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/ECY_Identify/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_FacilitySiteInteraction_MapServer",
+    "label": "FacilitySiteInteraction (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/FacilitySiteInteraction/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_Lakes_MapServer",
+    "label": "Lakes (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/Lakes/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_MapControl_MapServer",
+    "label": "MapControl (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/MapControl/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_OEEJ_MapServer",
+    "label": "OEEJ (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/OEEJ/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_SimpleMetadata_MapServer",
+    "label": "SimpleMetadata (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/SimpleMetadata/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_SimpleMetadataNew_MapServer",
+    "label": "SimpleMetadataNew (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/SimpleMetadataNew/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_Story_maps_MapServer",
+    "label": "Story_maps (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/Story_maps/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_Watershed_Characterization_MapServer",
+    "label": "Watershed_Characterization (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/Watershed_Characterization/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_WaterTemp_MapServer",
+    "label": "WaterTemp (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/WaterTemp/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_WCC_Recruiting_MapServer",
+    "label": "WCC_Recruiting (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/WCC_Recruiting/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "GIS_WetlandsRatingTool_MapServer",
+    "label": "WetlandsRatingTool (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/GIS/WetlandsRatingTool/MapServer",
+    "folder": "GIS"
+  },
+  {
+    "key": "MapControl_MapControlUtilityLayers_wm_MapServer",
+    "label": "MapControlUtilityLayers_wm (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/MapControl/MapControlUtilityLayers_wm/MapServer",
+    "folder": "MapControl"
+  },
+  {
+    "key": "MapControl_MapControlUtilityLayers_MapServer",
+    "label": "MapControlUtilityLayers (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/MapControl/MapControlUtilityLayers/MapServer",
+    "folder": "MapControl"
+  },
+  {
+    "key": "NHD_NHD_WBD_HUC12_MapServer",
+    "label": "NHD_WBD_HUC12 (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/NHD/NHD_WBD_HUC12/MapServer",
+    "folder": "NHD"
+  },
+  {
+    "key": "NHD_NHD_WBD_HUC4_MapServer",
+    "label": "NHD_WBD_HUC4 (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/NHD/NHD_WBD_HUC4/MapServer",
+    "folder": "NHD"
+  },
+  {
+    "key": "NHD_NHD_WBD_HUC8_MapServer",
+    "label": "NHD_WBD_HUC8 (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/NHD/NHD_WBD_HUC8/MapServer",
+    "folder": "NHD"
+  },
+  {
+    "key": "SEA_2011_Wetlands_Inventory_MapServer",
+    "label": "2011_Wetlands_Inventory (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SEA/2011_Wetlands_Inventory/MapServer",
+    "folder": "SEA"
+  },
+  {
+    "key": "SEA_Aquatics_MapServer",
+    "label": "Aquatics (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SEA/Aquatics/MapServer",
+    "folder": "SEA"
+  },
+  {
+    "key": "SEA_NOAA_Sea_Level_Rise_MapServer",
+    "label": "NOAA_Sea_Level_Rise (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SEA/NOAA_Sea_Level_Rise/MapServer",
+    "folder": "SEA"
+  },
+  {
+    "key": "SPPR_CPF_SubAccountAreas_MapServer",
+    "label": "CPF_SubAccountAreas (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SPPR/CPF_SubAccountAreas/MapServer",
+    "folder": "SPPR"
+  },
+  {
+    "key": "SPPR_FabenConstructPaddenCreek_MapServer",
+    "label": "FabenConstructPaddenCreek (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SPPR/FabenConstructPaddenCreek/MapServer",
+    "folder": "SPPR"
+  },
+  {
+    "key": "SPPR_GRP_DraftData_MapServer",
+    "label": "GRP_DraftData (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SPPR/GRP_DraftData/MapServer",
+    "folder": "SPPR"
+  },
+  {
+    "key": "SPPR_GRPS_Published_and_In_Development_MapServer",
+    "label": "GRPS_Published_and_In_Development (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SPPR/GRPS_Published_and_In_Development/MapServer",
+    "folder": "SPPR"
+  },
+  {
+    "key": "SPPR_NWACP_InSitu_Burn_Policy_MapServer",
+    "label": "NWACP_InSitu_Burn_Policy (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SPPR/NWACP_InSitu_Burn_Policy/MapServer",
+    "folder": "SPPR"
+  },
+  {
+    "key": "SPPR_PetroCardIndianCreek2025_MapServer",
+    "label": "PetroCardIndianCreek2025 (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SPPR/PetroCardIndianCreek2025/MapServer",
+    "folder": "SPPR"
+  },
+  {
+    "key": "SPPR_Spills_map_series_MapServer",
+    "label": "Spills_map_series (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SPPR/Spills_map_series/MapServer",
+    "folder": "SPPR"
+  },
+  {
+    "key": "SPPR_TribalContactAreas_MapServer",
+    "label": "TribalContactAreas (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SPPR/TribalContactAreas/MapServer",
+    "folder": "SPPR"
+  },
+  {
+    "key": "TCP_DirtAlert_MapServer",
+    "label": "DirtAlert (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/DirtAlert/MapServer",
+    "folder": "TCP"
+  },
+  {
+    "key": "TCP_EDAT_MapServer",
+    "label": "EDAT (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/EDAT/MapServer",
+    "folder": "TCP"
+  },
+  {
+    "key": "TCP_LDW_Cleanup_Sites_MapServer",
+    "label": "LDW_Cleanup_Sites (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/LDW_Cleanup_Sites/MapServer",
+    "folder": "TCP"
+  },
+  {
+    "key": "TCP_Neighborhood_MapServer",
+    "label": "Neighborhood (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/Neighborhood/MapServer",
+    "folder": "TCP"
+  },
+  {
+    "key": "TCP_SEPAParcels_MapServer",
+    "label": "SEPAParcels (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/SEPAParcels/MapServer",
+    "folder": "TCP"
+  },
+  {
+    "key": "TCP_TCP_Cleanup_Initiative_Sites_MapServer",
+    "label": "TCP_Cleanup_Initiative_Sites (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/TCP_Cleanup_Initiative_Sites/MapServer",
+    "folder": "TCP"
+  },
+  {
+    "key": "TCP_TCP_Puget_Sound_Initiative_Sites_MapServer",
+    "label": "TCP_Puget_Sound_Initiative_Sites (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/TCP_Puget_Sound_Initiative_Sites/MapServer",
+    "folder": "TCP"
+  },
+  {
+    "key": "TCP_TcpCleanupSites_MapServer",
+    "label": "TcpCleanupSites (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/TcpCleanupSites/MapServer",
+    "folder": "TCP"
+  },
+  {
+    "key": "WASHD_Catchments_MapServer",
+    "label": "Catchments (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WASHD/Catchments/MapServer",
+    "folder": "WASHD"
+  },
+  {
+    "key": "WASHD_HU10_MapServer",
+    "label": "HU10 (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WASHD/HU10/MapServer",
+    "folder": "WASHD"
+  },
+  {
+    "key": "WASHD_HU12_MapServer",
+    "label": "HU12 (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WASHD/HU12/MapServer",
+    "folder": "WASHD"
+  },
+  {
+    "key": "WASHD_HU8_MapServer",
+    "label": "HU8 (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WASHD/HU8/MapServer",
+    "folder": "WASHD"
+  },
+  {
+    "key": "WASHD_Lines_MapServer",
+    "label": "Lines (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WASHD/Lines/MapServer",
+    "folder": "WASHD"
+  },
+  {
+    "key": "WASHD_Points_MapServer",
+    "label": "Points (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WASHD/Points/MapServer",
+    "folder": "WASHD"
+  },
+  {
+    "key": "WASHD_Polygons_MapServer",
+    "label": "Polygons (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WASHD/Polygons/MapServer",
+    "folder": "WASHD"
+  },
+  {
+    "key": "WQ_fsweb_prod_wm_MapServer",
+    "label": "fsweb_prod_wm (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/fsweb_prod_wm/MapServer",
+    "folder": "WQ"
+  },
+  {
+    "key": "WQ_Riparian_Buffer_Zones_from_Clean_Water_Guidance_MapServer",
+    "label": "Riparian_Buffer_Zones_from_Clean_Water_Guidance (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/Riparian_Buffer_Zones_from_Clean_Water_Guidance/MapServer",
+    "folder": "WQ"
+  },
+  {
+    "key": "WQ_TileLayer_WQ_Assessment_Proposed_MapServer",
+    "label": "TileLayer_WQ_Assessment_Proposed (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/TileLayer_WQ_Assessment_Proposed/MapServer",
+    "folder": "WQ"
+  },
+  {
+    "key": "WQ_TMDL_Boundaries_MapServer",
+    "label": "TMDL_Boundaries (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/TMDL_Boundaries/MapServer",
+    "folder": "WQ"
+  },
+  {
+    "key": "WQ_UICmapper_AppControl_MapServer",
+    "label": "UICmapper_AppControl (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/UICmapper_AppControl/MapServer",
+    "folder": "WQ"
+  },
+  {
+    "key": "WQ_WaterQualityAtlas_mc_MapServer",
+    "label": "WaterQualityAtlas_mc (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/WaterQualityAtlas_mc/MapServer",
+    "folder": "WQ"
+  },
+  {
+    "key": "WQ_WaterQualityAtlasProposed_mc_MapServer",
+    "label": "WaterQualityAtlasProposed_mc (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/WaterQualityAtlasProposed_mc/MapServer",
+    "folder": "WQ"
+  },
+  {
+    "key": "WR_ECY_Stream_Gages_MapServer",
+    "label": "ECY_Stream_Gages (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WR/ECY_Stream_Gages/MapServer",
+    "folder": "WR"
+  },
+  {
+    "key": "WR_Nooksack_Adjudication_Map_WRIA_1_Map_Service_MapServer",
+    "label": "Nooksack_Adjudication_Map_WRIA_1_Map_Service (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WR/Nooksack_Adjudication_Map_WRIA_1_Map_Service/MapServer",
+    "folder": "WR"
+  },
+  {
+    "key": "WR_Water_Resources_Web_Map_Service_MapServer",
+    "label": "Water_Resources_Web_Map_Service (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WR/Water_Resources_Web_Map_Service/MapServer",
+    "folder": "WR"
+  },
+  {
+    "key": "WR_WellLogImages_MapServer",
+    "label": "WellLogImages (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WR/WellLogImages/MapServer",
+    "folder": "WR"
+  },
+  {
+    "key": "WR_WellLogLocations_mc_MapServer",
+    "label": "WellLogLocations_mc (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WR/WellLogLocations_mc/MapServer",
+    "folder": "WR"
+  },
+  {
+    "key": "WR_WRMap_MapServer",
+    "label": "WRMap (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WR/WRMap/MapServer",
+    "folder": "WR"
+  },
+  {
+    "key": "_SWM_Biosolids_Applications_MapServer",
+    "label": "SWM_Biosolids_Applications (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/SWM_Biosolids_Applications/MapServer",
+    "folder": "Root"
+  },
+  {
+    "key": "_WAGWNitrateWells_MapServer",
+    "label": "WAGWNitrateWells (MapServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WAGWNitrateWells/MapServer",
+    "folder": "Root"
+  }
+]

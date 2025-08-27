@@ -1,17 +1,5 @@
-// List all supported services here
-export const ARCGIS_SERVICES = [
-    {
-        key: 'AQ',
-        label: 'AQ (Air Quality)',
-        url: "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer"
-    },
-    {
-        key: 'EAP',
-        label: 'EAP',
-        url: "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/EAP/MapServer"
-    }
-    // Add more services here as needed
-];
+import ARCGIS_SERVICES from './arcgis_services.json';
+export { ARCGIS_SERVICES };
 
 // Utility to get service by key
 export function getServiceByKey(key) {

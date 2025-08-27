@@ -8,6 +8,15 @@ import {
     getArcgisTileUrl
 } from './arcgisDataUtils';
 
+// Group services by folder
+const servicesByFolder = {};
+ARCGIS_SERVICES.forEach(service => {
+    const folder = service.folder || 'Root';
+    if (!servicesByFolder[folder]) servicesByFolder[folder] = [];
+    servicesByFolder[folder].push(service);
+});
+const folderNames = Object.keys(servicesByFolder).sort();
+
 function ArcgisUploadPanel({
     isOpen,
     onClose,
@@ -218,88 +227,90 @@ function ArcgisUploadPanel({
             >
                 &times;
             </button>
-            <div
-                className="upload-folder"
-                onClick={() => setFolderExpanded(v => !v)}
-            >
-                {folderExpanded ? "▼" : "►"} Authoritative
-            </div>
-            {folderExpanded && (
-                <div style={{ marginLeft: 18 }}>
-                    {ARCGIS_SERVICES.map(service => {
-                        const layers = serviceLayers[service.key] || [];
-                        const legend = serviceLegends[service.key];
-                        const allIds = layers.map(l => l.id);
-                        const checkedIds = checkedLayerIds[service.key] || [];
-                        const isAllChecked = checkedIds.length === allIds.length && allIds.length > 0;
-                        const isAnyChecked = checkedIds.length > 0;
+            {folderNames.map(folder => (
+                <div key={folder}>
+                    <div
+                        className="upload-folder"
+                        onClick={() => setFolderExpanded(f => (f === folder ? null : folder))}
+                    >
+                        {folderExpanded === folder ? "▼" : "►"} {folder}
+                    </div>
+                    {folderExpanded === folder && (
+                        <div style={{ marginLeft: 18 }}>
+                            {servicesByFolder[folder].map(service => {
+                                const layers = serviceLayers[service.key] || [];
+                                const checkedIds = checkedLayerIds[service.key] || [];
+                                const isAnyChecked = checkedIds.length > 0;
 
-                        return (
-                            <div key={service.key} style={{ marginBottom: 12 }}>
-                                <div
-                                    className="upload-item"
-                                    onClick={() => setExpandedService(expandedService === service.key ? null : service.key)}
-                                >
-                                    <span>
-                                        {expandedService === service.key ? "▼" : "►"} {service.label}
-                                    </span>
-                                    <button
-                                        className={isAnyChecked ? "remove-btn" : "add-btn"}
-                                        onClick={e => {
-                                            e.stopPropagation();
-                                            handleAddRemove(service, layers);
-                                        }}
-                                    >
-                                        {isAnyChecked ? "Remove" : "Add"}
-                                    </button>
-                                </div>
-                                {expandedService === service.key && (
-                                    <div style={{ marginLeft: 18 }}>
-                                        <div style={{ marginBottom: 8 }}>
-                                            <label className="select-all-label">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isAllChecked}
-                                                    onChange={() => handleSelectAll(service, layers)}
-                                                    style={{ marginRight: 8 }}
-                                                />
-                                                Select All
-                                            </label>
-                                            <ul style={{ paddingLeft: 0, listStyle: "none" }}>
-                                                {layers.map(layer => {
-                                                    let legendItems = [];
-                                                    if (legend && legend.layers) {
-                                                        const legendLayer = legend.layers.find(l => l.layerId === layer.id);
-                                                        if (legendLayer) legendItems = legendLayer.legend;
-                                                    }
-                                                    return (
-                                                        <li key={layer.id} className="upload-layer-row">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={checkedIds.includes(layer.id)}
-                                                                onChange={() => handleLayerCheckbox(service, layer.id, layers)}
-                                                                style={{ marginRight: 8 }}
-                                                            />
-                                                            {legendItems.length > 0 && (
-                                                                <img
-                                                                    src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
-                                                                    alt={legendItems[0].label}
-                                                                    className="legend-img"
-                                                                />
-                                                            )}
-                                                            <span>{layer.name}</span>
-                                                        </li>
-                                                    );
-                                                })}
-                                            </ul>
+                                return (
+                                    <div key={service.key} style={{ marginBottom: 12 }}>
+                                        <div
+                                            className="upload-item"
+                                            onClick={() => setExpandedService(expandedService === service.key ? null : service.key)}
+                                        >
+                                            <span>
+                                                {expandedService === service.key ? "▼" : "►"} {service.label}
+                                            </span>
+                                            <button
+                                                className={isAnyChecked ? "remove-btn" : "add-btn"}
+                                                onClick={e => {
+                                                    e.stopPropagation();
+                                                    handleAddRemove(service, layers);
+                                                }}
+                                            >
+                                                {isAnyChecked ? "Remove" : "Add"}
+                                            </button>
                                         </div>
+                                        {expandedService === service.key && (
+                                            <div style={{ marginLeft: 18 }}>
+                                                <div style={{ marginBottom: 8 }}>
+                                                    <label className="select-all-label">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={checkedIds.length === layers.length}
+                                                            onChange={() => handleSelectAll(service, layers)}
+                                                            style={{ marginRight: 8 }}
+                                                        />
+                                                        Select All
+                                                    </label>
+                                                    <ul style={{ paddingLeft: 0, listStyle: "none" }}>
+                                                        {layers.map(layer => {
+                                                            let legendItems = [];
+                                                            const legend = serviceLegends[service.key];
+                                                            if (legend && legend.layers) {
+                                                                const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                                                                if (legendLayer) legendItems = legendLayer.legend;
+                                                            }
+                                                            return (
+                                                                <li key={layer.id} className="upload-layer-row">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={checkedIds.includes(layer.id)}
+                                                                        onChange={() => handleLayerCheckbox(service, layer.id, layers)}
+                                                                        style={{ marginRight: 8 }}
+                                                                    />
+                                                                    {legendItems.length > 0 && (
+                                                                        <img
+                                                                            src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
+                                                                            alt={legendItems[0].label}
+                                                                            className="legend-img"
+                                                                        />
+                                                                    )}
+                                                                    <span>{layer.name}</span>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
-            )}
+            ))}
         </div>
     );
 }
