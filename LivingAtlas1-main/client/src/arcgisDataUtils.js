@@ -1,20 +1,41 @@
-export const AQ_SERVICE_URL = "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer";
-
-export function getArcgisTileUrl(layerIds = []) {
-    let layersParam = '';
-    if (layerIds.length > 0) {
-        layersParam = '&layers=show:' + layerIds.join(',');
+// List all supported services here
+export const ARCGIS_SERVICES = [
+    {
+        key: 'AQ',
+        label: 'AQ (Air Quality)',
+        url: "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer"
+    },
+    {
+        key: 'EAP',
+        label: 'EAP',
+        url: "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/EAP/MapServer"
     }
-    return `${AQ_SERVICE_URL}/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&transparent=true&f=image${layersParam}`;
+    // Add more services here as needed
+];
+
+// Utility to get service by key
+export function getServiceByKey(key) {
+    return ARCGIS_SERVICES.find(s => s.key === key);
 }
 
-export async function fetchArcgisLayers() {
-    const res = await fetch(`${AQ_SERVICE_URL}/layers?f=json`);
+// Fetch layers for a given service
+export async function fetchArcgisLayers(serviceUrl) {
+    const res = await fetch(`${serviceUrl}/layers?f=json`);
     const data = await res.json();
     return data.layers || [];
 }
 
-export async function fetchArcgisLegend() {
-    const res = await fetch(`${AQ_SERVICE_URL}/legend?f=json`);
+// Fetch legend for a given service
+export async function fetchArcgisLegend(serviceUrl) {
+    const res = await fetch(`${serviceUrl}/legend?f=json`);
     return res.json();
+}
+
+// Get tile URL for a given service and layer IDs
+export function getArcgisTileUrl(serviceUrl, layerIds = []) {
+    let layersParam = '';
+    if (layerIds.length > 0) {
+        layersParam = '&layers=show:' + layerIds.join(',');
+    }
+    return `${serviceUrl}/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&transparent=true&f=image${layersParam}`;
 }

@@ -1,13 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import mapboxgl from 'mapbox-gl';
-import { addArcgisVectorLayer, handlerRefs } from './arcgisVectorUtils';
+import React, { useEffect, useState, useRef } from "react";
+import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
+    ARCGIS_SERVICES,
     fetchArcgisLayers,
     fetchArcgisLegend,
-    getArcgisTileUrl,
-    AQ_SERVICE_URL
+    getArcgisTileUrl
 } from './arcgisDataUtils';
 
 function ArcgisUploadPanel({
@@ -18,132 +16,196 @@ function ArcgisUploadPanel({
     setArcgisLayerAdded: setPropArcgisLayerAdded,
 }) {
     const [folderExpanded, setFolderExpanded] = useState(false);
-    const [itemExpanded, setItemExpanded] = useState(false);
-    const [arcgisLayers, setArcgisLayers] = useState([]);
-    const [arcgisLegend, setArcgisLegend] = useState(null);
-    const [checkedArcgisLayerIds, setCheckedArcgisLayerIds] = useState([]);
-    const [authoritativeServices, setAuthoritativeServices] = useState([]);
-    const [serviceLayers, setServiceLayers] = useState({}); // { serviceName: [layers] }
-    const [serviceLegends, setServiceLegends] = useState({}); // { serviceName: legend }
-    const handlerRefs = React.useRef({});
+    const [expandedService, setExpandedService] = useState(null);
+    const [serviceLayers, setServiceLayers] = useState({}); // { key: [layers] }
+    const [serviceLegends, setServiceLegends] = useState({}); // { key: legend }
+    const [checkedLayerIds, setCheckedLayerIds] = useState({}); // { key: [layerIds] }
+    const [serviceLayerAdded, setServiceLayerAdded] = useState({}); // { key: bool }
 
-    // Fetch layers and legend
+    // Track previous checkedLayerIds for diffing
+    const prevCheckedLayerIds = useRef({});
+
+    // Fetch layers and legends for all services
     useEffect(() => {
-        if (isOpen) {
-            fetchArcgisLayers()
-                .then(layers => {
-                    setArcgisLayers(prevLayers => {
-                        if (JSON.stringify(prevLayers) !== JSON.stringify(layers)) {
-                            setCheckedArcgisLayerIds([]);
-                        }
-                        return layers;
-                    });
+        if (!isOpen) return;
+        ARCGIS_SERVICES.forEach(service => {
+            if (!serviceLayers[service.key]) {
+                fetchArcgisLayers(service.url).then(layers => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: layers }));
+                    // Default: all unchecked
+                    setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
+                    setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
                 });
-            fetchArcgisLegend()
-                .then(data => setArcgisLegend(data));
-        }
+            }
+            if (!serviceLegends[service.key]) {
+                fetchArcgisLegend(service.url).then(legend => {
+                    setServiceLegends(prev => ({ ...prev, [service.key]: legend }));
+                });
+            }
+        });
+        // eslint-disable-next-line
     }, [isOpen]);
 
-    // Add ArcGIS Layer
-    const addArcgisLayer = (layerIds = checkedArcgisLayerIds) => {
+    // Add ArcGIS raster layer for a service
+    const addArcgisLayer = (service, layerIds) => {
         const map = mapInstance();
         if (!map) return;
+        const sourceId = `arcgis-raster-${service.key}`;
+        const layerId = `arcgis-raster-layer-${service.key}`;
 
-        if (map.getLayer('arcgis-raster-layer')) map.removeLayer('arcgis-raster-layer');
-        if (map.getSource('arcgis-raster')) map.removeSource('arcgis-raster');
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
 
-        let layersParam = '';
-        if (layerIds.length > 0) {
-            layersParam = '&layers=show:' + layerIds.join(',');
-        }
-
-        map.addSource('arcgis-raster', {
+        map.addSource(sourceId, {
             type: 'raster',
             tiles: [
-                getArcgisTileUrl(layerIds)
+                getArcgisTileUrl(service.url, layerIds)
             ],
             tileSize: 256,
             minzoom: 6,
             maxzoom: 12
         });
         map.addLayer({
-            id: 'arcgis-raster-layer',
+            id: layerId,
             type: 'raster',
-            source: 'arcgis-raster',
+            source: sourceId,
             paint: {
                 'raster-opacity': 0.4
             }
         });
-        setPropArcgisLayerAdded(true);
+        setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
     };
 
-    // Remove ArcGIS Layer
-    const removeArcgisLayer = () => {
+    // Remove ArcGIS raster layer for a service
+    const removeArcgisLayer = (service) => {
         const map = mapInstance();
         if (!map) return;
-        if (map.getLayer('arcgis-raster-layer')) map.removeLayer('arcgis-raster-layer');
-        if (map.getSource('arcgis-raster')) map.removeSource('arcgis-raster');
-        setPropArcgisLayerAdded(false);
+        const sourceId = `arcgis-raster-${service.key}`;
+        const layerId = `arcgis-raster-layer-${service.key}`;
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+        setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
     };
 
-    // Checkbox handlers
-    const handleLayerCheckbox = (layerId) => {
-        let newChecked;
-        if (checkedArcgisLayerIds.includes(layerId)) {
-            newChecked = checkedArcgisLayerIds.filter(id => id !== layerId);
+    // Add/Remove button logic:
+    const handleAddRemove = (service, layers) => {
+        const allIds = layers.map(l => l.id);
+        if (serviceLayerAdded[service.key]) {
+            // Remove: uncheck all
+            setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
+            setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
         } else {
-            newChecked = [...checkedArcgisLayerIds, layerId];
-        }
-        setCheckedArcgisLayerIds(newChecked);
-        if (propArcgisLayerAdded) {
-            addArcgisLayer(newChecked);
+            // Add: check all
+            setCheckedLayerIds(prev => ({ ...prev, [service.key]: allIds }));
+            setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
         }
     };
 
-    const handleSelectAll = () => {
-        if (checkedArcgisLayerIds.length === arcgisLayers.length) {
-            setCheckedArcgisLayerIds([]);
-            if (propArcgisLayerAdded) removeArcgisLayer();
+    // Select-All logic:
+    const handleSelectAll = (service, layers) => {
+        const allIds = layers.map(l => l.id);
+        const isAllChecked = (checkedLayerIds[service.key] || []).length === allIds.length;
+        if (isAllChecked) {
+            // Uncheck all
+            setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
+            setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
         } else {
-            const allIds = arcgisLayers.map(l => l.id);
-            setCheckedArcgisLayerIds(allIds);
-            if (propArcgisLayerAdded) addArcgisLayer(allIds);
+            // Check all
+            setCheckedLayerIds(prev => ({ ...prev, [service.key]: allIds }));
+            setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
         }
     };
 
-    // Effect for checked layers
+    // Layer checkbox logic:
+    const handleLayerCheckbox = (service, layerId, layers) => {
+        setCheckedLayerIds(prev => {
+            const prevChecked = prev[service.key] || [];
+            let newChecked;
+            if (prevChecked.includes(layerId)) {
+                newChecked = prevChecked.filter(id => id !== layerId);
+            } else {
+                newChecked = [...prevChecked, layerId];
+            }
+            // Update add/remove button state
+            setServiceLayerAdded(prevAdded => ({
+                ...prevAdded,
+                [service.key]: newChecked.length > 0
+            }));
+            return { ...prev, [service.key]: newChecked };
+        });
+    };
+
+    // Effect for checked layers: add/remove vector layers for each service
     useEffect(() => {
         const map = mapInstance();
         if (!map) return;
 
-        // Remove all vector layers first
-        arcgisLayers.forEach(layer => {
-            const layerId = `arcgis-vector-layer-${layer.id}`;
-            const outlineId = `${layerId}-outline`;
-            const sourceId = `arcgis-vector-source-${layer.id}`;
-            if (map.getLayer(layerId)) map.removeLayer(layerId);
-            if (map.getLayer(outlineId)) map.removeLayer(outlineId);
-            if (map.getSource(sourceId)) map.removeSource(sourceId);
-        });
+        ARCGIS_SERVICES.forEach(service => {
+            const layers = serviceLayers[service.key] || [];
+            const prevChecked = prevCheckedLayerIds.current[service.key] || [];
+            const currChecked = checkedLayerIds[service.key] || [];
 
-        // Add vector layers for checked layers
-        checkedArcgisLayerIds.forEach(id => {
-            const layer = arcgisLayers.find(l => l.id === id);
-            if (layer) addArcgisVectorLayer(map, layer, showArcgisPopup);
-        });
+            // --- VECTOR LAYERS (unchanged) ---
+            const toRemove = prevChecked.filter(id => !currChecked.includes(id));
+            const toAdd = currChecked.filter(id => !prevChecked.includes(id));
 
-        // Raster logic (as before)
-        if (checkedArcgisLayerIds.length === 0) {
-            if (propArcgisLayerAdded) removeArcgisLayer();
-        } else {
-            if (!propArcgisLayerAdded) {
-                addArcgisLayer(checkedArcgisLayerIds);
-            } else {
-                addArcgisLayer(checkedArcgisLayerIds);
+            toRemove.forEach(id => {
+                const baseId = `arcgis-vector-layer-${service.key}-${id}`;
+                const fillId = baseId;
+                const lineId = `${baseId}-outline`;
+                const circleId = `${baseId}-circle`;
+                const sourceId = `arcgis-vector-source-${service.key}-${id}`;
+                [fillId, lineId, circleId].forEach(lid => {
+                    if (map.getLayer(lid)) map.removeLayer(lid);
+                });
+                if (map.getSource(sourceId)) map.removeSource(sourceId);
+            });
+
+            toAdd.forEach(id => {
+                const layer = layers.find(l => l.id === id);
+                if (layer) {
+                    addArcgisVectorLayer(
+                        map,
+                        { ...layer, serviceKey: service.key, serviceUrl: service.url },
+                        showArcgisPopup
+                    );
+                }
+            });
+
+            // --- RASTER LAYER (fix here) ---
+            const rasterSourceId = `arcgis-raster-${service.key}`;
+            const rasterLayerId = `arcgis-raster-layer-${service.key}`;
+
+            // Always remove the raster layer/source first
+            if (map.getLayer(rasterLayerId)) map.removeLayer(rasterLayerId);
+            if (map.getSource(rasterSourceId)) map.removeSource(rasterSourceId);
+
+            if (currChecked.length > 0) {
+                // Add raster layer for currently checked layers
+                map.addSource(rasterSourceId, {
+                    type: 'raster',
+                    tiles: [
+                        getArcgisTileUrl(service.url, currChecked)
+                    ],
+                    tileSize: 256,
+                    minzoom: 6,
+                    maxzoom: 12
+                });
+                map.addLayer({
+                    id: rasterLayerId,
+                    type: 'raster',
+                    source: rasterSourceId,
+                    paint: {
+                        'raster-opacity': 0.4
+                    }
+                });
             }
-        }
+
+            // Update ref for next diff
+            prevCheckedLayerIds.current[service.key] = [...currChecked];
+        });
         // eslint-disable-next-line
-    }, [checkedArcgisLayerIds, arcgisLegend]);
+    }, [checkedLayerIds, serviceLayers]);
 
     if (!isOpen) return null;
 
@@ -164,71 +226,78 @@ function ArcgisUploadPanel({
             </div>
             {folderExpanded && (
                 <div style={{ marginLeft: 18 }}>
-                    <div
-                        className="upload-item"
-                        onClick={() => setItemExpanded(v => !v)}
-                    >
-                        <span>
-                            {itemExpanded ? "▼" : "►"} AQ (Air Quality)
-                        </span>
-                        <button
-                            className={propArcgisLayerAdded ? "remove-btn" : "add-btn"}
-                            onClick={e => {
-                                e.stopPropagation();
-                                if (propArcgisLayerAdded) {
-                                    removeArcgisLayer();
-                                } else {
-                                    const allIds = arcgisLayers.map(l => l.id);
-                                    setCheckedArcgisLayerIds(allIds);
-                                    addArcgisLayer(allIds);
-                                }
-                            }}
-                        >
-                            {propArcgisLayerAdded ? "Remove" : "Add"}
-                        </button>
-                    </div>
-                    {itemExpanded && (
-                        <div style={{ marginLeft: 18 }}>
-                            <div style={{ marginBottom: 8 }}>
-                                <label className="select-all-label">
-                                    <input
-                                        type="checkbox"
-                                        checked={checkedArcgisLayerIds.length === arcgisLayers.length && arcgisLayers.length > 0}
-                                        onChange={handleSelectAll}
-                                        style={{ marginRight: 8 }}
-                                    />
-                                    Select All
-                                </label>
-                                <ul style={{ paddingLeft: 0, listStyle: "none" }}>
-                                    {arcgisLayers.map(layer => {
-                                        let legendItems = [];
-                                        if (arcgisLegend && arcgisLegend.layers) {
-                                            const legendLayer = arcgisLegend.layers.find(l => l.layerId === layer.id);
-                                            if (legendLayer) legendItems = legendLayer.legend;
-                                        }
-                                        return (
-                                            <li key={layer.id} className="upload-layer-row">
+                    {ARCGIS_SERVICES.map(service => {
+                        const layers = serviceLayers[service.key] || [];
+                        const legend = serviceLegends[service.key];
+                        const allIds = layers.map(l => l.id);
+                        const checkedIds = checkedLayerIds[service.key] || [];
+                        const isAllChecked = checkedIds.length === allIds.length && allIds.length > 0;
+                        const isAnyChecked = checkedIds.length > 0;
+
+                        return (
+                            <div key={service.key} style={{ marginBottom: 12 }}>
+                                <div
+                                    className="upload-item"
+                                    onClick={() => setExpandedService(expandedService === service.key ? null : service.key)}
+                                >
+                                    <span>
+                                        {expandedService === service.key ? "▼" : "►"} {service.label}
+                                    </span>
+                                    <button
+                                        className={isAnyChecked ? "remove-btn" : "add-btn"}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleAddRemove(service, layers);
+                                        }}
+                                    >
+                                        {isAnyChecked ? "Remove" : "Add"}
+                                    </button>
+                                </div>
+                                {expandedService === service.key && (
+                                    <div style={{ marginLeft: 18 }}>
+                                        <div style={{ marginBottom: 8 }}>
+                                            <label className="select-all-label">
                                                 <input
                                                     type="checkbox"
-                                                    checked={checkedArcgisLayerIds.includes(layer.id)}
-                                                    onChange={() => handleLayerCheckbox(layer.id)}
+                                                    checked={isAllChecked}
+                                                    onChange={() => handleSelectAll(service, layers)}
                                                     style={{ marginRight: 8 }}
                                                 />
-                                                {legendItems.length > 0 && (
-                                                    <img
-                                                        src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
-                                                        alt={legendItems[0].label}
-                                                        className="legend-img"
-                                                    />
-                                                )}
-                                                <span>{layer.name}</span>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
+                                                Select All
+                                            </label>
+                                            <ul style={{ paddingLeft: 0, listStyle: "none" }}>
+                                                {layers.map(layer => {
+                                                    let legendItems = [];
+                                                    if (legend && legend.layers) {
+                                                        const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                                                        if (legendLayer) legendItems = legendLayer.legend;
+                                                    }
+                                                    return (
+                                                        <li key={layer.id} className="upload-layer-row">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={checkedIds.includes(layer.id)}
+                                                                onChange={() => handleLayerCheckbox(service, layer.id, layers)}
+                                                                style={{ marginRight: 8 }}
+                                                            />
+                                                            {legendItems.length > 0 && (
+                                                                <img
+                                                                    src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
+                                                                    alt={legendItems[0].label}
+                                                                    className="legend-img"
+                                                                />
+                                                            )}
+                                                            <span>{layer.name}</span>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    )}
+                        );
+                    })}
                 </div>
             )}
         </div>

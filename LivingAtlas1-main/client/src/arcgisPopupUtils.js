@@ -1,11 +1,17 @@
 import mapboxgl from 'mapbox-gl';
-import { AQ_SERVICE_URL } from './arcgisDataUtils';
 
+/**
+ * Show a popup for a feature from any ArcGIS service.
+ * @param {Object} e - Mapbox event
+ * @param {Object} layer - Layer object (should include .id and .serviceUrl)
+ */
 export async function showArcgisPopup(e, layer) {
     const feature = e.features[0];
     let layerMeta = {};
+    const serviceUrl = layer.serviceUrl; // must be passed in layer object
+
     try {
-        const resp = await fetch(`${AQ_SERVICE_URL}/${layer.id}?f=json`);
+        const resp = await fetch(`${serviceUrl}/${layer.id}?f=json`);
         layerMeta = await resp.json();
     } catch (err) {
         layerMeta = {};
