@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import mapboxgl from 'mapbox-gl';
 import { addArcgisVectorLayer, handlerRefs } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
+import { fetchArcgisLayers, fetchArcgisLegend } from './arcgisDataUtils'; // <-- import here
 
 const AUTHORITATIVE_BASE = "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative";
 
@@ -26,19 +27,16 @@ function ArcgisUploadPanel({
     // Fetch layers and legend
     useEffect(() => {
         if (isOpen) {
-            const SERVICE_URL = "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer";
-            fetch(`${SERVICE_URL}/layers?f=json`)
-                .then(res => res.json())
-                .then(data => {
+            fetchArcgisLayers()
+                .then(layers => {
                     setArcgisLayers(prevLayers => {
-                        if (JSON.stringify(prevLayers) !== JSON.stringify(data.layers || [])) {
+                        if (JSON.stringify(prevLayers) !== JSON.stringify(layers)) {
                             setCheckedArcgisLayerIds([]);
                         }
-                        return data.layers || [];
+                        return layers;
                     });
                 });
-            fetch(`${SERVICE_URL}/legend?f=json`)
-                .then(res => res.json())
+            fetchArcgisLegend()
                 .then(data => setArcgisLegend(data));
         }
     }, [isOpen]);
