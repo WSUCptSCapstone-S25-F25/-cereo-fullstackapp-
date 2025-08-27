@@ -324,8 +324,7 @@
     background: #e0e0e0;
 }
 
-.upload-folder,
-.upload-item {
+.upload-folder {
     cursor: pointer;
     font-weight: bold;
     margin: 8px 0 4px 0;
@@ -335,7 +334,23 @@
     transition: background 0.2s;
     color: #222 !important;
 }
-.upload-folder:hover,
+.upload-folder:hover {
+    background: #e0e0e0;
+}
+
+.upload-item {
+    cursor: pointer;
+    font-weight: bold;
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 4px;
+    background: #ececec;
+    padding: 4px 0 4px 4px;
+    transition: background 0.2s;
+    color: #222 !important;
+}
 .upload-item:hover {
     background: #e0e0e0;
 }
@@ -361,7 +376,8 @@
 .upload-panel .legend-item img {
     width: 20px;
     height: 20px;
-    margin-right: 6px;
+    margin-right: 8px;
+    vertical-align: middle;
     border: 1px solid #ccc;
     border-radius: 3px;
     background: #fff;
@@ -384,4 +400,11 @@
 }
 .upload-layer-row input[type="checkbox"] {
     accent-color: #1976d2;
+}
+
+.upload-panel .select-all-label {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
 }

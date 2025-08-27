@@ -69,7 +69,7 @@ function ArcgisUploadPanel({
             type: 'raster',
             source: 'arcgis-raster',
             paint: {
-                'raster-opacity': 0.35
+                'raster-opacity': 0.4
             }
         });
         setPropArcgisLayerAdded(true);
@@ -223,7 +223,6 @@ function ArcgisUploadPanel({
             <div
                 className="upload-folder"
                 onClick={() => setFolderExpanded(v => !v)}
-                style={{ cursor: "pointer", fontWeight: "bold", margin: "8px 0" }}
             >
                 {folderExpanded ? "▼" : "►"} Authoritative
             </div>
@@ -231,36 +230,18 @@ function ArcgisUploadPanel({
                 <div style={{ marginLeft: 18 }}>
                     <div
                         className="upload-item"
-                        style={{
-                            cursor: "pointer",
-                            fontWeight: "bold",
-                            margin: "6px 0",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between"
-                        }}
                         onClick={() => setItemExpanded(v => !v)}
                     >
                         <span>
                             {itemExpanded ? "▼" : "►"} AQ (Air Quality)
                         </span>
                         <button
-                            style={{
-                                marginLeft: "auto",
-                                background: propArcgisLayerAdded ? "#e57373" : "#1976d2",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "4px",
-                                padding: "2px 12px",
-                                fontWeight: "bold",
-                                cursor: "pointer"
-                            }}
+                            className={propArcgisLayerAdded ? "remove-btn" : "add-btn"}
                             onClick={e => {
                                 e.stopPropagation();
                                 if (propArcgisLayerAdded) {
                                     removeArcgisLayer();
                                 } else {
-                                    // Select all layers when adding
                                     const allIds = arcgisLayers.map(l => l.id);
                                     setCheckedArcgisLayerIds(allIds);
                                     addArcgisLayer(allIds);
@@ -273,7 +254,7 @@ function ArcgisUploadPanel({
                     {itemExpanded && (
                         <div style={{ marginLeft: 18 }}>
                             <div style={{ marginBottom: 8 }}>
-                                <label style={{ fontWeight: "bold", display: "flex", alignItems: "center", marginBottom: 6 }}>
+                                <label className="select-all-label">
                                     <input
                                         type="checkbox"
                                         checked={checkedArcgisLayerIds.length === arcgisLayers.length && arcgisLayers.length > 0}
@@ -301,7 +282,7 @@ function ArcgisUploadPanel({
                                                     <img
                                                         src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
                                                         alt={legendItems[0].label}
-                                                        style={{ width: 20, height: 20, marginRight: 8, verticalAlign: "middle", border: "1px solid #ccc", borderRadius: 3, background: "#fff" }}
+                                                        className="legend-img"
                                                     />
                                                 )}
                                                 <span>{layer.name}</span>
