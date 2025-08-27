@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import mapboxgl from 'mapbox-gl';
+import { addArcgisVectorLayer, showArcgisPopup, handlerRefs } from './arcgisVectorUtils';
 
 const AUTHORITATIVE_BASE = "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative";
 
@@ -126,7 +127,7 @@ function ArcgisUploadPanel({
         // Add vector layers for checked layers
         checkedArcgisLayerIds.forEach(id => {
             const layer = arcgisLayers.find(l => l.id === id);
-            if (layer) addArcgisVectorLayer(layer);
+            if (layer) addArcgisVectorLayer(map, layer, showArcgisPopup);
         });
 
         // Raster logic (as before)
@@ -141,78 +142,6 @@ function ArcgisUploadPanel({
         }
         // eslint-disable-next-line
     }, [checkedArcgisLayerIds, arcgisLegend]);
-
-    // Add ArcGIS Vector Layer
-    const addArcgisVectorLayer = async (layer) => {
-        const map = mapInstance();
-        if (!map) return;
-
-        const sourceId = `arcgis-vector-source-${layer.id}`;
-        const fillLayerId = `arcgis-vector-layer-${layer.id}`;
-        const lineLayerId = `${fillLayerId}-outline`;
-
-        // Remove if already exists
-        if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
-        if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
-
-        // Remove previous event listeners to prevent duplicates
-        const refs = handlerRefs.current[layer.id];
-        if (refs) {
-            map.off('click', fillLayerId, refs.handleArcgisPopup);
-            map.off('mouseenter', fillLayerId, refs.handleCursorPointer);
-            map.off('mouseleave', fillLayerId, refs.handleCursorDefault);
-            map.off('click', lineLayerId, refs.handleArcgisPopup);
-            map.off('mouseenter', lineLayerId, refs.handleCursorPointer);
-            map.off('mouseleave', lineLayerId, refs.handleCursorDefault);
-        }
-
-        // ArcGIS FeatureServer GeoJSON endpoint
-        const geojsonUrl = `https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/${layer.id}/query?where=1=1&outFields=*&f=geojson`;
-
-        // Add source
-        map.addSource(sourceId, {
-            type: 'geojson',
-            data: geojsonUrl
-        });
-
-        // Add fully transparent fill layer for click detection
-        map.addLayer({
-            id: fillLayerId,
-            type: 'fill',
-            source: sourceId,
-            paint: {
-                'fill-color': 'rgba(0,0,0,0)',
-                'fill-opacity': 0
-            }
-        });
-
-        // Add fully transparent line layer for click detection
-        map.addLayer({
-            id: lineLayerId,
-            type: 'line',
-            source: sourceId,
-            paint: {
-                'line-color': 'rgba(0,0,0,0)',
-                'line-width': 1
-            }
-        });
-
-        // Define handlers and store them in the ref
-        const handleArcgisPopup = (e) => showArcgisPopup(e, layer);
-        const handleCursorPointer = () => { map.getCanvas().style.cursor = 'pointer'; };
-        const handleCursorDefault = () => { map.getCanvas().style.cursor = ''; };
-        handlerRefs.current[layer.id] = { handleArcgisPopup, handleCursorPointer, handleCursorDefault };
-
-        // Add event listeners
-        map.on('click', fillLayerId, handleArcgisPopup);
-        map.on('mouseenter', fillLayerId, handleCursorPointer);
-        map.on('mouseleave', fillLayerId, handleCursorDefault);
-
-        map.on('click', lineLayerId, handleArcgisPopup);
-        map.on('mouseenter', lineLayerId, handleCursorPointer);
-        map.on('mouseleave', lineLayerId, handleCursorDefault);
-    };
 
     // Helper to show popup
     async function showArcgisPopup(e, layer) {
