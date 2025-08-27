@@ -3,9 +3,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import mapboxgl from 'mapbox-gl';
 import { addArcgisVectorLayer, handlerRefs } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
-import { fetchArcgisLayers, fetchArcgisLegend } from './arcgisDataUtils'; // <-- import here
-
-const AUTHORITATIVE_BASE = "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative";
+import {
+    fetchArcgisLayers,
+    fetchArcgisLegend,
+    getArcgisTileUrl,
+    AQ_SERVICE_URL
+} from './arcgisDataUtils';
 
 function ArcgisUploadPanel({
     isOpen,
@@ -57,7 +60,7 @@ function ArcgisUploadPanel({
         map.addSource('arcgis-raster', {
             type: 'raster',
             tiles: [
-                `https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&transparent=true&f=image${layersParam}`
+                getArcgisTileUrl(layerIds)
             ],
             tileSize: 256,
             minzoom: 6,

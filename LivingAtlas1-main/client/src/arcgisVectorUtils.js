@@ -1,4 +1,5 @@
 import mapboxgl from 'mapbox-gl';
+import { AQ_SERVICE_URL } from './arcgisDataUtils';
 
 // Handler refs for event cleanup
 export const handlerRefs = {};
@@ -25,7 +26,7 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
     }
 
     // ArcGIS FeatureServer GeoJSON endpoint
-    const geojsonUrl = `https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/${layer.id}/query?where=1=1&outFields=*&f=geojson`;
+    const geojsonUrl = `${AQ_SERVICE_URL}/${layer.id}/query?where=1=1&outFields=*&f=geojson`;
 
     // Add source
     map.addSource(sourceId, {
@@ -75,7 +76,7 @@ export async function showArcgisPopup(e, layer) {
     const feature = e.features[0];
     let layerMeta = {};
     try {
-        const resp = await fetch(`https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/${layer.id}?f=json`);
+        const resp = await fetch(`${AQ_SERVICE_URL}/${layer.id}?f=json`);
         layerMeta = await resp.json();
     } catch (err) {
         layerMeta = {};
