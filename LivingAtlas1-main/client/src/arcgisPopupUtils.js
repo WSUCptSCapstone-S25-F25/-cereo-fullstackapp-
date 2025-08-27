@@ -32,8 +32,10 @@ export async function showArcgisPopup(e, layer) {
     </div>
     ${layerDescription ? `
       <div style="font-size:0.95em;color:#444;margin-bottom:6px;">
-        <span id="${descId}">${descShort}</span>
-        ${hasLongDesc ? `<a href="#" id="${descId}-toggle" style="margin-left:8px;font-size:0.95em;">Show more</a>` : ""}
+        <div id="${descId}-container">
+          <span id="${descId}">${descShort}</span>
+          ${hasLongDesc ? `<a href="#" id="${descId}-toggle" style="margin-left:8px;font-size:0.95em;">Show more</a>` : ""}
+        </div>
       </div>
     ` : ""}
     <table>
@@ -57,17 +59,22 @@ export async function showArcgisPopup(e, layer) {
     // Add collapse/expand logic after popup is added to DOM
     if (hasLongDesc) {
         setTimeout(() => {
-            const descSpan = document.getElementById(descId);
-            const toggleLink = document.getElementById(`${descId}-toggle`);
+            const container = document.getElementById(`${descId}-container`);
             let expanded = false;
-            if (descSpan && toggleLink) {
-                toggleLink.onclick = function(ev) {
+            function updateDesc() {
+                container.innerHTML = `
+                    <span id="${descId}">${expanded ? layerDescription : descShort}</span>
+                    <a href="#" id="${descId}-toggle" style="margin-left:8px;font-size:0.95em;">
+                        ${expanded ? "Show less" : "Show more"}
+                    </a>
+                `;
+                document.getElementById(`${descId}-toggle`).onclick = function(ev) {
                     ev.preventDefault();
                     expanded = !expanded;
-                    descSpan.textContent = expanded ? layerDescription : descShort;
-                    toggleLink.textContent = expanded ? "Show less" : "Show more";
+                    updateDesc();
                 };
             }
+            if (container) updateDesc();
         }, 100);
     }
 }
