@@ -1,4 +1,7 @@
-import ARCGIS_SERVICES from './arcgis_services.json';
+import ALL_ARCGIS_SERVICES from './arcgis_services.json';
+
+// Only keep MapServer services
+const ARCGIS_SERVICES = ALL_ARCGIS_SERVICES.filter(s => s.type === 'MapServer');
 export { ARCGIS_SERVICES };
 
 // Utility to get service by key

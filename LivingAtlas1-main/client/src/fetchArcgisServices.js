@@ -15,12 +15,13 @@ async function fetchServices(url, folder = '') {
     }
     if (data.services) {
         for (const svc of data.services) {
-            if (svc.type === 'MapServer') {
+            if (svc.type === 'MapServer' || svc.type === 'FeatureServer') {
                 services.push({
-                    key: `${folder}_${svc.name.split('/').pop()}_MapServer`.replace(/[^\w]/g, '_'),
-                    label: `${svc.name.split('/').pop()} (MapServer)`,
-                    url: `${BASE_URL}${folder ? folder + '/' : ''}${svc.name.split('/').pop()}/MapServer`,
-                    folder: folder || 'Root'
+                    key: `${folder}_${svc.name.split('/').pop()}_${svc.type}`.replace(/[^\w]/g, '_'),
+                    label: `${svc.name.split('/').pop()} (${svc.type})`,
+                    url: `${BASE_URL}${folder ? folder + '/' : ''}${svc.name.split('/').pop()}/${svc.type}`,
+                    folder: folder || 'Root',
+                    type: svc.type
                 });
             }
         }
@@ -31,5 +32,5 @@ async function fetchServices(url, folder = '') {
 (async () => {
     const allServices = await fetchServices(BASE_URL);
     fs.writeFileSync('arcgis_services.json', JSON.stringify(allServices, null, 2));
-    console.log('Saved to ./src/arcgis_services.json');
+    console.log('Saved to arcgis_services.json');
 })();

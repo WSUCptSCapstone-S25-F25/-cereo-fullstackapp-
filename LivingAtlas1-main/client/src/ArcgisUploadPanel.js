@@ -311,6 +311,9 @@ function ArcgisUploadPanel({
                     )}
                 </div>
             ))}
+            <div style={{ fontSize: "12px", color: "#555", marginTop: 12, textAlign: "center" }}>
+                Data sources: <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
+            </div>
         </div>
     );
 }
