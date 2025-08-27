@@ -32,10 +32,10 @@ export async function showArcgisPopup(e, layer) {
     </div>
     ${layerDescription ? `
       <div style="font-size:0.95em;color:#444;margin-bottom:6px;">
-        <div id="${descId}-container">
+        <div id="${descId}-container" style="display:inline;">
           <span id="${descId}">${descShort}</span>
-          ${hasLongDesc ? `<a href="#" id="${descId}-toggle" style="margin-left:8px;font-size:0.95em;">Show more</a>` : ""}
         </div>
+        ${hasLongDesc ? `<a href="#" id="${descId}-toggle" style="margin-left:8px;font-size:0.95em;">Show more</a>` : ""}
       </div>
     ` : ""}
     <table>
@@ -59,22 +59,26 @@ export async function showArcgisPopup(e, layer) {
     // Add collapse/expand logic after popup is added to DOM
     if (hasLongDesc) {
         setTimeout(() => {
-            const container = document.getElementById(`${descId}-container`);
+            const descSpan = document.getElementById(descId);
+            const toggleLink = document.getElementById(`${descId}-toggle`);
             let expanded = false;
             function updateDesc() {
-                container.innerHTML = `
-                    <span id="${descId}">${expanded ? layerDescription : descShort}</span>
-                    <a href="#" id="${descId}-toggle" style="margin-left:8px;font-size:0.95em;">
-                        ${expanded ? "Show less" : "Show more"}
-                    </a>
-                `;
-                document.getElementById(`${descId}-toggle`).onclick = function(ev) {
+                if (descSpan) {
+                    if (/<[a-z][\s\S]*>/i.test(layerDescription)) {
+                        descSpan.innerHTML = expanded ? layerDescription : descShort;
+                    } else {
+                        descSpan.textContent = expanded ? layerDescription : descShort;
+                    }
+                }
+                if (toggleLink) toggleLink.textContent = expanded ? "Show less" : "Show more";
+            }
+            if (toggleLink) {
+                toggleLink.onclick = function(ev) {
                     ev.preventDefault();
                     expanded = !expanded;
                     updateDesc();
                 };
             }
-            if (container) updateDesc();
         }, 100);
     }
 }
