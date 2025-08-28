@@ -120,28 +120,6 @@ async def deleteCard(username: str, title: str):
     cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
     conn.commit()
     return {"Success": "The card is deleted"}
-"""
-async def deleteCard(cardID: int):
-    if cardID is None:
-        raise HTTPException(status_code=422, detail="CardID is required")
-    if not isinstance(cardID, int):
-        raise HTTPException(status_code=422, detail="CardID must be an integer")
-
-    cur.execute("SELECT Cards.CardID, Cards.thumbnail_link FROM Cards WHERE Cards.CardID = %s", (cardID,))
-    result = cur.fetchone()
-    if result is None:
-        raise HTTPException(status_code=404, detail="Card not found")
-    cardID, thumbnail_link = result
-
-    if thumbnail_link and thumbnail_link != DEFAULT_THUMBNAIL_URL:
-        delete_from_bucket(thumbnail_link.replace(f"https://storage.googleapis.com/{bucket_name}/", ""))
-
-    cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
-    cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
-    cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
-    conn.commit()
-    return {"Success": "The card is deleted"}
-"""
 
 
 
@@ -312,6 +290,8 @@ async def upload_form(
     title: str = Form(...),
     email: str = Form(...),
     username: str = Form(...),
+    original_username: Optional[str] = Form(None),
+    original_email: Optional[str] = Form(None),
     category: str = Form(...),
     latitude: str = Form(...),
     longitude: str = Form(...),
@@ -351,8 +331,13 @@ async def upload_form(
     #print(nextcardid, (type(nextcardid)))
 
     #Get UserID of submitted card from db
-    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (username, email))
-    userID = cur.fetchone()
+    print(username + email + original_username + original_email)
+    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (original_username, original_email))
+    user_row = cur.fetchone()
+    if not user_row:
+        raise HTTPException(status_code=404, detail="User not found")
+    userID = user_row[0]
+    
     #print(userID, (type(userID)))
 
     #Convert category string to categoryID
@@ -436,20 +421,29 @@ async def upload_form(
     try:
         enable_commits = False
         if update == True:
-            cur.execute("SELECT Cards.CardID FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.UserID = %s AND Cards.Title = %s", (userID[0], title))
+            print("test 1")
+            cur.execute("SELECT Cards.CardID FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.UserID = %s AND Cards.Title = %s", (userID, title))
             card = cur.fetchone()
+            print("test 2")
             if not card:
                 raise HTTPException(status_code=404, detail="Card not found for update")
+            print("test 3")
             nextcardid = card[0]
-
-            insert_script = """UPDATE Cards SET Latitude=%s, Longitude=%s, CategoryID=%s, Description=%s, Organization=%s, Funding=%s, Link=%s, Thumbnail_Link=COALESCE(%s, Thumbnail_Link) WHERE CardID=%s"""
-            insert_value = (latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url, nextcardid)
+            print("test 4")
+            if original_username and username != original_username:
+                cur.execute("SELECT UserID FROM Users WHERE username = %s AND email = %s", (username, email))
+                new_user = cur.fetchone()
+                if not new_user:
+                    raise HTTPException(status_code=404, detail="New username not found")
+                userID = new_user[0]
+            insert_script = """UPDATE Cards SET Latitude=%s, Longitude=%s, CategoryID=%s, Description=%s, Organization=%s, Funding=%s, Link=%s, Thumbnail_Link=COALESCE(%s, Thumbnail_Link), UserID=%s WHERE CardID=%s"""
+            insert_value = (latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url, userID, nextcardid)
             cur.execute(insert_script, insert_value)
             cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
         else:
-            insert_script = '''INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link=COALESCE(%s, Thumbnail_Link)
+            insert_script = '''INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link)
                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
-            insert_value = (nextcardid, userID[0], title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
+            insert_value = (nextcardid, userID, title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
             cur.execute(insert_script, insert_value)
 
         print("Ready to commit CARDS to DB")

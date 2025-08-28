@@ -171,27 +171,6 @@ def deleteCard(username: str, title: str):
         return {"data": f"Card '{title}' is Deleted"}
     except Exception as e:
         return {"error": "Failed to delete card and its files"}
-"""
-def deleteCard(cardID: int):
-    if cardID is None:
-        raise HTTPException(status_code=422, detail="CardID is required")
-    if not isinstance(cardID, int):
-        raise HTTPException(status_code=422, detail="CardID must be an integer")
-    try:
-        cur.execute("SELECT Cards.CardID, Cards.thumbnail_link FROM Cards WHERE Cards.CardID = %s", (cardID,))
-        cardID = cur.fetchone()[0]
-        #print(card_id)
-
-        #print(f""""""DELETE FROM Cards WHERE CardID = {card_id}"""""")
-        cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
-        cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
-        cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
-        conn.commit()
-
-        return {"data": f"Card '{cardID}' is Deleted"}
-    except Exception as e:
-        return {"error": "Failed to delete card and its files"}
-"""
 
 
 
