@@ -81,7 +81,7 @@ const FormModal = (props) => {
         }
 
         // Re-enforce username (name) from props before submitting
-        formData.name = props.username;
+        formData.username = props.username;
 
         const formData2 = new FormData();
         Object.entries(formData).forEach(([key, value]) => {
@@ -129,7 +129,7 @@ const FormModal = (props) => {
                 <h2>Upload Document</h2>
                 <form onSubmit={handleSubmit}>
                     <label>Name (required):</label>
-                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
+                    <input type="text" name="name" value={formData.username} onChange={handleInputChange} required />
 
                     <label>Email (required):</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />

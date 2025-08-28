@@ -120,6 +120,28 @@ async def deleteCard(username: str, title: str):
     cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
     conn.commit()
     return {"Success": "The card is deleted"}
+"""
+async def deleteCard(cardID: int):
+    if cardID is None:
+        raise HTTPException(status_code=422, detail="CardID is required")
+    if not isinstance(cardID, int):
+        raise HTTPException(status_code=422, detail="CardID must be an integer")
+
+    cur.execute("SELECT Cards.CardID, Cards.thumbnail_link FROM Cards WHERE Cards.CardID = %s", (cardID,))
+    result = cur.fetchone()
+    if result is None:
+        raise HTTPException(status_code=404, detail="Card not found")
+    cardID, thumbnail_link = result
+
+    if thumbnail_link and thumbnail_link != DEFAULT_THUMBNAIL_URL:
+        delete_from_bucket(thumbnail_link.replace(f"https://storage.googleapis.com/{bucket_name}/", ""))
+
+    cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
+    cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
+    cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
+    conn.commit()
+    return {"Success": "The card is deleted"}
+"""
 
 
 
@@ -286,6 +308,7 @@ def allCards():
 
 @card_router.post("/uploadForm")
 async def upload_form(
+    update: Optional[bool] = Form(False),
     title: str = Form(...),
     email: str = Form(...),
     username: str = Form(...),
@@ -316,7 +339,6 @@ async def upload_form(
     """
     This endpoint Submits a Card
     """
-
     #Inserting Card Data
     enable_commits = False
 
@@ -398,6 +420,7 @@ async def upload_form(
 
 
 
+
     #Order of operations for DB Insertions to not make schema mad
     #1st Card info
     #2nd Tag list
@@ -412,10 +435,22 @@ async def upload_form(
     # Inserting Card Data (updated to include thumbnail_url)
     try:
         enable_commits = False
-        insert_script = '''INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
-        insert_value = (nextcardid, userID[0], title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
-        cur.execute(insert_script, insert_value)
+        if update == True:
+            cur.execute("SELECT Cards.CardID FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.UserID = %s AND Cards.Title = %s", (userID[0], title))
+            card = cur.fetchone()
+            if not card:
+                raise HTTPException(status_code=404, detail="Card not found for update")
+            nextcardid = card[0]
+
+            insert_script = """UPDATE Cards SET Latitude=%s, Longitude=%s, CategoryID=%s, Description=%s, Organization=%s, Funding=%s, Link=%s, Thumbnail_Link=COALESCE(%s, Thumbnail_Link) WHERE CardID=%s"""
+            insert_value = (latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url, nextcardid)
+            cur.execute(insert_script, insert_value)
+            cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
+        else:
+            insert_script = '''INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link=COALESCE(%s, Thumbnail_Link)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
+            insert_value = (nextcardid, userID[0], title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
+            cur.execute(insert_script, insert_value)
 
         print("Ready to commit CARDS to DB")
         enable_commits = True
@@ -592,6 +627,8 @@ async def upload_form(
 
     if enable_commits == True:
         conn.commit()
+    else:
+        print("Commit failed")
 
     """
     I need the download button to toggle visability of the file 

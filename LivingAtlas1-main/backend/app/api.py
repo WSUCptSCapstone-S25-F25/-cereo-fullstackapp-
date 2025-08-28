@@ -171,7 +171,27 @@ def deleteCard(username: str, title: str):
         return {"data": f"Card '{title}' is Deleted"}
     except Exception as e:
         return {"error": "Failed to delete card and its files"}
+"""
+def deleteCard(cardID: int):
+    if cardID is None:
+        raise HTTPException(status_code=422, detail="CardID is required")
+    if not isinstance(cardID, int):
+        raise HTTPException(status_code=422, detail="CardID must be an integer")
+    try:
+        cur.execute("SELECT Cards.CardID, Cards.thumbnail_link FROM Cards WHERE Cards.CardID = %s", (cardID,))
+        cardID = cur.fetchone()[0]
+        #print(card_id)
 
+        #print(f""""""DELETE FROM Cards WHERE CardID = {card_id}"""""")
+        cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
+        cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
+        cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
+        conn.commit()
+
+        return {"data": f"Card '{cardID}' is Deleted"}
+    except Exception as e:
+        return {"error": "Failed to delete card and its files"}
+"""
 
 
 
@@ -208,18 +228,20 @@ def get_all2():
 
 @app.post("/uploadForm")
 async def submit_form(
-    name: str = Form(...),
-    email: str = Form(...),
+    update: Optional[bool] = Form(False),
     title: str = Form(...),
+    email: str = Form(...),
+    username: str = Form(...),
     category: str = Form(...),
+    latitude: str = Form(...),
+    longitude: str = Form(...),
     description: Optional[str] = Form(None),
-    funding: Optional[float] = Form(None),    
+    funding: Optional[str] = Form(None),
     org: Optional[str] = Form(None),
     link: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
-    latitude: float = Form(...),
-    longitude: float = Form(...),
-    file: UploadFile = File(None)
+    file: Optional[UploadFile] = File(None),
+    thumbnail: Optional[UploadFile] = File(None) 
 ):
     #The ... means that the input is required
     # print(f"name: {name}")
@@ -278,7 +300,7 @@ async def submit_form(
     #print(nextcardid, (type(nextcardid)))
 
     #Get UserID of submitted card from db
-    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (name, email))
+    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (username, email))
     userID = cur.fetchone()
     #print(userID, (type(userID)))
 
@@ -309,6 +331,7 @@ async def submit_form(
         raise HTTPException(status_code=400, detail="Title exceeds 255 characters")
 
     try:
+        latitude_val = float(latitude)
         if not (-90 <= latitude <= 90):
             raise HTTPException(status_code=400, detail="Latitude is out of bounds (-90 to 90)")
     except ValueError:
@@ -318,6 +341,7 @@ async def submit_form(
         raise HTTPException(status_code=400, detail=f"Latitude decimal places exceed {latitude_limit[1]}")
 
     try:
+        longitude_val = float(longitude)
         if not (-180 <= longitude <= 180):
             raise HTTPException(status_code=400, detail="Longitude is out of bounds (-180 to 180)")
     except ValueError:
@@ -354,12 +378,22 @@ async def submit_form(
 
     print("Card Data Validated")
 
-
     # Inserting Card Data
     try:
-        insert_script = 'INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-        insert_value = (nextcardid, userID[0], title, latitude, longitude, categoryID, description, org, funding, link)
-        cur.execute(insert_script, insert_value)
+        if update == True:
+            cur.execute("SELECT Cards.CardID FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.Username = %s AND Cards.Title = %s", (username, title))
+            card = cur.fetchone()
+            if not card:
+                raise HTTPException(status_code=404, detail="Card not found for update")
+            cardID = card[0]
+
+            insert_script = """UPDATE Cards SET Latitude=%s, Longitude=%s, CategoryID=%s, Description=%s, Organization=%s, Funding=%s, Link=%s WHERE CardID=%s"""
+            insert_value(latitude_val, longitude_val, categoryID, description, org, funding, link, cardID)
+            cur.execute(insert_script, insert_value)
+        else:
+            insert_script = 'INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
+            insert_value = (nextcardid, userID[0], title, latitude_val, longitude_val, categoryID, description, org, funding, link)
+            cur.execute(insert_script, insert_value)
         conn.commit()
         return {"message": "Data Card inserted successfully"}
     except psycopg2.DatabaseError as e:

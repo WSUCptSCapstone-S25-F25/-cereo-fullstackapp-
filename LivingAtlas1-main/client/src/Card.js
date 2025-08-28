@@ -129,6 +129,8 @@ function Card(props) {
             }
         });
 
+        formDataToSend.append('update', true);
+
         if (thumbnail) {
             formDataToSend.append('thumbnail', thumbnail);
         }
@@ -136,12 +138,15 @@ function Card(props) {
         setLoading(true);
         try {
             await api.post('/uploadForm', formDataToSend);
+            /*
             await api.delete('/deleteCard', {
                 params: {
                     username: props.formData.username,
                     title: props.formData.title,
+                    //cardID: props.formData.cardID
                 },
             });
+            */
 
             alert('Card Information Saved. Please reload the page.');
             setIsEditModalOpen(false);
@@ -248,7 +253,8 @@ function Card(props) {
             {/* Edit Modal */}
             <Modal isOpen={isEditModalOpen} onRequestClose={() => setIsEditModalOpen(false)} className="Modal">
                 <h2>Edit Card</h2>
-                <form onSubmit={(e) => { e.preventDefault(); saveEdits(); }}>
+                <form onSubmit={(e) => { e.preventDefault(); saveEdits(); }}> 
+                    {/* <label>Name:<input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} /></label> */}
                     <label>Title:<input type="text" name="title" value={formData.title || ''} onChange={handleInputChange} required /></label>
                     <label>Description:<textarea name="description" value={formData.description || ''} onChange={handleInputChange} /></label>
                     <label>Email:<input type="email" name="email" value={formData.email || ''} onChange={handleInputChange} /></label>
