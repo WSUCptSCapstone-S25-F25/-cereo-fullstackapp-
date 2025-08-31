@@ -79,7 +79,7 @@ function ArcgisUploadPanel({
             type: 'raster',
             source: sourceId,
             paint: {
-                'raster-opacity': 0.4
+                'raster-opacity': 0.5
             }
         });
         setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
