@@ -36,11 +36,24 @@ let curLocationCoordinates = { lat: 0, lng: 0 };
 const Content1 = (props) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null); // Store map instance
-  const [lng, setLng] = useState(-117.181738);
-  const [lat, setLat] = useState(46.729777);
-  const [zoom, setZoom] = useState(9);
+  const [lng, setLng] = useState(-120); // Original: -117.181738
+  const [lat, setLat] = useState(46); // Original: 46.729777
+  const [zoom, setZoom] = useState(5);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
+
+  // Resize map when content2 collapses
+  useEffect(() => {
+    if (mapContainerRef.current) {
+      if (props.isCollapsed) {
+        mapContainerRef.current.style.width = '100%';
+        mapContainerRef.current.style.left = '0';
+      } else {
+        mapContainerRef.current.style.width = '79%';
+        mapContainerRef.current.style.left = '-134px';
+      }
+    }
+  }, [props.isCollapsed]);
 
   // Resize map when content2 collapses
   useEffect(() => {

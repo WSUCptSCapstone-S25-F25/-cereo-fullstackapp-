@@ -36,7 +36,7 @@ function Content2(props) {
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const toggleCollapse = () => {
-        setIsCollapsed(!isCollapsed);
+        props.setIsCollapsed?.(!props.isCollapsed);
     };
 
     const location = useLocation();
@@ -404,7 +404,7 @@ function Content2(props) {
 
             <div id="right-sidebar">
                 <div className="collapse-toggle" onClick={toggleCollapse}>
-                    <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
+                    <FontAwesomeIcon icon={props.isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
                 </div>
                 <button 
                     className="add-card-button" 
@@ -422,9 +422,9 @@ function Content2(props) {
                 onRequestClose={closeModal} 
             />
     
-            <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
+            <section id="content-2" className={props.isCollapsed ? 'collapsed' : ''}>
                     
-                {!isCollapsed && (
+                {!props.isCollapsed && (
                     <div 
                         className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
                         onClick={() => setShowFavoritesOnly(prev => !prev)}
@@ -434,7 +434,7 @@ function Content2(props) {
                     </div>
                 )}
 
-                <div className="card-container" style={{ display: isCollapsed ? 'none' : 'grid' }}>
+                <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
                     {cards
                         .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
                         .map((card, index) => (

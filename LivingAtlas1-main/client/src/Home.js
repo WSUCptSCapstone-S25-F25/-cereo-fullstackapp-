@@ -115,6 +115,8 @@ function Home(props) {
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 isAdmin={props.isAdmin}
                 username={props.username}
+                isCollapsed={isCollapsed}
+                setIsCollapsed={setIsCollapsed}
             />
             <Content2
                 filterCondition={filterCondition}
@@ -129,6 +131,7 @@ function Home(props) {
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 username={props.username}
                 isCollapsed={isCollapsed}
+                setIsCollapsed={setIsCollapsed}
             />
             {props.isLoggedIn && props.isAdmin}
             {/* {<p>Welcome, admin user!</p>} */}
