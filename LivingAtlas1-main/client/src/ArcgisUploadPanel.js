@@ -44,6 +44,8 @@ function ArcgisUploadPanel({
     const [searchResult, setSearchResult] = useState(null);
     const [expandedFolders, setExpandedFolders] = useState(new Set());
     const [expandedServices, setExpandedServices] = useState(new Set());
+    // State for added-only checkbox
+    const [showAddedOnly, setShowAddedOnly] = useState(false);
 
     // Track previous checkedLayerIds for diffing
     const prevCheckedLayerIds = useRef({});
@@ -290,66 +292,115 @@ function ArcgisUploadPanel({
 
     // UI for search bar and dropdown
     const renderSearchBar = () => (
-        <div className="upload-panel-searchbar">
-            <input
-                type="text"
-                value={searchKeyword}
-                onChange={e => setSearchKeyword(e.target.value)}
-                placeholder="Search folders, services, or layers..."
-            />
-            <select
-                value={searchType}
-                onChange={e => setSearchType(e.target.value)}
-                className="upload-panel-searchbar-dropdown"
-            >
-                <option value="any">Any</option>
-                <option value="folder">Folder</option>
-                <option value="service">Service</option>
-                <option value="layer">Layer</option>
-            </select>
-            <button
-                className="search-btn upload-panel-searchbar-btn"
-                title="Search"
-                onClick={() => {
-                    if (!searchKeyword) {
+        <div>
+            <div className="upload-panel-searchbar">
+                <input
+                    type="text"
+                    value={searchKeyword}
+                    onChange={e => setSearchKeyword(e.target.value)}
+                    placeholder="Search folders, services, or layers..."
+                />
+                <select
+                    value={searchType}
+                    onChange={e => setSearchType(e.target.value)}
+                    className="upload-panel-searchbar-dropdown"
+                >
+                    <option value="any">Any</option>
+                    <option value="folder">Folder</option>
+                    <option value="service">Service</option>
+                    <option value="layer">Layer</option>
+                </select>
+                <button
+                    className="search-btn upload-panel-searchbar-btn"
+                    title="Search"
+                    onClick={() => {
+                        if (!searchKeyword) {
+                            setSearchResult(null);
+                            setExpandedFolders(new Set());
+                            setExpandedServices(new Set());
+                            return;
+                        }
+                        const result = filterUploadPanelData({
+                            services: ARCGIS_SERVICES,
+                            serviceLayers,
+                            searchType,
+                            keyword: searchKeyword
+                        });
+                        setSearchResult(result);
+                        setExpandedFolders(new Set(result.expandedFolders));
+                        setExpandedServices(new Set(result.expandedServices));
+                    }}
+                >
+                    <FontAwesomeIcon icon={faSearch} />
+                </button>
+                <button
+                    className="clear-btn upload-panel-searchbar-btn"
+                    title="Clear Search"
+                    onClick={() => {
+                        setSearchKeyword('');
                         setSearchResult(null);
                         setExpandedFolders(new Set());
                         setExpandedServices(new Set());
-                        return;
-                    }
-                    const result = filterUploadPanelData({
-                        services: ARCGIS_SERVICES,
-                        serviceLayers,
-                        searchType,
-                        keyword: searchKeyword
-                    });
-                    setSearchResult(result);
-                    setExpandedFolders(new Set(result.expandedFolders));
-                    setExpandedServices(new Set(result.expandedServices));
-                }}
-            >
-                <FontAwesomeIcon icon={faSearch} />
-            </button>
-            <button
-                className="clear-btn upload-panel-searchbar-btn"
-                title="Clear Search"
-                onClick={() => {
-                    setSearchKeyword('');
-                    setSearchResult(null);
-                    setExpandedFolders(new Set());
-                    setExpandedServices(new Set());
-                }}
-            >
-                <FontAwesomeIcon icon={faTimes} />
-            </button>
+                    }}
+                >
+                    <FontAwesomeIcon icon={faTimes} />
+                </button>
+            </div>
+            <div className="upload-panel-added-checkbox-row">
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={showAddedOnly}
+                        onChange={e => {
+                            setShowAddedOnly(e.target.checked);
+                            if (e.target.checked) {
+                                // Expand all folders and services that have added layers
+                                const foldersWithAdded = [];
+                                const servicesWithAdded = [];
+                                folderNames.forEach(folder => {
+                                    const hasAdded = servicesByFolder[folder].some(service =>
+                                        (checkedLayerIds[service.key] || []).length > 0
+                                    );
+                                    if (hasAdded) foldersWithAdded.push(folder);
+                                    servicesByFolder[folder].forEach(service => {
+                                        if ((checkedLayerIds[service.key] || []).length > 0) {
+                                            servicesWithAdded.push(service.key);
+                                        }
+                                    });
+                                });
+                                setExpandedFolders(new Set(foldersWithAdded));
+                                setExpandedServices(new Set(servicesWithAdded));
+                            } else {
+                                setExpandedFolders(new Set());
+                                setExpandedServices(new Set());
+                            }
+                        }}
+                        style={{ marginRight: 8 }}
+                    />
+                    Show only services added to map
+                </label>
+            </div>
         </div>
     );
 
-    // Use either searchResult or default folders/services
-    const foldersToShow = searchResult ? Object.keys(searchResult.filteredFolders) : folderNames;
-    const servicesByFolderToShow = searchResult ? searchResult.filteredFolders : servicesByFolder;
-    const expandedFoldersSet = searchResult ? searchResult.expandedFolders : new Set([folderExpanded]);
-    const expandedServicesSet = searchResult ? searchResult.expandedServices : new Set([expandedService]);
+    // Use either searchResult or default folders/services, filter if showAddedOnly
+    let foldersToShow = searchResult ? Object.keys(searchResult.filteredFolders) : folderNames;
+    let servicesByFolderToShow = searchResult ? searchResult.filteredFolders : servicesByFolder;
+    if (showAddedOnly) {
+        const filteredFolders = {};
+        folderNames.forEach(folder => {
+            const filteredServices = servicesByFolder[folder].filter(service =>
+                (checkedLayerIds[service.key] || []).length > 0
+            );
+            if (filteredServices.length > 0) {
+                filteredFolders[folder] = filteredServices;
+            }
+        });
+        foldersToShow = Object.keys(filteredFolders);
+        servicesByFolderToShow = filteredFolders;
+    }
+    const expandedFoldersSet = expandedFolders;
+    const expandedServicesSet = expandedServices;
 
     // Folder click
     const handleFolderClick = (folder) => {
