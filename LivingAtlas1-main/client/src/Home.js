@@ -117,6 +117,7 @@ function Home(props) {
                 username={props.username}
                 isCollapsed={isCollapsed}
                 setIsCollapsed={setIsCollapsed}
+                isSidebarOpen={isSidebarOpen}
             />
             <Content2
                 filterCondition={filterCondition}

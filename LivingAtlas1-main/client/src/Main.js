@@ -19,6 +19,7 @@ function Main(props) {
                 setFilterCondition={props.setFilterCondition}
                 isCollapsed={props.isCollapsed}
                 setIsCollapsed={props.setIsCollapsed}
+                isSidebarOpen={props.isSidebarOpen}
             />
         </main>
     );

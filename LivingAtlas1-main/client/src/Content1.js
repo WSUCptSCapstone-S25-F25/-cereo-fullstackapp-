@@ -42,20 +42,26 @@ const Content1 = (props) => {
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
 
-  // Resize map when content2 collapses
+  // Resize map when sidebars open or close
   useEffect(() => {
     if (mapContainerRef.current) {
-      if (props.isCollapsed) {
+      if (props.isCollapsed && !props.isSidebarOpen) {
         mapContainerRef.current.style.width = '100%';
         mapContainerRef.current.style.left = '0';
-      } else {
+      } else if (props.isCollapsed && props.isSidebarOpen) {
+        mapContainerRef.current.style.width = '100%';
+        mapContainerRef.current.style.left = '119px';
+      } else if (!props.isCollapsed && !props.isSidebarOpen) {
         mapContainerRef.current.style.width = '79%';
         mapContainerRef.current.style.left = '-134px';
+      } else if (!props.isCollapsed && props.isSidebarOpen) {
+        mapContainerRef.current.style.width = '57%';
+        mapContainerRef.current.style.left = '108px';
       }
     }
-  }, [props.isCollapsed]);
+  }, [props.isCollapsed, props.isSidebarOpen]);
 
-  // Resize map when content2 collapses
+  // Adjust map size to resized map container
   useEffect(() => {
     if (mapRef.current) {
       mapRef.current.resize();
