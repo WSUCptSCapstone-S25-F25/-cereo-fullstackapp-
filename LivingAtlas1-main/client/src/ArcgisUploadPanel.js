@@ -265,6 +265,17 @@ function ArcgisUploadPanel({
             >
                 Search
             </button>
+            <button
+                style={{ marginLeft: 8, padding: '4px 12px', fontSize: 14, borderRadius: 4, background: '#eee', color: '#333', border: '1px solid #ccc' }}
+                onClick={() => {
+                    setSearchKeyword('');
+                    setSearchResult(null);
+                    setExpandedFolders(new Set());
+                    setExpandedServices(new Set());
+                }}
+            >
+                Clear Search
+            </button>
         </div>
     );
 
