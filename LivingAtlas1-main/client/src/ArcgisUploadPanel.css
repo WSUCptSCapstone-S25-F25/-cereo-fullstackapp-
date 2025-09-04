@@ -1,0 +1,238 @@
+/* Upload Panel: attaches to right of left sidebar */
+.upload-panel {
+    position: fixed;
+    top: 65px; /* below navbar */
+    left: 60px; /* right edge of left sidebar */
+    height: calc(100vh - 65px);
+    width: 420px;
+    background: #f7f7f7;
+    border-left: 1px solid #ddd;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.07);
+    z-index: 1200;
+    padding: 18px 18px 18px 18px;
+    font-size: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    color: #222; /* Make text dark */
+}
+
+.upload-panel * {
+    color: #222 !important; /* Force dark text for all children */
+}
+
+.upload-panel-close-btn {
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    color: #333 !important;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1201;
+    border-radius: 0 8px 8px 0;
+    transition: background 0.2s;
+}
+.upload-panel-close-btn:hover {
+    background: #e0e0e0;
+}
+
+.upload-folder {
+    cursor: pointer;
+    font-weight: bold;
+    margin: 8px 0 4px 0;
+    padding: 4px 0 4px 4px;
+    border-radius: 4px;
+    background: #ececec;
+    transition: background 0.2s;
+    color: #222 !important;
+}
+.upload-folder:hover {
+    background: #e0e0e0;
+}
+
+.upload-item {
+    cursor: pointer;
+    font-weight: bold;
+    margin: 2px 0;
+    padding: 2px 0 2px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 4px;
+    background: #ececec;
+    transition: background 0.2s;
+    color: #222 !important;
+    min-height: 24px;
+    font-size: 13px;
+    padding: 2px 0 2px 4px;
+}
+
+.upload-item:hover {
+    background: #e0e0e0;
+}
+
+.upload-panel ul {
+    padding-left: 10px;
+    margin: 0 0 4px 0;
+}
+
+.upload-panel li {
+    margin: 2px 0;
+    font-size: 14px;
+    color: #222;
+}
+
+.upload-panel .legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px;
+    gap: 8px;
+}
+
+.upload-panel .legend-item img {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+}
+
+.upload-panel .legend-layer-title {
+    font-weight: 600;
+    margin: 8px 0 2px 0;
+    font-size: 15px;
+    color: #333;
+    padding-left: 2px;
+}
+
+.upload-layer-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px;
+    font-size: 13px;
+    gap: 4px;
+    min-height: 20px;
+}
+
+.upload-layer-row input[type="checkbox"] {
+    margin-right: 4px;
+    width: 13px;
+    height: 13px;
+}
+
+.upload-panel .select-all-label {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+/* Make upload items and add/remove buttons compact */
+.upload-item {
+    min-height: 24px;
+    font-size: 13px;
+    padding: 2px 0 2px 4px;
+}
+
+.upload-layer-row {
+    min-height: 20px;
+    font-size: 12.5px;
+    margin-bottom: 1px;
+    gap: 3px;
+}
+
+.upload-layer-row input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+    margin-right: 3px;
+}
+
+.upload-panel .add-btn,
+.upload-panel .remove-btn {
+    min-height: 22px;
+    height: 22px;
+    font-size: 12px;
+    padding: 0 8px;
+    margin-left: 8px;
+    border-radius: 4px;
+    border: none;
+    background: #dbeafe;
+    color: #1976d2;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.upload-panel .remove-btn {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.upload-panel .add-btn:hover,
+.upload-panel .remove-btn:hover {
+    background: #e0e0e0;
+}
+
+/* Search bar container */
+.upload-panel-searchbar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+/* Search input */
+.upload-panel-searchbar input[type="text"] {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+/* Search dropdown */
+.upload-panel-searchbar select {
+    margin-left: 8px;
+    padding: 4px;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+/* Search and clear buttons */
+.upload-panel-searchbar button {
+    margin-left: 8px;
+    padding: 4px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.upload-panel-searchbar .search-btn {
+    background: #1976d2;
+    color: #fff;
+}
+
+.upload-panel-searchbar .clear-btn {
+    background: #eee;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+/* Attribution at bottom */
+.upload-panel-attribution {
+    font-size: 12px;
+    color: #555;
+    margin-top: 12px;
+    text-align: center;
+}

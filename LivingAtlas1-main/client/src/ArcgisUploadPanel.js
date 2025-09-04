@@ -8,6 +8,7 @@ import {
     getArcgisTileUrl
 } from './arcgisDataUtils';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
+import './ArcgisUploadPanel.css';
 
 // Group services by folder
 const servicesByFolder = {};
@@ -225,18 +226,16 @@ function ArcgisUploadPanel({
 
     // UI for search bar and dropdown
     const renderSearchBar = () => (
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+        <div className="upload-panel-searchbar">
             <input
                 type="text"
                 value={searchKeyword}
                 onChange={e => setSearchKeyword(e.target.value)}
                 placeholder="Search folders, services, or layers..."
-                style={{ flex: 1, padding: '4px 8px', fontSize: 14, borderRadius: 4, border: '1px solid #ccc' }}
             />
             <select
                 value={searchType}
                 onChange={e => setSearchType(e.target.value)}
-                style={{ marginLeft: 8, padding: '4px', fontSize: 14, borderRadius: 4 }}
             >
                 <option value="any">Any</option>
                 <option value="folder">Folder</option>
@@ -244,7 +243,7 @@ function ArcgisUploadPanel({
                 <option value="layer">Layer</option>
             </select>
             <button
-                style={{ marginLeft: 8, padding: '4px 12px', fontSize: 14, borderRadius: 4, background: '#1976d2', color: '#fff', border: 'none' }}
+                className="search-btn"
                 onClick={() => {
                     if (!searchKeyword) {
                         setSearchResult(null);
@@ -266,7 +265,7 @@ function ArcgisUploadPanel({
                 Search
             </button>
             <button
-                style={{ marginLeft: 8, padding: '4px 12px', fontSize: 14, borderRadius: 4, background: '#eee', color: '#333', border: '1px solid #ccc' }}
+                className="clear-btn"
                 onClick={() => {
                     setSearchKeyword('');
                     setSearchResult(null);
@@ -402,7 +401,7 @@ function ArcgisUploadPanel({
                     )}
                 </div>
             ))}
-            <div style={{ fontSize: "12px", color: "#555", marginTop: 12, textAlign: "center" }}>
+            <div className="upload-panel-attribution">
                 Data sources: <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
             </div>
         </div>
