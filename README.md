@@ -83,6 +83,17 @@ Now you can follow the steps in the following sections to start the frontend or 
    - If this fails, try `python .\main.py` instead.  
 4. Access API docs at `http://localhost:8000/docs`.  
 
+#### Updating ArcGIS Services List  
+If new services are added to ArcGIS and you want them to appear in the application, you need to update the local services list:
+
+1. Open a terminal and navigate to `/LivingAtlas1-main/client/src`.
+2. Run the fetch script to regenerate the services file:
+   ```
+   node fetchArcgisServices.js
+   ```
+3. This will update `arcgis_services.json` with the latest services from ArcGIS.
+4. Restart the frontend server if it is running, so the changes take effect.
+
 #### Connecting Frontend to Local Backend  
 1. Open `/client/src/api.js`.  
 2. Comment out hosted `baseURL` lines.  

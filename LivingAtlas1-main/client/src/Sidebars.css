@@ -85,15 +85,15 @@
 
 /* Search Button */
 .left-sidebar-search-button {
-    position: absolute;
-    /* top: 10px;
-    left: 10px; */
     background: none;
     border: none;
     color: white;
     font-size: 24px;
     cursor: pointer;
     z-index: 1001;
+    margin: 12px 0 0 0; /* Add vertical spacing */
+    position: static;    /* Remove absolute positioning */
+    display: block;
 }
 
 /* Search Modal */
@@ -269,3 +269,15 @@
 .open-card-container-button:hover {
     color: lightgray;
 }
+
+.left-sidebar-upload-button {
+    background: none;
+    border: none;
+    color: white;   /* <-- Change from #333 to white */
+    font-size: 22px;
+    cursor: pointer;
+    margin: 8px 0 0 8px;
+    display: block;
+    top: 60px;
+}
+

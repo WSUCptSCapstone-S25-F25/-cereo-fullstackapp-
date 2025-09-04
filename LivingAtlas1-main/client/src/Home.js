@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import Main from './Main';
 import Content2 from './Content2';
@@ -6,8 +6,10 @@ import Content1 from './Content1';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
+import { faUpload } from '@fortawesome/free-solid-svg-icons'; // Add this import
 import './Home.css';
 import './Sidebars.css';
+import ArcgisUploadPanel from './ArcgisUploadPanel';
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -22,6 +24,33 @@ function Home(props) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
+    const [folderExpanded, setFolderExpanded] = useState(false);
+    const [itemExpanded, setItemExpanded] = useState(false);
+    const [arcgisLayers, setArcgisLayers] = useState([]);
+    const [arcgisLegend, setArcgisLegend] = useState(null);
+    const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false); // State to track if AQ layer is added
+
+    // Fetch layers and legend for demo folder/item
+    useEffect(() => {
+        if (isUploadPanelOpen) {
+            const SERVICE_URL = "https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer";
+            fetch(`${SERVICE_URL}/layers?f=json`)
+                .then(res => res.json())
+                .then(data => {
+                    setArcgisLayers(prevLayers => {
+                        // Only reset checked layers if the layers list actually changed
+                        if (JSON.stringify(prevLayers) !== JSON.stringify(data.layers || [])) {
+                            setCheckedArcgisLayerIds([]);
+                        }
+                        return data.layers || [];
+                    });
+                });
+            fetch(`${SERVICE_URL}/legend?f=json`)
+                .then(res => res.json())
+                .then(data => setArcgisLegend(data));
+        }
+    }, [isUploadPanelOpen]);
 
     // State to track selected card coordinates
     const [selectedCardCoords, setSelectedCardCoords] = useState(null);
@@ -43,13 +72,114 @@ function Home(props) {
         setIsCollapsed(!isCollapsed);
     };
 
+    // Helper to access the Mapbox map instance
+    const getMapboxMap = () => window.atlasMapInstance;
+
+    // Add AQ Layer
+    const addArcgisLayer = (layerIds = checkedArcgisLayerIds) => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+
+        if (map.getLayer('arcgis-raster-layer')) map.removeLayer('arcgis-raster-layer');
+        if (map.getSource('arcgis-raster')) map.removeSource('arcgis-raster');
+
+        let layersParam = '';
+        if (layerIds.length > 0) {
+            layersParam = '&layers=show:' + layerIds.join(',');
+        }
+
+        map.addSource('arcgis-raster', {
+            type: 'raster',
+            tiles: [
+                `https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&transparent=true&f=image${layersParam}`
+            ],
+            tileSize: 256,
+            minzoom: 6,
+            maxzoom: 12
+        });
+        map.addLayer({
+            id: 'arcgis-raster-layer',
+            type: 'raster',
+            source: 'arcgis-raster',
+            paint: {
+                'raster-opacity': 0.35
+            }
+        });
+        setArcgisLayerAdded(true);
+    };
+
+    // Remove AQ Layer
+    const removeArcgisLayer = () => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+        if (map.getLayer('arcgis-raster-layer')) map.removeLayer('arcgis-raster-layer');
+        if (map.getSource('arcgis-raster')) map.removeSource('arcgis-raster');
+        setArcgisLayerAdded(false);
+    };
+
+    const [checkedArcgisLayerIds, setCheckedArcgisLayerIds] = useState([]); // IDs of checked layers
+
+    const handleLayerCheckbox = (layerId) => {
+        let newChecked;
+        if (checkedArcgisLayerIds.includes(layerId)) {
+            newChecked = checkedArcgisLayerIds.filter(id => id !== layerId);
+        } else {
+            newChecked = [...checkedArcgisLayerIds, layerId];
+        }
+        setCheckedArcgisLayerIds(newChecked);
+        if (arcgisLayerAdded) {
+            // Update AQ layer on map
+            addArcgisLayer(newChecked);
+        }
+    };
+
+    const handleSelectAll = () => {
+        if (checkedArcgisLayerIds.length === arcgisLayers.length) {
+            setCheckedArcgisLayerIds([]);
+            if (arcgisLayerAdded) removeArcgisLayer(); // Remove the AQ layer if none selected
+        } else {
+            const allIds = arcgisLayers.map(l => l.id);
+            setCheckedArcgisLayerIds(allIds);
+            if (arcgisLayerAdded) addArcgisLayer(allIds);
+        }
+    };
+
+    useEffect(() => {
+        if (checkedArcgisLayerIds.length === 0) {
+            if (arcgisLayerAdded) removeArcgisLayer();
+        } else {
+            if (!arcgisLayerAdded) {
+                addArcgisLayer(checkedArcgisLayerIds);
+            } else {
+                addArcgisLayer(checkedArcgisLayerIds);
+            }
+        }
+        // eslint-disable-next-line
+    }, [checkedArcgisLayerIds]);
+
     return (
         <div className="home-container">
-            <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`}> 
+            <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`}>
                 {/* Left Sidebar Search Button */}
                 <button className="left-sidebar-search-button" onClick={toggleSearchModal}>
-                        <FontAwesomeIcon icon={faSearch} />
+                    <FontAwesomeIcon icon={faSearch} />
                 </button>
+                {/* Upload Button */}
+                <button
+                    className="left-sidebar-upload-button"
+                    onClick={() => setIsUploadPanelOpen(v => !v)}
+                    title="Browse GIS Services"
+                >
+                    <FontAwesomeIcon icon={faUpload} />
+                </button>
+                {/* Upload Panel */}
+                <ArcgisUploadPanel
+                    isOpen={isUploadPanelOpen}
+                    onClose={() => setIsUploadPanelOpen(false)}
+                    mapInstance={getMapboxMap}
+                    arcgisLayerAdded={arcgisLayerAdded}
+                    setArcgisLayerAdded={setArcgisLayerAdded}
+                />
 
                 {/* Left Sidebar toggle Button */}
                 <button className="left-sidebar-toggle" onClick={toggleSidebar}>
