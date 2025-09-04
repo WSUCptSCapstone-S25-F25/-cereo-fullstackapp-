@@ -415,7 +415,7 @@ function ArcgisUploadPanel({
                                                     handleAddRemove(service, layersToShow);
                                                 }}
                                             >
-                                                {isAnyChecked ? "Remove" : "Add"}
+                                                {isAnyChecked ? "Remove" : "Load"}
                                             </button>
                                         </div>
                                         {expandedServices.has(service.key) && (
