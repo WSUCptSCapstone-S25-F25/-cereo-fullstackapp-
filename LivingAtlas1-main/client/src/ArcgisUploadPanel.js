@@ -222,24 +222,6 @@ function ArcgisUploadPanel({
         // eslint-disable-next-line
     }, [checkedLayerIds, serviceLayers]);
 
-    // Update search result when search changes
-    useEffect(() => {
-        if (!searchKeyword) {
-            setSearchResult(null);
-            setExpandedFolders(new Set());
-            setExpandedServices(new Set());
-            return;
-        }
-        const result = filterUploadPanelData({
-            services: ARCGIS_SERVICES,
-            serviceLayers,
-            searchType,
-            keyword: searchKeyword
-        });
-        setSearchResult(result);
-        setExpandedFolders(new Set(result.expandedFolders));
-        setExpandedServices(new Set(result.expandedServices));
-    }, [searchKeyword, searchType, serviceLayers]);
 
     // UI for search bar and dropdown
     const renderSearchBar = () => (
@@ -263,15 +245,26 @@ function ArcgisUploadPanel({
             </select>
             <button
                 style={{ marginLeft: 8, padding: '4px 12px', fontSize: 14, borderRadius: 4, background: '#1976d2', color: '#fff', border: 'none' }}
-                onClick={() => setSearchResult(
-                    filterUploadPanelData({
+                onClick={() => {
+                    if (!searchKeyword) {
+                        setSearchResult(null);
+                        setExpandedFolders(new Set());
+                        setExpandedServices(new Set());
+                        return;
+                    }
+                    const result = filterUploadPanelData({
                         services: ARCGIS_SERVICES,
                         serviceLayers,
                         searchType,
                         keyword: searchKeyword
-                    })
-                )}
-            >Search</button>
+                    });
+                    setSearchResult(result);
+                    setExpandedFolders(new Set(result.expandedFolders));
+                    setExpandedServices(new Set(result.expandedServices));
+                }}
+            >
+                Search
+            </button>
         </div>
     );
 
