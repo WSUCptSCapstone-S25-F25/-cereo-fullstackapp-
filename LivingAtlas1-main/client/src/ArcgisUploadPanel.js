@@ -9,6 +9,8 @@ import {
 } from './arcgisDataUtils';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 // Group services by folder
 const servicesByFolder = {};
@@ -236,6 +238,7 @@ function ArcgisUploadPanel({
             <select
                 value={searchType}
                 onChange={e => setSearchType(e.target.value)}
+                className="upload-panel-searchbar-dropdown"
             >
                 <option value="any">Any</option>
                 <option value="folder">Folder</option>
@@ -243,7 +246,8 @@ function ArcgisUploadPanel({
                 <option value="layer">Layer</option>
             </select>
             <button
-                className="search-btn"
+                className="search-btn upload-panel-searchbar-btn"
+                title="Search"
                 onClick={() => {
                     if (!searchKeyword) {
                         setSearchResult(null);
@@ -262,10 +266,11 @@ function ArcgisUploadPanel({
                     setExpandedServices(new Set(result.expandedServices));
                 }}
             >
-                Search
+                <FontAwesomeIcon icon={faSearch} />
             </button>
             <button
-                className="clear-btn"
+                className="clear-btn upload-panel-searchbar-btn"
+                title="Clear Search"
                 onClick={() => {
                     setSearchKeyword('');
                     setSearchResult(null);
@@ -273,7 +278,7 @@ function ArcgisUploadPanel({
                     setExpandedServices(new Set());
                 }}
             >
-                Clear Search
+                <FontAwesomeIcon icon={faTimes} />
             </button>
         </div>
     );
