@@ -386,10 +386,12 @@ function ArcgisUploadPanel({
     // Use either searchResult or default folders/services, filter if showAddedOnly
     let foldersToShow = searchResult ? Object.keys(searchResult.filteredFolders) : folderNames;
     let servicesByFolderToShow = searchResult ? searchResult.filteredFolders : servicesByFolder;
+
+    // If "Show only services added to map" is checked, filter the current display set
     if (showAddedOnly) {
         const filteredFolders = {};
-        folderNames.forEach(folder => {
-            const filteredServices = servicesByFolder[folder].filter(service =>
+        foldersToShow.forEach(folder => {
+            const filteredServices = (servicesByFolderToShow[folder] || []).filter(service =>
                 (checkedLayerIds[service.key] || []).length > 0
             );
             if (filteredServices.length > 0) {
