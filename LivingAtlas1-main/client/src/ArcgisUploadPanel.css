@@ -240,3 +240,35 @@
     margin-top: 12px;
     text-align: center;
 }
+
+.arcgis-loading-messages {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    z-index: 99999; /* Make sure this is higher than any sidebar/panel */
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    pointer-events: none;
+}
+
+.arcgis-loading-message {
+    background: #fff;
+    color: #333;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    padding: 8px 18px;
+    margin-bottom: 8px;
+    font-size: 15px;
+    min-width: 220px;
+    text-align: center;
+    pointer-events: auto;
+    border-left: 5px solid #1976d2;
+    transition: opacity 0.3s;
+}
+
+.arcgis-loading-message.finished {
+    border-left: 5px solid #22c55e;
+    background: #f0fff4;
+}

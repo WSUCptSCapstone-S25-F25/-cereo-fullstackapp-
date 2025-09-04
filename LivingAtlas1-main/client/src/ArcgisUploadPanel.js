@@ -11,6 +11,11 @@ import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
+import {
+    useArcgisLoadingMessages,
+    getLoadingMsgId,
+    getLoadingMsgText
+} from './arcgisUploadMessageUtils';
 
 // Group services by folder
 const servicesByFolder = {};
@@ -42,6 +47,13 @@ function ArcgisUploadPanel({
 
     // Track previous checkedLayerIds for diffing
     const prevCheckedLayerIds = useRef({});
+
+    const {
+        messages,
+        addLoadingMessage,
+        removeLoadingMessage,
+        showFinishedMessage
+    } = useArcgisLoadingMessages();
 
     // Fetch layers and legends for all services
     useEffect(() => {
@@ -112,10 +124,14 @@ function ArcgisUploadPanel({
             // Remove: uncheck all
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+            layers.forEach(layer => removeLoadingMessage(getLoadingMsgId(service, layer)));
+            removeLoadingMessage(getLoadingMsgId(service, null));
         } else {
             // Add: check all
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: allIds }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
+            // Show loading message for all layers IMMEDIATELY
+            addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
         }
     };
 
@@ -124,13 +140,14 @@ function ArcgisUploadPanel({
         const allIds = layers.map(l => l.id);
         const isAllChecked = (checkedLayerIds[service.key] || []).length === allIds.length;
         if (isAllChecked) {
-            // Uncheck all
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+            layers.forEach(layer => removeLoadingMessage(getLoadingMsgId(service, layer)));
+            removeLoadingMessage(getLoadingMsgId(service, null));
         } else {
-            // Check all
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: allIds }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
+            addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
         }
     };
 
@@ -141,10 +158,13 @@ function ArcgisUploadPanel({
             let newChecked;
             if (prevChecked.includes(layerId)) {
                 newChecked = prevChecked.filter(id => id !== layerId);
+                const layer = layers.find(l => l.id === layerId);
+                if (layer) removeLoadingMessage(getLoadingMsgId(service, layer));
             } else {
                 newChecked = [...prevChecked, layerId];
+                const layer = layers.find(l => l.id === layerId);
+                if (layer) addLoadingMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer));
             }
-            // Update add/remove button state
             setServiceLayerAdded(prevAdded => ({
                 ...prevAdded,
                 [service.key]: newChecked.length > 0
@@ -217,6 +237,48 @@ function ArcgisUploadPanel({
                         'raster-opacity': 0.4
                     }
                 });
+
+                // Show loading message (already handled in handlers)
+
+                let tilesLoaded = false;
+                let renderedAfterTiles = false;
+                let finishedTimeout = null;
+
+                // Listen for tiles loaded
+                const onTilesLoaded = (e) => {
+                    if (e.sourceId === rasterSourceId && map.isSourceLoaded(rasterSourceId)) {
+                        tilesLoaded = true;
+                    }
+                };
+
+                // Listen for render event after tiles are loaded
+                const onRender = () => {
+                    if (tilesLoaded && map.getLayer(rasterLayerId)) {
+                        if (!renderedAfterTiles) {
+                            renderedAfterTiles = true;
+                            finishedTimeout = setTimeout(() => {
+                                if (currChecked.length === layers.length) {
+                                    removeLoadingMessage(getLoadingMsgId(service, null));
+                                    showFinishedMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null, true));
+                                } else {
+                                    currChecked.forEach(id => {
+                                        const layer = layers.find(l => l.id === id);
+                                        if (layer) {
+                                            removeLoadingMessage(getLoadingMsgId(service, layer));
+                                            showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+                                        }
+                                    });
+                                }
+                                map.off('sourcedata', onTilesLoaded);
+                                map.off('render', onRender);
+                                if (finishedTimeout) clearTimeout(finishedTimeout);
+                            }, 500); // 500ms delay after first render after tiles loaded
+                        }
+                    }
+                };
+
+                map.on('sourcedata', onTilesLoaded);
+                map.on('render', onRender);
             }
 
             // Update ref for next diff
@@ -408,6 +470,13 @@ function ArcgisUploadPanel({
             ))}
             <div className="upload-panel-attribution">
                 Data sources: <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
+            </div>
+            <div className="arcgis-loading-messages">
+                {messages.map((msg, idx) => (
+                    <div key={msg.id} className={`arcgis-loading-message ${msg.type}`}>
+                        {msg.text}
+                    </div>
+                ))}
             </div>
         </div>
     );
