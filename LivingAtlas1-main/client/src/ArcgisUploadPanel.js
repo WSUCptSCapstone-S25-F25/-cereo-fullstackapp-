@@ -7,6 +7,7 @@ import {
     fetchArcgisLegend,
     getArcgisTileUrl
 } from './arcgisDataUtils';
+import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 
 // Group services by folder
 const servicesByFolder = {};
@@ -30,6 +31,11 @@ function ArcgisUploadPanel({
     const [serviceLegends, setServiceLegends] = useState({}); // { key: legend }
     const [checkedLayerIds, setCheckedLayerIds] = useState({}); // { key: [layerIds] }
     const [serviceLayerAdded, setServiceLayerAdded] = useState({}); // { key: bool }
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [searchType, setSearchType] = useState('any'); // 'any', 'folder', 'service', 'layer'
+    const [searchResult, setSearchResult] = useState(null);
+    const [expandedFolders, setExpandedFolders] = useState(new Set());
+    const [expandedServices, setExpandedServices] = useState(new Set());
 
     // Track previous checkedLayerIds for diffing
     const prevCheckedLayerIds = useRef({});
@@ -216,6 +222,85 @@ function ArcgisUploadPanel({
         // eslint-disable-next-line
     }, [checkedLayerIds, serviceLayers]);
 
+    // Update search result when search changes
+    useEffect(() => {
+        if (!searchKeyword) {
+            setSearchResult(null);
+            setExpandedFolders(new Set());
+            setExpandedServices(new Set());
+            return;
+        }
+        const result = filterUploadPanelData({
+            services: ARCGIS_SERVICES,
+            serviceLayers,
+            searchType,
+            keyword: searchKeyword
+        });
+        setSearchResult(result);
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+    }, [searchKeyword, searchType, serviceLayers]);
+
+    // UI for search bar and dropdown
+    const renderSearchBar = () => (
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+            <input
+                type="text"
+                value={searchKeyword}
+                onChange={e => setSearchKeyword(e.target.value)}
+                placeholder="Search folders, services, or layers..."
+                style={{ flex: 1, padding: '4px 8px', fontSize: 14, borderRadius: 4, border: '1px solid #ccc' }}
+            />
+            <select
+                value={searchType}
+                onChange={e => setSearchType(e.target.value)}
+                style={{ marginLeft: 8, padding: '4px', fontSize: 14, borderRadius: 4 }}
+            >
+                <option value="any">Any</option>
+                <option value="folder">Folder</option>
+                <option value="service">Service</option>
+                <option value="layer">Layer</option>
+            </select>
+            <button
+                style={{ marginLeft: 8, padding: '4px 12px', fontSize: 14, borderRadius: 4, background: '#1976d2', color: '#fff', border: 'none' }}
+                onClick={() => setSearchResult(
+                    filterUploadPanelData({
+                        services: ARCGIS_SERVICES,
+                        serviceLayers,
+                        searchType,
+                        keyword: searchKeyword
+                    })
+                )}
+            >Search</button>
+        </div>
+    );
+
+    // Use either searchResult or default folders/services
+    const foldersToShow = searchResult ? Object.keys(searchResult.filteredFolders) : folderNames;
+    const servicesByFolderToShow = searchResult ? searchResult.filteredFolders : servicesByFolder;
+    const expandedFoldersSet = searchResult ? searchResult.expandedFolders : new Set([folderExpanded]);
+    const expandedServicesSet = searchResult ? searchResult.expandedServices : new Set([expandedService]);
+
+    // Folder click
+    const handleFolderClick = (folder) => {
+        setExpandedFolders(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(folder)) newSet.delete(folder);
+            else newSet.add(folder);
+            return newSet;
+        });
+    };
+
+    // Service click
+    const handleServiceClick = (serviceKey) => {
+        setExpandedServices(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(serviceKey)) newSet.delete(serviceKey);
+            else newSet.add(serviceKey);
+            return newSet;
+        });
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -227,54 +312,56 @@ function ArcgisUploadPanel({
             >
                 &times;
             </button>
-            {folderNames.map(folder => (
+            {renderSearchBar()}
+            {foldersToShow.map(folder => (
                 <div key={folder}>
                     <div
                         className="upload-folder"
-                        onClick={() => setFolderExpanded(f => (f === folder ? null : folder))}
+                        onClick={() => handleFolderClick(folder)}
                     >
-                        {folderExpanded === folder ? "▼" : "►"} {folder}
+                        {expandedFolders.has(folder) ? "▼" : "►"} {folder}
                     </div>
-                    {folderExpanded === folder && (
+                    {expandedFolders.has(folder) && (
                         <div style={{ marginLeft: 18 }}>
-                            {servicesByFolder[folder].map(service => {
+                            {servicesByFolderToShow[folder].map(service => {
                                 const layers = serviceLayers[service.key] || [];
                                 const checkedIds = checkedLayerIds[service.key] || [];
                                 const isAnyChecked = checkedIds.length > 0;
+                                const layersToShow = service.layers || layers;
 
                                 return (
                                     <div key={service.key} style={{ marginBottom: 12 }}>
                                         <div
                                             className="upload-item"
-                                            onClick={() => setExpandedService(expandedService === service.key ? null : service.key)}
+                                            onClick={() => handleServiceClick(service.key)}
                                         >
                                             <span>
-                                                {expandedService === service.key ? "▼" : "►"} {service.label}
+                                                {expandedServices.has(service.key) ? "▼" : "►"} {service.label}
                                             </span>
                                             <button
                                                 className={isAnyChecked ? "remove-btn" : "add-btn"}
                                                 onClick={e => {
                                                     e.stopPropagation();
-                                                    handleAddRemove(service, layers);
+                                                    handleAddRemove(service, layersToShow);
                                                 }}
                                             >
                                                 {isAnyChecked ? "Remove" : "Add"}
                                             </button>
                                         </div>
-                                        {expandedService === service.key && (
+                                        {expandedServices.has(service.key) && (
                                             <div style={{ marginLeft: 18 }}>
                                                 <div style={{ marginBottom: 8 }}>
                                                     <label className="select-all-label">
                                                         <input
                                                             type="checkbox"
-                                                            checked={checkedIds.length === layers.length}
-                                                            onChange={() => handleSelectAll(service, layers)}
+                                                            checked={checkedIds.length === layersToShow.length}
+                                                            onChange={() => handleSelectAll(service, layersToShow)}
                                                             style={{ marginRight: 8 }}
                                                         />
                                                         Select All
                                                     </label>
                                                     <ul style={{ paddingLeft: 0, listStyle: "none" }}>
-                                                        {layers.map(layer => {
+                                                        {layersToShow.map(layer => {
                                                             let legendItems = [];
                                                             const legend = serviceLegends[service.key];
                                                             if (legend && legend.layers) {
@@ -286,7 +373,7 @@ function ArcgisUploadPanel({
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={checkedIds.includes(layer.id)}
-                                                                        onChange={() => handleLayerCheckbox(service, layer.id, layers)}
+                                                                        onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
                                                                         style={{ marginRight: 8 }}
                                                                     />
                                                                     {legendItems.length > 0 && (
