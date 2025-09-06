@@ -6,7 +6,7 @@ import Content1 from './Content1';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
-import { faUpload } from '@fortawesome/free-solid-svg-icons'; // Add this import
+import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; // <-- Add faEarthAmericas
 import './Home.css';
 import './Sidebars.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
@@ -164,11 +164,18 @@ function Home(props) {
                 <button className="left-sidebar-search-button" onClick={toggleSearchModal}>
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
-                {/* Upload Button */}
+                {/* GIS Services Button (was Upload Button) */}
                 <button
-                    className="left-sidebar-upload-button"
+                    className="left-sidebar-gis-button" // <-- Changed class name
                     onClick={() => setIsUploadPanelOpen(v => !v)}
                     title="Browse GIS Services"
+                >
+                    <FontAwesomeIcon icon={faEarthAmericas} />
+                </button>
+                {/* New Upload Button */}
+                <button
+                    className="left-sidebar-upload-button"
+                    title="Upload"
                 >
                     <FontAwesomeIcon icon={faUpload} />
                 </button>
