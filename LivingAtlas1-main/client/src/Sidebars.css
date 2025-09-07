@@ -270,14 +270,21 @@
     color: lightgray;
 }
 
+.left-sidebar-gis-button,
 .left-sidebar-upload-button {
     background: none;
     border: none;
-    color: white;   /* <-- Change from #333 to white */
+    color: white;
     font-size: 22px;
     cursor: pointer;
     margin: 8px 0 0 8px;
     display: block;
     top: 60px;
 }
+
+/* .left-sidebar-gis-button:hover,
+.left-sidebar-upload-button:hover {
+    background-color: #444;
+    color: #e0e0e0;
+} */
 

@@ -37,9 +37,9 @@ let curLocationCoordinates = { lat: 0, lng: 0 };
 const Content1 = (props) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null); // Store map instance
-  const [lng, setLng] = useState(-117.181738);
-  const [lat, setLat] = useState(46.729777);
-  const [zoom, setZoom] = useState(9);
+  const [lng, setLng] = useState(-120);
+  const [lat, setLat] = useState(46);
+  const [zoom, setZoom] = useState(5.5);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
