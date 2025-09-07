@@ -94,7 +94,7 @@ function ArcgisUploadPanel({
                 getArcgisTileUrl(service.url, layerIds)
             ],
             tileSize: 256,
-            minzoom: 6,
+            minzoom: 5,
             maxzoom: 12
         });
         map.addLayer({

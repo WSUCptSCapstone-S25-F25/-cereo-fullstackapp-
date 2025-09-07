@@ -1,4 +1,3 @@
-
 """
 card
     delete card
@@ -24,10 +23,10 @@ import os, base64
 
 # Decode the GCP credentials from the environment variable and write to file
 # COMMENT OUT IF RUNNING LOCALLY
-gcs_key = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
-if gcs_key:
-    with open("ServiceKey_GoogleCloud.json", "wb") as f:
-        f.write(base64.b64decode(gcs_key))
+# gcs_key = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
+# if gcs_key:
+#     with open("ServiceKey_GoogleCloud.json", "wb") as f:
+#         f.write(base64.b64decode(gcs_key))
 # _______________________________________
 """
 # COMMENT OUT IF RUNNING ON RENDER
