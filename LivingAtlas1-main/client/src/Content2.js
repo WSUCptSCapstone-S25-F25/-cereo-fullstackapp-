@@ -314,9 +314,13 @@ function Content2(props) {
                 }
             })
                 .then(response => {
-                    console.error(response.data.data);
-                    console.error();
-                    setCards(response.data.data);
+                    if (Array.isArray(response.data.data)) {
+                        setCards(response.data.data);
+                        console.log("Search results:", response.data.data);
+                    } else {
+                        console.warn("No card data returned from searchBar:", response.data);
+                        setCards([]);
+                    }
                 })
                 .catch(error => {
                     console.error(error);
@@ -362,11 +366,21 @@ function Content2(props) {
         }
     };
 
+    // Function to fetch all cards and update formData
+    const fetchAllCards = async () => {
+        try {
+            const response = await api.get('/allCards');
+            setCards(response.data.data);
+        } catch (error) {
+            console.error('Error fetching all cards:', error);
+        }
+    };
+
     useEffect(() => {
-        let isMounted = true; // Track whether the component is mounted
-        let isfetched = true; // Track whether the component is mounted
-
-
+        // Commented out updateBoundry logic
+        /*
+        let isMounted = true;
+        let isfetched = true;
 
         if (didMountRef.current) {
             console.log("running bound" + props.boundCondition);
@@ -383,7 +397,6 @@ function Content2(props) {
 
             // Define an async function inside useEffect
             const fetchData = async () => {
-
                 try {
                     setTimeout(500);
                     const response = await api.post('/updateBoundry', data);
@@ -406,7 +419,6 @@ function Content2(props) {
                         console.error('Error:', error);
                     }
                 }
-
             };
 
             // Call the async function
@@ -423,12 +435,15 @@ function Content2(props) {
 
         } else {
             console.log("Not running bound" + props.boundCondition);
-            didMountRef.current = true;  // set to true after first render
+            didMountRef.current = true;
             setTimeout(1000);
         }
         return () => {
-            isMounted = false; // Set it to false when the component unmounts
+            isMounted = false;
         };
+        */
+        // Instead, always fetch all cards when boundCondition changes
+        fetchAllCards();
     }, [props.boundCondition]);
 
 
