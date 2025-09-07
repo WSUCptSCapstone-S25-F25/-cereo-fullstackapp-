@@ -8,8 +8,8 @@
 """
 import os
 import json
-from google.cloud import storage
-import base64
+# from google.cloud import storage
+# import base64
 
 # Decode base64 service account key from environment variable
 # COMMENT OUT IF RUNNING LOCALLY
