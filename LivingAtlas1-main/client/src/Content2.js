@@ -16,6 +16,7 @@ import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { faBook } from '@fortawesome/free-solid-svg-icons'; // <-- Add this import for the new button icon
 import LayerPanel from './LayerPanel';
 import { applyAreaVisibility } from './AreaFilter';
+import { faCheckSquare } from '@fortawesome/free-solid-svg-icons';
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
@@ -366,7 +367,7 @@ function Content2(props) {
         }
     };
 
-    // Function to fetch all cards and update formData
+    // Fetch all cards and update formData instead of using updateBoundry API call
     const fetchAllCards = async () => {
         try {
             const response = await api.get('/allCards');
@@ -603,14 +604,35 @@ function Content2(props) {
                     }}
                     onMouseDown={onMouseDown}
                 />
-                    
+
+                {/* Favorites toggle checkbox at top-left with spacing */}
                 {!isCollapsed && (
                     <div 
-                        className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
-                        onClick={() => setShowFavoritesOnly(prev => !prev)}
-                        title="Favorites"
+                        className="favorites-toggle-checkbox"
+                        style={{
+                            position: 'absolute',
+                            top: '18px',
+                            left: '18px',
+                            zIndex: 10,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: '#f5f5f5',
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
+                        }}
                     >
-                        <FontAwesomeIcon icon={faStarHalfStroke} />
+                        <input
+                            type="checkbox"
+                            checked={showFavoritesOnly}
+                            onChange={() => setShowFavoritesOnly(prev => !prev)}
+                            id="favoritesOnlyCheckbox"
+                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="favoritesOnlyCheckbox" style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', margin: 0 }}>
+                            Show Favorites Only
+                        </label>
                     </div>
                 )}
 
