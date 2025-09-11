@@ -1,4 +1,3 @@
-
 """
 card
     delete card
@@ -12,7 +11,7 @@ from database import conn, cur
 from io import BytesIO
 from typing import Optional
 from fastapi.responses import FileResponse
-from google.cloud import storage
+# from google.cloud import storage
 import psycopg2
 import os
 import uuid
@@ -24,68 +23,68 @@ import os, base64
 
 # Decode the GCP credentials from the environment variable and write to file
 # COMMENT OUT IF RUNNING LOCALLY
-"""
-gcs_key = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
-if gcs_key:
-    with open("ServiceKey_GoogleCloud.json", "wb") as f:
-        f.write(base64.b64decode(gcs_key))
+
+# gcs_key = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
+# if gcs_key:
+#     with open("ServiceKey_GoogleCloud.json", "wb") as f:
+#         f.write(base64.b64decode(gcs_key))
 # _______________________________________
 """
 # COMMENT OUT IF RUNNING ON RENDER
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
 # _______________________________________
         
-storage_client = storage.Client()
-bucket_name = "cereo_atlas_storage"
-bucket = storage_client.bucket(bucket_name)
-DEFAULT_THUMBNAIL_URL = "https://storage.googleapis.com/cereo_atlas_storage/thumbnails/default_cereo_thumbnail.png"
+# storage_client = storage.Client()
+# bucket_name = "cereo_atlas_storage"
+# bucket = storage_client.bucket(bucket_name)
+# DEFAULT_THUMBNAIL_URL = "https://storage.googleapis.com/cereo_atlas_storage/thumbnails/default_cereo_thumbnail.png"
 
 # Function to delete files from Google Cloud
-def delete_from_bucket(blob_name):
-    try:
-        bucket = storage_client.get_bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-        blob.delete()
-        print(f"File: {blob_name} deleted.")
-    except Exception as e:
-        print(e)
-        return
+# def delete_from_bucket(blob_name):
+#     try:
+#         bucket = storage_client.get_bucket(bucket_name)
+#         blob = bucket.blob(blob_name)
+#         blob.delete()
+#         print(f"File: {blob_name} deleted.")
+#     except Exception as e:
+#         print(e)
+#         return
 
 # Function to upload files to Google Cloud
-def upload_to_bucket(blob_name, file_obj, file_type, bucket_name):
-    try:
-        bucket = storage_client.get_bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-        blob.content_type = file_type
-        blob.upload_from_file(file_obj)
-        return True
-    except Exception as e:
-        print(e)
-        return False
+# def upload_to_bucket(blob_name, file_obj, file_type, bucket_name):
+#     try:
+#         bucket = storage_client.get_bucket(bucket_name)
+#         blob = bucket.blob(blob_name)
+#         blob.content_type = file_type
+#         blob.upload_from_file(file_obj)
+#         return True
+#     except Exception as e:
+#         print(e)
+#         return False
 
 # Function to upload an image to Google Cloud Storage and return its URL
-def upload_image(file: Optional[UploadFile]) -> str:
-    if not file:
-        return DEFAULT_THUMBNAIL_URL
+# def upload_image(file: Optional[UploadFile]) -> str:
+#     if not file:
+#         return DEFAULT_THUMBNAIL_URL
 
-    allowed_extensions = {"png", "jpg", "jpeg", "gif"}
-    if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
-        raise HTTPException(status_code=400, detail="Invalid thumbnail file type. Allowed: PNG, JPG, JPEG, GIF")
+#     allowed_extensions = {"png", "jpg", "jpeg", "gif"}
+#     if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+#         raise HTTPException(status_code=400, detail="Invalid thumbnail file type. Allowed: PNG, JPG, JPEG, GIF")
 
-    try:
-        # Rewind the file pointer to ensure it's readable
-        file.file.seek(0)
+#     try:
+#         # Rewind the file pointer to ensure it's readable
+#         file.file.seek(0)
 
-        # Generate unique filename
-        unique_filename = f"{uuid.uuid4()}_{file.filename}"
-        blob = bucket.blob(f"thumbnails/{unique_filename}")
-        blob.upload_from_file(file.file, content_type=file.content_type)
+#         # Generate unique filename
+#         unique_filename = f"{uuid.uuid4()}_{file.filename}"
+#         blob = bucket.blob(f"thumbnails/{unique_filename}")
+#         blob.upload_from_file(file.file, content_type=file.content_type)
 
-        public_url = f"https://storage.googleapis.com/{bucket_name}/thumbnails/{unique_filename}"
-        return public_url
-    except Exception as e:
-        print(f"Thumbnail upload error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to upload thumbnail image.")
+#         public_url = f"https://storage.googleapis.com/{bucket_name}/thumbnails/{unique_filename}"
+#         return public_url
+#     except Exception as e:
+#         print(f"Thumbnail upload error: {e}")
+#         raise HTTPException(status_code=500, detail="Failed to upload thumbnail image.")
 
 @card_router.post("/create-card")
 async def create_card(
@@ -247,7 +246,7 @@ async def downloadFile(fileID: int):
 def allCards():
     try:
         cur.execute("""
-            SELECT Users.Username, Users.Email, Cards.title, Cards.CardID, Categories.CategoryLabel, Cards.dateposted,
+            SELECT Users.Username, Users.Email, Cards.title, Cards.cardid, Categories.CategoryLabel, Cards.dateposted,
                    Cards.description, Cards.organization, Cards.funding, Cards.link,
                    STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
                    Cards.latitude, Cards.longitude,
@@ -257,20 +256,20 @@ def allCards():
             INNER JOIN Categories
             ON Cards.CategoryID = Categories.CategoryID
             LEFT JOIN Files
-            ON Cards.CardID = Files.CardID
+            ON Cards.cardid = Files.cardid
             LEFT JOIN CardTags
-            ON Cards.CardID = CardTags.CardID
+            ON Cards.cardid = CardTags.cardid
             LEFT JOIN Tags
             ON CardTags.TagID = Tags.TagID
             INNER JOIN Users
             ON Cards.UserID = Users.UserID
-            GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Users.Username, Users.Email
-            ORDER BY Cards.CardID DESC;
+            GROUP BY Cards.cardid, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Users.Username, Users.Email
+            ORDER BY Cards.cardid DESC;
         """)
 
         columns = [
-            "username", "email", "title","cardID", "category", "date", "description", "org", "funding", "link",
-            "tags", "latitude", "longitude", "thumbnail_link",  # Added thumbnail link
+            "username", "email", "title", "cardID", "category", "date", "description", "org", "funding", "link",
+            "tags", "latitude", "longitude", "thumbnail_link",
             "fileEXT", "fileID"
         ]
 

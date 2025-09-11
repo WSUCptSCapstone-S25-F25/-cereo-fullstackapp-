@@ -33,14 +33,35 @@ let greenMarkers = [];
 let yellowMarkers = [];
 let curLocationCoordinates = { lat: 0, lng: 0 };
 
+
 const Content1 = (props) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null); // Store map instance
-  const [lng, setLng] = useState(-120); // Original: -117.181738
-  const [lat, setLat] = useState(46); // Original: 46.729777
-  const [zoom, setZoom] = useState(5);
+  const [lng, setLng] = useState(-120);
+  const [lat, setLat] = useState(46);
+  const [zoom, setZoom] = useState(5.5);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalFeature, setModalFeature] = useState(null);
+
+  // Move map when selectedCardCoords changes
+  React.useEffect(() => {
+    if (
+      mapRef.current &&
+      props.selectedCardCoords &&
+      typeof props.selectedCardCoords.latitude === 'number' &&
+      typeof props.selectedCardCoords.longitude === 'number'
+    ) {
+      console.log('[Content1] Moving map to:', props.selectedCardCoords);
+      mapRef.current.flyTo({
+        center: [props.selectedCardCoords.longitude, props.selectedCardCoords.latitude],
+        zoom: 13
+      });
+    } else if (props.selectedCardCoords) {
+      console.warn('[Content1] Invalid selectedCardCoords:', props.selectedCardCoords);
+    }
+  }, [props.selectedCardCoords]);
 
   // Resize map when sidebars open or close
   useEffect(() => {
@@ -75,6 +96,7 @@ const Content1 = (props) => {
       center: [lng, lat],
       zoom: zoom
     });
+    window.atlasMapInstance = map; // <-- Add this line
     mapRef.current = map;
 
     
@@ -424,45 +446,67 @@ const Content1 = (props) => {
             .addTo(map);
         }
       });
+
+      map.on('click', 'aq-maint-ozone-fill', async (e) => {
+        const feature = e.features[0];
+        // Fetch layer metadata dynamically
+        let layerMeta = {};
+        try {
+          const resp = await fetch('https://gis.ecology.wa.gov/serverext/rest/services/Authoritative/AQ/MapServer/3?f=json');
+          layerMeta = await resp.json();
+        } catch (err) {
+          layerMeta = {};
+        }
+        const layerName = layerMeta.name || "Layer";
+        const layerDescription = layerMeta.description || "";
+
+        // Build HTML for the popup
+        let html = `
+          <div style="min-width:240px;max-width:340px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h3 style="margin:0;font-size:1.1em;">${layerName}</h3>
+              <button onclick="this.closest('.mapboxgl-popup').remove()" style="background:none;border:none;font-size:1.3em;cursor:pointer;">&times;</button>
+            </div>
+            ${layerDescription ? `<div style="font-size:0.95em;color:#444;margin-bottom:6px;">${layerDescription}</div>` : ""}
+            <table style="width:100%;font-size:0.95em;">
+              <tbody>
+                ${Object.entries(feature.properties).map(([key, value]) =>
+                  `<tr><td style="font-weight:bold;padding-right:6px;">${key}</td><td>${String(value)}</td></tr>`
+                ).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        new mapboxgl.Popup({ offset: 20, closeButton: false })
+          .setLngLat(e.lngLat)
+          .setHTML(html)
+          .addTo(map);
+      });
     })
     // Clean up on unmount
     return () => map.remove();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 
+
   return (
-    // set zIndex to '0' so that the map will be displayed below other components (like modals for example)
-    <div style={{ zIndex: '0' }}>
-
-
-
-      <div className='map-container' ref={mapContainerRef} />
-      <div className='sidebarStyle'>
-        <div>
-          Map Center - Lat: {lat} | Long: {lng} | Zoom: {zoom}
-        </div>
-        <div>
-          Mouse Coordinates - Lat: {mouseCoordinates.lat} | Long: {mouseCoordinates.lng}
+    <div className="AtlasMap">
+      <div className="AtlasMap__container" ref={mapContainerRef}>
+        <div className="AtlasMap__info-bottomleft">
+          <div>
+            Map Center - Lat: {lat} | Long: {lng} | Zoom: {zoom}
+          </div>
+          <div>
+            Mouse Coordinates - Lat: {mouseCoordinates.lat} | Long: {mouseCoordinates.lng}
+          </div>
         </div>
       </div>
-
-      {/* Giving credit to the authors of the map icons used. */}
-      <div>
+      <div className="AtlasMap__credit">
         <a>Map icons by </a><a href="https://icons8.com/icon/" title="marker icons">icons8. </a>
       </div>
-      {/* There's no need for the user to see the bounds */}
-      {/* Get the bounds of the map (the rectangular area on map defined by Northeast & Southwest corners) */}
-      {/* <div>
-        Bounds:
-      </div> */}
-      {/* <div>
-        NE: {bounds.getNorthEast ? `Lng: ${bounds.getNorthEast().lng.toFixed(4)}, Lat: ${bounds.getNorthEast().lat.toFixed(4)}` : ''}
-      </div>
-      <div>
-        SW: {bounds.getSouthWest ? `Lng: ${bounds.getSouthWest().lng.toFixed(4)}, Lat: ${bounds.getSouthWest().lat.toFixed(4)}` : ''}
-      </div> */}
+      
     </div>
-
   );
 
 };
@@ -470,20 +514,3 @@ const Content1 = (props) => {
 export { allMarkers, draw, blueMarkers, greenMarkers, yellowMarkers, curLocationCoordinates};
 export default Content1;
 
-
-// import React from 'react';
-// import './Content1.css';
-
-
-// function Content1() {
-//     return (
-//         <section id="content-1">
-//             <h1>Content Area 1</h1>
-//             <p>
-//                 Below is a map that shows all the data points in our system. Each marker represents a unique data point, and you can click on each marker to view more information about that point.
-//             </p>
-//         </section>
-//     );
-// }
-
-// export default Content1;

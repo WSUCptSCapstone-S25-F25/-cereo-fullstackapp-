@@ -1,3 +1,62 @@
+/* Smaller font for Learn More button text */
+.learn-more-text {
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+/* Horizontal button row for card actions */
+.card-button-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 18px;
+    gap: 10px;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.card-button-row .card-button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 0;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    height: 40px;
+    margin: 0;
+    transition: background-color 0.3s;
+    background-color: #0077cc;
+}
+
+.card-button-row .card-button.card-learn-more {
+    background-color: #0077cc;
+}
+.card-button-row .card-button.card-learn-more:hover {
+    background-color: #005fa3;
+}
+.card-button-row .card-button.card-delete {
+    background-color: #ff4c4c;
+}
+.card-button-row .card-button.card-delete:hover {
+    background-color: #e43f3f;
+}
+.card-button-row .card-button.card-edit {
+    background-color: #28a745;
+}
+.card-button-row .card-button.card-edit:hover {
+    background-color: #218838;
+}
+
+.learn-more-text {
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
 .card {
     position: relative;
     background-color: #fff;
@@ -133,20 +192,21 @@
     background-color: #005fa3;
 }
 
-.card-button {
-    padding: 10px 20px;
+
+/* .card-button {
     background-color: #0077cc;
-    color: #fff;
     border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    font-weight: bold;
+    border-radius: 4px;
+    color: #fff;
     cursor: pointer;
+    font-size: 1rem;
+    padding: 8px 16px;
+    transition: background-color 0.3s ease;
 }
 
 .card-button:hover {
-    background-color: #005fa3;
-}
+    background-color: #0052a9;
+} */
 
 .Modal button {
     margin-top: 20px;
