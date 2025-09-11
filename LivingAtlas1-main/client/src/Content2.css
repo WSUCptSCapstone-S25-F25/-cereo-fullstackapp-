@@ -5,7 +5,8 @@ The grid-template-columns property sets the size and number of columns, while th
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-gap: 20px;
-  padding-top: 20px;
+  margin-top: 50px;
+  padding: 20px;
   justify-items: center;
   z-index: 1;
 }
@@ -100,30 +101,31 @@ It adjusts the layout of the .card-container and .card elements for smaller scre
 }
 
 /* Favorites toggle icon styles */
-.favorites-toggle-icon {
+.favorites-toggle-checkbox {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 18px;
+  left: 18px;
   z-index: 10;
-  padding: 6px;
-  background-color: #ddd;
-  border-radius: 0 0 8px 0;
+  padding: 6px 14px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   cursor: pointer;
   transition: background-color 0.2s ease;
-  padding: 10px;
-  padding-bottom: 10px;
-  padding-right: 10px;
 }
 
-.favorites-toggle-icon svg {
+.favorites-toggle-checkbox svg {
   font-size: 18px;
 }
 
-.favorites-toggle-icon:hover {
+.favorites-toggle-checkbox:hover {
   background-color: rgba(255, 255, 255, 0.35); /* Subtle hover effect */
 }
 
-.favorites-toggle-icon.active {
+.favorites-toggle-checkbox.active {
   background-color: darkgray; /* Slightly darker when toggled */
   border-radius: 0 0 8px 0;
 }

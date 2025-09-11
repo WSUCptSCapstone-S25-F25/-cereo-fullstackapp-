@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './Content2.css';
 import './Sidebars.css';
+import './LayerPanel.css';
 import Card from './Card.js';
 import FormModal from './FormModal';
 import axios from 'axios';
@@ -11,33 +12,72 @@ import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-s
 import { useLocation } from 'react-router-dom';
 import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
+import { faBook } from '@fortawesome/free-solid-svg-icons'; // <-- Add this import for the new button icon
+import LayerPanel from './LayerPanel';
+import { applyAreaVisibility } from './AreaFilter';
+import { faCheckSquare } from '@fortawesome/free-solid-svg-icons';
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
-function Content2(props) {
 
+function Content2(props) {
     const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
+    const [containerWidth, setContainerWidth] = useState(300); // Default width in px
+    const containerRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const startX = useRef(0);
+    const startWidth = useRef(500);
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
 
     function useDidMount() {
         const mountRef = useRef(false);
-
         useEffect(() => { mountRef.current = true }, []);
-
         return () => mountRef.current;
     }
 
     const didMount = useDidMount();
     const didMountRef = useRef(false);
-    
+
     // Collapse card container
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed);
     };
+
+    // Drag handlers for resizing
+    const onMouseDown = (e) => {
+        e.preventDefault(); // Prevent text selection
+        setIsDragging(true);
+        startX.current = e.clientX;
+        startWidth.current = containerWidth;
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
+    };
+
+    useEffect(() => {
+        if (!isDragging) return;
+        const onMouseMove = (e) => {
+            const dx = startX.current - e.clientX;
+            let newWidth = startWidth.current + dx;
+            newWidth = Math.max(250, Math.min(newWidth, 900));
+            setContainerWidth(newWidth);
+        };
+        const onMouseUp = () => {
+            setIsDragging(false);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+    }, [isDragging]);
 
     const location = useLocation();
 
@@ -272,9 +312,13 @@ function Content2(props) {
                 }
             })
                 .then(response => {
-                    console.error(response.data.data);
-                    console.error();
-                    setCards(response.data.data);
+                    if (Array.isArray(response.data.data)) {
+                        setCards(response.data.data);
+                        console.log("Search results:", response.data.data);
+                    } else {
+                        console.warn("No card data returned from searchBar:", response.data);
+                        setCards([]);
+                    }
                 })
                 .catch(error => {
                     console.error(error);
@@ -323,11 +367,21 @@ function Content2(props) {
         }
     };
 
+    // Fetch all cards and update formData instead of using updateBoundry API call
+    const fetchAllCards = async () => {
+        try {
+            const response = await api.get('/allCards');
+            setCards(response.data.data);
+        } catch (error) {
+            console.error('Error fetching all cards:', error);
+        }
+    };
+
     useEffect(() => {
-        let isMounted = true; // Track whether the component is mounted
-        let isfetched = true; // Track whether the component is mounted
-
-
+        // Commented out updateBoundry logic
+        /*
+        let isMounted = true;
+        let isfetched = true;
 
         if (didMountRef.current) {
             console.log("running bound" + props.boundCondition);
@@ -344,7 +398,6 @@ function Content2(props) {
 
             // Define an async function inside useEffect
             const fetchData = async () => {
-
                 try {
                     setTimeout(500);
                     const response = await api.post('/updateBoundry', data);
@@ -367,7 +420,6 @@ function Content2(props) {
                         console.error('Error:', error);
                     }
                 }
-
             };
 
             // Call the async function
@@ -384,24 +436,105 @@ function Content2(props) {
 
         } else {
             console.log("Not running bound" + props.boundCondition);
-            didMountRef.current = true;  // set to true after first render
+            didMountRef.current = true;
             setTimeout(1000);
         }
         return () => {
-            isMounted = false; // Set it to false when the component unmounts
+            isMounted = false;
         };
+        */
+        // Instead, always fetch all cards when boundCondition changes
+        fetchAllCards();
     }, [props.boundCondition]);
 
 
 
+
+    // Handler for card click
+    const handleCardClick = (card) => {
+        console.log('[Content2] Card clicked:', card);
+        if (props.onCardClick && card.latitude && card.longitude) {
+            console.log('[Content2] Calling onCardClick with:', {
+                latitude: Number(card.latitude),
+                longitude: Number(card.longitude)
+            });
+            props.onCardClick({
+                latitude: Number(card.latitude),
+                longitude: Number(card.longitude)
+            });
+        } else {
+            console.warn('[Content2] Card missing lat/lng or onCardClick not provided:', card);
+        }
+    };
+
+    // State for layer panel
+    const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
+
+    // Card marker visibility state
+    const [layerVisibility, setLayerVisibility] = useState({
+        River: true,
+        Watershed: true,
+        Places: true,
+    });
+
+    // Colored area (vector tile) visibility state
+    const [areaVisibility, setAreaVisibility] = useState({
+        River: true,
+        Watershed: true,
+        Places: true,
+    });
+
+    // Helper to show/hide markers by class
+    const updateLayerVisibility = (visibility) => {
+        // Rivers
+        const rivers = document.getElementsByClassName("blue-marker");
+        for (let i = 0; i < rivers.length; i++) {
+            rivers[i].style.visibility = visibility.River ? "visible" : "hidden";
+        }
+        // Watersheds
+        const watersheds = document.getElementsByClassName("green-marker");
+        for (let i = 0; i < watersheds.length; i++) {
+            watersheds[i].style.visibility = visibility.Watershed ? "visible" : "hidden";
+        }
+        // Places
+        const places = document.getElementsByClassName("yellow-marker");
+        for (let i = 0; i < places.length; i++) {
+            places[i].style.visibility = visibility.Places ? "visible" : "hidden";
+        }
+    };
+
+    // Show/hide colored areas (vector tile layers)
+    useEffect(() => {
+        applyAreaVisibility(areaVisibility);
+    }, [areaVisibility]);
+
+    // Update marker visibility when checkboxes change
+    useEffect(() => {
+        // If all are checked, show all
+        if (layerVisibility.River && layerVisibility.Watershed && layerVisibility.Places) {
+            showAll();
+        } else {
+            updateLayerVisibility(layerVisibility);
+        }
+    }, [layerVisibility]);
+
+    // Checkbox handlers
+    const handleLayerCheckbox = (category) => {
+        setLayerVisibility((prev) => ({
+            ...prev,
+            [category]: !prev[category],
+        }));
+    };
+    const handleAreaCheckbox = (category) => {
+        setAreaVisibility((prev) => ({
+            ...prev,
+            [category]: !prev[category],
+        }));
+    };
+
     return (
         <>
-            {/* <div id="right-sidebar">
-                <div className="collapse-toggle" onClick={toggleCollapse}>
-                    <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
-                </div>
-            </div> */}
-
+            {/* Right Sidebar */}
             <div id="right-sidebar">
                 <div className="collapse-toggle" onClick={toggleCollapse}>
                     <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
@@ -410,10 +543,39 @@ function Content2(props) {
                     className="add-card-button" 
                     onClick={openModal} 
                     title="Add Card"
+                    style={{ top: '0px', position: 'absolute' }}
                 >
                     <FontAwesomeIcon icon={faPlus} />
                 </button>
+                {/* New Layer Button */}
+                <button
+                    className="layer-panel-button"
+                    onClick={() => setIsLayerPanelOpen((prev) => !prev)}
+                    title="Layers"
+                    style={{ top: '50px', position: 'absolute' }}
+                >
+                    <FontAwesomeIcon icon={faLayerGroup} />
+                </button>
+                {/* New: Open Card Container Button */}
+                <button
+                    className="open-card-container-button"
+                    onClick={toggleCollapse}
+                    title={isCollapsed ? "Open Card Container" : "Collapse Card Container"}
+                    style={{ top: '100px', position: 'absolute' }}
+                >
+                    <FontAwesomeIcon icon={faBook} />
+                </button>
             </div>
+
+            {/* Layer Panel */}
+            <LayerPanel
+                isOpen={isLayerPanelOpen}
+                onClose={() => setIsLayerPanelOpen(false)}
+                layerVisibility={layerVisibility}
+                areaVisibility={areaVisibility}
+                handleLayerCheckbox={handleLayerCheckbox}
+                handleAreaCheckbox={handleAreaCheckbox}
+            />
 
             <FormModal 
                 username={resolvedUsername} 
@@ -422,15 +584,55 @@ function Content2(props) {
                 onRequestClose={closeModal} 
             />
     
-            <section id="content-2" className={isCollapsed ? 'collapsed' : ''}>
-                    
+            <section
+                id="content-2"
+                className={isCollapsed ? 'collapsed' : ''}
+                ref={containerRef}
+                style={{ width: containerWidth }}
+            >
+                {/* Draggable left edge handle */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        width: '6px',
+                        height: '100%',
+                        cursor: 'ew-resize',
+                        zIndex: 1002,
+                        background: 'transparent',
+                    }}
+                    onMouseDown={onMouseDown}
+                />
+
+                {/* Favorites toggle checkbox at top-left with spacing */}
                 {!isCollapsed && (
                     <div 
-                        className={`favorites-toggle-icon ${showFavoritesOnly ? 'active' : ''}`}
-                        onClick={() => setShowFavoritesOnly(prev => !prev)}
-                        title="Favorites"
+                        className="favorites-toggle-checkbox"
+                        style={{
+                            position: 'absolute',
+                            top: '18px',
+                            left: '18px',
+                            zIndex: 10,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: '#f5f5f5',
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
+                        }}
                     >
-                        <FontAwesomeIcon icon={faStarHalfStroke} />
+                        <input
+                            type="checkbox"
+                            checked={showFavoritesOnly}
+                            onChange={() => setShowFavoritesOnly(prev => !prev)}
+                            id="favoritesOnlyCheckbox"
+                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="favoritesOnlyCheckbox" style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', margin: 0 }}>
+                            Show Favorites Only
+                        </label>
                     </div>
                 )}
 
@@ -438,18 +640,24 @@ function Content2(props) {
                     {cards
                         .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
                         .map((card, index) => (
-                            <Card
+                            <div
                                 key={`${card.cardID}-${index}`}
-                                formData={{
-                                    ...card,
-                                    cardOwner: card.username,
-                                    viewerUsername: resolvedUsername,
-                                    cardID: card.cardID
-                                }}
-                                isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                                username={resolvedUsername}
-                                fetchBookmarks={fetchBookmarks}
-                            />
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => handleCardClick(card)} // Always shift view on card click
+                            >
+                                <Card
+                                    formData={{
+                                        ...card,
+                                        cardOwner: card.username,
+                                        viewerUsername: resolvedUsername,
+                                        cardID: card.cardID
+                                    }}
+                                    isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                    username={resolvedUsername}
+                                    fetchBookmarks={fetchBookmarks}
+                                    // No need to pass onLearnMore for fly-to
+                                />
+                            </div>
                         ))}
                 </div>
             </section>
