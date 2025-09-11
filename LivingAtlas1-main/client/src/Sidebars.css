@@ -85,15 +85,15 @@
 
 /* Search Button */
 .left-sidebar-search-button {
-    position: absolute;
-    /* top: 10px;
-    left: 10px; */
     background: none;
     border: none;
     color: white;
     font-size: 24px;
     cursor: pointer;
     z-index: 1001;
+    margin: 12px 0 0 0; /* Add vertical spacing */
+    position: static;    /* Remove absolute positioning */
+    display: block;
 }
 
 /* Search Modal */
@@ -230,8 +230,61 @@
     z-index: 1001;
     position: absolute;
     transition: color 0.3s ease;
+    border-bottom: 10px;
 }
 
 .add-card-button:hover {
     color: lightgray;
 }
+
+/* Layer Panel Button */
+.layer-panel-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
+    position: absolute;
+    transition: color 0.3s ease;
+    border-bottom: 10px;
+}
+
+.layer-panel-button:hover {
+    color: lightgray;
+}
+
+.open-card-container-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
+    position: absolute;
+    transition: color 0.3s ease;
+    border-bottom: 10px;
+}
+
+.open-card-container-button:hover {
+    color: lightgray;
+}
+
+.left-sidebar-gis-button,
+.left-sidebar-upload-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    margin: 8px 0 0 8px;
+    display: block;
+    top: 60px;
+}
+
+/* .left-sidebar-gis-button:hover,
+.left-sidebar-upload-button:hover {
+    background-color: #444;
+    color: #e0e0e0;
+} */
+

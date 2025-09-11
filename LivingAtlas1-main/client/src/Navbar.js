@@ -65,29 +65,29 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
         )}
       </ul>
       {isModalOpen && (
-        console.log("Profile modal is opened."),
+        // console.log("Profile modal is opened."),
         <div className="profile-modal">
           <ul>
+            {/* New: Profile Page Button */}
+            <li>
+              <Link to="/profile" onClick={() => setIsModalOpen(false)}>Profile</Link>
+            </li>
             {isAdmin && (
               <li>
                 <Link to="/administration" onClick={() => setIsModalOpen(false)}>Administration</Link>
               </li>
             )}
-
             <li>
               <Link to="/login" onClick={() => setIsModalOpen(false)}>Switch Account</Link>
             </li>
-
             {/* <li>
               <button onClick={handleLogout}>Logout</button>
             </li> */}
-
             <li>
               <Link to="/login" onClick={() => setIsModalOpen(false)} className="logout-button">
                 Logout
               </Link>
             </li>
-
           </ul>
         </div>
       )}
