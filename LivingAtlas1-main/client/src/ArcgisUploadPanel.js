@@ -2,13 +2,14 @@ import React, { useEffect, useState, useRef } from "react";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
-    ARCGIS_SERVICES,
+    ARCGIS_SERVICES_BY_STATE,
     fetchArcgisLayers,
     fetchArcgisLegend,
     getArcgisTileUrl
 } from './arcgisDataUtils';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
+import './ArcgisUploadPanelStateMenu.css'; // <-- Add this new CSS file
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
 import {
@@ -17,14 +18,9 @@ import {
     getLoadingMsgText
 } from './arcgisUploadMessageUtils';
 
-// Group services by folder
-const servicesByFolder = {};
-ARCGIS_SERVICES.forEach(service => {
-    const folder = service.folder || 'Root';
-    if (!servicesByFolder[folder]) servicesByFolder[folder] = [];
-    servicesByFolder[folder].push(service);
-});
-const folderNames = Object.keys(servicesByFolder).sort();
+// --- NEW: State selector ---
+const STATE_CODES = ['WA', 'ID', 'OR'];
+const STATE_LABELS = { WA: 'Washington', ID: 'Idaho', OR: 'Oregon' };
 
 function ArcgisUploadPanel({
     isOpen,
@@ -33,6 +29,21 @@ function ArcgisUploadPanel({
     arcgisLayerAdded: propArcgisLayerAdded,
     setArcgisLayerAdded: setPropArcgisLayerAdded,
 }) {
+    // NEW: Track selected state
+    const [selectedState, setSelectedState] = useState('WA');
+
+    // Use services for selected state
+    const ARCGIS_SERVICES = ARCGIS_SERVICES_BY_STATE[selectedState];
+
+    // Group services by folder (move this up!)
+    const servicesByFolder = {};
+    ARCGIS_SERVICES.forEach(service => {
+        const folder = service.folder || 'Root';
+        if (!servicesByFolder[folder]) servicesByFolder[folder] = [];
+        servicesByFolder[folder].push(service);
+    });
+    const folderNames = Object.keys(servicesByFolder).sort();
+
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [expandedService, setExpandedService] = useState(null);
     const [serviceLayers, setServiceLayers] = useState({}); // { key: [layers] }
@@ -424,17 +435,27 @@ function ArcgisUploadPanel({
         });
     };
 
+    // --- NEW: State menu bar ---
+    const renderStateMenu = () => (
+        <div className="arcgis-upload-state-menu">
+            {STATE_CODES.map(code => (
+                <button
+                    key={code}
+                    className={`arcgis-upload-state-btn${selectedState === code ? ' active' : ''}`}
+                    onClick={() => setSelectedState(code)}
+                >
+                    {STATE_LABELS[code]}
+                </button>
+            ))}
+        </div>
+    );
+
     if (!isOpen) return null;
 
     return (
         <div className="upload-panel">
-            <button
-                className="upload-panel-close-btn"
-                onClick={onClose}
-                title="Close"
-            >
-                &times;
-            </button>
+            {/* State menu at top right */}
+            {renderStateMenu()}
             {renderSearchBar()}
             {foldersToShow.map(folder => (
                 <div key={folder}>
