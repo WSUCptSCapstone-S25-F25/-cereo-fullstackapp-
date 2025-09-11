@@ -45,7 +45,7 @@ function Content2(props) {
     const [isCollapsed, setIsCollapsed] = useState(true);
 
     const toggleCollapse = () => {
-        setIsCollapsed(!isCollapsed);
+        props.setIsCollapsed?.(!props.isCollapsed);
     };
 
     // Drag handlers for resizing
@@ -537,7 +537,7 @@ function Content2(props) {
             {/* Right Sidebar */}
             <div id="right-sidebar">
                 <div className="collapse-toggle" onClick={toggleCollapse}>
-                    <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
+                    <FontAwesomeIcon icon={props.isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
                 </div>
                 <button 
                     className="add-card-button" 
@@ -586,7 +586,7 @@ function Content2(props) {
     
             <section
                 id="content-2"
-                className={isCollapsed ? 'collapsed' : ''}
+                className={props.isCollapsed ? 'collapsed' : ''}
                 ref={containerRef}
                 style={{ width: containerWidth }}
             >
@@ -606,7 +606,7 @@ function Content2(props) {
                 />
 
                 {/* Favorites toggle checkbox at top-left with spacing */}
-                {!isCollapsed && (
+                {!props.isCollapsed && (
                     <div 
                         className="favorites-toggle-checkbox"
                         style={{
@@ -636,7 +636,7 @@ function Content2(props) {
                     </div>
                 )}
 
-                <div className="card-container" style={{ display: isCollapsed ? 'none' : 'grid' }}>
+                <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
                     {cards
                         .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
                         .map((card, index) => (

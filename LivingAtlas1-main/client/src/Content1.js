@@ -63,7 +63,26 @@ const Content1 = (props) => {
     }
   }, [props.selectedCardCoords]);
 
-  // Resize map when content2 collapses
+  // Resize map when sidebars open or close
+  useEffect(() => {
+    if (mapContainerRef.current) {
+      if (props.isCollapsed && !props.isSidebarOpen) {
+        mapContainerRef.current.style.width = '100%';
+        mapContainerRef.current.style.left = '0';
+      } else if (props.isCollapsed && props.isSidebarOpen) {
+        mapContainerRef.current.style.width = '100%';
+        mapContainerRef.current.style.left = '119px';
+      } else if (!props.isCollapsed && !props.isSidebarOpen) {
+        mapContainerRef.current.style.width = '79%';
+        mapContainerRef.current.style.left = '-134px';
+      } else if (!props.isCollapsed && props.isSidebarOpen) {
+        mapContainerRef.current.style.width = '57%';
+        mapContainerRef.current.style.left = '108px';
+      }
+    }
+  }, [props.isCollapsed, props.isSidebarOpen]);
+
+  // Adjust map size to resized map container
   useEffect(() => {
     if (mapRef.current) {
       mapRef.current.resize();

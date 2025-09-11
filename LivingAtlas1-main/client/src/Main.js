@@ -23,6 +23,9 @@ function Main(props) {
                 setCategoryConditionCondition={props.setCategoryConditionCondition}
                 filterCondition={props.filterCondition}
                 setFilterCondition={props.setFilterCondition}
+                isCollapsed={props.isCollapsed}
+                setIsCollapsed={props.setIsCollapsed}
+                isSidebarOpen={props.isSidebarOpen}
                 selectedCardCoords={props.selectedCardCoords}
             />
         </main>

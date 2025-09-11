@@ -260,6 +260,9 @@ function Home(props) {
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 isAdmin={props.isAdmin}
                 username={props.username}
+                isCollapsed={isCollapsed}
+                setIsCollapsed={setIsCollapsed}
+                isSidebarOpen={isSidebarOpen}
                 selectedCardCoords={selectedCardCoords}
             />
             <Content2
@@ -275,6 +278,7 @@ function Home(props) {
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 username={props.username}
                 isCollapsed={isCollapsed}
+                setIsCollapsed={setIsCollapsed}
                 onCardClick={handleCardClick}
             />
             {props.isLoggedIn && props.isAdmin}
