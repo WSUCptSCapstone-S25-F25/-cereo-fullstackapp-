@@ -437,12 +437,38 @@ function ArcgisUploadPanel({
 
     // --- NEW: State menu bar ---
     const renderStateMenu = () => (
-        <div className="arcgis-upload-state-menu">
+        <div
+            className="arcgis-upload-state-menu"
+            style={{
+                position: 'fixed',
+                top: 83,
+                left: 498,
+                zIndex: 1301,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                background: '#f7f7f7',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                padding: '10px 8px',
+            }}
+        >
             {STATE_CODES.map(code => (
                 <button
                     key={code}
                     className={`arcgis-upload-state-btn${selectedState === code ? ' active' : ''}`}
                     onClick={() => setSelectedState(code)}
+                    style={{
+                        background: selectedState === code ? '#e3f2fd' : '#f7f7f7',
+                        color: selectedState === code ? '#1565c0' : '#1976d2',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        fontSize: '15px',
+                        padding: '8px 16px',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s, color 0.2s',
+                    }}
                 >
                     {STATE_LABELS[code]}
                 </button>
@@ -453,106 +479,109 @@ function ArcgisUploadPanel({
     if (!isOpen) return null;
 
     return (
-        <div className="upload-panel">
-            {/* State menu at top right */}
-            {renderStateMenu()}
-            {renderSearchBar()}
-            {foldersToShow.map(folder => (
-                <div key={folder}>
-                    <div
-                        className="upload-folder"
-                        onClick={() => handleFolderClick(folder)}
-                    >
-                        {expandedFolders.has(folder) ? "▼" : "►"} {folder}
-                    </div>
-                    {expandedFolders.has(folder) && (
-                        <div style={{ marginLeft: 18 }}>
-                            {servicesByFolderToShow[folder].map(service => {
-                                const layers = serviceLayers[service.key] || [];
-                                const checkedIds = checkedLayerIds[service.key] || [];
-                                const isAnyChecked = checkedIds.length > 0;
-                                const layersToShow = service.layers || layers;
-
-                                return (
-                                    <div key={service.key} style={{ marginBottom: 12 }}>
-                                        <div
-                                            className="upload-item"
-                                            onClick={() => handleServiceClick(service.key)}
-                                        >
-                                            <span>
-                                                {expandedServices.has(service.key) ? "▼" : "►"} {service.label}
-                                            </span>
-                                            <button
-                                                className={isAnyChecked ? "remove-btn" : "add-btn"}
-                                                onClick={e => {
-                                                    e.stopPropagation();
-                                                    handleAddRemove(service, layersToShow);
-                                                }}
-                                            >
-                                                {isAnyChecked ? "Remove" : "Load"}
-                                            </button>
-                                        </div>
-                                        {expandedServices.has(service.key) && (
-                                            <div style={{ marginLeft: 18 }}>
-                                                <div style={{ marginBottom: 8 }}>
-                                                    <label className="select-all-label">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={checkedIds.length === layersToShow.length}
-                                                            onChange={() => handleSelectAll(service, layersToShow)}
-                                                            style={{ marginRight: 8 }}
-                                                        />
-                                                        Select All
-                                                    </label>
-                                                    <ul style={{ paddingLeft: 0, listStyle: "none" }}>
-                                                        {layersToShow.map(layer => {
-                                                            let legendItems = [];
-                                                            const legend = serviceLegends[service.key];
-                                                            if (legend && legend.layers) {
-                                                                const legendLayer = legend.layers.find(l => l.layerId === layer.id);
-                                                                if (legendLayer) legendItems = legendLayer.legend;
-                                                            }
-                                                            return (
-                                                                <li key={layer.id} className="upload-layer-row">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={checkedIds.includes(layer.id)}
-                                                                        onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
-                                                                        style={{ marginRight: 8 }}
-                                                                    />
-                                                                    {legendItems.length > 0 && (
-                                                                        <img
-                                                                            src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
-                                                                            alt={legendItems[0].label}
-                                                                            className="legend-img"
-                                                                        />
-                                                                    )}
-                                                                    <span>{layer.name}</span>
-                                                                </li>
-                                                            );
-                                                        })}
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
+        <>
+            {/* Upload Panel */}
+            <div className="upload-panel">
+                {/* State menu at top right */}
+                {renderStateMenu()}
+                {renderSearchBar()}
+                {foldersToShow.map(folder => (
+                    <div key={folder}>
+                        <div
+                            className="upload-folder"
+                            onClick={() => handleFolderClick(folder)}
+                        >
+                            {expandedFolders.has(folder) ? "▼" : "►"} {folder}
                         </div>
-                    )}
-                </div>
-            ))}
-            <div className="upload-panel-attribution">
-                Data sources: <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
-            </div>
-            <div className="arcgis-loading-messages">
-                {messages.map((msg, idx) => (
-                    <div key={msg.id} className={`arcgis-loading-message ${msg.type}`}>
-                        {msg.text}
+                        {expandedFolders.has(folder) && (
+                            <div style={{ marginLeft: 18 }}>
+                                {servicesByFolderToShow[folder].map(service => {
+                                    const layers = serviceLayers[service.key] || [];
+                                    const checkedIds = checkedLayerIds[service.key] || [];
+                                    const isAnyChecked = checkedIds.length > 0;
+                                    const layersToShow = service.layers || layers;
+
+                                    return (
+                                        <div key={service.key} style={{ marginBottom: 12 }}>
+                                            <div
+                                                className="upload-item"
+                                                onClick={() => handleServiceClick(service.key)}
+                                            >
+                                                <span>
+                                                    {expandedServices.has(service.key) ? "▼" : "►"} {service.label}
+                                                </span>
+                                                <button
+                                                    className={isAnyChecked ? "remove-btn" : "add-btn"}
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        handleAddRemove(service, layersToShow);
+                                                    }}
+                                                >
+                                                    {isAnyChecked ? "Remove" : "Load"}
+                                                </button>
+                                            </div>
+                                            {expandedServices.has(service.key) && (
+                                                <div style={{ marginLeft: 18 }}>
+                                                    <div style={{ marginBottom: 8 }}>
+                                                        <label className="select-all-label">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={checkedIds.length === layersToShow.length}
+                                                                onChange={() => handleSelectAll(service, layersToShow)}
+                                                                style={{ marginRight: 8 }}
+                                                            />
+                                                            Select All
+                                                        </label>
+                                                        <ul style={{ paddingLeft: 0, listStyle: "none" }}>
+                                                            {layersToShow.map(layer => {
+                                                                let legendItems = [];
+                                                                const legend = serviceLegends[service.key];
+                                                                if (legend && legend.layers) {
+                                                                    const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                                                                    if (legendLayer) legendItems = legendLayer.legend;
+                                                                }
+                                                                return (
+                                                                    <li key={layer.id} className="upload-layer-row">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={checkedIds.includes(layer.id)}
+                                                                            onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
+                                                                            style={{ marginRight: 8 }}
+                                                                        />
+                                                                        {legendItems.length > 0 && (
+                                                                            <img
+                                                                                src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
+                                                                                alt={legendItems[0].label}
+                                                                                className="legend-img"
+                                                                            />
+                                                                        )}
+                                                                        <span>{layer.name}</span>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 ))}
+                <div className="upload-panel-attribution">
+                    Data sources: <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
+                </div>
+                <div className="arcgis-loading-messages">
+                    {messages.map((msg, idx) => (
+                        <div key={msg.id} className={`arcgis-loading-message ${msg.type}`}>
+                            {msg.text}
+                        </div>
+                    ))}
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 

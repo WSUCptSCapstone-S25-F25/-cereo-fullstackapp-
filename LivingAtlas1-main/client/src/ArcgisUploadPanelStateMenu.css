@@ -1,33 +1,41 @@
 .arcgis-upload-state-menu {
+  position: fixed;
+  top: 83px;
+  left: 498px;
+  z-index: 1301;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  position: relative;
-  min-width: 110px;
+  flex-direction: row;
+  gap: 8px;
   background: #f7f7f7;
-  border-left: 1px solid #ddd;
-  padding: 18px 0;
-  height: 100%;
-  z-index: 1201;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 6px 8px;
+  width: auto;
+  height: auto;
 }
 
 .arcgis-upload-state-btn {
-  background: none;
-  border: none;
+  background: #f7f7f7;
+  border: 1px solid #ddd;
   color: #1976d2;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: bold;
-  padding: 14px 0;
+  width: 38px;
+  height: 38px;
+  padding: 0;
   cursor: pointer;
+  border-radius: 6px;
+  text-align: center;
   transition: background 0.2s, color 0.2s;
-  border-radius: 0;
-  text-align: left;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .arcgis-upload-state-btn.active {
   background: #e3f2fd;
   color: #1565c0;
+  border-color: #1565c0;
 }
 .arcgis-upload-state-btn:hover {
   background: #e0e0e0;
