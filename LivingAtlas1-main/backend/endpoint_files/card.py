@@ -29,7 +29,7 @@ import os, base64
 #     with open("ServiceKey_GoogleCloud.json", "wb") as f:
 #         f.write(base64.b64decode(gcs_key))
 # _______________________________________
-"""
+
 # COMMENT OUT IF RUNNING ON RENDER
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
 # _______________________________________

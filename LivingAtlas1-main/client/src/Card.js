@@ -50,16 +50,12 @@ function Card(props) {
         if (props.onLearnMore) props.onLearnMore();
     };
   
-    const handleEdit = () => {
+    const handleEdit = (e) => {
         setFormData(prev => ({ 
             ...prev, 
             original_username: prev.username, 
             original_email: prev.email,
         }));
-        setIsEditModalOpen(true);
-    };
-
-    const handleEdit = (e) => {
         e.stopPropagation();
         setIsEditModalOpen(true);
     };
