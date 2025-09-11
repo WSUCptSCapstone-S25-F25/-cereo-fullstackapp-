@@ -1,12 +1,17 @@
-import ALL_ARCGIS_SERVICES from './arcgis_services.json';
+import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
+import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
+import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 
-// Only keep MapServer services
-const ARCGIS_SERVICES = ALL_ARCGIS_SERVICES.filter(s => s.type === 'MapServer');
-export { ARCGIS_SERVICES };
+// Utility to get services by state
+export const ARCGIS_SERVICES_BY_STATE = {
+    WA: WA_ARCGIS_SERVICES.filter(s => s.type === 'MapServer'),
+    ID: ID_ARCGIS_SERVICES.filter(s => s.type === 'MapServer'),
+    OR: OR_ARCGIS_SERVICES.filter(s => s.type === 'MapServer')
+};
 
-// Utility to get service by key
-export function getServiceByKey(key) {
-    return ARCGIS_SERVICES.find(s => s.key === key);
+// Utility to get service by key and state
+export function getServiceByKey(state, key) {
+    return ARCGIS_SERVICES_BY_STATE[state].find(s => s.key === key);
 }
 
 // Fetch layers for a given service
