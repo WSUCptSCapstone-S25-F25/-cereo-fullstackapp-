@@ -70,14 +70,14 @@ const Content1 = (props) => {
         mapContainerRef.current.style.width = '100%';
         mapContainerRef.current.style.left = '0';
       } else if (props.isCollapsed && props.isSidebarOpen) {
-        mapContainerRef.current.style.width = '100%';
-        mapContainerRef.current.style.left = '119px';
+        mapContainerRef.current.style.width = '82.8%';
+        mapContainerRef.current.style.left = '240px';
       } else if (!props.isCollapsed && !props.isSidebarOpen) {
-        mapContainerRef.current.style.width = '79%';
-        mapContainerRef.current.style.left = '-134px';
+        mapContainerRef.current.style.width = '78.5%';
+        mapContainerRef.current.style.left = '0';
       } else if (!props.isCollapsed && props.isSidebarOpen) {
-        mapContainerRef.current.style.width = '57%';
-        mapContainerRef.current.style.left = '108px';
+        mapContainerRef.current.style.width = '61.3%';
+        mapContainerRef.current.style.left = '240px';
       }
     }
   }, [props.isCollapsed, props.isSidebarOpen]);
