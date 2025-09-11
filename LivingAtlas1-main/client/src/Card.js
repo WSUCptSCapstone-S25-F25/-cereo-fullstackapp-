@@ -106,8 +106,6 @@ function Card(props) {
             return;
         }
 
-        setIsFavorited(prev => !prev);
-
         try {
             const endpoint = !isFavorited ? '/bookmarkCard' : '/unbookmarkCard';
             const formData = new FormData();
@@ -115,6 +113,8 @@ function Card(props) {
             formData.append('cardID', cardID);
 
             await api.post(endpoint, formData);
+
+            setIsFavorited(prev => !prev);
 
             if (props.fetchBookmarks) props.fetchBookmarks();
             if (props.onBookmarkChange) props.onBookmarkChange();

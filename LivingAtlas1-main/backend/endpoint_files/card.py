@@ -23,6 +23,7 @@ import os, base64
 
 # Decode the GCP credentials from the environment variable and write to file
 # COMMENT OUT IF RUNNING LOCALLY
+
 # gcs_key = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
 # if gcs_key:
 #     with open("ServiceKey_GoogleCloud.json", "wb") as f:
@@ -32,7 +33,6 @@ import os, base64
 # COMMENT OUT IF RUNNING ON RENDER
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
 # _______________________________________
-"""
         
 # storage_client = storage.Client()
 # bucket_name = "cereo_atlas_storage"
@@ -185,6 +185,7 @@ async def unbookmark_card(username: str = Form(...), cardID: int = Form(...)):
 
 @card_router.get("/getBookmarkedCards")
 def get_bookmarked_cards(username: str):
+
     print(f"[DEBUG] Connected to DB: {conn.dsn}")
 
     cur.execute("SELECT Username FROM Users")
@@ -196,6 +197,7 @@ def get_bookmarked_cards(username: str):
 
         cur.execute("SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)", (username,))
         result = cur.fetchone()
+        print(f"[DEBUG] Result: {result}")
 
         if not result:
             print("[WARN] No user found for:", username)
@@ -222,8 +224,6 @@ def get_bookmarked_cards(username: str):
     except Exception as e:
         print(f"[EXCEPTION] {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
 
 @card_router.get("/downloadFile")
 async def downloadFile(fileID: int):

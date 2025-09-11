@@ -32,8 +32,9 @@ def allCards():
                 
                 """)
                 #LIMIT 6;
+
+    print("[DEBUG] Rows:", cur.fetchall())
     
-    rows = cur.fetchall()
     columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "fileEXT", "fileID"]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}

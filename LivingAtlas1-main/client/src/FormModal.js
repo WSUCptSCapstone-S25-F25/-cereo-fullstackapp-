@@ -129,7 +129,7 @@ const FormModal = (props) => {
                 <h2>Upload Document</h2>
                 <form onSubmit={handleSubmit}>
                     <label>Name (required):</label>
-                    <input type="text" name="name" value={formData.name} readOnly />
+                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
 
                     <label>Email (required):</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />

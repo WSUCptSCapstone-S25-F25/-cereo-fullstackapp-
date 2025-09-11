@@ -80,6 +80,7 @@ function Content2(props) {
     }, [isDragging]);
 
     const location = useLocation();
+
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
 
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -100,7 +101,6 @@ function Content2(props) {
                 .then(response => {
                     console.log("Fetched cards:", response.data.data);
                     setCards(response.data.data);
-
                 })
                 .catch(error => {
                     console.error(error);
@@ -192,7 +192,6 @@ function Content2(props) {
     const [sortCondition, setSortCondition] = useState(props.sortCondition);
     // const isInitialMount = useRef(true);
 
-
     useEffect(() => {
         if (resolvedUsername) {
             localStorage.setItem("username", resolvedUsername);
@@ -206,7 +205,6 @@ function Content2(props) {
             return;
         }
 
-
         if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter193" + props.filterCondition);
             showAll();
@@ -216,7 +214,6 @@ function Content2(props) {
                 .then(response => {
                     console.log(response.data.data);
                     setCards(response.data.data);
-
                 })
                 .catch(error => {
                     console.error(error);
@@ -343,6 +340,9 @@ function Content2(props) {
         console.log("[fetchBookmarks] Sending GET /getBookmarkedCards request...");
 
         try {
+
+            await new Promise(r => setTimeout(r, 50));
+
             const res = await api.get('/getBookmarkedCards', {
                 params: { username: resolvedUsername }
             });

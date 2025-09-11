@@ -39,6 +39,7 @@ function Profile(props) {
 
     const fetchBookmarks = async () => {
         try {
+
             const res = await api.get('/getBookmarkedCards', {
                 params: { username: props.username }
             });
@@ -135,18 +136,21 @@ function Profile(props) {
                 let cardResponse;
     
                 if (isAdmin) {
-                    cardResponse = await api.get('/allCards');
+                    api.get('/allCards');
                 } else {
                     cardResponse = await api.get(`/profileCards?username=${props.username}`);
                 }
     
                 const cardData = cardResponse.data.data;
     
+                // Set state
+                setCards(cardData);
+
                 // Fetch bookmarks
                 const bookmarkRes = await api.get('/getBookmarkedCards', {
                     params: { username: props.username }
                 });
-    
+
                 const bookmarkedIDs = new Set(
                     bookmarkRes.data.bookmarkedCards.map(card =>
                         card.cardID || card.cardid || card.CardID
@@ -155,10 +159,9 @@ function Profile(props) {
     
                 // Optionally log for debugging
                 console.log("[Profile] Final bookmarked set:", bookmarkedIDs);
-    
+
                 // Set state
                 setBookmarkedCardIDs(bookmarkedIDs);
-                setCards(cardData);
                 setBookmarksLoaded(true);
                 setLastDeletedCard(false);
     

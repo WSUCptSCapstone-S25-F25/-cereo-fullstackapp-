@@ -27,7 +27,6 @@ import json
 # client = storage.Client()
 # _______________________________________
 
-
 #importing libraries for the backend
 import uvicorn
 from fastapi import FastAPI
