@@ -7,7 +7,6 @@
     width: 420px;
     background: #f7f7f7;
     border-left: 1px solid #ddd;
-    border-radius: 0 8px 8px 0;
     box-shadow: 2px 0 8px rgba(0,0,0,0.07);
     z-index: 1200;
     padding: 18px 18px 18px 18px;
@@ -193,7 +192,7 @@
     display: flex;
     align-items: center;
     margin-bottom: 8px;
-    margin-top: 32px; /* Add space below close button */
+    margin-top: 10px;
 }
 
 /* Search input */
@@ -204,7 +203,7 @@
     border-radius: 4px;
     border: 1px solid #ccc;
     height: 32px;
-    margin-top: 0; /* Ensure no extra margin */
+    margin-top: 0;
 }
 
 /* Search dropdown */

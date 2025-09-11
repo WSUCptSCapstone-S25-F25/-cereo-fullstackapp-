@@ -20,7 +20,7 @@ import {
 
 // --- NEW: State selector ---
 const STATE_CODES = ['WA', 'ID', 'OR'];
-const STATE_LABELS = { WA: 'Washington', ID: 'Idaho', OR: 'Oregon' };
+const STATE_LABELS = { WA: 'WA', ID: 'ID', OR: 'OR' };
 
 function ArcgisUploadPanel({
     isOpen,
@@ -437,38 +437,12 @@ function ArcgisUploadPanel({
 
     // --- NEW: State menu bar ---
     const renderStateMenu = () => (
-        <div
-            className="arcgis-upload-state-menu"
-            style={{
-                position: 'fixed',
-                top: 83,
-                left: 498,
-                zIndex: 1301,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                background: '#f7f7f7',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                padding: '10px 8px',
-            }}
-        >
+        <div className="arcgis-upload-state-menu">
             {STATE_CODES.map(code => (
                 <button
                     key={code}
                     className={`arcgis-upload-state-btn${selectedState === code ? ' active' : ''}`}
                     onClick={() => setSelectedState(code)}
-                    style={{
-                        background: selectedState === code ? '#e3f2fd' : '#f7f7f7',
-                        color: selectedState === code ? '#1565c0' : '#1976d2',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontWeight: 'bold',
-                        fontSize: '15px',
-                        padding: '8px 16px',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s, color 0.2s',
-                    }}
                 >
                     {STATE_LABELS[code]}
                 </button>
@@ -482,8 +456,6 @@ function ArcgisUploadPanel({
         <>
             {/* Upload Panel */}
             <div className="upload-panel">
-                {/* State menu at top right */}
-                {renderStateMenu()}
                 {renderSearchBar()}
                 {foldersToShow.map(folder => (
                     <div key={folder}>
@@ -581,6 +553,8 @@ function ArcgisUploadPanel({
                     ))}
                 </div>
             </div>
+            {/* State menu: outside the upload panel */}
+            {renderStateMenu()}
         </>
     );
 }
