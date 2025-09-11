@@ -1,0 +1,107 @@
+[
+  {
+    "key": "Framework_Admin_Bounds_MapServer",
+    "label": "Admin_Bounds (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Admin_Bounds/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Admin_Bounds_WM_MapServer",
+    "label": "Admin_Bounds_WM (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Admin_Bounds_WM/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Bio_Wetlands_MapServer",
+    "label": "Bio_Wetlands (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Bio_Wetlands/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Cadastral_PLSS_MapServer",
+    "label": "Cadastral_PLSS (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Cadastral_PLSS/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Cadastral_PLSS_WM_MapServer",
+    "label": "Cadastral_PLSS_WM (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Cadastral_PLSS_WM/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Haz_GeneralMap_MapServer",
+    "label": "Haz_GeneralMap (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Haz_GeneralMap/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Haz_GeneralMap_WM_MapServer",
+    "label": "Haz_GeneralMap_WM (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Haz_GeneralMap_WM/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Hydro_GeneralMap_MapServer",
+    "label": "Hydro_GeneralMap (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Hydro_GeneralMap/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Prep_GeneralMap_MapServer",
+    "label": "Prep_GeneralMap (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Prep_GeneralMap/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Trans_GeneralMap_MapServer",
+    "label": "Trans_GeneralMap (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Trans_GeneralMap/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Framework_Trans_GeneralMap_WM_MapServer",
+    "label": "Trans_GeneralMap_WM (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Trans_GeneralMap_WM/MapServer",
+    "folder": "Framework",
+    "type": "MapServer"
+  },
+  {
+    "key": "Projects_GEO_ImageryPortal_BaseLyr_MapServer",
+    "label": "GEO_ImageryPortal_BaseLyr (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Projects/GEO_ImageryPortal_BaseLyr/MapServer",
+    "folder": "Projects",
+    "type": "MapServer"
+  },
+  {
+    "key": "Projects_OBDD_EnterpriseZones_MapServer",
+    "label": "OBDD_EnterpriseZones (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Projects/OBDD_EnterpriseZones/MapServer",
+    "folder": "Projects",
+    "type": "MapServer"
+  },
+  {
+    "key": "Root_TestFS_FeatureServer",
+    "label": "TestFS (FeatureServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/TestFS/FeatureServer",
+    "folder": "Root",
+    "type": "FeatureServer"
+  },
+  {
+    "key": "Root_TestFS_MapServer",
+    "label": "TestFS (MapServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/TestFS/MapServer",
+    "folder": "Root",
+    "type": "MapServer"
+  }
+]
