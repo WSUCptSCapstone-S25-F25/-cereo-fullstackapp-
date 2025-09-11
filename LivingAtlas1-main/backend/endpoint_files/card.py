@@ -285,9 +285,12 @@ def allCards():
 
 @card_router.post("/uploadForm")
 async def upload_form(
+    update: Optional[bool] = Form(False),
     title: str = Form(...),
     email: str = Form(...),
     username: str = Form(...),
+    original_username: Optional[str] = Form(None),
+    original_email: Optional[str] = Form(None),
     category: str = Form(...),
     latitude: str = Form(...),
     longitude: str = Form(...),
@@ -315,7 +318,6 @@ async def upload_form(
     """
     This endpoint Submits a Card
     """
-
     #Inserting Card Data
     enable_commits = False
 
@@ -328,8 +330,13 @@ async def upload_form(
     #print(nextcardid, (type(nextcardid)))
 
     #Get UserID of submitted card from db
-    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (username, email))
-    userID = cur.fetchone()
+    print(username + email + original_username + original_email)
+    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (original_username, original_email))
+    user_row = cur.fetchone()
+    if not user_row:
+        raise HTTPException(status_code=404, detail="User not found")
+    userID = user_row[0]
+    
     #print(userID, (type(userID)))
 
     #Convert category string to categoryID
@@ -397,6 +404,7 @@ async def upload_form(
 
 
 
+
     #Order of operations for DB Insertions to not make schema mad
     #1st Card info
     #2nd Tag list
@@ -411,10 +419,31 @@ async def upload_form(
     # Inserting Card Data (updated to include thumbnail_url)
     try:
         enable_commits = False
-        insert_script = '''INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
-        insert_value = (nextcardid, userID[0], title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
-        cur.execute(insert_script, insert_value)
+        if update == True:
+            print("test 1")
+            cur.execute("SELECT Cards.CardID FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.UserID = %s AND Cards.Title = %s", (userID, title))
+            card = cur.fetchone()
+            print("test 2")
+            if not card:
+                raise HTTPException(status_code=404, detail="Card not found for update")
+            print("test 3")
+            nextcardid = card[0]
+            print("test 4")
+            if original_username and username != original_username:
+                cur.execute("SELECT UserID FROM Users WHERE username = %s AND email = %s", (username, email))
+                new_user = cur.fetchone()
+                if not new_user:
+                    raise HTTPException(status_code=404, detail="New username not found")
+                userID = new_user[0]
+            insert_script = """UPDATE Cards SET Latitude=%s, Longitude=%s, CategoryID=%s, Description=%s, Organization=%s, Funding=%s, Link=%s, Thumbnail_Link=COALESCE(%s, Thumbnail_Link), UserID=%s WHERE CardID=%s"""
+            insert_value = (latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url, userID, nextcardid)
+            cur.execute(insert_script, insert_value)
+            cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
+        else:
+            insert_script = '''INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
+            insert_value = (nextcardid, userID, title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
+            cur.execute(insert_script, insert_value)
 
         print("Ready to commit CARDS to DB")
         enable_commits = True
@@ -591,6 +620,8 @@ async def upload_form(
 
     if enable_commits == True:
         conn.commit()
+    else:
+        print("Commit failed")
 
     """
     I need the download button to toggle visability of the file 

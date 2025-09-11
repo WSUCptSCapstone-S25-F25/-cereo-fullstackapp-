@@ -49,6 +49,15 @@ function Card(props) {
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
     };
+  
+    const handleEdit = () => {
+        setFormData(prev => ({ 
+            ...prev, 
+            original_username: prev.username, 
+            original_email: prev.email,
+        }));
+        setIsEditModalOpen(true);
+    };
 
     const handleEdit = (e) => {
         e.stopPropagation();
@@ -154,6 +163,22 @@ function Card(props) {
             }
         });
 
+        formDataToSend.append('update', true);
+
+        if (formData.original_username || formData.username)
+        {
+            formDataToSend.append('original_username', formData.original_username || formData.username);
+        }
+
+        if (formData.original_email || formData.email)
+        {
+            formDataToSend.append('original_email', formData.original_email || formData.email);
+        }
+
+        formDataToSend.append('username', formData.username || '');
+        formDataToSend.append('email', formData.email || '');
+        formDataToSend.append('title', formData.title || '');
+
         if (thumbnail) {
             formDataToSend.append('thumbnail', thumbnail);
         }
@@ -161,12 +186,15 @@ function Card(props) {
         setLoading(true);
         try {
             await api.post('/uploadForm', formDataToSend);
+            /*
             await api.delete('/deleteCard', {
                 params: {
                     username: props.formData.username,
                     title: props.formData.title,
+                    //cardID: props.formData.cardID
                 },
             });
+            */
 
             alert('Card Information Saved. Please reload the page.');
             setIsEditModalOpen(false);
@@ -275,9 +303,10 @@ function Card(props) {
                     e.stopPropagation(); // Prevent bubbling to card container
                     saveEdits(); 
                 }}>
+                    <label>Name:<input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} required /></label>
                     <label>Title:<input type="text" name="title" value={formData.title || ''} onChange={handleInputChange} required /></label>
                     <label>Description:<textarea name="description" value={formData.description || ''} onChange={handleInputChange} /></label>
-                    <label>Email:<input type="email" name="email" value={formData.email || ''} onChange={handleInputChange} /></label>
+                    <label>Email:<input type="email" name="email" value={formData.email || ''} onChange={handleInputChange} required /></label>
                     <label>Organization:<input type="text" name="org" value={formData.org || ''} onChange={handleInputChange} /></label>
                     <label>Funding:<input type="text" name="funding" value={formData.funding || ''} onChange={handleInputChange} /></label>
                     <label>Link:<input type="text" name="link" value={formData.link || ''} onChange={handleInputChange} /></label>
@@ -286,6 +315,8 @@ function Card(props) {
                     <label>Latitude:<input type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} /></label>
                     <label>Longitude:<input type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} /></label>
                     <label>Thumbnail:<input type="file" accept="image/png, image/jpeg, image/gif" onChange={handleImageChange} /></label>
+                    <input type="hidden" name="original_username" value={formData.original_username || ''} />
+                    <input type="hidden" name="original_email" value={formData.original_email || ''} />
                     {preview && <img src={preview} alt="Thumbnail Preview" width="100" style={{ margin: '10px 0' }} />}
                     <button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
                     <button
