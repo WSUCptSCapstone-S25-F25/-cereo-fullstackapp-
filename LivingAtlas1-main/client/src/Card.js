@@ -23,9 +23,14 @@ function Card(props) {
         setIsFavorited(props.isFavorited);
     }, [props.isFavorited]);
 
+    // Ensure username and name always have safe defaults
     useEffect(() => {
         if (props.formData) {
-            setFormData(props.formData);
+            setFormData({
+                ...props.formData,
+                username: props.formData.username || '',
+                name: props.formData.name || ''
+            });
         }
     }, [props.formData]);
 
@@ -130,7 +135,7 @@ function Card(props) {
     };
 
     const validateForm = () => {
-        const requiredFields = ['username', 'email', 'title', 'category', 'latitude', 'longitude'];
+        const requiredFields = ['username', 'name', 'email', 'title', 'category', 'latitude', 'longitude'];
         for (const field of requiredFields) {
             const value = formData[field];
             if (value === undefined || value === null || value.toString().trim() === '') {
@@ -152,6 +157,12 @@ function Card(props) {
     const saveEdits = async () => {
         if (!validateForm()) return;
 
+        // Extra guard for username and name
+        if (!formData.username?.trim() || !formData.name?.trim()) {
+            alert("Both Username and Name are required.");
+            return;
+        }
+
         const formDataToSend = new FormData();
         Object.keys(formData).forEach((key) => {
             if (formData[key] !== undefined && formData[key] !== null) {
@@ -161,19 +172,13 @@ function Card(props) {
 
         formDataToSend.append('update', true);
 
-        if (formData.original_username || formData.username)
-        {
+        if (formData.original_username || formData.username) {
             formDataToSend.append('original_username', formData.original_username || formData.username);
         }
 
-        if (formData.original_email || formData.email)
-        {
+        if (formData.original_email || formData.email) {
             formDataToSend.append('original_email', formData.original_email || formData.email);
         }
-
-        formDataToSend.append('username', formData.username || '');
-        formDataToSend.append('email', formData.email || '');
-        formDataToSend.append('title', formData.title || '');
 
         if (thumbnail) {
             formDataToSend.append('thumbnail', thumbnail);
@@ -182,16 +187,6 @@ function Card(props) {
         setLoading(true);
         try {
             await api.post('/uploadForm', formDataToSend);
-            /*
-            await api.delete('/deleteCard', {
-                params: {
-                    username: props.formData.username,
-                    title: props.formData.title,
-                    //cardID: props.formData.cardID
-                },
-            });
-            */
-
             alert('Card Information Saved. Please reload the page.');
             setIsEditModalOpen(false);
 
@@ -208,7 +203,6 @@ function Card(props) {
         }
     };
 
-    // Add these handlers to fix the ESLint errors
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -245,8 +239,7 @@ function Card(props) {
                 alt="Card Thumbnail"
                 className="card-thumbnail"
             />
-            <h2 className="card-title" style={{ marginBottom: '18px' }}>{props.formData.title}</h2>
-            {/* <p className="card-text">{props.formData.description}</p> */}
+            <h2 className="card-title" style={{ marginBottom: '18px' }}>{formData.title}</h2>
 
             <div className="card-button-row">
                 <button className="card-button card-learn-more" onClick={handleLearnMore}>
@@ -258,26 +251,29 @@ function Card(props) {
 
             {/* Learn More Modal */}
             <Modal isOpen={isModalOpen} onRequestClose={() => setIsModalOpen(false)} className="Modal">
-                <h2>{props.formData.title}</h2>
-                <p><strong>Name:</strong> {props.formData.username}</p>
-                <p><strong>Email:</strong> {props.formData.email}</p>
-                <p><strong>Funding:</strong> {props.formData.funding}</p>
-                <p><strong>Organization:</strong> {props.formData.org}</p>
-                <p><strong>Title:</strong> {props.formData.title}</p>
+                <h2>{formData.title}</h2>
+                <p><strong>Name:</strong> {formData.name}</p>
+                <p><strong>Username:</strong> {formData.username}</p>
+                <p><strong>Email:</strong> {formData.email}</p>
+                <p><strong>Funding:</strong> {formData.funding}</p>
+                <p><strong>Organization:</strong> {formData.org}</p>
+                <p><strong>Title:</strong> {formData.title}</p>
                 <p>
                     <strong>Link:</strong>{' '}
-                    <a href={props.formData.link} target="_blank" rel="noopener noreferrer">
-                        {props.formData.link}
+                    <a href={formData.link} target="_blank" rel="noopener noreferrer">
+                        {formData.link}
                     </a>
                 </p>
-                <p><strong>Description:</strong> {props.formData.description}</p>
-                <p><strong>Category:</strong> {props.formData.category}</p>
-                <p><strong>Tags:</strong> {props.formData.tags}</p>
-                <p><strong>Latitude:</strong> {props.formData.latitude}</p>
-                <p><strong>Longitude:</strong> {props.formData.longitude}</p>
+                <p><strong>Description:</strong> {formData.description}</p>
+                <p><strong>Category:</strong> {formData.category}</p>
+                <p><strong>Tags:</strong> {formData.tags}</p>
+                <p><strong>Latitude:</strong> {formData.latitude}</p>
+                <p><strong>Longitude:</strong> {formData.longitude}</p>
 
-                {props.formData.fileID && (
-                    <button className="card-button" onClick={() => props.downloadFile(props.formData.fileID)}>Download {props.formData.fileEXT}</button>
+                {formData.fileID && (
+                    <button className="card-button" onClick={() => props.downloadFile(formData.fileID)}>
+                        Download {formData.fileEXT}
+                    </button>
                 )}
 
                 <button
@@ -291,29 +287,58 @@ function Card(props) {
                 </button>
             </Modal>
 
-            {/* Edit Modal */}
+            {/* Edit/Create Modal */}
             <Modal isOpen={isEditModalOpen} onRequestClose={() => setIsEditModalOpen(false)} className="Modal">
-                <h2>Edit Card</h2>
+                <h2>{formData.cardID ? "Edit Card" : "Create Card"}</h2>
                 <form onSubmit={(e) => { 
                     e.preventDefault(); 
-                    e.stopPropagation(); // Prevent bubbling to card container
+                    e.stopPropagation();
                     saveEdits(); 
                 }}>
-                    <label>Name:<input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} required /></label>
-                    <label>Title:<input type="text" name="title" value={formData.title || ''} onChange={handleInputChange} required /></label>
-                    <label>Description:<textarea name="description" value={formData.description || ''} onChange={handleInputChange} /></label>
-                    <label>Email:<input type="email" name="email" value={formData.email || ''} onChange={handleInputChange} required /></label>
-                    <label>Organization:<input type="text" name="org" value={formData.org || ''} onChange={handleInputChange} /></label>
-                    <label>Funding:<input type="text" name="funding" value={formData.funding || ''} onChange={handleInputChange} /></label>
-                    <label>Link:<input type="text" name="link" value={formData.link || ''} onChange={handleInputChange} /></label>
-                    <label>Category:<input type="text" name="category" value={formData.category || ''} onChange={handleInputChange} /></label>
-                    <label>Tags:<input type="text" name="tags" value={formData.tags || ''} onChange={handleInputChange} /></label>
-                    <label>Latitude:<input type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} /></label>
-                    <label>Longitude:<input type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} /></label>
-                    <label>Thumbnail:<input type="file" accept="image/png, image/jpeg, image/gif" onChange={handleImageChange} /></label>
+                    <label>Username:
+                        <input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} required />
+                    </label>
+                    <label>Name:
+                        <input type="text" name="name" value={formData.name || ''} onChange={handleInputChange} required />
+                    </label>
+                    <label>Email:
+                        <input type="email" name="email" value={formData.email || ''} onChange={handleInputChange} required />
+                    </label>
+                    <label>Title:
+                        <input type="text" name="title" value={formData.title || ''} onChange={handleInputChange} required />
+                    </label>
+                    <label>Description:
+                        <textarea name="description" value={formData.description || ''} onChange={handleInputChange} />
+                    </label>
+                    <label>Organization:
+                        <input type="text" name="org" value={formData.org || ''} onChange={handleInputChange} />
+                    </label>
+                    <label>Funding:
+                        <input type="text" name="funding" value={formData.funding || ''} onChange={handleInputChange} />
+                    </label>
+                    <label>Link:
+                        <input type="text" name="link" value={formData.link || ''} onChange={handleInputChange} />
+                    </label>
+                    <label>Category:
+                        <input type="text" name="category" value={formData.category || ''} onChange={handleInputChange} />
+                    </label>
+                    <label>Tags:
+                        <input type="text" name="tags" value={formData.tags || ''} onChange={handleInputChange} />
+                    </label>
+                    <label>Latitude:
+                        <input type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} />
+                    </label>
+                    <label>Longitude:
+                        <input type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
+                    </label>
+                    <label>Thumbnail:
+                        <input type="file" accept="image/png, image/jpeg, image/gif" onChange={handleImageChange} />
+                    </label>
+
                     <input type="hidden" name="original_username" value={formData.original_username || ''} />
                     <input type="hidden" name="original_email" value={formData.original_email || ''} />
                     {preview && <img src={preview} alt="Thumbnail Preview" width="100" style={{ margin: '10px 0' }} />}
+
                     <button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
                     <button
                         onClick={e => {
