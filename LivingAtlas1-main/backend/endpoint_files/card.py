@@ -86,6 +86,7 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
 #         print(f"Thumbnail upload error: {e}")
 #         raise HTTPException(status_code=500, detail="Failed to upload thumbnail image.")
 
+
 @card_router.post("/create-card")
 async def create_card(
     title: str = Form(...),
@@ -105,14 +106,24 @@ async def deleteCard(username: str, title: str):
     if not isinstance(username, str) or not isinstance(title, str):
         raise HTTPException(status_code=422, detail="Username and title must be strings")
 
-    cur.execute("SELECT Cards.CardID, Cards.thumbnail_link FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.Username = %s AND Cards.Title = %s", (username, title))
+    cur.execute("""
+        SELECT Cards.CardID, Cards.thumbnail_link
+        FROM Users
+        JOIN Cards ON Users.UserID = Cards.UserID
+        WHERE Users.Username = %s AND Cards.Title = %s
+    """, (username, title))
     result = cur.fetchone()
     if result is None:
         raise HTTPException(status_code=404, detail="Card not found")
     cardID, thumbnail_link = result
 
     if thumbnail_link and thumbnail_link != DEFAULT_THUMBNAIL_URL:
-        delete_from_bucket(thumbnail_link.replace(f"https://storage.googleapis.com/{bucket_name}/", ""))
+        # Convert full URL to blob path by stripping bucket URL prefix:
+        try:
+            blob_path = thumbnail_link.replace(f"https://storage.googleapis.com/{bucket_name}/", "")
+            delete_from_bucket(blob_path)
+        except Exception as e:
+            print(f"[WARN] Failed to parse/delete thumbnail: {e}")
 
     cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
     cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
@@ -120,14 +131,10 @@ async def deleteCard(username: str, title: str):
     conn.commit()
     return {"Success": "The card is deleted"}
 
-
-
-
 @card_router.post("/bookmarkCard")
 async def bookmark_card(username: str = Form(...), cardID: int = Form(...)):
     try:
         print(f"[BOOKMARK] Incoming request: username={username}, cardID={cardID}")
-        
         cur.execute("""
             INSERT INTO Favorites (UserID, CardID)
             SELECT u.UserID, %s
@@ -135,77 +142,38 @@ async def bookmark_card(username: str = Form(...), cardID: int = Form(...)):
             WHERE LOWER(u.Username) = LOWER(%s)
             ON CONFLICT DO NOTHING
         """, (cardID, username))
-
         conn.commit()
-
-        # Check if the bookmark was inserted
-        cur.execute("""
-            SELECT * FROM Favorites
-            WHERE CardID = %s AND UserID = (
-                SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)
-            )
-        """, (cardID, username))
-        result = cur.fetchone()
-        print(f"[BOOKMARK] DB insert result: {result}")
-
         return {"message": "Card bookmarked successfully"}
     except Exception as e:
         print(f"[BOOKMARK ERROR] {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @card_router.post("/unbookmarkCard")
 async def unbookmark_card(username: str = Form(...), cardID: int = Form(...)):
     try:
         print(f"[UNBOOKMARK] Incoming request: username={username}, card_id={cardID}")
-
         cur.execute("""
             DELETE FROM Favorites
             WHERE UserID = (SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s))
               AND CardID = %s
         """, (username, cardID))
-
         conn.commit()
-
-        # Verify deletion
-        cur.execute("""
-            SELECT * FROM Favorites
-            WHERE CardID = %s AND UserID = (
-                SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)
-            )
-        """, (cardID, username))
-        result = cur.fetchone()
-        print(f"[UNBOOKMARK] Post-delete DB check (should be None): {result}")
-
         return {"message": "Card removed from bookmarks"}
     except Exception as e:
         print(f"[UNBOOKMARK ERROR] {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    
 
 @card_router.get("/getBookmarkedCards")
 def get_bookmarked_cards(username: str):
-
-    print(f"[DEBUG] Connected to DB: {conn.dsn}")
-
-    cur.execute("SELECT Username FROM Users")
-    print("[DEBUG] All users in DB:", cur.fetchall())
-
     try:
         username = username.strip()
-        print(f"[DEBUG] Raw username input after strip: '{username}'")
-
         cur.execute("SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(%s)", (username,))
         result = cur.fetchone()
-        print(f"[DEBUG] Result: {result}")
 
         if not result:
-            print("[WARN] No user found for:", username)
             return {"bookmarkedCards": []}
 
         user_id = result[0]
-        print(f"[DEBUG] UserID fetched for bookmark: {user_id}")
-
         cur.execute("""
             SELECT c.CardID AS "cardID"
             FROM Favorites f
@@ -214,9 +182,6 @@ def get_bookmarked_cards(username: str):
         """, (user_id,))
 
         rows = cur.fetchall()
-        print(f"[DEBUG] Bookmarked cards found: {len(rows)}")
-        print("[BOOKMARK] Result rows:", rows)
-
         columns = ["cardID"]
         data = [dict(zip(columns, row)) for row in rows]
         return {"bookmarkedCards": data}
@@ -227,61 +192,85 @@ def get_bookmarked_cards(username: str):
 
 @card_router.get("/downloadFile")
 async def downloadFile(fileID: int):
+    """
+    Stream a file from Google Cloud Storage to the client by fileID.
+    """
     cur.execute("SELECT DirectoryPath FROM Files WHERE fileID = %s", (fileID,))
     result = cur.fetchone()
     if result is None:
         raise HTTPException(status_code=422, detail="File is not in the database")
-    directoryPath = result[0]
 
-    fileTitle = str(fileID) + '/' + directoryPath
+    directoryPath = result[0]
+    fileTitle = f"{fileID}/{directoryPath}"
     blob = bucket.blob(fileTitle)
-    if blob.exists():
+
+    # Prefer direct download; exists() can be flaky without client.
+    try:
         file_content = BytesIO()
-        storage_client.download_blob_to_file(blob, file_content)
+        blob.download_to_file(file_content)  # <-- fixed from storage_client.download_blob_to_file
         file_content.seek(0)
-        return Response(file_content.read(), media_type="application/octet-stream", headers={"Content-Disposition": f"attachment; filename={directoryPath}"})
-    return {"error": "File doesn't exist"}
+        return Response(
+            file_content.read(),
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={directoryPath}"}
+        )
+    except NotFound:
+        return {"error": "File doesn't exist"}
+    except Exception as e:
+        print(f"[DOWNLOAD ERROR] {e}")
+        raise HTTPException(status_code=500, detail="Could not download file from storage.")
 
 @card_router.get("/allCards")
 def allCards():
     try:
         cur.execute("""
-            SELECT Users.Username, Users.Email, Cards.title, Cards.cardid, Categories.CategoryLabel, Cards.dateposted,
-                   Cards.description, Cards.organization, Cards.funding, Cards.link,
-                   STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
-                   Cards.latitude, Cards.longitude,
-                   Cards.thumbnail_link,  
-                   Files.FileExtension, Files.FileID
+            SELECT
+                Users.Username,
+                Users.Email,
+                COALESCE(Cards.Name, '') AS Name,
+                Cards.Title,
+                Cards.CardID,
+                Categories.CategoryLabel,
+                Cards.DatePosted,
+                Cards.Description,
+                Cards.Organization,
+                Cards.Funding,
+                Cards.Link,
+                STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
+                Cards.Latitude,
+                Cards.Longitude,
+                Cards.Thumbnail_Link,
+                Files.FileExtension,
+                Files.FileID
             FROM Cards
-            INNER JOIN Categories
-            ON Cards.CategoryID = Categories.CategoryID
-            LEFT JOIN Files
-            ON Cards.cardid = Files.cardid
-            LEFT JOIN CardTags
-            ON Cards.cardid = CardTags.cardid
-            LEFT JOIN Tags
-            ON CardTags.TagID = Tags.TagID
-            INNER JOIN Users
-            ON Cards.UserID = Users.UserID
-            GROUP BY Cards.cardid, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Users.Username, Users.Email
-            ORDER BY Cards.cardid DESC;
+            INNER JOIN Categories ON Cards.CategoryID = Categories.CategoryID
+            LEFT JOIN Files ON Cards.CardID = Files.CardID
+            LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
+            LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
+            INNER JOIN Users ON Cards.UserID = Users.UserID
+            GROUP BY
+                Cards.CardID,
+                Categories.CategoryLabel,
+                Files.FileExtension,
+                Files.FileID,
+                Users.Username,
+                Users.Email,
+                Cards.Name
+            ORDER BY Cards.CardID DESC;
         """)
 
         columns = [
-            "username", "email", "title", "cardID", "category", "date", "description", "org", "funding", "link",
+            "username", "email", "name", "title", "cardID", "category", "date", "description", "org", "funding", "link",
             "tags", "latitude", "longitude", "thumbnail_link",
             "fileEXT", "fileID"
         ]
 
         rows = cur.fetchall()
         data = [dict(zip(columns, row)) for row in rows]
-        
         return {"data": data}
     except Exception as e:
         print(f"An error occurred while fetching all cards: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-
-
 
 @card_router.post("/uploadForm")
 async def upload_form(
@@ -289,6 +278,7 @@ async def upload_form(
     title: str = Form(...),
     email: str = Form(...),
     username: str = Form(...),
+    name: str = Form(...),
     original_username: Optional[str] = Form(None),
     original_email: Optional[str] = Form(None),
     category: str = Form(...),
@@ -302,45 +292,27 @@ async def upload_form(
     file: Optional[UploadFile] = File(None),
     thumbnail: Optional[UploadFile] = File(None)  # THIS IS IMPORTANT
 ):
-    #The ... means that the input is required
-    # print(f"name: {name}")
-    # print(f"email: {email}")
-    # print(f"title: {title}")
-    # print(f"category: {category}")
-    # print(f"description: {description}")
-    # print(f"funding: {funding}")
-    # print(f"org: {org}")
-    # print(f"link: {link}")
-    # print(f"tags: {tags}")
-    # print(f"latitude: {latitude}")
-    # print(f"longitude: {longitude}")
-    #print(f"file: {file}")
     """
-    This endpoint Submits a Card
+    This endpoint submits/updates a Card
     """
-    #Inserting Card Data
     enable_commits = False
 
+    # Safe debug print (avoid None concatenation)
+    print(f"[UPLOAD] username={username}, email={email}, orig_username={original_username or ''}, orig_email={original_email or ''}")
 
-    #Get Max CardID from db
+    # Get next CardID
     cur.execute("SELECT MAX(CardID) FROM Cards")
     maxcardid = cur.fetchone()
-    #print(maxcardid[0], (type(maxcardid[0])))
-    nextcardid = maxcardid[0] + 1
-    #print(nextcardid, (type(nextcardid)))
+    nextcardid = (maxcardid[0] or 0) + 1
 
-    #Get UserID of submitted card from db
-    print(username + email + original_username + original_email)
+    # Identify user performing the update/insert
     cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (original_username, original_email))
     user_row = cur.fetchone()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
     userID = user_row[0]
-    
-    #print(userID, (type(userID)))
 
-    #Convert category string to categoryID
-    categoryID = 0
+    # Convert category string to categoryID
     if category == "River":
         categoryID = 1
     elif category == "Watershed":
@@ -349,19 +321,16 @@ async def upload_form(
         categoryID = 3
     else:
         raise HTTPException(status_code=400, detail="Category is not a valid item")
-    #print(category, categoryID)
 
     # Define schema limits for testing
     title_limit = 255
-    latitude_limit = (10, 8)  # (total_digits, decimal_places)
+    latitude_limit = (10, 8)   # (total_digits, decimal_places) – informational
     longitude_limit = (11, 8)
     description_limit = 2000
     organization_limit = 255
-    funding_digits = 8
-    funding_decimal = 2
     link_limit = 255
 
-    #Testing the Data based on the schema
+    # Validate fields
     if len(title) > title_limit:
         raise HTTPException(status_code=400, detail="Title exceeds 255 characters")
 
@@ -383,259 +352,191 @@ async def upload_form(
     except ValueError:
         raise HTTPException(status_code=400, detail="Longitude is not a valid decimal number")
 
-    if description != None:
-        if len(description) > description_limit:
-            raise HTTPException(status_code=400, detail="Description exceeds 2000 characters")
+    if description is not None and len(description) > description_limit:
+        raise HTTPException(status_code=400, detail="Description exceeds 2000 characters")
 
-    if org != None:
-        if len(org) > organization_limit:
-            raise HTTPException(status_code=400, detail="Organization exceeds 255 characters")
+    if org is not None and len(org) > organization_limit:
+        raise HTTPException(status_code=400, detail="Organization exceeds 255 characters")
 
-    if funding is not None:
-        if len(funding) > 255:  # Maximum length for VARCHAR(255)
-            raise HTTPException(status_code=400, detail="Funding exceeds 255 characters")
-
-
-    if link != None:
-        if len(link) > link_limit:
-            raise HTTPException(status_code=400, detail="Link exceeds 255 characters")
+    if link is not None and len(link) > link_limit:
+        raise HTTPException(status_code=400, detail="Link exceeds 255 characters")
 
     print("Card Data Validated for CardID: ", nextcardid)
 
-
-
-
-    #Order of operations for DB Insertions to not make schema mad
-    #1st Card info
-    #2nd Tag list
-    #3rd CardTag Associations
-    #4th Files
-
-
-    
     # Upload thumbnail (custom or default)
     thumbnail_url = upload_image(thumbnail)
 
-    # Inserting Card Data (updated to include thumbnail_url)
+    # Inserting/Updating Card Data (includes thumbnail_url)
     try:
         enable_commits = False
-        if update == True:
-            print("test 1")
-            cur.execute("SELECT Cards.CardID FROM Users JOIN Cards ON Users.UserID = Cards.UserID WHERE Users.UserID = %s AND Cards.Title = %s", (userID, title))
+        if update:
+            cur.execute("""
+                SELECT Cards.CardID
+                FROM Users
+                JOIN Cards ON Users.UserID = Cards.UserID
+                WHERE Users.UserID = %s AND Cards.Title = %s
+            """, (userID, title))
             card = cur.fetchone()
-            print("test 2")
             if not card:
                 raise HTTPException(status_code=404, detail="Card not found for update")
-            print("test 3")
+
             nextcardid = card[0]
-            print("test 4")
+
             if original_username and username != original_username:
                 cur.execute("SELECT UserID FROM Users WHERE username = %s AND email = %s", (username, email))
                 new_user = cur.fetchone()
                 if not new_user:
                     raise HTTPException(status_code=404, detail="New username not found")
                 userID = new_user[0]
-            insert_script = """UPDATE Cards SET Latitude=%s, Longitude=%s, CategoryID=%s, Description=%s, Organization=%s, Funding=%s, Link=%s, Thumbnail_Link=COALESCE(%s, Thumbnail_Link), UserID=%s WHERE CardID=%s"""
-            insert_value = (latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url, userID, nextcardid)
+
+            insert_script = """
+                UPDATE Cards
+                SET Name=%s,
+                    Latitude=%s,
+                    Longitude=%s,
+                    CategoryID=%s,
+                    Description=%s,
+                    Organization=%s,
+                    Funding=%s,
+                    Link=%s,
+                    Thumbnail_Link=COALESCE(%s, Thumbnail_Link),
+                    UserID=%s
+                WHERE CardID=%s
+            """
+            insert_value = (name, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url, userID, nextcardid)
             cur.execute(insert_script, insert_value)
+
+            # Clear tag links for rebuild below (if tags sent)
             cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
         else:
-            insert_script = '''INSERT INTO Cards (CardID, UserID, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
-            insert_value = (nextcardid, userID, title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
+            insert_script = """
+                INSERT INTO Cards
+                    (CardID, UserID, Name, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link)
+                VALUES
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            insert_value = (nextcardid, userID, name, title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
             cur.execute(insert_script, insert_value)
 
         print("Ready to commit CARDS to DB")
         enable_commits = True
-
-        #return {"message": "Data Card inserted successfully"}
     except psycopg2.DatabaseError as e:
-        # Log the error for debugging
-        print(f"Database Error: {e}")
-        # Rollback the transaction
+        print(f"[DB ERROR] {e}")
         conn.rollback()
         raise HTTPException(status_code=500, detail="An error occurred while inserting the data. Please try again later.")
-
     except Exception as e:
-        # Handle other exceptions gracefully and log them
-        print(f"An unexpected error occurred: {e}")
+        print(f"[UNEXPECTED ERROR] {e}")
         raise HTTPException(status_code=500, detail="An error occurred while inserting the data. Please try again later.")
 
-
-
     # Inserting Unique Tag items if any
-    if tags != None:
+    if tags is not None and tags.strip() != "":
         enable_commits = False
-
-
         try:
-            #seperating the tag list
-            user_tags = tags.split(",")
-            # Remove leading and trailing spaces from each word
-            user_tags = [tag.strip() for tag in user_tags]
-            """print("\nuser_tags:  ")
-            print(user_tags)"""
+            # Split and normalize tag list
+            user_tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
 
-            #Get the master list of custom tags from db
+            # Get master tag list
             cur.execute("SELECT TagLabel FROM Tags")
             all_tag_list = cur.fetchall()
-            """print("\nall_tag_list:   ")
-            print(all_tag_list)"""
-
-            #Find unique tags from the submitted list
-            # Convert all_tag_list to a set of strings
             masterTags = set(tag[0] for tag in all_tag_list)
-            # Convert userTags to a set
+
+            # Compute unique vs existing
             userTagsSet = set(user_tags)
-            # Use set difference to remove common tags
-            uniqueUserTags = userTagsSet - masterTags
-            # Use set intersection to find common tags
-            existingUserTags = userTagsSet & masterTags
+            uniqueUserTags = list(userTagsSet - masterTags)
+            existingUserTagsList = list(userTagsSet & masterTags)
 
-            # Convert back to a list
-            uniqueUserTagsList = list(uniqueUserTags)
-            existingUserTagsList = list(existingUserTags)
-            """
-            print("\nuniqueUserTagList:    ")
-            print(uniqueUserTagsList)
-            print("\nexistingUserTagsList:   ")
-            print(existingUserTagsList)
-            """
-
-            if uniqueUserTagsList != []:
-                #Get the next tagID from db
+            if uniqueUserTags:
+                # Next Tag IDs
                 cur.execute("SELECT MAX(TagID) FROM Tags")
                 maxtagid = cur.fetchone()
+                start_id = (maxtagid[0] or 0) + 1
+                nextTagIDsList = [start_id + i for i in range(len(uniqueUserTags))]
 
-                #Creates the new tagIDS to insert to tag table
-                nextTagIDsList = [maxtagid[0] + i + 1 for i in range(len(uniqueUserTagsList))]
+                # Insert new tags
+                cur.executemany("INSERT INTO Tags (TagID, TagLabel) VALUES (%s, %s)", list(zip(nextTagIDsList, uniqueUserTags)))
 
-                #Create the insert statement for the tags table
-                tags_insert_statement_words = "INSERT INTO Tags (TagID, TagLabel) VALUES (%s, %s)"
-                tags_insert_statement_data = list(zip(nextTagIDsList, uniqueUserTagsList))
-
-                """print("\nnextTagIDsList:   ")
-                print(nextTagIDsList)
-                print("\ntags_insert_statement words:    ")
-                print(tags_insert_statement_words)
-                print("\ntags_insert_statement data:    ")
-                print(tags_insert_statement_data)
-                """
-
-                #Insert to DB tags
-                cur.executemany(tags_insert_statement_words, tags_insert_statement_data)   
-
-                #Creates the tag query with cardID
+                # Associate new tags to card
                 cardTagIDTuple = [(nextcardid, num) for num in nextTagIDsList]
-                """print("\ncardTagIDTuple:    ")
-                print(cardTagIDTuple)"""
-                #Inserts into DB
-                cardTags_insert_statement = "INSERT INTO CardTags (CardID, TagID) VALUES (%s, %s)"
-                cur.executemany(cardTags_insert_statement, cardTagIDTuple)        
+                cur.executemany("INSERT INTO CardTags (CardID, TagID) VALUES (%s, %s)", cardTagIDTuple)
 
-
-            # Creating CardTag assocaitions for new Card
-
-            #Get the other half of non-unique taglabel ID's
-            if existingUserTagsList != []:
+            if existingUserTagsList:
                 data = tuple(existingUserTagsList)
-                query = "SELECT TagID FROM Tags WHERE TagLabel IN %s"
-                cur.execute(query, (data,))
+                cur.execute("SELECT TagID FROM Tags WHERE TagLabel IN %s", (data,))
                 results = cur.fetchall()
-                #Fixes format from fetchall() so [(#,), (#,)] to [#, #]
-                existingUserTagID = list(item[0] for item in results)
-                """print(existingUserTagID)"""
-                #Creates the tag query with cardID
+                existingUserTagID = [item[0] for item in results]
                 cardTagIDTuple = [(nextcardid, num) for num in existingUserTagID]
-                """print(cardTagIDTuple)"""
-                #Inserts into DB
-                cardTags_insert_statement = "INSERT INTO CardTags (CardID, TagID) VALUES (%s, %s)"
-                cur.executemany(cardTags_insert_statement, cardTagIDTuple)
-                
+                cur.executemany("INSERT INTO CardTags (CardID, TagID) VALUES (%s, %s)", cardTagIDTuple)
 
-                print("Ready to commit TAGS to DB")
-                enable_commits = True
+            print("Ready to commit TAGS to DB")
+            enable_commits = True
         except ValueError as e:
-            # Handle the exception (ValueError in this case)
-            print(f"Exception: {e}")
-            print("Unable to try Tags. No comma found.")
+            print(f"Exception parsing tags: {e} (no comma or invalid input)")
 
     # Inserting File to Database then Google Cloud
-    if file != None:
+    if file is not None:
         enable_commits = False
 
+        # Get file size properly
+        try:
+            file.file.seek(0, os.SEEK_END)
+            filesizeNEW = file.file.tell()
+            file.file.seek(0)
+        except Exception:
+            filesizeNEW = None  # If size can't be determined, allow upload
 
-
-        #Get info from file object
-        directoryPathNEW = file.filename
-        fileContent = file.content_type
-        fileNameNEW, fileExtensionNEW = os.path.splitext(directoryPathNEW)
-        if fileExtensionNEW:
-            file_typeNEW = fileExtensionNEW[1:] # remove the leading dot
-        else:
-            file_typeNEW = "binary"
-        filesizeNEW = file.size
-        #print(fileNameNEW, directoryPathNEW, file_typeNEW.upper(), filesizeNEW, sep='\n')
-            
-        # Check if the file size is over 10 GB (10 * 1024 * 1024 * 1024 bytes)
-        #This is an abritrary limit that I put in the size of file uploads so we can't have someone send in a terabyte and kill the backend
+        # Arbitrary size limit 10 GB
         max_size_bytes = 10 * 1024 * 1024 * 1024
-
-        if filesizeNEW > max_size_bytes:
+        if filesizeNEW is not None and filesizeNEW > max_size_bytes:
             raise HTTPException(status_code=413, detail="File size exceeds 10 GB. This is a limit that can be removed by the Living Atlas Devs if requested")
 
-
-        #Get Max FileID from db
+        # Next FileID
         cur.execute("SELECT MAX(FileID) FROM Files")
         maxFileid = cur.fetchone()
-        nextfileid = maxFileid[0] + 1
-        #print(maxFileid, nextfileid, sep=' -> ')
+        nextfileid = (maxFileid[0] or 0) + 1
+
+        directoryPathNEW = file.filename
+        fileNameNEW, fileExtensionNEW = os.path.splitext(directoryPathNEW)
+        file_typeNEW = fileExtensionNEW[1:].upper() if fileExtensionNEW else "BINARY"
 
         try:
-            insert_script = 'INSERT INTO Files (FileID, CardID, FileName, DirectoryPath, FileSize, FileExtension) VALUES (%s, %s, %s, %s, %s, %s)'
-            insert_value = (nextfileid, nextcardid, fileNameNEW, directoryPathNEW, filesizeNEW, file_typeNEW.upper())
-            cur.execute(insert_script, insert_value)
-            
+            cur.execute(
+                'INSERT INTO Files (FileID, CardID, FileName, DirectoryPath, FileSize, FileExtension) VALUES (%s, %s, %s, %s, %s, %s)',
+                (nextfileid, nextcardid, fileNameNEW, directoryPathNEW, filesizeNEW, file_typeNEW)
+            )
+
+            bucketFilePath = f"{nextfileid}/{directoryPathNEW}"
+
+            # Ensure stream at start before upload
+            try:
+                file.file.seek(0)
+            except Exception:
+                pass
+
+            upload_ok = upload_to_bucket(bucketFilePath, file.file, file.content_type, bucket_name)
+            if not upload_ok:
+                raise HTTPException(status_code=500, detail="Failed to upload file to storage")
+
             print("Ready to commit FILES TO DB")
             enable_commits = True
-
-            bucketFilePath = str(nextfileid) + '/' + directoryPathNEW
-            #print(bucketFilePath)
-
-            # If Added to the DB the file will be added to Google Cloud
-            upload_to_bucket(bucketFilePath, file.file, fileContent, bucket_name)
-
-            #return {"message": "Data Card inserted successfully"}
         except psycopg2.DatabaseError as e:
-            # Log the error for debugging
-            print(f"Database Error: {e}")
-            # Rollback the transaction
+            print(f"[DB ERROR - FILES] {e}")
             conn.rollback()
-            raise HTTPException(status_code=500, detail="An error occurred while inserting the data. Please try again later.")
+            raise HTTPException(status_code=500, detail="An error occurred while inserting the file.")
         except Exception as e:
-            # Handle other exceptions gracefully and log them
-            print(f"An unexpected error occurred in uploadFiles: {e}")
+            print(f"[UNEXPECTED ERROR in uploadFiles] {e}")
             raise HTTPException(status_code=500, detail="An error occurred while inserting the data. Please try again later.")
 
-
-    if enable_commits == True:
+    if enable_commits:
         conn.commit()
     else:
         print("Commit failed")
 
-    """
-    I need the download button to toggle visability of the file 
-    I need the download button to adjust the label to File.FileExtension
-    I need /getall /adjustboundry /searchbar /filterbytag to return fileextension, fileID
-    I need download to use fileID
-    """
+    return {"message": "Success", "cardID": nextcardid}
 
-
-
-
-
+# ------------------------------------------------------------
+# DEPRECATED LOCAL FS EXAMPLES (kept for reference)
+# ------------------------------------------------------------
 """
-
 # THESE TWO ENDPOINTS UPLOAD AND DOWNLOAD ARE MADE FOR WHEN THE BACKEND HAS A LOCAL FILE SYSTEM TO USE. 
 # WE HAVE SWITCHED TO USE A CLOUD SERVICE TO STORE OUR FILES SO THESE ARE NOW DEPRICATED
 
@@ -655,7 +556,6 @@ async def uploadFile(file: UploadFile = File(...)):
     os.makedirs(folder_path, exist_ok=True)  # Creates the folder if it doesn't exist
     file_path = os.path.join(folder_path, f"{file_name}.{file_ext}")
     
-   
     print(file_path)
     #Should probably write to folder in chunks for larger files but that will come in time
     with open(file_path, "wb") as f:
@@ -678,5 +578,4 @@ async def downloadFile(fileTitle: str):
     if os.path.exists(file_path):
         return FileResponse(file_path)
     return {"error": "File doesn't exist"}
-
 """

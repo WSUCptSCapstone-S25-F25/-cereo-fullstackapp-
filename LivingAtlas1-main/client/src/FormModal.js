@@ -17,8 +17,9 @@ const FormModal = (props) => {
     };
 
     const [formData, setFormData] = useState({
-        username: props.username,
-        email: props.email,
+        username: props.username || '',   // required account login
+        name: '',                         // display name
+        email: props.email || '',
         title: '',
         category: '',
         description: '',
@@ -62,6 +63,8 @@ const FormModal = (props) => {
 
     const validateForm = () => {
         const errors = [];
+        if (!formData.username.trim()) errors.push("Username is required.");
+        if (!formData.name.trim()) errors.push("Name is required.");
         if (!formData.title.trim() || formData.title.length > 255) errors.push("Title is required and must be <256 chars.");
         if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.latitude)) errors.push("Latitude format is invalid.");
         if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.longitude)) errors.push("Longitude format is invalid.");
@@ -80,12 +83,15 @@ const FormModal = (props) => {
             return;
         }
 
-        // Re-enforce username (name) from props before submitting
-        formData.username = props.username;
+        // Always use current props.username to avoid stale state
+        const payload = {
+            ...formData,
+            username: props.username || formData.username
+        };
 
         const formData2 = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-            if (value) {
+        Object.entries(payload).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
                 formData2.append(key, value);
             }
         });
@@ -113,23 +119,25 @@ const FormModal = (props) => {
         <div>
             <button className="open-form-button" onClick={() => setModalIsOpen(true)}>Upload</button>
             <Modal
-                // isOpen={props.isOpen} // Use the isOpen prop from the parent
-                // onRequestClose={props.onRequestClose} // Use the onRequestClose prop from the parent
                 isOpen={isModalOpen}
                 onRequestClose={handleCloseModal}
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
                 ariaHideApp={false}
-
             >
-
-                <button className="close-modal-button"  onClick={handleCloseModal}>
+                <button className="close-modal-button" onClick={handleCloseModal}>
                     &times;
                 </button>
                 <h2>Upload Document</h2>
                 <form onSubmit={handleSubmit}>
                     <label>Name (required):</label>
-                    <input type="text" name="name" value={formData.username} onChange={handleInputChange} required />
+                    <input 
+                        type="text" 
+                        name="name" 
+                        value={formData.name} 
+                        onChange={handleInputChange} 
+                        required 
+                    />
 
                     <label>Email (required):</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
