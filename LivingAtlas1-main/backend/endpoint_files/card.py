@@ -28,6 +28,7 @@ gcs_key = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
 if gcs_key:
     with open("ServiceKey_GoogleCloud.json", "wb") as f:
         f.write(base64.b64decode(gcs_key))
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
 # _______________________________________
 
 # COMMENT OUT IF RUNNING ON RENDER
