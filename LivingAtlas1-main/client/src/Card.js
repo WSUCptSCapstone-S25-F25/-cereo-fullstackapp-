@@ -23,13 +23,17 @@ function Card(props) {
         setIsFavorited(props.isFavorited);
     }, [props.isFavorited]);
 
-    // Ensure username and name always have safe defaults
+    // Ensure name doesn’t default to username
     useEffect(() => {
         if (props.formData) {
             setFormData({
                 ...props.formData,
                 username: props.formData.username || '',
-                name: props.formData.name || ''
+                name:
+                    props.formData.name !== undefined &&
+                    props.formData.name !== null
+                        ? props.formData.name
+                        : '',
             });
         }
     }, [props.formData]);
@@ -54,11 +58,11 @@ function Card(props) {
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
     };
-  
+
     const handleEdit = (e) => {
-        setFormData(prev => ({ 
-            ...prev, 
-            original_username: prev.username, 
+        setFormData((prev) => ({
+            ...prev,
+            original_username: prev.username,
             original_email: prev.email,
         }));
         e.stopPropagation();
@@ -79,20 +83,20 @@ function Card(props) {
             params: {
                 username: formData.username,
                 title: formData.title,
-            }
+            },
         })
-        .then(() => {
-            alert("Card deleted successfully.");
-            if (typeof props.onCardDelete === "function") {
-                props.onCardDelete(true);
-            } else {
-                window.location.reload();
-            }
-        })
-        .catch((error) => {
-            console.error("Delete failed:", error);
-            alert("Failed to delete the card.");
-        });
+            .then(() => {
+                alert("Card deleted successfully.");
+                if (typeof props.onCardDelete === "function") {
+                    props.onCardDelete(true);
+                } else {
+                    window.location.reload();
+                }
+            })
+            .catch((error) => {
+                console.error("Delete failed:", error);
+                alert("Failed to delete the card.");
+            });
     };
 
     const handleFavoriteClick = async (e) => {
@@ -124,11 +128,10 @@ function Card(props) {
 
             await api.post(endpoint, formData);
 
-            setIsFavorited(prev => !prev);
+            setIsFavorited((prev) => !prev);
 
             if (props.fetchBookmarks) props.fetchBookmarks();
             if (props.onBookmarkChange) props.onBookmarkChange();
-
         } catch (error) {
             console.error('Error toggling bookmark:', error);
         }
@@ -157,7 +160,6 @@ function Card(props) {
     const saveEdits = async () => {
         if (!validateForm()) return;
 
-        // Extra guard for username and name
         if (!formData.username?.trim() || !formData.name?.trim()) {
             alert("Both Username and Name are required.");
             return;
@@ -278,7 +280,7 @@ function Card(props) {
 
                 <button
                     className="close-button"
-                    onClick={e => {
+                    onClick={(e) => {
                         e.stopPropagation();
                         setIsModalOpen(false);
                     }}
@@ -290,11 +292,13 @@ function Card(props) {
             {/* Edit/Create Modal */}
             <Modal isOpen={isEditModalOpen} onRequestClose={() => setIsEditModalOpen(false)} className="Modal">
                 <h2>{formData.cardID ? "Edit Card" : "Create Card"}</h2>
-                <form onSubmit={(e) => { 
-                    e.preventDefault(); 
-                    e.stopPropagation();
-                    saveEdits(); 
-                }}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        saveEdits();
+                    }}
+                >
                     <label>Username:
                         <input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} required />
                     </label>
@@ -341,7 +345,7 @@ function Card(props) {
 
                     <button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
                     <button
-                        onClick={e => {
+                        onClick={(e) => {
                             e.stopPropagation();
                             setIsEditModalOpen(false);
                         }}
