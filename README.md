@@ -109,13 +109,15 @@ The Living Atlas supports the following features:
 - Interactive map visualization for water quality and environmental datasets.
 - User-contributed data with dynamic updates.
 - Advanced filtering options for geospatial data.
+- View external GIS spatial data collected from geodatabases.
 - Automated workflows for user account management and data input.
 - Scalability to handle larger datasets and more concurrent users.
 
 ## Known Problems
 Performance under high load: Scaling tests are in progress to address potential issues with large datasets. <br>
 UI responsiveness: Some pages may load slowly during heavy operations; optimizations are planned. <br>
-Map rendering bugs: Occasional glitches with rendering layers; debugging in progress. 
+Map rendering bugs: Occasional glitches with rendering layers; debugging in progress.  <br>
+App security and data integrity: There is a lack of protection of user account data.
 
 ## Contributing
 * Fork it!
