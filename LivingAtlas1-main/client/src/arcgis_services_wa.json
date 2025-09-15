@@ -203,6 +203,97 @@
     "type": "MapServer"
   },
   {
+    "key": "CustomUtilities_CustomPrintService_GPServer",
+    "label": "CustomPrintService (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/CustomPrintService/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_GeoEAGLAreaProportion_GPServer",
+    "label": "GeoEAGLAreaProportion (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/GeoEAGLAreaProportion/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_GetRoutePointScript_GPServer",
+    "label": "GetRoutePointScript (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/GetRoutePointScript/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_NhdPointTool_GPServer",
+    "label": "NhdPointTool (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/NhdPointTool/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_RouteMeasureTool_GPServer",
+    "label": "RouteMeasureTool (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/RouteMeasureTool/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_WetlandRatingClip_GPServer",
+    "label": "WetlandRatingClip (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/WetlandRatingClip/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_WetlandRatingCowardinClass_GPServer",
+    "label": "WetlandRatingCowardinClass (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/WetlandRatingCowardinClass/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_WetlandRatingDownload_GPServer",
+    "label": "WetlandRatingDownload (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/WetlandRatingDownload/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_WetlandRatingErase_GPServer",
+    "label": "WetlandRatingErase (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/WetlandRatingErase/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_WetlandRatingHabitat_GPServer",
+    "label": "WetlandRatingHabitat (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/WetlandRatingHabitat/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_WetlandRatingHydroperiods_GPServer",
+    "label": "WetlandRatingHydroperiods (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/WetlandRatingHydroperiods/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_WetlandRatingLandUse_GPServer",
+    "label": "WetlandRatingLandUse (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/WetlandRatingLandUse/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
+    "key": "CustomUtilities_WetlandRatingPlantCoverDRS_GPServer",
+    "label": "WetlandRatingPlantCoverDRS (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/CustomUtilities/WetlandRatingPlantCoverDRS/GPServer",
+    "folder": "CustomUtilities",
+    "type": "GPServer"
+  },
+  {
     "key": "EAP_AccreditedLabLocations_MapServer",
     "label": "AccreditedLabLocations (MapServer)",
     "url": "https://gis.ecology.wa.gov/serverext/rest/services/EAP/AccreditedLabLocations/MapServer",
@@ -504,6 +595,13 @@
     "type": "MapServer"
   },
   {
+    "key": "TCP_GetDataNearSEPA_GPServer",
+    "label": "GetDataNearSEPA (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/GetDataNearSEPA/GPServer",
+    "folder": "TCP",
+    "type": "GPServer"
+  },
+  {
     "key": "TCP_LDW_Cleanup_Sites_MapServer",
     "label": "LDW_Cleanup_Sites (MapServer)",
     "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/LDW_Cleanup_Sites/MapServer",
@@ -544,6 +642,27 @@
     "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/TcpCleanupSites/MapServer",
     "folder": "TCP",
     "type": "MapServer"
+  },
+  {
+    "key": "TCP_TcpPrint_GPServer",
+    "label": "TcpPrint (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/TCP/TcpPrint/GPServer",
+    "folder": "TCP",
+    "type": "GPServer"
+  },
+  {
+    "key": "Utilities_Geometry_GeometryServer",
+    "label": "Geometry (GeometryServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Utilities/Geometry/GeometryServer",
+    "folder": "Utilities",
+    "type": "GeometryServer"
+  },
+  {
+    "key": "Utilities_PrintingTools_GPServer",
+    "label": "PrintingTools (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/Utilities/PrintingTools/GPServer",
+    "folder": "Utilities",
+    "type": "GPServer"
   },
   {
     "key": "WASHD_Catchments_FeatureServer",
@@ -649,6 +768,27 @@
     "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/fsweb_prod_wm/MapServer",
     "folder": "WQ",
     "type": "MapServer"
+  },
+  {
+    "key": "WQ_NPItoExcel_GPServer",
+    "label": "NPItoExcel (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/NPItoExcel/GPServer",
+    "folder": "WQ",
+    "type": "GPServer"
+  },
+  {
+    "key": "WQ_NPItoFGDBfc_GPServer",
+    "label": "NPItoFGDBfc (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/NPItoFGDBfc/GPServer",
+    "folder": "WQ",
+    "type": "GPServer"
+  },
+  {
+    "key": "WQ_NPItoKMZ_GPServer",
+    "label": "NPItoKMZ (GPServer)",
+    "url": "https://gis.ecology.wa.gov/serverext/rest/services/WQ/NPItoKMZ/GPServer",
+    "folder": "WQ",
+    "type": "GPServer"
   },
   {
     "key": "WQ_Riparian_Buffer_Zones_from_Clean_Water_Guidance_MapServer",

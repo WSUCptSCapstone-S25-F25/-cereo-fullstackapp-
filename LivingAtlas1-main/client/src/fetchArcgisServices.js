@@ -7,6 +7,50 @@ const path = require('path');
 // Lazy import to work in Node without ESM
 const fetchDynamic = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
+// Basic sleep
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Resilient fetch with retries/backoff and timeout
+async function resilientFetch(url, opts = {}, { retries = 5, baseDelay = 500 } = {}) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
+    try {
+      const res = await fetchDynamic(url, {
+        ...opts,
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'LivingAtlasFetcher/1.0 (+https://example.org)',
+          'Accept': 'application/json',
+          ...(opts.headers || {})
+        }
+      });
+      clearTimeout(timeout);
+
+      // Retry on 429/5xx
+      if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
+        if (attempt < retries) {
+          const backoff = baseDelay * Math.pow(2, attempt);
+          await delay(backoff);
+          continue;
+        }
+      }
+      return res;
+    } catch (err) {
+      clearTimeout(timeout);
+      // Retry on network errors/aborts
+      if (attempt < retries && (err.name === 'AbortError' || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT')) {
+        const backoff = baseDelay * Math.pow(2, attempt);
+        await delay(backoff);
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Should not reach here
+  throw new Error(`Failed to fetch ${url} after retries`);
+}
+
 // REST server roots
 const SERVERS = {
   WA: 'https://gis.ecology.wa.gov/serverext/rest/services/',
@@ -21,10 +65,19 @@ const OUTPUT_FILES = {
   OR: path.join(__dirname, 'arcgis_services_or.json')
 };
 
+// Supported service types
+const SUPPORTED_TYPES = [
+  'MapServer',
+  'FeatureServer',
+  'GeometryServer',
+  'GPServer',
+  'GeocodeServer'
+];
+
 // Recursively fetch folders/services under a base URL
 async function fetchServicesRecursive(baseUrl, currentPath = '') {
   const url = baseUrl + currentPath + (currentPath.endsWith('/') ? '' : '') + '?f=json';
-  const res = await fetchDynamic(url);
+  const res = await resilientFetch(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
   }
@@ -44,14 +97,11 @@ async function fetchServicesRecursive(baseUrl, currentPath = '') {
   // Collect services in this folder
   if (Array.isArray(data.services)) {
     for (const svc of data.services) {
-      // svc.name can be like "Folder/Service" or just "Service" depending on endpoint
-      const nameParts = svc.name.split('/');
+      const nameParts = (svc.name || '').split('/');
       const serviceName = nameParts[nameParts.length - 1];
-
-      // Determine folder label for record
       const folderLabel = currentPath ? currentPath.replace(/\/$/, '') : (nameParts.length > 1 ? nameParts.slice(0, -1).join('/') : 'Root');
 
-      if (svc.type === 'MapServer' || svc.type === 'FeatureServer') {
+      if (SUPPORTED_TYPES.includes(svc.type) && serviceName) {
         services.push({
           key: `${(folderLabel || 'Root')}_${serviceName}_${svc.type}`.replace(/[^\w]/g, '_'),
           label: `${serviceName} (${svc.type})`,

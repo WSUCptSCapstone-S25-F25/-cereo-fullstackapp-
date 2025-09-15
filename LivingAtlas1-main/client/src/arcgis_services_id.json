@@ -889,6 +889,20 @@
     "type": "MapServer"
   },
   {
+    "key": "MapAutomation_Layouts_GPServer",
+    "label": "Layouts (GPServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/MapAutomation/Layouts/GPServer",
+    "folder": "MapAutomation",
+    "type": "GPServer"
+  },
+  {
+    "key": "MapAutomation_PrintMap_GPServer",
+    "label": "PrintMap (GPServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/MapAutomation/PrintMap/GPServer",
+    "folder": "MapAutomation",
+    "type": "GPServer"
+  },
+  {
     "key": "Modeling_12DigitHydrologicUnit_FeatureServer",
     "label": "12DigitHydrologicUnit (FeatureServer)",
     "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/12DigitHydrologicUnit/FeatureServer",
@@ -1729,6 +1743,13 @@
     "type": "MapServer"
   },
   {
+    "key": "ScientificRasters_EtCirStatistics_GPServer",
+    "label": "EtCirStatistics (GPServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/ScientificRasters/EtCirStatistics/GPServer",
+    "folder": "ScientificRasters",
+    "type": "GPServer"
+  },
+  {
     "key": "ScientificRasters_ETData_MapServer",
     "label": "ETData (MapServer)",
     "url": "https://gis.idwr.idaho.gov/hosting/rest/services/ScientificRasters/ETData/MapServer",
@@ -1748,6 +1769,20 @@
     "url": "https://gis.idwr.idaho.gov/hosting/rest/services/ScientificRasters/EtIdahoStations/MapServer",
     "folder": "ScientificRasters",
     "type": "MapServer"
+  },
+  {
+    "key": "Utilities_Geometry_GeometryServer",
+    "label": "Geometry (GeometryServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Utilities/Geometry/GeometryServer",
+    "folder": "Utilities",
+    "type": "GeometryServer"
+  },
+  {
+    "key": "Utilities_PrintingTools_GPServer",
+    "label": "PrintingTools (GPServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Utilities/PrintingTools/GPServer",
+    "folder": "Utilities",
+    "type": "GPServer"
   },
   {
     "key": "WaterPlans_EasternSnakeComprehensiveAquiferManagementPlan_FeatureServer",

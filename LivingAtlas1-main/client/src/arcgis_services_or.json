@@ -77,6 +77,27 @@
     "type": "MapServer"
   },
   {
+    "key": "Locators_gc_PLSS_GeocodeServer",
+    "label": "gc_PLSS (GeocodeServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Locators/gc_PLSS/GeocodeServer",
+    "folder": "Locators",
+    "type": "GeocodeServer"
+  },
+  {
+    "key": "Locators_gc_StreetsORTRANS_GeocodeServer",
+    "label": "gc_StreetsORTRANS (GeocodeServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Locators/gc_StreetsORTRANS/GeocodeServer",
+    "folder": "Locators",
+    "type": "GeocodeServer"
+  },
+  {
+    "key": "Locators_OregonAddress_GeocodeServer",
+    "label": "OregonAddress (GeocodeServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Locators/OregonAddress/GeocodeServer",
+    "folder": "Locators",
+    "type": "GeocodeServer"
+  },
+  {
     "key": "Projects_GEO_ImageryPortal_BaseLyr_MapServer",
     "label": "GEO_ImageryPortal_BaseLyr (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Projects/GEO_ImageryPortal_BaseLyr/MapServer",
@@ -103,5 +124,19 @@
     "url": "https://navigator.state.or.us/arcgis/rest/services/TestFS/MapServer",
     "folder": "Root",
     "type": "MapServer"
+  },
+  {
+    "key": "Utilities_Geometry_GeometryServer",
+    "label": "Geometry (GeometryServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Utilities/Geometry/GeometryServer",
+    "folder": "Utilities",
+    "type": "GeometryServer"
+  },
+  {
+    "key": "Utilities_RasterUtilities_GPServer",
+    "label": "RasterUtilities (GPServer)",
+    "url": "https://navigator.state.or.us/arcgis/rest/services/Utilities/RasterUtilities/GPServer",
+    "folder": "Utilities",
+    "type": "GPServer"
   }
 ]
