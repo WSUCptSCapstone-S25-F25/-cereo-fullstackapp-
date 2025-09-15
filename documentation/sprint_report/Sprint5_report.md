@@ -13,12 +13,9 @@
  * Thumbnail, bookmarking, and card editing features fixed
 
 ## Work Summary (Developer Facing)
-Provide a one paragraph synposis of what your team accomplished this sprint. Don't repeat the "What's New" list of features. Instead, help the instructor understand how you went about the work described there, any barriers you overcame, and any significant learnings for your team.
-
 During this sprint, our team mainly focused on implementing features suggested by the client during our weekly client meeting. There were also some previously implemented features that no longer functioned as intended. Yaru worked on a new layers menu that contains current and external GIS spatial data that can be shown or hidden by the user. He is working on also adding data from the HydroShare website and will add this next sprint. Zachary worked on fixing the thumbnail feature for cards and editing the database schema to allow accounts to be registered with the user's real name. Jonathan worked on allowing names to be changed on cards and map resizing for when sidebars are opened. We experienced some challenges reaccessing our account for the Render, Netlify, and Google Cloud services after our long break in development but we were able to regain access, and we also experienced challenges with deploying our repository to the web server. Overall, we believe we made significant progress in development this sprint and have a good understanding of work that still needs to be completed in future sprints.
 
 ## Unfinished Work
-If applicable, explain the work you did not finish in this sprint. For issues/user stories in the current sprint that have not been closed, (a) any progress toward completion of the issues has been clearly tracked (by checking the checkboxes of  acceptance criteria), (b) a comment has been added to the issue to explain why the issue could not be completed (e.g., "we ran out of time" or "we did not anticipate it would be so much work"), and (c) the issue is added to a subsequent sprint, so that it can be addressed later.
 * The thumbnail feature is still broken and do not appear on cards. We ran out of time and will fix this next sprint.
 * There are additional geodatabases containing data that we would like to add as optional layers on the map, such as HydroShare and ArcGIS REST. The client informed us that they wanted this feature to be added late in this sprint so it will not be done in time for this sprint.
 * The option to attach a file to cards still needs to be implemented. We ran out of time working on other features and will prioritize this feature next sprint.
@@ -109,4 +106,5 @@ Here are changes we plan to implement in the next sprint:
    * Implement file attachment to cards feature
    * Add spatial data layers from more geodatabases
    * Improve performance
+
    * Improve security protections
