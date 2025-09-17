@@ -472,6 +472,15 @@ function ArcgisUploadPanel({
         setServiceInfoOpenKey(null);
     };
 
+    // Helper: convert HTML to plain text (for Service Description)
+    function toPlainText(html) {
+        if (!html) return '';
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        const text = tmp.textContent || tmp.innerText || '';
+        return text.replace(/\u00A0/g, ' ').trim();
+    }
+
     if (!isOpen) return null;
 
     return (
@@ -620,7 +629,7 @@ function ArcgisUploadPanel({
                                         <div className="arcgis-service-info-row">
                                             <strong>Service Description:</strong>
                                             <div className="arcgis-service-info-description">
-                                                {info.serviceDescription || info.description}
+                                                {toPlainText(info.serviceDescription || info.description)}
                                             </div>
                                         </div>
                                     ) : null}
@@ -628,7 +637,7 @@ function ArcgisUploadPanel({
                                         <strong>Service Item Id:</strong> {info.serviceItemId || info.itemId || '—'}
                                     </div>
                                     <div className="arcgis-service-info-row">
-                                        <strong>Copyright Text:</strong> {info.copyrightText || '—'}
+                                        <strong>Copyright Text:</strong> {toPlainText(info.copyrightText) || '—'}
                                     </div>
                                     <div className="arcgis-service-info-row">
                                         <strong>Spatial Reference:</strong> {srText}
