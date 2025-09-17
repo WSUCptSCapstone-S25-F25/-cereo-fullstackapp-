@@ -5,7 +5,8 @@ import {
     ARCGIS_SERVICES_BY_STATE,
     fetchArcgisLayers,
     fetchArcgisLegend,
-    getArcgisTileUrl
+    getArcgisTileUrl,
+    fetchArcgisServiceInfo // <-- added
 } from './arcgisDataUtils';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
@@ -67,6 +68,11 @@ function ArcgisUploadPanel({
         removeLoadingMessage,
         showFinishedMessage
     } = useArcgisLoadingMessages();
+
+    // --- NEW: Service info modal state ---
+    const [serviceInfoOpenKey, setServiceInfoOpenKey] = useState(null); // service.key
+    const [serviceInfoCache, setServiceInfoCache] = useState({}); // { key: info }
+    const [serviceInfoLoading, setServiceInfoLoading] = useState(false);
 
     // Fetch layers and legends for all services
     useEffect(() => {
@@ -450,6 +456,22 @@ function ArcgisUploadPanel({
         </div>
     );
 
+    // --- NEW: Open service info modal (fetch & cache) ---
+    const openServiceInfo = async (service) => {
+        setServiceInfoOpenKey(service.key);
+        if (serviceInfoCache[service.key]) return;
+        setServiceInfoLoading(true);
+        try {
+            const info = await fetchArcgisServiceInfo(service.url);
+            setServiceInfoCache(prev => ({ ...prev, [service.key]: info || {} }));
+        } finally {
+            setServiceInfoLoading(false);
+        }
+    };
+    const closeServiceInfo = () => {
+        setServiceInfoOpenKey(null);
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -482,15 +504,27 @@ function ArcgisUploadPanel({
                                                 <span>
                                                     {expandedServices.has(service.key) ? "▼" : "►"} {service.label}
                                                 </span>
-                                                <button
-                                                    className={isAnyChecked ? "remove-btn" : "add-btn"}
-                                                    onClick={e => {
-                                                        e.stopPropagation();
-                                                        handleAddRemove(service, layersToShow);
-                                                    }}
-                                                >
-                                                    {isAnyChecked ? "Remove" : "Load"}
-                                                </button>
+                                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                                    <button
+                                                        className={isAnyChecked ? "remove-btn" : "add-btn"}
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            handleAddRemove(service, layersToShow);
+                                                        }}
+                                                    >
+                                                        {isAnyChecked ? "Remove" : "Load"}
+                                                    </button>
+                                                    <button
+                                                        className="learn-more-btn"
+                                                        title="Learn more about this service"
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            openServiceInfo(service);
+                                                        }}
+                                                    >
+                                                        Learn
+                                                    </button>
+                                                </div>
                                             </div>
                                             {expandedServices.has(service.key) && (
                                                 <div style={{ marginLeft: 18 }}>
@@ -553,6 +587,68 @@ function ArcgisUploadPanel({
                     ))}
                 </div>
             </div>
+
+            {/* Service info modal (right side) */}
+            {serviceInfoOpenKey && (
+                <div
+                    className="arcgis-service-info-modal"
+                >
+                    <div className="arcgis-service-info-modal-header">
+                        <strong>Service info</strong>
+                        <button
+                            className="arcgis-service-info-modal-close"
+                            onClick={closeServiceInfo}
+                            aria-label="Close"
+                        >
+                            &times;
+                        </button>
+                    </div>
+                    <div className="arcgis-service-info-modal-content">
+                        {serviceInfoLoading && <div>Loading service info…</div>}
+                        {!serviceInfoLoading && (() => {
+                            const info = serviceInfoCache[serviceInfoOpenKey] || {};
+                            if (!info || Object.keys(info).length === 0) {
+                                return <div className="arcgis-service-info-empty">No information available.</div>;
+                            }
+                            const sr = info.spatialReference || {};
+                            const srText = sr.latestWkid
+                                ? `WKID ${sr.latestWkid}`
+                                : (sr.wkid ? `WKID ${sr.wkid}` : (sr.wkt ? 'WKT' : '—'));
+                            return (
+                                <div>
+                                    {info.serviceDescription || info.description ? (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Service Description:</strong>
+                                            <div className="arcgis-service-info-description">
+                                                {info.serviceDescription || info.description}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                    <div className="arcgis-service-info-row">
+                                        <strong>Service Item Id:</strong> {info.serviceItemId || info.itemId || '—'}
+                                    </div>
+                                    <div className="arcgis-service-info-row">
+                                        <strong>Copyright Text:</strong> {info.copyrightText || '—'}
+                                    </div>
+                                    <div className="arcgis-service-info-row">
+                                        <strong>Spatial Reference:</strong> {srText}
+                                    </div>
+                                    <div className="arcgis-service-info-row">
+                                        <strong>MaxRecordCount:</strong> {info.maxRecordCount ?? '—'}
+                                    </div>
+                                    <div className="arcgis-service-info-raw">
+                                        <details>
+                                            <summary>Raw JSON</summary>
+                                            <pre>{JSON.stringify(info, null, 2)}</pre>
+                                        </details>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
+
             {/* State menu: outside the upload panel */}
             {renderStateMenu()}
         </>
