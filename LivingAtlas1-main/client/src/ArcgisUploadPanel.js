@@ -12,7 +12,7 @@ import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css'; // <-- Add this new CSS file
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faPlus, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
@@ -566,18 +566,21 @@ function ArcgisUploadPanel({
                                                             e.stopPropagation();
                                                             handleAddRemove(service, layersToShow);
                                                         }}
+                                                        title={isAnyChecked ? "Remove" : "Load"}
+                                                        aria-label={isAnyChecked ? "Remove service" : "Load service"}
                                                     >
-                                                        {isAnyChecked ? "Remove" : "Load"}
+                                                        <FontAwesomeIcon icon={isAnyChecked ? faTimes : faPlus} />
                                                     </button>
                                                     <button
                                                         className="learn-more-btn"
                                                         title="Learn more about this service"
+                                                        aria-label="Learn more about this service"
                                                         onClick={e => {
                                                             e.stopPropagation();
                                                             openServiceInfo(service);
                                                         }}
                                                     >
-                                                        Learn
+                                                        <FontAwesomeIcon icon={faEllipsisH} />
                                                     </button>
                                                 </div>
                                             </div>
