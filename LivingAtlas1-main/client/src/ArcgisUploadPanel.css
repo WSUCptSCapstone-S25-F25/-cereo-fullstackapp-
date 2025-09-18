@@ -76,10 +76,19 @@
     min-height: 24px;
     font-size: 13px;
     padding: 2px 0 2px 4px;
+    flex-wrap: wrap;
 }
 
 .upload-item:hover {
     background: #e0e0e0;
+}
+
+.upload-item > span {
+    white-space: nowrap; /* NEW */
+}
+
+.upload-item > div:last-child {
+    margin-left: auto;
 }
 
 .upload-panel ul {

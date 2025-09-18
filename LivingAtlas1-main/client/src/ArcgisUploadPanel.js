@@ -31,7 +31,7 @@ function ArcgisUploadPanel({
     setArcgisLayerAdded: setPropArcgisLayerAdded,
 }) {
     // NEW: Track selected state
-    const [selectedState, setSelectedState] = useState('ID');
+    const [selectedState, setSelectedState] = useState('WA');
 
     // Use services for selected state
     const ARCGIS_SERVICES = ARCGIS_SERVICES_BY_STATE[selectedState];
