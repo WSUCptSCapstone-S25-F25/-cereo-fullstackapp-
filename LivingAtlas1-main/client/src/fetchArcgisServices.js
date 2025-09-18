@@ -1,36 +1,148 @@
-// save as fetchArcgisServices.js
-const fs = require('fs');
-const BASE_URL = 'https://gis.ecology.wa.gov/serverext/rest/services/';
+// Node script to crawl ArcGIS REST "services" directories and save MapServer/FeatureServer endpoints
+// Usage (from client/src): node fetchArcgisServices.js
 
-async function fetchServices(url, folder = '') {
-    const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-    const res = await fetch(url + '?f=json');
-    const data = await res.json();
-    let services = [];
-    if (data.folders) {
-        for (const subfolder of data.folders) {
-            const subfolderUrl = url + subfolder + '/';
-            services = services.concat(await fetchServices(subfolderUrl, folder ? folder + '/' + subfolder : subfolder));
+const fs = require('fs');
+const path = require('path');
+
+// Lazy import to work in Node without ESM
+const fetchDynamic = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
+// Basic sleep
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Resilient fetch with retries/backoff and timeout
+async function resilientFetch(url, opts = {}, { retries = 5, baseDelay = 500 } = {}) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
+    try {
+      const res = await fetchDynamic(url, {
+        ...opts,
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'LivingAtlasFetcher/1.0 (+https://example.org)',
+          'Accept': 'application/json',
+          ...(opts.headers || {})
         }
-    }
-    if (data.services) {
-        for (const svc of data.services) {
-            if (svc.type === 'MapServer' || svc.type === 'FeatureServer') {
-                services.push({
-                    key: `${folder}_${svc.name.split('/').pop()}_${svc.type}`.replace(/[^\w]/g, '_'),
-                    label: `${svc.name.split('/').pop()} (${svc.type})`,
-                    url: `${BASE_URL}${folder ? folder + '/' : ''}${svc.name.split('/').pop()}/${svc.type}`,
-                    folder: folder || 'Root',
-                    type: svc.type
-                });
-            }
+      });
+      clearTimeout(timeout);
+
+      // Retry on 429/5xx
+      if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
+        if (attempt < retries) {
+          const backoff = baseDelay * Math.pow(2, attempt);
+          await delay(backoff);
+          continue;
         }
+      }
+      return res;
+    } catch (err) {
+      clearTimeout(timeout);
+      // Retry on network errors/aborts
+      if (attempt < retries && (err.name === 'AbortError' || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT')) {
+        const backoff = baseDelay * Math.pow(2, attempt);
+        await delay(backoff);
+        continue;
+      }
+      throw err;
     }
-    return services;
+  }
+  // Should not reach here
+  throw new Error(`Failed to fetch ${url} after retries`);
+}
+
+// REST server roots
+const SERVERS = {
+  WA: 'https://gis.ecology.wa.gov/serverext/rest/services/',
+  ID: 'https://gis.idwr.idaho.gov/hosting/rest/services/',
+  OR: 'https://navigator.state.or.us/arcgis/rest/services/'
+};
+
+// Output files (kept next to existing arcgis_services.json for WA-only)
+const OUTPUT_FILES = {
+  WA: path.join(__dirname, 'arcgis_services_wa.json'),
+  ID: path.join(__dirname, 'arcgis_services_id.json'),
+  OR: path.join(__dirname, 'arcgis_services_or.json')
+};
+
+// Supported service types
+const SUPPORTED_TYPES = [
+  'MapServer',
+  'FeatureServer',
+  'GeometryServer',
+  'GPServer',
+  'GeocodeServer'
+];
+
+// Recursively fetch folders/services under a base URL
+async function fetchServicesRecursive(baseUrl, currentPath = '') {
+  const url = baseUrl + currentPath + (currentPath.endsWith('/') ? '' : '') + '?f=json';
+  const res = await resilientFetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
+  }
+  const data = await res.json();
+
+  let services = [];
+
+  // Recurse into subfolders
+  if (Array.isArray(data.folders)) {
+    for (const sub of data.folders) {
+      const subPath = (currentPath ? currentPath : '') + sub + '/';
+      const subServices = await fetchServicesRecursive(baseUrl, subPath);
+      services = services.concat(subServices);
+    }
+  }
+
+  // Collect services in this folder
+  if (Array.isArray(data.services)) {
+    for (const svc of data.services) {
+      const nameParts = (svc.name || '').split('/');
+      const serviceName = nameParts[nameParts.length - 1];
+      const folderLabel = currentPath ? currentPath.replace(/\/$/, '') : (nameParts.length > 1 ? nameParts.slice(0, -1).join('/') : 'Root');
+
+      if (SUPPORTED_TYPES.includes(svc.type) && serviceName) {
+        services.push({
+          key: `${(folderLabel || 'Root')}_${serviceName}_${svc.type}`.replace(/[^\w]/g, '_'),
+          label: `${serviceName} (${svc.type})`,
+          url: `${baseUrl}${currentPath}${serviceName}/${svc.type}`,
+          folder: folderLabel || 'Root',
+          type: svc.type
+        });
+      }
+    }
+  }
+
+  return services;
+}
+
+async function fetchAndSave(serverKey) {
+  const baseUrl = SERVERS[serverKey];
+  const outFile = OUTPUT_FILES[serverKey];
+
+  console.log(`[fetchArcgisServices] Fetching ${serverKey} from ${baseUrl}`);
+  const list = await fetchServicesRecursive(baseUrl, '');
+  // Sort for stable diffs
+  list.sort((a, b) => a.folder.localeCompare(b.folder) || a.label.localeCompare(b.label));
+
+  fs.writeFileSync(outFile, JSON.stringify(list, null, 2));
+  console.log(`[fetchArcgisServices] Saved ${list.length} services to ${path.basename(outFile)}`);
 }
 
 (async () => {
-    const allServices = await fetchServices(BASE_URL);
-    fs.writeFileSync('arcgis_services.json', JSON.stringify(allServices, null, 2));
-    console.log('Saved to arcgis_services.json');
+  try {
+    await fetchAndSave('WA'); // Washington
+    await fetchAndSave('ID'); // Idaho
+    await fetchAndSave('OR'); // Oregon
+
+    console.log('[fetchArcgisServices] Done.');
+    console.log('Outputs:');
+    console.log(' - arcgis_services_wa.json (Washington)');
+    console.log(' - arcgis_services_id.json (Idaho)');
+    console.log(' - arcgis_services_or.json (Oregon)');
+    console.log('Note: arcgis_services.json remains your Washington-only legacy file.');
+  } catch (err) {
+    console.error('[fetchArcgisServices] Error:', err);
+    process.exit(1);
+  }
 })();

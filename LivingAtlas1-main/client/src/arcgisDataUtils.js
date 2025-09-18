@@ -1,12 +1,17 @@
-import ALL_ARCGIS_SERVICES from './arcgis_services.json';
+import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
+import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
+import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 
-// Only keep MapServer services
-const ARCGIS_SERVICES = ALL_ARCGIS_SERVICES.filter(s => s.type === 'MapServer');
-export { ARCGIS_SERVICES };
+// Utility to get services by state
+export const ARCGIS_SERVICES_BY_STATE = {
+    WA: WA_ARCGIS_SERVICES.filter(s => s.type === 'MapServer'),
+    ID: ID_ARCGIS_SERVICES.filter(s => s.type === 'MapServer'),
+    OR: OR_ARCGIS_SERVICES.filter(s => s.type === 'MapServer')
+};
 
-// Utility to get service by key
-export function getServiceByKey(key) {
-    return ARCGIS_SERVICES.find(s => s.key === key);
+// Utility to get service by key and state
+export function getServiceByKey(state, key) {
+    return ARCGIS_SERVICES_BY_STATE[state].find(s => s.key === key);
 }
 
 // Fetch layers for a given service
@@ -29,4 +34,22 @@ export function getArcgisTileUrl(serviceUrl, layerIds = []) {
         layersParam = '&layers=show:' + layerIds.join(',');
     }
     return `${serviceUrl}/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&transparent=true&f=image${layersParam}`;
+}
+
+// Fetch the service info (service root page) from ArcGIS REST (e.g. .../MapServer?f=json)
+// Returns parsed JSON or empty object on error.
+export async function fetchArcgisServiceInfo(serviceUrl) {
+    try {
+        const res = await fetch(`${serviceUrl}?f=json`);
+        if (!res.ok) {
+            // Try without f param as fallback
+            const res2 = await fetch(serviceUrl);
+            if (!res2.ok) return {};
+            return await res2.json();
+        }
+        return await res.json();
+    } catch (err) {
+        console.warn('fetchArcgisServiceInfo error for', serviceUrl, err);
+        return {};
+    }
 }
