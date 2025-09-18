@@ -543,19 +543,7 @@ function ArcgisUploadPanel({
                             <span>
                                 {expandedFolders.has(folder) ? "▼" : "►"} {folder}
                             </span>
-                            <div className="upload-folder-actions">
-                                <button
-                                    className="learn-more-btn"
-                                    title="Remove"
-                                    aria-label="Remove"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        // TODO: implement remove functionality
-                                    }}
-                                >
-                                    <FontAwesomeIcon icon={faBan} />
-                                </button>
-                            </div>
+                            {/* Removed folder-level remove button */}
                         </div>
                         {expandedFolders.has(folder) && (
                             <div style={{ marginLeft: 18 }}>
@@ -597,7 +585,7 @@ function ArcgisUploadPanel({
                                                     >
                                                         <FontAwesomeIcon icon={faEllipsisH} />
                                                     </button>
-                                                    {/* NEW: Remove button (no-op) */}
+                                                    {/* Keep service-level remove button (no-op) */}
                                                     <button
                                                         className="learn-more-btn"
                                                         title="Remove"
