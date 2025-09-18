@@ -642,15 +642,6 @@ function ArcgisUploadPanel({
                                     <div className="arcgis-service-info-row">
                                         <strong>Spatial Reference:</strong> {srText}
                                     </div>
-                                    <div className="arcgis-service-info-row">
-                                        <strong>MaxRecordCount:</strong> {info.maxRecordCount ?? '—'}
-                                    </div>
-                                    <div className="arcgis-service-info-raw">
-                                        <details>
-                                            <summary>Raw JSON</summary>
-                                            <pre>{JSON.stringify(info, null, 2)}</pre>
-                                        </details>
-                                    </div>
                                 </div>
                             );
                         })()}
