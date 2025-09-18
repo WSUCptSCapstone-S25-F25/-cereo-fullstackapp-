@@ -31,7 +31,7 @@ function ArcgisUploadPanel({
     setArcgisLayerAdded: setPropArcgisLayerAdded,
 }) {
     // NEW: Track selected state
-    const [selectedState, setSelectedState] = useState('WA');
+    const [selectedState, setSelectedState] = useState('ID');
 
     // Use services for selected state
     const ARCGIS_SERVICES = ARCGIS_SERVICES_BY_STATE[selectedState];
@@ -74,26 +74,72 @@ function ArcgisUploadPanel({
     const [serviceInfoCache, setServiceInfoCache] = useState({}); // { key: info }
     const [serviceInfoLoading, setServiceInfoLoading] = useState(false);
 
-    // Fetch layers and legends for all services
+    // Fetch layers and legends when panel opens or state changes
     useEffect(() => {
         if (!isOpen) return;
-        ARCGIS_SERVICES.forEach(service => {
-            if (!serviceLayers[service.key]) {
-                fetchArcgisLayers(service.url).then(layers => {
-                    setServiceLayers(prev => ({ ...prev, [service.key]: layers }));
-                    // Default: all unchecked
-                    setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
-                    setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
-                });
-            }
-            if (!serviceLegends[service.key]) {
-                fetchArcgisLegend(service.url).then(legend => {
-                    setServiceLegends(prev => ({ ...prev, [service.key]: legend }));
-                });
-            }
+
+        // Reset per-state caches/UI
+        setServiceLayers({});
+        setServiceLegends({});
+        setCheckedLayerIds({});
+        setServiceLayerAdded({});
+        setExpandedFolders(new Set());
+        setExpandedServices(new Set());
+        setServiceInfoOpenKey(null);
+        prevCheckedLayerIds.current = {};
+
+        // Fetch for current state's services
+        (ARCGIS_SERVICES || []).forEach(service => {
+            if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
+
+            fetchArcgisLayers(service.url).then(layers => {
+                setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
+                setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
+                setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+            });
+
+            fetchArcgisLegend(service.url).then(legend => {
+                setServiceLegends(prev => ({ ...prev, [service.key]: legend || {} }));
+            });
         });
-        // eslint-disable-next-line
-    }, [isOpen]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, selectedState]);
+
+    // On state change: remove any ArcGIS layers/sources left from the previous state
+    useEffect(() => {
+        if (!isOpen) return;
+        const map = mapInstance && mapInstance();
+        if (!map || !map.getStyle) return;
+
+        const style = map.getStyle();
+        // Remove layers first
+        if (style && Array.isArray(style.layers)) {
+            style.layers
+                .map(l => l.id)
+                .filter(id =>
+                    id.startsWith('arcgis-raster-layer-') ||
+                    id.startsWith('arcgis-vector-layer-')
+                )
+                .forEach(id => {
+                    if (map.getLayer(id)) map.removeLayer(id);
+                });
+        }
+        // Then remove sources
+        if (style && style.sources) {
+            Object.keys(style.sources)
+                .filter(id =>
+                    id.startsWith('arcgis-raster-') ||
+                    id.startsWith('arcgis-vector-source-')
+                )
+                .forEach(id => {
+                    if (map.getSource(id)) map.removeSource(id);
+                });
+        }
+
+        // Also reset our internal ref used for diffs
+        prevCheckedLayerIds.current = {};
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedState, isOpen]);
 
     // Add ArcGIS raster layer for a service
     const addArcgisLayer = (service, layerIds) => {
