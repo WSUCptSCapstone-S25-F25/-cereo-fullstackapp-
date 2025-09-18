@@ -24,7 +24,8 @@ function Card(props) {
     }, [props.isFavorited]);
 
     // Ensure username and name always have safe defaults
-    useEffect(() => {
+    // Logic moved to handleEdit
+    /* useEffect(() => {
         if (props.formData) {
             setFormData({
                 ...props.formData,
@@ -32,7 +33,7 @@ function Card(props) {
                 name: props.formData.name || ''
             });
         }
-    }, [props.formData]);
+    }, [props.formData]); */
 
     useEffect(() => {
         if ((!formData.thumbnail_link || formData.thumbnail_link === "") && formData.cardID) {
@@ -56,12 +57,19 @@ function Card(props) {
     };
   
     const handleEdit = (e) => {
+        e.stopPropagation();
+        setFormData(({ 
+            ...props.formData, 
+            original_username: props.formData.username, 
+            original_email: props.formData.email,
+        }));
+        /*
         setFormData(prev => ({ 
             ...prev, 
             original_username: prev.username, 
             original_email: prev.email,
         }));
-        e.stopPropagation();
+        */
         setIsEditModalOpen(true);
     };
 
