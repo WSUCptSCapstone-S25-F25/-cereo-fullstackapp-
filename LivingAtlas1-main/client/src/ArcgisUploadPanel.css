@@ -51,14 +51,21 @@
     cursor: pointer;
     font-weight: bold;
     margin: 8px 0 4px 0;
-    padding: 4px 0 4px 4px;
+    padding: 4px 6px 4px 4px;
     border-radius: 4px;
     background: #ececec;
     transition: background 0.2s;
     color: #222 !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
-.upload-folder:hover {
-    background: #e0e0e0;
+
+.upload-folder-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .upload-item {

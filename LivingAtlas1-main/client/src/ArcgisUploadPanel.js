@@ -12,7 +12,7 @@ import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css'; // <-- Add this new CSS file
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faPlus, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faPlus, faEllipsisH, faBan } from '@fortawesome/free-solid-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
@@ -487,7 +487,7 @@ function ArcgisUploadPanel({
         });
     };
 
-    // --- NEW: State menu bar ---
+    // NEW: State menu bar
     const renderStateMenu = () => (
         <div className="arcgis-upload-state-menu">
             {STATE_CODES.map(code => (
@@ -502,7 +502,7 @@ function ArcgisUploadPanel({
         </div>
     );
 
-    // --- NEW: Open service info modal (fetch & cache) ---
+    // Open service info modal (fetch & cache)
     const openServiceInfo = async (service) => {
         setServiceInfoOpenKey(service.key);
         if (serviceInfoCache[service.key]) return;
@@ -540,7 +540,22 @@ function ArcgisUploadPanel({
                             className="upload-folder"
                             onClick={() => handleFolderClick(folder)}
                         >
-                            {expandedFolders.has(folder) ? "▼" : "►"} {folder}
+                            <span>
+                                {expandedFolders.has(folder) ? "▼" : "►"} {folder}
+                            </span>
+                            <div className="upload-folder-actions">
+                                <button
+                                    className="learn-more-btn"
+                                    title="Remove"
+                                    aria-label="Remove"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: implement remove functionality
+                                    }}
+                                >
+                                    <FontAwesomeIcon icon={faBan} />
+                                </button>
+                            </div>
                         </div>
                         {expandedFolders.has(folder) && (
                             <div style={{ marginLeft: 18 }}>
@@ -581,6 +596,18 @@ function ArcgisUploadPanel({
                                                         }}
                                                     >
                                                         <FontAwesomeIcon icon={faEllipsisH} />
+                                                    </button>
+                                                    {/* NEW: Remove button (no-op) */}
+                                                    <button
+                                                        className="learn-more-btn"
+                                                        title="Remove"
+                                                        aria-label="Remove"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            // TODO: implement remove functionality
+                                                        }}
+                                                    >
+                                                        <FontAwesomeIcon icon={faBan} />
                                                     </button>
                                                 </div>
                                             </div>
