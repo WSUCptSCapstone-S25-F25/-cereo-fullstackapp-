@@ -17,6 +17,7 @@ import { faBook } from '@fortawesome/free-solid-svg-icons'; // <-- Add this impo
 import LayerPanel from './LayerPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { faCheckSquare } from '@fortawesome/free-solid-svg-icons';
+import { faTrash } from '@fortawesome/free-solid-svg-icons'; // <-- NEW: Trash icon
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
@@ -547,7 +548,7 @@ function Content2(props) {
                 >
                     <FontAwesomeIcon icon={faPlus} />
                 </button>
-                {/* New Layer Button */}
+                {/* Layer Button */}
                 <button
                     className="layer-panel-button"
                     onClick={() => setIsLayerPanelOpen((prev) => !prev)}
@@ -556,7 +557,7 @@ function Content2(props) {
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
                 </button>
-                {/* New: Open Card Container Button */}
+                {/* Open Card Container Button */}
                 <button
                     className="open-card-container-button"
                     onClick={toggleCollapse}
@@ -565,6 +566,7 @@ function Content2(props) {
                 >
                     <FontAwesomeIcon icon={faBook} />
                 </button>
+                
             </div>
 
             {/* Layer Panel */}

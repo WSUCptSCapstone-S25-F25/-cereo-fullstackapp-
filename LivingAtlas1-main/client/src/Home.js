@@ -10,6 +10,7 @@ import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; /
 import './Home.css';
 import './Sidebars.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
+import { faTrash } from '@fortawesome/free-solid-svg-icons'; // <-- NEW: trash icon
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -172,7 +173,7 @@ function Home(props) {
                 >
                     <FontAwesomeIcon icon={faEarthAmericas} />
                 </button>
-                {/* New Upload Button */}
+                {/* Upload Button */}
                 <button
                     className="left-sidebar-upload-button"
                     title="Upload"
@@ -191,6 +192,16 @@ function Home(props) {
                 {/* Left Sidebar toggle Button */}
                 <button className="left-sidebar-toggle" onClick={toggleSidebar}>
                     <FontAwesomeIcon icon={isSidebarOpen ? faAngleDoubleLeft : faAngleDoubleRight} />
+                </button>
+
+                {/* Trash button (no functionality) */}
+                <button
+                    className="left-sidebar-upload-button"
+                    title="Removed Services"
+                    style={{ top: '150px', position: 'absolute' }}
+                    onClick={() => {}}
+                >
+                    <FontAwesomeIcon icon={faTrash} />
                 </button>
 
                 {/* Expanded Left Sidebar Content */}
