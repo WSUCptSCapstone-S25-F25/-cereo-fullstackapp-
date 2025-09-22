@@ -69,7 +69,7 @@ function ArcgisUploadPanel({
         showFinishedMessage
     } = useArcgisLoadingMessages();
 
-    // --- NEW: Service info modal state ---
+    // Service info modal state ---
     const [serviceInfoOpenKey, setServiceInfoOpenKey] = useState(null); // service.key
     const [serviceInfoCache, setServiceInfoCache] = useState({}); // { key: info }
     const [serviceInfoLoading, setServiceInfoLoading] = useState(false);
