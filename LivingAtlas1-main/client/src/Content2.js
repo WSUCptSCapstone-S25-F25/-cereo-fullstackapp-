@@ -43,7 +43,7 @@ function Content2(props) {
     const didMountRef = useRef(false);
 
     // Collapse card container
-    const [isCollapsed, setIsCollapsed] = useState(true);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     const toggleCollapse = () => {
         props.setIsCollapsed?.(!props.isCollapsed);

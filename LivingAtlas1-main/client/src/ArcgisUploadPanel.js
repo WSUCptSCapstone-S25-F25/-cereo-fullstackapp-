@@ -141,47 +141,6 @@ function ArcgisUploadPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedState, isOpen]);
 
-    // Add ArcGIS raster layer for a service
-    const addArcgisLayer = (service, layerIds) => {
-        const map = mapInstance();
-        if (!map) return;
-        const sourceId = `arcgis-raster-${service.key}`;
-        const layerId = `arcgis-raster-layer-${service.key}`;
-
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
-
-        map.addSource(sourceId, {
-            type: 'raster',
-            tiles: [
-                getArcgisTileUrl(service.url, layerIds)
-            ],
-            tileSize: 256,
-            minzoom: 5,
-            maxzoom: 12
-        });
-        map.addLayer({
-            id: layerId,
-            type: 'raster',
-            source: sourceId,
-            paint: {
-                'raster-opacity': 0.5
-            }
-        });
-        setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
-    };
-
-    // Remove ArcGIS raster layer for a service
-    const removeArcgisLayer = (service) => {
-        const map = mapInstance();
-        if (!map) return;
-        const sourceId = `arcgis-raster-${service.key}`;
-        const layerId = `arcgis-raster-layer-${service.key}`;
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
-        setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
-    };
-
     // Add/Remove button logic:
     const handleAddRemove = (service, layers) => {
         const allIds = layers.map(l => l.id);
