@@ -517,10 +517,10 @@ async def upload_form(
 
                 # Insert into DB (note file_extension is now .zip)
                 cur.execute(
-                    'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
-                    (nextfileid, nextcardid, file.filename, public_url, filesizeNEW, ".zip")
-                )
-
+                            'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
+                            (nextfileid, nextcardid, f"{file.filename}.zip", public_url, filesizeNEW, ".zip")
+                        )
+                
                 print(f"Ready to commit COMPRESSED FILE {file.filename} TO DB")
                 enable_commits = True
             except Exception as e:
