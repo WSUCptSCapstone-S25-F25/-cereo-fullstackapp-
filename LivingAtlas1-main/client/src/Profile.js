@@ -136,11 +136,10 @@ function Profile(props) {
                 let cardResponse;
     
                 if (isAdmin) {
-                    api.get('/allCards');
+                    cardResponse = await api.get('/allCards');
                 } else {
                     cardResponse = await api.get(`/profileCards?username=${props.username}`);
                 }
-    
                 const cardData = cardResponse.data.data;
     
                 // Set state

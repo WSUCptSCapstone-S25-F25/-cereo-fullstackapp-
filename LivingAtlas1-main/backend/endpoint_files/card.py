@@ -15,6 +15,8 @@ from google.cloud import storage
 import psycopg2
 import os
 import uuid
+import tempfile
+from .file_utils import compress_file #importing my function that handles compressing files for use in /uploadForm
 
 
 card_router = APIRouter()
@@ -32,7 +34,7 @@ if gcs_key:
 # _______________________________________
 
 # COMMENT OUT IF RUNNING ON RENDER
-# os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
+#os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
 # _______________________________________
         
 storage_client = storage.Client()
@@ -194,76 +196,79 @@ def get_bookmarked_cards(username: str):
 @card_router.get("/downloadFile")
 async def downloadFile(fileID: int):
     """
-    Stream a file from Google Cloud Storage to the client by fileID.
+    Return the public Google Cloud Storage link for a file by fileID.
     """
-    cur.execute("SELECT DirectoryPath FROM Files WHERE fileID = %s", (fileID,))
+    cur.execute("SELECT filename, file_link FROM files WHERE fileid = %s", (fileID,))
     result = cur.fetchone()
     if result is None:
         raise HTTPException(status_code=422, detail="File is not in the database")
 
-    directoryPath = result[0]
-    fileTitle = f"{fileID}/{directoryPath}"
-    blob = bucket.blob(fileTitle)
+    filename, file_link = result
 
-    # Prefer direct download; exists() can be flaky without client.
-    try:
-        file_content = BytesIO()
-        blob.download_to_file(file_content)  # <-- fixed from storage_client.download_blob_to_file
-        file_content.seek(0)
-        return Response(
-            file_content.read(),
-            media_type="application/octet-stream",
-            headers={"Content-Disposition": f"attachment; filename={directoryPath}"}
-        )
-    except NotFound:
-        return {"error": "File doesn't exist"}
-    except Exception as e:
-        print(f"[DOWNLOAD ERROR] {e}")
-        raise HTTPException(status_code=500, detail="Could not download file from storage.")
+    # Option A: return direct link (preferred for cloud storage)
+    return {"file_link": file_link, "filename": filename}
+
+    # Option B: stream through backend (uncomment if you want proxying)
+    # blob_name = file_link.replace(f"https://storage.googleapis.com/{bucket_name}/", "")
+    # blob = bucket.blob(blob_name)
+    # file_content = BytesIO()
+    # blob.download_to_file(file_content)
+    # file_content.seek(0)
+    # return Response(
+    #     file_content.read(),
+    #     media_type="application/octet-stream",
+    #     headers={"Content-Disposition": f"attachment; filename={filename}"}
+    # )
 
 @card_router.get("/allCards")
 def allCards():
     try:
         cur.execute("""
             SELECT
-                Users.Username,
-                Users.Email,
-                COALESCE(Cards.Name, '') AS Name,
-                Cards.Title,
-                Cards.CardID,
-                Categories.CategoryLabel,
-                Cards.DatePosted,
-                Cards.Description,
-                Cards.Organization,
-                Cards.Funding,
-                Cards.Link,
-                STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
-                Cards.Latitude,
-                Cards.Longitude,
-                Cards.Thumbnail_Link,
-                Files.FileExtension,
-                Files.FileID
-            FROM Cards
-            INNER JOIN Categories ON Cards.CategoryID = Categories.CategoryID
-            LEFT JOIN Files ON Cards.CardID = Files.CardID
-            LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
-            LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
-            INNER JOIN Users ON Cards.UserID = Users.UserID
+                u.Username,
+                u.Email,
+                COALESCE(c.Name, '') AS Name,
+                c.Title,
+                c.CardID,
+                cat.CategoryLabel,
+                c.DatePosted,
+                c.Description,
+                c.Organization,
+                c.Funding,
+                c.Link,
+                STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
+                c.Latitude,
+                c.Longitude,
+                c.Thumbnail_Link,
+                COALESCE(
+                    json_agg(
+                        DISTINCT jsonb_build_object(
+                            'fileid', f.fileid,
+                            'filename', f.filename,
+                            'file_link', f.file_link,
+                            'fileextension', f.fileextension
+                        )
+                    ) FILTER (WHERE f.fileid IS NOT NULL),
+                    '[]'
+                ) AS files
+            FROM Cards c
+            INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+            LEFT JOIN Files f ON c.CardID = f.CardID
+            LEFT JOIN CardTags ct ON c.CardID = ct.CardID
+            LEFT JOIN Tags t ON ct.TagID = t.TagID
+            INNER JOIN Users u ON c.UserID = u.UserID
             GROUP BY
-                Cards.CardID,
-                Categories.CategoryLabel,
-                Files.FileExtension,
-                Files.FileID,
-                Users.Username,
-                Users.Email,
-                Cards.Name
-            ORDER BY Cards.CardID DESC;
+                c.CardID,
+                cat.CategoryLabel,
+                u.Username,
+                u.Email,
+                c.Name
+            ORDER BY c.CardID DESC;
         """)
 
         columns = [
-            "username", "email", "name", "title", "cardID", "category", "date", "description", "org", "funding", "link",
-            "tags", "latitude", "longitude", "thumbnail_link",
-            "fileEXT", "fileID"
+            "username", "email", "name", "title", "cardID", "category", "date", "description",
+            "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
         ]
 
         rows = cur.fetchall()
@@ -272,6 +277,9 @@ def allCards():
     except Exception as e:
         print(f"An error occurred while fetching all cards: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+    
+from .file_utils import compress_file
+import tempfile
 
 @card_router.post("/uploadForm")
 async def upload_form(
@@ -290,8 +298,8 @@ async def upload_form(
     org: Optional[str] = Form(None),
     link: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None),
-    thumbnail: Optional[UploadFile] = File(None)  # THIS IS IMPORTANT
+    files: Optional[list[UploadFile]] = File(None),   # <-- multiple files supported
+    thumbnail: Optional[UploadFile] = File(None)      # THIS IS IMPORTANT
 ):
     """
     This endpoint submits/updates a Card
@@ -307,7 +315,19 @@ async def upload_form(
     nextcardid = (maxcardid[0] or 0) + 1
 
     # Identify user performing the update/insert
-    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (original_username, original_email))
+    if update:
+        # Updating → use original identity
+        cur.execute(
+            "SELECT userID FROM Users WHERE username = %s AND email = %s",
+            (original_username, original_email)
+        )
+    else:
+        # New card → use current username/email
+        cur.execute(
+            "SELECT userID FROM Users WHERE username = %s AND email = %s",
+            (username, email)
+        )
+
     user_row = cur.fetchone()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
@@ -325,7 +345,7 @@ async def upload_form(
 
     # Define schema limits for testing
     title_limit = 255
-    latitude_limit = (10, 8)   # (total_digits, decimal_places) – informational
+    latitude_limit = (10, 8)
     longitude_limit = (11, 8)
     description_limit = 2000
     organization_limit = 255
@@ -343,7 +363,7 @@ async def upload_form(
             raise HTTPException(status_code=400, detail="Latitude decimal places exceed 8")
     except ValueError:
         raise HTTPException(status_code=400, detail="Latitude is not a valid decimal number")
-    
+
     try:
         longitude_val = float(longitude)
         if not (-180 <= longitude_val <= 180):
@@ -355,10 +375,8 @@ async def upload_form(
 
     if description is not None and len(description) > description_limit:
         raise HTTPException(status_code=400, detail="Description exceeds 2000 characters")
-
     if org is not None and len(org) > organization_limit:
         raise HTTPException(status_code=400, detail="Organization exceeds 255 characters")
-
     if link is not None and len(link) > link_limit:
         raise HTTPException(status_code=400, detail="Link exceeds 255 characters")
 
@@ -404,19 +422,21 @@ async def upload_form(
                     UserID=%s
                 WHERE CardID=%s
             """
-            insert_value = (name, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url, userID, nextcardid)
+            insert_value = (name, latitude_val, longitude_val, categoryID, description, org, funding,
+                            link, thumbnail_url, userID, nextcardid)
             cur.execute(insert_script, insert_value)
 
-            # Clear tag links for rebuild below (if tags sent)
             cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
         else:
             insert_script = """
                 INSERT INTO Cards
-                    (CardID, UserID, Name, Title, Latitude, Longitude, CategoryID, Description, Organization, Funding, Link, Thumbnail_Link)
+                    (CardID, UserID, Name, Title, Latitude, Longitude, CategoryID,
+                     Description, Organization, Funding, Link, Thumbnail_Link)
                 VALUES
                     (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            insert_value = (nextcardid, userID, name, title, latitude_val, longitude_val, categoryID, description, org, funding, link, thumbnail_url)
+            insert_value = (nextcardid, userID, name, title, latitude_val, longitude_val,
+                            categoryID, description, org, funding, link, thumbnail_url)
             cur.execute(insert_script, insert_value)
 
         print("Ready to commit CARDS to DB")
@@ -424,39 +444,30 @@ async def upload_form(
     except psycopg2.DatabaseError as e:
         print(f"[DB ERROR] {e}")
         conn.rollback()
-        raise HTTPException(status_code=500, detail="An error occurred while inserting the data. Please try again later.")
+        raise HTTPException(status_code=500, detail="An error occurred while inserting the data.")
     except Exception as e:
         print(f"[UNEXPECTED ERROR] {e}")
-        raise HTTPException(status_code=500, detail="An error occurred while inserting the data. Please try again later.")
+        raise HTTPException(status_code=500, detail="Unexpected error while inserting card data.")
 
     # Inserting Unique Tag items if any
     if tags is not None and tags.strip() != "":
-        enable_commits = False
         try:
-            # Split and normalize tag list
             user_tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
-
-            # Get master tag list
             cur.execute("SELECT TagLabel FROM Tags")
             all_tag_list = cur.fetchall()
             masterTags = set(tag[0] for tag in all_tag_list)
 
-            # Compute unique vs existing
             userTagsSet = set(user_tags)
             uniqueUserTags = list(userTagsSet - masterTags)
             existingUserTagsList = list(userTagsSet & masterTags)
 
             if uniqueUserTags:
-                # Next Tag IDs
                 cur.execute("SELECT MAX(TagID) FROM Tags")
                 maxtagid = cur.fetchone()
                 start_id = (maxtagid[0] or 0) + 1
                 nextTagIDsList = [start_id + i for i in range(len(uniqueUserTags))]
-
-                # Insert new tags
-                cur.executemany("INSERT INTO Tags (TagID, TagLabel) VALUES (%s, %s)", list(zip(nextTagIDsList, uniqueUserTags)))
-
-                # Associate new tags to card
+                cur.executemany("INSERT INTO Tags (TagID, TagLabel) VALUES (%s, %s)",
+                                list(zip(nextTagIDsList, uniqueUserTags)))
                 cardTagIDTuple = [(nextcardid, num) for num in nextTagIDsList]
                 cur.executemany("INSERT INTO CardTags (CardID, TagID) VALUES (%s, %s)", cardTagIDTuple)
 
@@ -470,62 +481,57 @@ async def upload_form(
 
             print("Ready to commit TAGS to DB")
             enable_commits = True
-        except ValueError as e:
-            print(f"Exception parsing tags: {e} (no comma or invalid input)")
-
-    # Inserting File to Database then Google Cloud
-    if file is not None:
-        enable_commits = False
-
-        # Get file size properly
-        try:
-            file.file.seek(0, os.SEEK_END)
-            filesizeNEW = file.file.tell()
-            file.file.seek(0)
-        except Exception:
-            filesizeNEW = None  # If size can't be determined, allow upload
-
-        # Arbitrary size limit 10 GB
-        max_size_bytes = 10 * 1024 * 1024 * 1024
-        if filesizeNEW is not None and filesizeNEW > max_size_bytes:
-            raise HTTPException(status_code=413, detail="File size exceeds 10 GB. This is a limit that can be removed by the Living Atlas Devs if requested")
-
-        # Next FileID
-        cur.execute("SELECT MAX(FileID) FROM Files")
-        maxFileid = cur.fetchone()
-        nextfileid = (maxFileid[0] or 0) + 1
-
-        directoryPathNEW = file.filename
-        fileNameNEW, fileExtensionNEW = os.path.splitext(directoryPathNEW)
-        file_typeNEW = fileExtensionNEW[1:].upper() if fileExtensionNEW else "BINARY"
-
-        try:
-            cur.execute(
-                'INSERT INTO Files (FileID, CardID, FileName, DirectoryPath, FileSize, FileExtension) VALUES (%s, %s, %s, %s, %s, %s)',
-                (nextfileid, nextcardid, fileNameNEW, directoryPathNEW, filesizeNEW, file_typeNEW)
-            )
-
-            bucketFilePath = f"{nextfileid}/{directoryPathNEW}"
-
-            # Ensure stream at start before upload
-            try:
-                file.file.seek(0)
-            except Exception:
-                pass
-
-            upload_ok = upload_to_bucket(bucketFilePath, file.file, file.content_type, bucket_name)
-            if not upload_ok:
-                raise HTTPException(status_code=500, detail="Failed to upload file to storage")
-
-            print("Ready to commit FILES TO DB")
-            enable_commits = True
-        except psycopg2.DatabaseError as e:
-            print(f"[DB ERROR - FILES] {e}")
-            conn.rollback()
-            raise HTTPException(status_code=500, detail="An error occurred while inserting the file.")
         except Exception as e:
-            print(f"[UNEXPECTED ERROR in uploadFiles] {e}")
-            raise HTTPException(status_code=500, detail="An error occurred while inserting the data. Please try again later.")
+            print(f"[TAG ERROR] {e}")
+
+    # Inserting Files to Database then Google Cloud (with compression)
+    if files is not None:
+        for file in files:
+            enable_commits = False
+            try:
+                # Save uploaded file to temp path
+                with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                    file.file.seek(0)
+                    tmp.write(file.file.read())
+                    tmp_path = tmp.name
+
+                # Compress file into .zip
+                zip_path = compress_file(tmp_path)
+                zip_filename = os.path.basename(zip_path)
+                filesizeNEW = os.path.getsize(zip_path)
+
+                # Next FileID
+                cur.execute("SELECT MAX(FileID) FROM Files")
+                maxFileid = cur.fetchone()
+                nextfileid = (maxFileid[0] or 0) + 1
+
+                # Upload .zip to GCS
+                blob_name = f"files/{nextfileid}_{uuid.uuid4().hex}_{zip_filename}"
+                with open(zip_path, "rb") as fzip:
+                    upload_ok = upload_to_bucket(blob_name, fzip, "application/zip", bucket_name)
+                if not upload_ok:
+                    raise HTTPException(status_code=500, detail="Failed to upload compressed file")
+
+                # Build public URL
+                public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+
+                # Insert into DB (note file_extension is now .zip)
+                cur.execute(
+                    'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
+                    (nextfileid, nextcardid, file.filename, public_url, filesizeNEW, ".zip")
+                )
+
+                print(f"Ready to commit COMPRESSED FILE {file.filename} TO DB")
+                enable_commits = True
+            except Exception as e:
+                conn.rollback()
+                print(f"[FILE ERROR] {e}")
+                raise HTTPException(status_code=500, detail="Error inserting file")
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+                if os.path.exists(zip_path):
+                    os.remove(zip_path)
 
     if enable_commits:
         conn.commit()
@@ -533,6 +539,8 @@ async def upload_form(
         print("Commit failed")
 
     return {"message": "Success", "cardID": nextcardid}
+
+
 
 # ------------------------------------------------------------
 # DEPRECATED LOCAL FS EXAMPLES (kept for reference)
