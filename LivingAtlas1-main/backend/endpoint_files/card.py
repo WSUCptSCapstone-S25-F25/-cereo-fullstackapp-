@@ -34,7 +34,7 @@ if gcs_key:
 # _______________________________________
 
 # COMMENT OUT IF RUNNING ON RENDER
-# os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
+#os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "ServiceKey_GoogleCloud.json"
 # _______________________________________
         
 storage_client = storage.Client()
@@ -198,7 +198,7 @@ async def downloadFile(fileID: int):
     """
     Return the public Google Cloud Storage link for a file by fileID.
     """
-    cur.execute("SELECT FileName, FileLink FROM Files WHERE FileID = %s", (fileID,))
+    cur.execute("SELECT filename, file_link FROM files WHERE fileid = %s", (fileID,))
     result = cur.fetchone()
     if result is None:
         raise HTTPException(status_code=422, detail="File is not in the database")
@@ -243,12 +243,12 @@ def allCards():
                 COALESCE(
                     json_agg(
                         DISTINCT jsonb_build_object(
-                            'fileID', f.FileID,
-                            'filename', f.FileName,
-                            'fileLink', f.FileLink,
-                            'fileEXT', f.FileExtension
+                            'fileid', f.fileid,
+                            'filename', f.filename,
+                            'file_link', f.file_link,
+                            'fileextension', f.fileextension
                         )
-                    ) FILTER (WHERE f.FileID IS NOT NULL),
+                    ) FILTER (WHERE f.fileid IS NOT NULL),
                     '[]'
                 ) AS files
             FROM Cards c
@@ -315,7 +315,19 @@ async def upload_form(
     nextcardid = (maxcardid[0] or 0) + 1
 
     # Identify user performing the update/insert
-    cur.execute("SELECT userID FROM Users WHERE username = %s AND email = %s", (original_username, original_email))
+    if update:
+        # Updating → use original identity
+        cur.execute(
+            "SELECT userID FROM Users WHERE username = %s AND email = %s",
+            (original_username, original_email)
+        )
+    else:
+        # New card → use current username/email
+        cur.execute(
+            "SELECT userID FROM Users WHERE username = %s AND email = %s",
+            (username, email)
+        )
+
     user_row = cur.fetchone()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
@@ -505,7 +517,7 @@ async def upload_form(
 
                 # Insert into DB (note file_extension is now .zip)
                 cur.execute(
-                    'INSERT INTO Files (FileID, CardID, FileName, FileLink, FileSize, FileExtension) VALUES (%s, %s, %s, %s, %s, %s)',
+                    'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
                     (nextfileid, nextcardid, file.filename, public_url, filesizeNEW, ".zip")
                 )
 
