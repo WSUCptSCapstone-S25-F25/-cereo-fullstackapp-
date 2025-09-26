@@ -38,7 +38,7 @@ from fastapi.middleware.cors import CORSMiddleware
 #importing functions from other files
 from database import conn, cur
 from endpoint_files import account_router
-from endpoint_files import card_router
+from endpoint_files.card import card_router
 from endpoint_files import filterbar_router
 from endpoint_files import map_router
 
