@@ -148,7 +148,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
 @filterbar_router.get("/searchBar")
 def searchBar(titleSearch: str):
    cur.execute("""
-           SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Cards.thumbnail_link, Files.FileExtension, Files.FileID
+           SELECT Users.Username, Cards.name, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Cards.thumbnail_link, Files.FileExtension, Files.FileID
            FROM Cards
            INNER JOIN Categories
            ON Cards.CategoryID = Categories.CategoryID
@@ -166,7 +166,7 @@ def searchBar(titleSearch: str):
            """, ('%' + titleSearch + '%',))
    
    rows = cur.fetchall()
-   columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "fileEXT", "fileID"]
+   columns = ["username", "name", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "fileEXT", "fileID"]
    data = [dict(zip(columns, row)) for row in rows]
    return {"data": data}
 

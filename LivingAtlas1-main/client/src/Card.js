@@ -24,7 +24,7 @@ function Card(props) {
     }, [props.isFavorited]);
 
     // Ensure username and name always have safe defaults
-    // Logic moved to handleEdit
+    // Now handled by handleEdit
     /* useEffect(() => {
         if (props.formData) {
             setFormData({
@@ -58,11 +58,11 @@ function Card(props) {
   
     const handleEdit = (e) => {
         e.stopPropagation();
-        setFormData(({ 
-            ...props.formData, 
+        setFormData({ 
+            ...props.formData,
             original_username: props.formData.username, 
             original_email: props.formData.email,
-        }));
+        });
         /*
         setFormData(prev => ({ 
             ...prev, 
@@ -167,7 +167,7 @@ function Card(props) {
 
         // Extra guard for username and name
         if (!formData.username?.trim() || !formData.name?.trim()) {
-            alert("Both Username and Name are required.");
+            alert("Both Username and name are required.");
             return;
         }
 
@@ -260,7 +260,7 @@ function Card(props) {
             {/* Learn More Modal */}
             <Modal isOpen={isModalOpen} onRequestClose={() => setIsModalOpen(false)} className="Modal">
                 <h2>{formData.title}</h2>
-                <p><strong>Name:</strong> {formData.name}</p>
+                <p><strong>Full Name:</strong> {formData.name}</p>
                 <p><strong>Username:</strong> {formData.username}</p>
                 <p><strong>Email:</strong> {formData.email}</p>
                 <p><strong>Funding:</strong> {formData.funding}</p>
@@ -306,7 +306,7 @@ function Card(props) {
                     <label>Username:
                         <input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} required />
                     </label>
-                    <label>Name:
+                    <label>Full Name:
                         <input type="text" name="name" value={formData.name || ''} onChange={handleInputChange} required />
                     </label>
                     <label>Email:
