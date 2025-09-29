@@ -6,11 +6,12 @@ import {
     fetchArcgisLayers,
     fetchArcgisLegend,
     getArcgisTileUrl,
-    fetchArcgisServiceInfo // <-- added
+    fetchArcgisServiceInfo
 } from './arcgisDataUtils';
+import { fetchArcgisServicesByState } from './arcgisServicesDb'; // Fetch from DB
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
-import './ArcgisUploadPanelStateMenu.css'; // <-- Add this new CSS file
+import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimes, faPlus, faEllipsisH, faBan } from '@fortawesome/free-solid-svg-icons';
 import {
@@ -19,7 +20,7 @@ import {
     getLoadingMsgText
 } from './arcgisUploadMessageUtils';
 
-// --- NEW: State selector ---
+// --- State selector ---
 const STATE_CODES = ['WA', 'ID', 'OR'];
 const STATE_LABELS = { WA: 'WA', ID: 'ID', OR: 'OR' };
 
@@ -30,11 +31,26 @@ function ArcgisUploadPanel({
     arcgisLayerAdded: propArcgisLayerAdded,
     setArcgisLayerAdded: setPropArcgisLayerAdded,
 }) {
-    // NEW: Track selected state
+    // Track selected state
     const [selectedState, setSelectedState] = useState('WA');
 
-    // Use services for selected state
-    const ARCGIS_SERVICES = ARCGIS_SERVICES_BY_STATE[selectedState];
+    // Services fetched from DB for selected state
+    const [servicesFromDb, setServicesFromDb] = useState([]);
+
+    // Use DB services if available; fallback to local JSON for backward-compat
+    const ARCGIS_SERVICES =
+        (servicesFromDb && servicesFromDb.length > 0)
+            ? servicesFromDb
+            : ARCGIS_SERVICES_BY_STATE[selectedState];
+
+    // Log when falling back to local data
+    useEffect(() => {
+        if (!isOpen) return;
+        const hasDb = Array.isArray(servicesFromDb) && servicesFromDb.length > 0;
+        if (!hasDb && (ARCGIS_SERVICES_BY_STATE[selectedState]?.length || 0) > 0) {
+            console.log(`[ArcgisUploadPanel] Falling back from arcgisServicesDb to arcgisDataUtils for state ${selectedState}`);
+        }
+    }, [isOpen, selectedState, servicesFromDb]);
 
     // Group services by folder (move this up!)
     const servicesByFolder = {};
@@ -446,7 +462,7 @@ function ArcgisUploadPanel({
         });
     };
 
-    // NEW: State menu bar
+    // State menu bar
     const renderStateMenu = () => (
         <div className="arcgis-upload-state-menu">
             {STATE_CODES.map(code => (
@@ -485,6 +501,22 @@ function ArcgisUploadPanel({
         const text = tmp.textContent || tmp.innerText || '';
         return text.replace(/\u00A0/g, ' ').trim();
     }
+
+    // Fetch services from DB whenever panel opens or state changes
+    useEffect(() => {
+        if (!isOpen) return;
+        let active = true;
+        (async () => {
+            try {
+                const list = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
+                if (active) setServicesFromDb(Array.isArray(list) ? list : []);
+            } catch (e) {
+                console.warn('Failed to load ArcGIS services from DB:', e);
+                if (active) setServicesFromDb([]);
+            }
+        })();
+        return () => { active = false; };
+    }, [isOpen, selectedState]);
 
     if (!isOpen) return null;
 
