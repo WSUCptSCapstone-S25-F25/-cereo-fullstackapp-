@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
-    ARCGIS_SERVICES_BY_STATE,
+    // ARCGIS_SERVICES_BY_STATE,
     fetchArcgisLayers,
     fetchArcgisLegend,
     getArcgisTileUrl,
@@ -37,22 +37,10 @@ function ArcgisUploadPanel({
     // Services fetched from DB for selected state
     const [servicesFromDb, setServicesFromDb] = useState([]);
 
-    // Use DB services if available; fallback to local JSON for backward-compat
-    const ARCGIS_SERVICES =
-        (servicesFromDb && servicesFromDb.length > 0)
-            ? servicesFromDb
-            : ARCGIS_SERVICES_BY_STATE[selectedState];
+    // Use DB services only (fallback disabled)
+    const ARCGIS_SERVICES = servicesFromDb;
 
-    // Log when falling back to local data
-    useEffect(() => {
-        if (!isOpen) return;
-        const hasDb = Array.isArray(servicesFromDb) && servicesFromDb.length > 0;
-        if (!hasDb && (ARCGIS_SERVICES_BY_STATE[selectedState]?.length || 0) > 0) {
-            console.log(`[ArcgisUploadPanel] Falling back from arcgisServicesDb to arcgisDataUtils for state ${selectedState}`);
-        }
-    }, [isOpen, selectedState, servicesFromDb]);
-
-    // Group services by folder (move this up!)
+    // Group services by folder
     const servicesByFolder = {};
     ARCGIS_SERVICES.forEach(service => {
         const folder = service.folder || 'Root';
@@ -90,7 +78,7 @@ function ArcgisUploadPanel({
     const [serviceInfoCache, setServiceInfoCache] = useState({}); // { key: info }
     const [serviceInfoLoading, setServiceInfoLoading] = useState(false);
 
-    // Fetch layers and legends when panel opens or state changes
+    // Fetch layers and legends when panel opens, state changes, or DB services arrive
     useEffect(() => {
         if (!isOpen) return;
 
@@ -119,7 +107,7 @@ function ArcgisUploadPanel({
             });
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, selectedState]);
+    }, [isOpen, selectedState, servicesFromDb]); // include servicesFromDb so it reacts to API results
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
     useEffect(() => {
