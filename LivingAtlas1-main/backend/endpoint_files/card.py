@@ -484,7 +484,7 @@ async def upload_form(
         except Exception as e:
             print(f"[TAG ERROR] {e}")
 
-    # Inserting Files to Database then Google Cloud (with compression)
+    # Inserting Files to Database then Google Cloud (with compression or passthrough)
     if files is not None:
         for file in files:
             enable_commits = False
@@ -495,50 +495,61 @@ async def upload_form(
                     tmp.write(file.file.read())
                     tmp_path = tmp.name
 
-                # Compress file into .zip
-                zip_path = compress_file(tmp_path)
-                zip_filename = os.path.basename(zip_path)
-                filesizeNEW = os.path.getsize(zip_path)
+                original_name = os.path.splitext(file.filename)[0]
+                original_ext = os.path.splitext(file.filename)[1].lower()
 
-                # Next FileID
+                # Decide how to handle file
+                if original_ext == ".zip":
+                    # Already zipped → upload directly
+                    upload_path = tmp_path
+                    upload_filename = file.filename
+                else:
+                    # Create a folder named after file
+                    folder_path = os.path.join(tempfile.gettempdir(), original_name)
+                    os.makedirs(folder_path, exist_ok=True)
+
+                    # Move the single file into that folder
+                    new_file_path = os.path.join(folder_path, file.filename)
+                    os.replace(tmp_path, new_file_path)
+
+                    # Zip the folder (preserves filename and structure)
+                    upload_path = compress_file(folder_path)
+                    upload_filename = f"{original_name}.zip"
+
+                # Get size and next FileID
+                filesizeNEW = os.path.getsize(upload_path)
                 cur.execute("SELECT MAX(FileID) FROM Files")
                 maxFileid = cur.fetchone()
                 nextfileid = (maxFileid[0] or 0) + 1
 
-                # Upload .zip to GCS
-                blob_name = f"files/{nextfileid}_{uuid.uuid4().hex}_{zip_filename}"
-                with open(zip_path, "rb") as fzip:
+                # Upload to Google Cloud
+                blob_name = f"files/{nextfileid}_{uuid.uuid4().hex}_{upload_filename}"
+                with open(upload_path, "rb") as fzip:
                     upload_ok = upload_to_bucket(blob_name, fzip, "application/zip", bucket_name)
                 if not upload_ok:
-                    raise HTTPException(status_code=500, detail="Failed to upload compressed file")
+                    raise HTTPException(status_code=500, detail="Failed to upload file")
 
                 # Build public URL
                 public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
 
-                # Insert into DB (note file_extension is now .zip)
+                # Insert record into DB
                 cur.execute(
-                            'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
-                            (nextfileid, nextcardid, f"{file.filename}.zip", public_url, filesizeNEW, ".zip")
-                        )
-                
-                print(f"Ready to commit COMPRESSED FILE {file.filename} TO DB")
+                    'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
+                    (nextfileid, nextcardid, upload_filename, public_url, filesizeNEW, ".zip")
+                )
+
+                print(f"Ready to commit FILE {file.filename} TO DB")
                 enable_commits = True
+
             except Exception as e:
                 conn.rollback()
                 print(f"[FILE ERROR] {e}")
                 raise HTTPException(status_code=500, detail="Error inserting file")
             finally:
-                if os.path.exists(tmp_path):
-                    os.remove(tmp_path)
-                if os.path.exists(zip_path):
-                    os.remove(zip_path)
-
-    if enable_commits:
-        conn.commit()
-    else:
-        print("Commit failed")
-
-    return {"message": "Success", "cardID": nextcardid}
+                # Clean up temp files/folders
+                for path in [tmp_path, upload_path]:
+                    if os.path.exists(path):
+                        os.remove(path)
 
 
 
