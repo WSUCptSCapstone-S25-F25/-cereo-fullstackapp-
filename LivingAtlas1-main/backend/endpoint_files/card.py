@@ -196,18 +196,27 @@ def get_bookmarked_cards(username: str):
 @card_router.get("/downloadFile")
 async def downloadFile(fileID: int):
     """
-    Return the public Google Cloud Storage link for a file by fileID.
+    Return the public Google Cloud Storage link for a file by fileID,
+    and include Content-Disposition headers so the browser downloads it cleanly.
     """
     cur.execute("SELECT filename, file_link FROM files WHERE fileid = %s", (fileID,))
     result = cur.fetchone()
     if result is None:
-        raise HTTPException(status_code=422, detail="File is not in the database")
+        raise HTTPException(status_code=422, detail="File not found in the database")
 
     filename, file_link = result
 
-    # Option A: return direct link (preferred for cloud storage)
-    return {"file_link": file_link, "filename": filename}
-
+    # Option A: redirect to the public link
+    # (preferred for large files; GCS handles it directly)
+    return Response(
+        content=f"Redirecting to {file_link}",
+        media_type="text/plain",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}.zip"',
+            "Location": file_link,
+        },
+        status_code=302,  # Redirect
+    )
     # Option B: stream through backend (uncomment if you want proxying)
     # blob_name = file_link.replace(f"https://storage.googleapis.com/{bucket_name}/", "")
     # blob = bucket.blob(blob_name)
@@ -222,6 +231,10 @@ async def downloadFile(fileID: int):
 
 @card_router.get("/allCards")
 def allCards():
+    """
+    Fetch all cards and their associated data (tags, files, etc.),
+    while cleaning up filenames to remove the '.zip' suffix for display.
+    """
     try:
         cur.execute("""
             SELECT
@@ -273,7 +286,16 @@ def allCards():
 
         rows = cur.fetchall()
         data = [dict(zip(columns, row)) for row in rows]
+
+        # Clean up filenames for display — remove .zip suffix
+        for card in data:
+            if isinstance(card.get("files"), list):
+                for file in card["files"]:
+                    if file.get("filename") and file["filename"].lower().endswith(".zip"):
+                        file["filename"] = file["filename"][:-4]  # strip ".zip"
+
         return {"data": data}
+
     except Exception as e:
         print(f"An error occurred while fetching all cards: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -484,7 +506,7 @@ async def upload_form(
         except Exception as e:
             print(f"[TAG ERROR] {e}")
 
-    # Inserting Files to Database then Google Cloud (with compression or passthrough)
+    # Inserting Files to Database then Google Cloud
     if files is not None:
         for file in files:
             enable_commits = False
@@ -495,50 +517,31 @@ async def upload_form(
                     tmp.write(file.file.read())
                     tmp_path = tmp.name
 
-                original_name = os.path.splitext(file.filename)[0]
-                original_ext = os.path.splitext(file.filename)[1].lower()
+                # Let compress_file() decide how to handle it
+                zip_path = compress_file(tmp_path, original_name=file.filename)
+                zip_filename = os.path.basename(zip_path)
+                filesizeNEW = os.path.getsize(zip_path)
 
-                # Decide how to handle file
-                if original_ext == ".zip":
-                    # Already zipped → upload directly
-                    upload_path = tmp_path
-                    upload_filename = file.filename
-                else:
-                    # Create a folder named after file
-                    folder_path = os.path.join(tempfile.gettempdir(), original_name)
-                    os.makedirs(folder_path, exist_ok=True)
-
-                    # Move the single file into that folder
-                    new_file_path = os.path.join(folder_path, file.filename)
-                    os.replace(tmp_path, new_file_path)
-
-                    # Zip the folder (preserves filename and structure)
-                    upload_path = compress_file(folder_path)
-                    upload_filename = f"{original_name}.zip"
-
-                # Get size and next FileID
-                filesizeNEW = os.path.getsize(upload_path)
                 cur.execute("SELECT MAX(FileID) FROM Files")
                 maxFileid = cur.fetchone()
                 nextfileid = (maxFileid[0] or 0) + 1
 
-                # Upload to Google Cloud
-                blob_name = f"files/{nextfileid}_{uuid.uuid4().hex}_{upload_filename}"
-                with open(upload_path, "rb") as fzip:
+                # Upload to GCS
+                blob_name = f"files/{nextfileid}_{uuid.uuid4().hex}_{zip_filename}"
+                with open(zip_path, "rb") as fzip:
                     upload_ok = upload_to_bucket(blob_name, fzip, "application/zip", bucket_name)
                 if not upload_ok:
                     raise HTTPException(status_code=500, detail="Failed to upload file")
 
-                # Build public URL
                 public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
 
-                # Insert record into DB
+                # Save DB record
                 cur.execute(
                     'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
-                    (nextfileid, nextcardid, upload_filename, public_url, filesizeNEW, ".zip")
+                    (nextfileid, nextcardid, zip_filename, public_url, filesizeNEW, ".zip")
                 )
 
-                print(f"Ready to commit FILE {file.filename} TO DB")
+                print(f"Ready to commit COMPRESSED FILE {file.filename} TO DB")
                 enable_commits = True
 
             except Exception as e:
@@ -546,8 +549,7 @@ async def upload_form(
                 print(f"[FILE ERROR] {e}")
                 raise HTTPException(status_code=500, detail="Error inserting file")
             finally:
-                # Clean up temp files/folders
-                for path in [tmp_path, upload_path]:
+                for path in [tmp_path, zip_path]:
                     if os.path.exists(path):
                         os.remove(path)
 
