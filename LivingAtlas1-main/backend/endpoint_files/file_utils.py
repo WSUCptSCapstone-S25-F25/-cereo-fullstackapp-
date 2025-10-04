@@ -1,19 +1,64 @@
 import zipfile
 import lzma
 import os
+import tempfile
+import shutil
 
 #I am currently putting this code here while i wait on clients response on how they want to procede with compression based on the research document I provided them.
 #This current method just uses the .zip method to allow me to test everything else related to file upload until that decision is reached.
 
-def compress_file(file_path: str) -> str:
-    """
-    Compress a single file into a .zip archive and return the zip path.
-    """
-    zip_path = f"{file_path}.zip"
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        zipf.write(file_path, arcname=os.path.basename(file_path))
-    return zip_path
+import os
+import zipfile
+import tempfile
+import shutil
 
+def compress_file(input_path: str, original_name: str = None) -> str:
+    """
+    Compress a file or directory into a .zip archive.
+    - If input_path is already a .zip, returns it unchanged.
+    - If input_path is a single file, creates a folder named after the file (no extension)
+      and zips that folder, so the extracted result preserves its name.
+    - If input_path is a directory, zips it recursively.
+    - Returns the path to the created .zip file.
+    """
+
+    # If the user already uploaded a .zip file, skip re-zipping
+    if input_path.lower().endswith(".zip"):
+        return input_path
+
+    # Use original filename (if provided) for nicer naming
+    base_display_name = os.path.splitext(original_name or os.path.basename(input_path))[0]
+    zip_output_path = os.path.join(tempfile.gettempdir(), f"{base_display_name}.zip")
+
+    # Case 1: Single file upload — wrap it in a folder first
+    if os.path.isfile(input_path):
+        folder_name = base_display_name
+        temp_dir = os.path.join(tempfile.gettempdir(), folder_name)
+        os.makedirs(temp_dir, exist_ok=True)
+        target_path = os.path.join(temp_dir, os.path.basename(input_path))
+        shutil.copy2(input_path, target_path)
+
+        with zipfile.ZipFile(zip_output_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for root, _, files in os.walk(temp_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, temp_dir)
+                    zipf.write(file_path, arcname)
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    # Case 2: Directory input — zip recursively
+    elif os.path.isdir(input_path):
+        with zipfile.ZipFile(zip_output_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for root, _, files in os.walk(input_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, input_path)
+                    zipf.write(file_path, arcname)
+    else:
+        raise ValueError(f"compress_file() expected file or directory, got invalid path: {input_path}")
+
+    return zip_output_path
 
 def decompress_file(zip_path: str, extract_to: str) -> str:
     """
