@@ -30,7 +30,7 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
       </a>
       <ul>
         <li>
-          <Link to="/" className={location.pathname === '/' ? 'active' : ''}>Home</Link>
+          <a href="/" className={location.pathname === '/' ? 'active' : ''}>Home</a>
         </li>
         <li>
           <Link to="/about" className={location.pathname === '/about' ? 'active' : ''}>About</Link>
