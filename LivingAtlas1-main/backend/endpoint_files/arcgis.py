@@ -4,7 +4,6 @@ from database import cur
 
 arcgis_router = APIRouter(prefix="/arcgis", tags=["ArcGIS"])
 
-# Accept WA/ID/OR or full names; stored in DB as lowercase full names
 _STATE_MAP = {
     "wa": "washington",
     "washington": "washington",
@@ -18,7 +17,7 @@ def _normalize_state(s: Optional[str]) -> Optional[str]:
     if not s:
         return None
     key = s.strip().lower()
-    return _STATE_MAP.get(key, key)  # fall back to raw lower if unknown
+    return _STATE_MAP.get(key, key)
 
 @arcgis_router.get("/services")
 def get_services(
@@ -52,9 +51,14 @@ def get_services(
         FROM arcgis_services
         {where_sql}
         ORDER BY folder, label
-    """
-    cur.execute(sql, params)
-    rows = cur.fetchall()
+    """.strip()
+
+    try:
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Query failed: {e}")
+
     columns = ["key", "label", "url", "folder", "type", "state"]
     data = [dict(zip(columns, row)) for row in rows]
-    return {"data": data}
+    return data
