@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
-    // ARCGIS_SERVICES_BY_STATE,
+    ARCGIS_SERVICES_BY_STATE,
     fetchArcgisLayers,
     fetchArcgisLegend,
     getArcgisTileUrl,
@@ -36,9 +36,12 @@ function ArcgisUploadPanel({
 
     // Services fetched from DB for selected state
     const [servicesFromDb, setServicesFromDb] = useState([]);
+    const [isUsingFallback, setIsUsingFallback] = useState(false);
 
-    // Use DB services only (fallback disabled)
-    const ARCGIS_SERVICES = servicesFromDb;
+    // Use DB services with fallback to local JSON
+    const ARCGIS_SERVICES = servicesFromDb.length > 0 
+        ? servicesFromDb 
+        : (ARCGIS_SERVICES_BY_STATE[selectedState] || []);
 
     // Group services by folder
     const servicesByFolder = {};
@@ -494,15 +497,30 @@ function ArcgisUploadPanel({
     useEffect(() => {
         if (!isOpen) return;
         let active = true;
+        
         (async () => {
             try {
                 const list = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
-                if (active) setServicesFromDb(Array.isArray(list) ? list : []);
+                if (active) {
+                    if (Array.isArray(list) && list.length > 0) {
+                        setServicesFromDb(list);
+                        setIsUsingFallback(false);
+                    } else {
+                        // Fallback to local JSON data
+                        console.warn('No services from DB, using local JSON fallback');
+                        setServicesFromDb([]);
+                        setIsUsingFallback(true);
+                    }
+                }
             } catch (e) {
-                console.warn('Failed to load ArcGIS services from DB:', e);
-                if (active) setServicesFromDb([]);
+                console.warn('Failed to load ArcGIS services from DB, using local JSON fallback:', e);
+                if (active) {
+                    setServicesFromDb([]);
+                    setIsUsingFallback(true);
+                }
             }
         })();
+        
         return () => { active = false; };
     }, [isOpen, selectedState]);
 
@@ -512,6 +530,21 @@ function ArcgisUploadPanel({
         <>
             {/* Upload Panel */}
             <div className="upload-panel">
+                {/* Add fallback indicator */}
+                {isUsingFallback && (
+                    <div style={{ 
+                        background: '#fff3cd', 
+                        border: '1px solid #ffeaa7', 
+                        borderRadius: '4px', 
+                        padding: '8px', 
+                        marginBottom: '12px', 
+                        fontSize: '12px',
+                        color: '#856404'
+                    }}>
+                        ⚠️ Using local data (database unavailable)
+                    </div>
+                )}
+                
                 {renderSearchBar()}
                 {foldersToShow.map(folder => (
                     <div key={folder}>
@@ -628,9 +661,16 @@ function ArcgisUploadPanel({
                         )}
                     </div>
                 ))}
+                
+                {/* Update attribution to show data source */}
                 <div className="upload-panel-attribution">
-                    Data sources: <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
+                    Data sources: {isUsingFallback ? (
+                        "Local JSON files (fallback)"
+                    ) : (
+                        "Database"
+                    )} • <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
                 </div>
+                
                 <div className="arcgis-loading-messages">
                     {messages.map((msg, idx) => (
                         <div key={msg.id} className={`arcgis-loading-message ${msg.type}`}>
