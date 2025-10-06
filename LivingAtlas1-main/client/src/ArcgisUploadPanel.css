@@ -147,6 +147,42 @@
     margin-right: 4px;
     width: 13px;
     height: 13px;
+    flex-shrink: 0;
+}
+
+/* Sublayer/legend item styles */
+.upload-layer-sublayer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 2px;
+    font-size: 12px;
+    color: #666;
+    padding-left: 4px;
+}
+
+.upload-layer-sublayer img {
+    width: 14px !important;
+    height: 14px !important;
+    margin-right: 6px !important;
+    flex-shrink: 0;
+}
+
+.upload-layer-sublayer span {
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+/* Legend image base styles */
+.upload-panel .legend-img {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+    flex-shrink: 0;
 }
 
 .upload-panel .select-all-label {

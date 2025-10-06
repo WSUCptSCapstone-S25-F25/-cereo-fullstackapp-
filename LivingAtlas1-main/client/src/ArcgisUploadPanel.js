@@ -629,24 +629,79 @@ function ArcgisUploadPanel({
                                                                 const legend = serviceLegends[service.key];
                                                                 if (legend && legend.layers) {
                                                                     const legendLayer = legend.layers.find(l => l.layerId === layer.id);
-                                                                    if (legendLayer) legendItems = legendLayer.legend;
+                                                                    if (legendLayer) legendItems = legendLayer.legend || [];
                                                                 }
+
+                                                                // Check if this layer has multiple legend items
+                                                                const hasMultipleLegends = legendItems.length > 1;
+
                                                                 return (
-                                                                    <li key={layer.id} className="upload-layer-row">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={checkedIds.includes(layer.id)}
-                                                                            onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
-                                                                            style={{ marginRight: 8 }}
-                                                                        />
-                                                                        {legendItems.length > 0 && (
-                                                                            <img
-                                                                                src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
-                                                                                alt={legendItems[0].label}
-                                                                                className="legend-img"
+                                                                    <li key={layer.id} className="upload-layer-row" style={{ 
+                                                                        flexDirection: 'column', 
+                                                                        alignItems: 'flex-start',
+                                                                        marginBottom: hasMultipleLegends ? 8 : 2
+                                                                    }}>
+                                                                        {/* Main layer row */}
+                                                                        <div style={{ 
+                                                                            display: 'flex', 
+                                                                            alignItems: 'center', 
+                                                                            gap: 4, 
+                                                                            minHeight: 20,
+                                                                            width: '100%'
+                                                                        }}>
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={checkedIds.includes(layer.id)}
+                                                                                onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
+                                                                                style={{ marginRight: 8 }}
                                                                             />
+                                                                            {/* Show legend icon only if there's exactly one legend item */}
+                                                                            {legendItems.length === 1 && (
+                                                                                <img
+                                                                                    src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
+                                                                                    alt={legendItems[0].label}
+                                                                                    className="legend-img"
+                                                                                />
+                                                                            )}
+                                                                            <span>{layer.name}</span>
+                                                                        </div>
+
+                                                                        {/* Show sublayers/legends if there are multiple */}
+                                                                        {hasMultipleLegends && (
+                                                                            <div style={{ 
+                                                                                marginLeft: 24, 
+                                                                                marginTop: 4,
+                                                                                width: 'calc(100% - 24px)'
+                                                                            }}>
+                                                                                {legendItems.map((legendItem, index) => (
+                                                                                    <div 
+                                                                                        key={index} 
+                                                                                        style={{ 
+                                                                                            display: 'flex', 
+                                                                                            alignItems: 'center', 
+                                                                                            gap: 4, 
+                                                                                            marginBottom: 2,
+                                                                                            fontSize: '12px',
+                                                                                            color: '#666'
+                                                                                        }}
+                                                                                    >
+                                                                                        <img
+                                                                                            src={`data:${legendItem.contentType};base64,${legendItem.imageData}`}
+                                                                                            alt={legendItem.label}
+                                                                                            className="legend-img"
+                                                                                            style={{ 
+                                                                                                width: '14px', 
+                                                                                                height: '14px',
+                                                                                                marginRight: '6px'
+                                                                                            }}
+                                                                                        />
+                                                                                        <span title={legendItem.label}>
+                                                                                            {legendItem.label}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
                                                                         )}
-                                                                        <span>{layer.name}</span>
                                                                     </li>
                                                                 );
                                                             })}
