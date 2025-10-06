@@ -81,6 +81,9 @@ function ArcgisUploadPanel({
     const [serviceInfoCache, setServiceInfoCache] = useState({}); // { key: info }
     const [serviceInfoLoading, setServiceInfoLoading] = useState(false);
 
+    // Add new state for sublayer checkboxes (add this near other state declarations)
+    const [checkedSublayerIds, setCheckedSublayerIds] = useState({}); // { serviceKey: { layerId: [sublayerIndexes] } }
+
     // Fetch layers and legends when panel opens, state changes, or DB services arrive
     useEffect(() => {
         if (!isOpen) return;
@@ -187,20 +190,107 @@ function ArcgisUploadPanel({
         setCheckedLayerIds(prev => {
             const prevChecked = prev[service.key] || [];
             let newChecked;
+            
             if (prevChecked.includes(layerId)) {
                 newChecked = prevChecked.filter(id => id !== layerId);
                 const layer = layers.find(l => l.id === layerId);
                 if (layer) removeLoadingMessage(getLoadingMsgId(service, layer));
+                
+                // Uncheck all sublayers when parent is unchecked
+                setCheckedSublayerIds(prevSub => ({
+                    ...prevSub,
+                    [service.key]: {
+                        ...prevSub[service.key],
+                        [layerId]: []
+                    }
+                }));
             } else {
                 newChecked = [...prevChecked, layerId];
                 const layer = layers.find(l => l.id === layerId);
                 if (layer) addLoadingMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer));
+                
+                // Check all sublayers when parent is checked
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layerId);
+                    if (legendLayer && legendLayer.legend) {
+                        const allSublayerIndexes = legendLayer.legend.map((_, index) => index);
+                        setCheckedSublayerIds(prevSub => ({
+                            ...prevSub,
+                            [service.key]: {
+                                ...prevSub[service.key],
+                                [layerId]: allSublayerIndexes
+                            }
+                        }));
+                    }
+                }
             }
+            
             setServiceLayerAdded(prevAdded => ({
                 ...prevAdded,
                 [service.key]: newChecked.length > 0
             }));
             return { ...prev, [service.key]: newChecked };
+        });
+    };
+
+    // Add new handler for sublayer checkboxes
+    const handleSublayerCheckbox = (service, layerId, sublayerIndex, layers) => {
+        setCheckedSublayerIds(prev => {
+            const serviceSubIds = prev[service.key] || {};
+            const layerSubIds = serviceSubIds[layerId] || [];
+            
+            let newLayerSubIds;
+            if (layerSubIds.includes(sublayerIndex)) {
+                newLayerSubIds = layerSubIds.filter(id => id !== sublayerIndex);
+            } else {
+                newLayerSubIds = [...layerSubIds, sublayerIndex];
+            }
+            
+            // If no sublayers are checked, uncheck the parent layer
+            if (newLayerSubIds.length === 0) {
+                setCheckedLayerIds(prevChecked => ({
+                    ...prevChecked,
+                    [service.key]: (prevChecked[service.key] || []).filter(id => id !== layerId)
+                }));
+                const layer = layers.find(l => l.id === layerId);
+                if (layer) removeLoadingMessage(getLoadingMsgId(service, layer));
+            } else {
+                // If at least one sublayer is checked, check the parent layer
+                setCheckedLayerIds(prevChecked => {
+                    const currentChecked = prevChecked[service.key] || [];
+                    if (!currentChecked.includes(layerId)) {
+                        const layer = layers.find(l => l.id === layerId);
+                        if (layer) addLoadingMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer));
+                        return {
+                            ...prevChecked,
+                            [service.key]: [...currentChecked, layerId]
+                        };
+                    }
+                    return prevChecked;
+                });
+            }
+            
+            // Update service layer added status
+            setServiceLayerAdded(prevAdded => {
+                const allCheckedLayers = Object.keys({ ...serviceSubIds, [layerId]: newLayerSubIds })
+                    .filter(lid => {
+                        const subIds = lid === layerId ? newLayerSubIds : serviceSubIds[lid] || [];
+                        return subIds.length > 0;
+                    });
+                return {
+                    ...prevAdded,
+                    [service.key]: allCheckedLayers.length > 0
+                };
+            });
+            
+            return {
+                ...prev,
+                [service.key]: {
+                    ...serviceSubIds,
+                    [layerId]: newLayerSubIds
+                }
+            };
         });
     };
 
@@ -634,6 +724,7 @@ function ArcgisUploadPanel({
 
                                                                 // Check if this layer has multiple legend items
                                                                 const hasMultipleLegends = legendItems.length > 1;
+                                                                const checkedSublayers = checkedSublayerIds[service.key]?.[layer.id] || [];
 
                                                                 return (
                                                                     <li key={layer.id} className="upload-layer-row" style={{ 
@@ -664,6 +755,15 @@ function ArcgisUploadPanel({
                                                                                 />
                                                                             )}
                                                                             <span>{layer.name}</span>
+                                                                            {hasMultipleLegends && (
+                                                                                <span style={{ 
+                                                                                    fontSize: '11px', 
+                                                                                    color: '#888', 
+                                                                                    marginLeft: 8 
+                                                                                }}>
+                                                                                    ({checkedSublayers.length}/{legendItems.length})
+                                                                                </span>
+                                                                            )}
                                                                         </div>
 
                                                                         {/* Show sublayers/legends if there are multiple */}
@@ -676,15 +776,28 @@ function ArcgisUploadPanel({
                                                                                 {legendItems.map((legendItem, index) => (
                                                                                     <div 
                                                                                         key={index} 
+                                                                                        className="upload-layer-sublayer"
                                                                                         style={{ 
                                                                                             display: 'flex', 
                                                                                             alignItems: 'center', 
                                                                                             gap: 4, 
-                                                                                            marginBottom: 2,
+                                                                                            marginBottom: 3,
                                                                                             fontSize: '12px',
-                                                                                            color: '#666'
+                                                                                            color: '#666',
+                                                                                            minHeight: '18px'
                                                                                         }}
                                                                                     >
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            checked={checkedSublayers.includes(index)}
+                                                                                            onChange={() => handleSublayerCheckbox(service, layer.id, index, layersToShow)}
+                                                                                            style={{ 
+                                                                                                marginRight: 6,
+                                                                                                width: '12px',
+                                                                                                height: '12px',
+                                                                                                flexShrink: 0
+                                                                                            }}
+                                                                                        />
                                                                                         <img
                                                                                             src={`data:${legendItem.contentType};base64,${legendItem.imageData}`}
                                                                                             alt={legendItem.label}
