@@ -642,9 +642,7 @@ function ArcgisUploadPanel({
 
             {/* Service info modal (right side) */}
             {serviceInfoOpenKey && (
-                <div
-                    className="arcgis-service-info-modal"
-                >
+                <div className="arcgis-service-info-modal">
                     <div className="arcgis-service-info-modal-header">
                         <strong>Service info</strong>
                         <button
@@ -659,13 +657,33 @@ function ArcgisUploadPanel({
                         {serviceInfoLoading && <div>Loading service info…</div>}
                         {!serviceInfoLoading && (() => {
                             const info = serviceInfoCache[serviceInfoOpenKey] || {};
+                            const currentService = ARCGIS_SERVICES.find(s => s.key === serviceInfoOpenKey);
+                            
                             if (!info || Object.keys(info).length === 0) {
-                                return <div className="arcgis-service-info-empty">No information available.</div>;
+                                return (
+                                    <div>
+                                        <div className="arcgis-service-info-empty">No information available.</div>
+                                        {currentService && currentService.url && (
+                                            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                                <a 
+                                                    href={currentService.url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    style={{ color: '#1976d2', textDecoration: 'none' }}
+                                                >
+                                                    View ArcGIS Service Page →
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
                             }
+                            
                             const sr = info.spatialReference || {};
                             const srText = sr.latestWkid
                                 ? `WKID ${sr.latestWkid}`
                                 : (sr.wkid ? `WKID ${sr.wkid}` : (sr.wkt ? 'WKT' : '—'));
+                            
                             return (
                                 <div>
                                     {info.serviceDescription || info.description ? (
@@ -685,6 +703,20 @@ function ArcgisUploadPanel({
                                     <div className="arcgis-service-info-row">
                                         <strong>Spatial Reference:</strong> {srText}
                                     </div>
+                                    
+                                    {/* Add the ArcGIS service page link at the bottom */}
+                                    {currentService && currentService.url && (
+                                        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                            <a 
+                                                href={currentService.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                style={{ color: '#1976d2', textDecoration: 'none' }}
+                                            >
+                                                View ArcGIS Service Page →
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })()}
