@@ -158,12 +158,27 @@ function ArcgisUploadPanel({
             // Remove: uncheck all
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: {} }));
             layers.forEach(layer => removeLoadingMessage(getLoadingMsgId(service, layer)));
             removeLoadingMessage(getLoadingMsgId(service, null));
         } else {
             // Add: check all
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: allIds }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
+            
+            // Also check all sublayers for each layer
+            const newSublayerIds = {};
+            layers.forEach(layer => {
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                    if (legendLayer && legendLayer.legend && legendLayer.legend.length > 1) {
+                        newSublayerIds[layer.id] = legendLayer.legend.map((_, index) => index);
+                    }
+                }
+            });
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: newSublayerIds }));
+            
             // Show loading message for all layers IMMEDIATELY
             addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
         }
@@ -173,14 +188,32 @@ function ArcgisUploadPanel({
     const handleSelectAll = (service, layers) => {
         const allIds = layers.map(l => l.id);
         const isAllChecked = (checkedLayerIds[service.key] || []).length === allIds.length;
+        
         if (isAllChecked) {
+            // Uncheck all layers and sublayers
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: {} }));
             layers.forEach(layer => removeLoadingMessage(getLoadingMsgId(service, layer)));
             removeLoadingMessage(getLoadingMsgId(service, null));
         } else {
+            // Check all layers and their sublayers
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: allIds }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
+            
+            // Also check all sublayers for each layer
+            const newSublayerIds = {};
+            layers.forEach(layer => {
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                    if (legendLayer && legendLayer.legend && legendLayer.legend.length > 1) {
+                        newSublayerIds[layer.id] = legendLayer.legend.map((_, index) => index);
+                    }
+                }
+            });
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: newSublayerIds }));
+            
             addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
         }
     };
@@ -234,7 +267,7 @@ function ArcgisUploadPanel({
         });
     };
 
-    // Add new handler for sublayer checkboxes
+    // Add new handler for sublayer checkboxes (enhanced)
     const handleSublayerCheckbox = (service, layerId, sublayerIndex, layers) => {
         setCheckedSublayerIds(prev => {
             const serviceSubIds = prev[service.key] || {};
@@ -294,7 +327,7 @@ function ArcgisUploadPanel({
         });
     };
 
-    // Effect for checked layers: add/remove vector layers for each service
+    // Enhanced effect for checked layers: add/remove vector layers and individual sublayer rasters
     useEffect(() => {
         const map = mapInstance();
         if (!map) return;
@@ -303,6 +336,8 @@ function ArcgisUploadPanel({
             const layers = serviceLayers[service.key] || [];
             const prevChecked = prevCheckedLayerIds.current[service.key] || [];
             const currChecked = checkedLayerIds[service.key] || [];
+            const serviceSublayers = checkedSublayerIds[service.key] || {};
+            const prevSublayers = prevCheckedLayerIds.current[`${service.key}_sublayers`] || {};
 
             // --- VECTOR LAYERS (unchanged) ---
             const toRemove = prevChecked.filter(id => !currChecked.includes(id));
@@ -331,82 +366,185 @@ function ArcgisUploadPanel({
                 }
             });
 
-            // --- RASTER LAYER (fix here) ---
-            const rasterSourceId = `arcgis-raster-${service.key}`;
-            const rasterLayerId = `arcgis-raster-layer-${service.key}`;
+            // --- ENHANCED RASTER LAYER LOGIC WITH PROPER REMOVAL ---
+            // First, handle layers that were completely unchecked - remove ALL their raster layers
+            toRemove.forEach(layerId => {
+                const layerRasterPrefix = `arcgis-raster-layer-${service.key}-${layerId}`;
+                const style = map.getStyle();
+                if (style?.layers) {
+                    style.layers
+                        .filter(l => l.id.startsWith(layerRasterPrefix))
+                        .forEach(l => {
+                            if (map.getLayer(l.id)) map.removeLayer(l.id);
+                        });
+                }
+                if (style?.sources) {
+                    Object.keys(style.sources)
+                        .filter(id => id.startsWith(`arcgis-raster-${service.key}-${layerId}`))
+                        .forEach(id => {
+                            if (map.getSource(id)) map.removeSource(id);
+                        });
+                }
+            });
 
-            // Always remove the raster layer/source first
-            if (map.getLayer(rasterLayerId)) map.removeLayer(rasterLayerId);
-            if (map.getSource(rasterSourceId)) map.removeSource(rasterSourceId);
+            // Then handle sublayer changes for currently checked layers
+            currChecked.forEach(layerId => {
+                const layer = layers.find(l => l.id === layerId);
+                if (!layer) return;
 
-            if (currChecked.length > 0) {
-                // Add raster layer for currently checked layers
-                map.addSource(rasterSourceId, {
-                    type: 'raster',
-                    tiles: [
-                        getArcgisTileUrl(service.url, currChecked)
-                    ],
-                    tileSize: 256,
-                    minzoom: 6,
-                    maxzoom: 12
-                });
-                map.addLayer({
-                    id: rasterLayerId,
-                    type: 'raster',
-                    source: rasterSourceId,
-                    paint: {
-                        'raster-opacity': 0.4
-                    }
-                });
+                const legend = serviceLegends[service.key];
+                const legendLayer = legend?.layers?.find(l => l.layerId === layerId);
+                const legendItems = legendLayer?.legend || [];
+                const checkedSublayers = serviceSublayers[layerId] || [];
+                const prevCheckedSublayers = prevSublayers[layerId] || [];
 
-                // Show loading message (already handled in handlers)
+                // Check if sublayer selection changed
+                const sublayersChanged = JSON.stringify(checkedSublayers.sort()) !== JSON.stringify(prevCheckedSublayers.sort());
 
-                let tilesLoaded = false;
-                let renderedAfterTiles = false;
-                let finishedTimeout = null;
+                if (legendItems.length > 1) {
+                    // Multiple legends case
+                    if (sublayersChanged || toAdd.includes(layerId)) {
+                        // Remove all existing raster layers for this layer first
+                        const layerRasterPrefix = `arcgis-raster-layer-${service.key}-${layerId}`;
+                        const style = map.getStyle();
+                        if (style?.layers) {
+                            style.layers
+                                .filter(l => l.id.startsWith(layerRasterPrefix))
+                                .forEach(l => {
+                                    if (map.getLayer(l.id)) map.removeLayer(l.id);
+                            });
+                        }
+                        if (style?.sources) {
+                            Object.keys(style.sources)
+                                .filter(id => id.startsWith(`arcgis-raster-${service.key}-${layerId}`))
+                                .forEach(id => {
+                                    if (map.getSource(id)) map.removeSource(id);
+                            });
+                        }
 
-                // Listen for tiles loaded
-                const onTilesLoaded = (e) => {
-                    if (e.sourceId === rasterSourceId && map.isSourceLoaded(rasterSourceId)) {
-                        tilesLoaded = true;
-                    }
-                };
+                        // Add raster layers only for checked sublayers
+                        if (checkedSublayers.length > 0) {
+                            checkedSublayers.forEach((sublayerIndex, index) => {
+                                const legendItem = legendItems[sublayerIndex];
+                                if (!legendItem) return;
 
-                // Listen for render event after tiles are loaded
-                const onRender = () => {
-                    if (tilesLoaded && map.getLayer(rasterLayerId)) {
-                        if (!renderedAfterTiles) {
-                            renderedAfterTiles = true;
-                            finishedTimeout = setTimeout(() => {
-                                if (currChecked.length === layers.length) {
-                                    removeLoadingMessage(getLoadingMsgId(service, null));
-                                    showFinishedMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null, true));
-                                } else {
-                                    currChecked.forEach(id => {
-                                        const layer = layers.find(l => l.id === id);
-                                        if (layer) {
-                                            removeLoadingMessage(getLoadingMsgId(service, layer));
-                                            showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+                                const sublayerSourceId = `arcgis-raster-${service.key}-${layerId}-sub-${sublayerIndex}`;
+                                const sublayerLayerId = `arcgis-raster-layer-${service.key}-${layerId}-sub-${sublayerIndex}`;
+
+                                // Create tile URL for this specific sublayer
+                                const sublayerTileUrl = getArcgisTileUrl(service.url, [layerId]);
+
+                                map.addSource(sublayerSourceId, {
+                                    type: 'raster',
+                                    tiles: [sublayerTileUrl],
+                                    tileSize: 256,
+                                    minzoom: 6,
+                                    maxzoom: 12
+                                });
+
+                                map.addLayer({
+                                    id: sublayerLayerId,
+                                    type: 'raster',
+                                    source: sublayerSourceId,
+                                    paint: {
+                                        'raster-opacity': 0.4 - (index * 0.05)
+                                    }
+                                });
+
+                                // Add loading/finished message handling for sublayers
+                                let tilesLoaded = false;
+                                let renderedAfterTiles = false;
+                                let finishedTimeout = null;
+
+                                const onTilesLoaded = (e) => {
+                                    if (e.sourceId === sublayerSourceId && map.isSourceLoaded(sublayerSourceId)) {
+                                        tilesLoaded = true;
+                                    }
+                                };
+
+                                const onRender = () => {
+                                    if (tilesLoaded && map.getLayer(sublayerLayerId)) {
+                                        if (!renderedAfterTiles) {
+                                            renderedAfterTiles = true;
+                                            finishedTimeout = setTimeout(() => {
+                                                const sublayerMsgId = `${getLoadingMsgId(service, layer)}-sub-${sublayerIndex}`;
+                                                removeLoadingMessage(sublayerMsgId);
+                                                showFinishedMessage(sublayerMsgId, `${legendItem.label} loaded`);
+                                                map.off('sourcedata', onTilesLoaded);
+                                                map.off('render', onRender);
+                                                if (finishedTimeout) clearTimeout(finishedTimeout);
+                                            }, 500);
                                         }
-                                    });
-                                }
-                                map.off('sourcedata', onTilesLoaded);
-                                map.off('render', onRender);
-                                if (finishedTimeout) clearTimeout(finishedTimeout);
-                            }, 500); // 500ms delay after first render after tiles loaded
+                                    }
+                                };
+
+                                map.on('sourcedata', onTilesLoaded);
+                                map.on('render', onRender);
+                            });
                         }
                     }
-                };
+                } else if (toAdd.includes(layerId)) {
+                    // Single legend case - only add if this layer was just checked
+                    const rasterSourceId = `arcgis-raster-${service.key}-${layerId}`;
+                    const rasterLayerId = `arcgis-raster-layer-${service.key}-${layerId}`;
 
-                map.on('sourcedata', onTilesLoaded);
-                map.on('render', onRender);
-            }
+                    // Remove existing first (in case of re-adding)
+                    if (map.getLayer(rasterLayerId)) map.removeLayer(rasterLayerId);
+                    if (map.getSource(rasterSourceId)) map.removeSource(rasterSourceId);
 
-            // Update ref for next diff
+                    map.addSource(rasterSourceId, {
+                        type: 'raster',
+                        tiles: [getArcgisTileUrl(service.url, [layerId])],
+                        tileSize: 256,
+                        minzoom: 6,
+                        maxzoom: 12
+                    });
+
+                    map.addLayer({
+                        id: rasterLayerId,
+                        type: 'raster',
+                        source: rasterSourceId,
+                        paint: {
+                            'raster-opacity': 0.4
+                        }
+                    });
+
+                    let tilesLoaded = false;
+                    let renderedAfterTiles = false;
+                    let finishedTimeout = null;
+
+                    const onTilesLoaded = (e) => {
+                        if (e.sourceId === rasterSourceId && map.isSourceLoaded(rasterSourceId)) {
+                            tilesLoaded = true;
+                        }
+                    };
+
+                    const onRender = () => {
+                        if (tilesLoaded && map.getLayer(rasterLayerId)) {
+                            if (!renderedAfterTiles) {
+                                renderedAfterTiles = true;
+                                finishedTimeout = setTimeout(() => {
+                                    removeLoadingMessage(getLoadingMsgId(service, layer));
+                                    showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+                                    map.off('sourcedata', onTilesLoaded);
+                                    map.off('render', onRender);
+                                    if (finishedTimeout) clearTimeout(finishedTimeout);
+                                }, 500);
+                            }
+                        }
+                    };
+
+                    map.on('sourcedata', onTilesLoaded);
+                    map.on('render', onRender);
+                }
+            });
+
+            // Update refs for next diff
             prevCheckedLayerIds.current[service.key] = [...currChecked];
+            prevCheckedLayerIds.current[`${service.key}_sublayers`] = JSON.parse(JSON.stringify(serviceSublayers));
         });
         // eslint-disable-next-line
-    }, [checkedLayerIds, serviceLayers]);
+    }, [checkedLayerIds, serviceLayers, checkedSublayerIds]); // Added checkedSublayerIds as dependency
 
 
     // UI for search bar and dropdown
