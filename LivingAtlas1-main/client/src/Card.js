@@ -260,8 +260,8 @@ function Card(props) {
             {/* Learn More Modal */}
             <Modal isOpen={isModalOpen} onRequestClose={() => setIsModalOpen(false)} className="Modal">
                 <h2>{formData.title}</h2>
-                <p><strong>Full Name:</strong> {formData.name}</p>
-                <p><strong>Username:</strong> {formData.username}</p>
+                <p><strong>Author:</strong> {formData.name}</p>
+                <p><strong>Card Creator:</strong> {formData.username}</p>
                 <p><strong>Email:</strong> {formData.email}</p>
                 <p><strong>Funding:</strong> {formData.funding}</p>
                 <p><strong>Organization:</strong> {formData.org}</p>
