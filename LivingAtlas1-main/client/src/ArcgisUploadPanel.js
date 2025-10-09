@@ -8,6 +8,10 @@ import {
     fetchArcgisServiceInfo
 } from './arcgisDataUtils';
 import { fetchArcgisServicesByState } from './arcgisServicesDb'; // Fetch from DB
+// Import local JSON files as fallback
+import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
+import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
+import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
@@ -23,6 +27,13 @@ import {
 const STATE_CODES = ['WA', 'ID', 'OR'];
 const STATE_LABELS = { WA: 'WA', ID: 'ID', OR: 'OR' };
 
+// Local JSON fallback data
+const ARCGIS_SERVICES_BY_STATE = {
+    WA: WA_ARCGIS_SERVICES || [],
+    ID: ID_ARCGIS_SERVICES || [],
+    OR: OR_ARCGIS_SERVICES || []
+};
+
 function ArcgisUploadPanel({
     isOpen,
     onClose,
@@ -37,9 +48,12 @@ function ArcgisUploadPanel({
     const [servicesFromDb, setServicesFromDb] = useState([]);
     const [isLoadingServices, setIsLoadingServices] = useState(false);
     const [servicesError, setServicesError] = useState(null);
+    const [usingFallback, setUsingFallback] = useState(false);
 
-    // Use services from database
-    const ARCGIS_SERVICES = servicesFromDb || [];
+    // Use services from database, fallback to local JSON if needed
+    const ARCGIS_SERVICES = servicesFromDb.length > 0 
+        ? servicesFromDb 
+        : (ARCGIS_SERVICES_BY_STATE[selectedState] || []);
 
     // Group services by folder
     const servicesByFolder = {};
@@ -82,7 +96,49 @@ function ArcgisUploadPanel({
     // Add new state for sublayer checkboxes (add this near other state declarations)
     const [checkedSublayerIds, setCheckedSublayerIds] = useState({}); // { serviceKey: { layerId: [sublayerIndexes] } }
 
-    // Fetch layers and legends when panel opens, state changes, or DB services arrive
+    // Fetch services from DB whenever panel opens or state changes
+    useEffect(() => {
+        if (!isOpen) return;
+        let active = true;
+        
+        (async () => {
+            setIsLoadingServices(true);
+            setServicesError(null);
+            setUsingFallback(false);
+            
+            try {
+                console.log(`[ArcgisUploadPanel] Attempting to fetch services from backend for ${selectedState}...`);
+                const list = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
+                
+                if (active) {
+                    if (Array.isArray(list) && list.length > 0) {
+                        setServicesFromDb(list);
+                        setUsingFallback(false);
+                        console.log(`[ArcgisUploadPanel] ✅ Loaded ${list.length} services from backend for state ${selectedState}`);
+                    } else {
+                        console.warn(`[ArcgisUploadPanel] ⚠️ Backend returned no services for ${selectedState}, using local fallback`);
+                        setServicesFromDb([]);
+                        setUsingFallback(true);
+                    }
+                }
+            } catch (error) {
+                console.error(`[ArcgisUploadPanel] ❌ Failed to load from backend for ${selectedState}, using local fallback:`, error);
+                if (active) {
+                    setServicesFromDb([]);
+                    setUsingFallback(true);
+                    setServicesError(`Backend unavailable (using local data): ${error.message || 'Network error'}`);
+                }
+            } finally {
+                if (active) {
+                    setIsLoadingServices(false);
+                }
+            }
+        })();
+        
+        return () => { active = false; };
+    }, [isOpen, selectedState]);
+
+    // Fetch layers and legends when panel opens, state changes, or services change
     useEffect(() => {
         if (!isOpen) return;
 
@@ -96,7 +152,7 @@ function ArcgisUploadPanel({
         setServiceInfoOpenKey(null);
         prevCheckedLayerIds.current = {};
 
-        // Fetch for current state's services
+        // Fetch for current services (from DB or fallback)
         (ARCGIS_SERVICES || []).forEach(service => {
             if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
 
@@ -111,7 +167,7 @@ function ArcgisUploadPanel({
             });
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, selectedState, servicesFromDb]); // include servicesFromDb so it reacts to API results
+    }, [isOpen, selectedState, servicesFromDb.length]); // React to changes in services
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
     useEffect(() => {
@@ -719,50 +775,13 @@ function ArcgisUploadPanel({
         return text.replace(/\u00A0/g, ' ').trim();
     }
 
-    // Fetch services from DB whenever panel opens or state changes
-    useEffect(() => {
-        if (!isOpen) return;
-        let active = true;
-        
-        (async () => {
-            setIsLoadingServices(true);
-            setServicesError(null);
-            
-            try {
-                const list = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
-                if (active) {
-                    if (Array.isArray(list) && list.length > 0) {
-                        setServicesFromDb(list);
-                        console.log(`[ArcgisUploadPanel] Loaded ${list.length} services for state ${selectedState}`);
-                    } else {
-                        console.warn(`[ArcgisUploadPanel] No services returned for state ${selectedState}`);
-                        setServicesFromDb([]);
-                        setServicesError(`No ArcGIS services available for ${selectedState}`);
-                    }
-                }
-            } catch (error) {
-                console.error(`[ArcgisUploadPanel] Failed to load ArcGIS services for ${selectedState}:`, error);
-                if (active) {
-                    setServicesFromDb([]);
-                    setServicesError(`Failed to load services: ${error.message || 'Network error'}`);
-                }
-            } finally {
-                if (active) {
-                    setIsLoadingServices(false);
-                }
-            }
-        })();
-        
-        return () => { active = false; };
-    }, [isOpen, selectedState]);
-
     if (!isOpen) return null;
 
     return (
         <>
             {/* Upload Panel */}
             <div className="upload-panel">
-                {/* Loading and error states */}
+                {/* Loading and status messages */}
                 {isLoadingServices && (
                     <div style={{ 
                         background: '#d4edda', 
@@ -777,17 +796,32 @@ function ArcgisUploadPanel({
                     </div>
                 )}
                 
-                {servicesError && (
+                {usingFallback && (
                     <div style={{ 
-                        background: '#f8d7da', 
-                        border: '1px solid #f5c6cb', 
+                        background: '#fff3cd', 
+                        border: '1px solid #ffecb5', 
                         borderRadius: '4px', 
                         padding: '8px', 
                         marginBottom: '12px', 
                         fontSize: '12px',
-                        color: '#721c24'
+                        color: '#856404'
                     }}>
-                        ⚠️ {servicesError}
+                        📂 Using local data for {selectedState} ({ARCGIS_SERVICES.length} services)
+                        {servicesError && <div style={{ marginTop: '4px', fontSize: '11px' }}>{servicesError}</div>}
+                    </div>
+                )}
+
+                {!isLoadingServices && !usingFallback && servicesFromDb.length > 0 && (
+                    <div style={{ 
+                        background: '#d1ecf1', 
+                        border: '1px solid #bee5eb', 
+                        borderRadius: '4px', 
+                        padding: '8px', 
+                        marginBottom: '12px', 
+                        fontSize: '12px',
+                        color: '#0c5460'
+                    }}>
+                        🌐 Loaded from database: {servicesFromDb.length} services for {selectedState}
                     </div>
                 )}
                 
@@ -988,7 +1022,7 @@ function ArcgisUploadPanel({
                 
                 {/* Attribution */}
                 <div className="upload-panel-attribution">
-                    Data sources: Backend Database • <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
+                    Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
                 </div>
                 
                 <div className="arcgis-loading-messages">
@@ -1074,7 +1108,7 @@ function ArcgisUploadPanel({
                                                 style={{ color: '#1976d2', textDecoration: 'none' }}
                                             >
                                                 View ArcGIS Service Page →
-                                            </a>
+                            </a>
                                         </div>
                                     )}
                                 </div>
