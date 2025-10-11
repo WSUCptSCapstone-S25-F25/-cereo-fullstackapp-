@@ -9,7 +9,7 @@
 import os
 import json
 # from google.cloud import storage
-# import base64
+#import base64
 
 # Decode base64 service account key from environment variable
 # COMMENT OUT IF RUNNING LOCALLY
@@ -38,7 +38,7 @@ from fastapi.middleware.cors import CORSMiddleware
 #importing functions from other files
 from database import conn, cur
 from endpoint_files import account_router
-from endpoint_files import card_router
+from endpoint_files.card import card_router
 from endpoint_files import filterbar_router
 from endpoint_files import map_router
 

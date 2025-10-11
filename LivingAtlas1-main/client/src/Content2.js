@@ -667,6 +667,7 @@ function Content2(props) {
                                 <Card
                                     formData={{
                                         ...card,
+                                        files: card.files || [],   // ensure it's always an array to maintain consistency
                                         cardOwner: card.username,
                                         viewerUsername: resolvedUsername,
                                         cardID: card.cardID
