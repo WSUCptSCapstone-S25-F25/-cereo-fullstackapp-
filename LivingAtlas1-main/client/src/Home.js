@@ -6,12 +6,12 @@ import Content1 from './Content1';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
-import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; // <-- Add faEarthAmericas
+import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; // faEarthAmericas
 import './Home.css';
 import './Sidebars.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
-import RemovedServicesPanel from './RemovedServicesPanel'; // <-- NEW: Import the new panel
-import { faTrash } from '@fortawesome/free-solid-svg-icons'; // <-- NEW: trash icon
+import RemovedServicesPanel from './RemovedServicesPanel'; // Import the new panel
+import { faTrash } from '@fortawesome/free-solid-svg-icons'; // trash icon
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -27,7 +27,7 @@ function Home(props) {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
-    const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false); // <-- NEW: State for removed panel
+    const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false); // State for removed panel
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
     const [arcgisLayers, setArcgisLayers] = useState([]);
