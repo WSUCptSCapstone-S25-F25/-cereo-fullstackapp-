@@ -58,42 +58,75 @@
     flex-shrink: 0;
 }
 
+/* Search bar container - matches upload panel */
 .removed-services-searchbar {
     display: flex;
     align-items: center;
-    gap: 8px;
+    margin-bottom: 8px;
+    margin-top: 10px;
 }
 
-.removed-services-searchbar input {
+/* Search input - matches upload panel */
+.removed-services-searchbar input[type="text"] {
     flex: 1;
-    padding: 8px 12px;
+    padding: 4px 8px;
     font-size: 14px;
-    border: 1px solid #ccc;
     border-radius: 4px;
+    border: 1px solid #ccc;
+    height: 32px;
+    margin-top: 0;
     outline: none;
     transition: border-color 0.2s;
 }
 
-.removed-services-searchbar input:focus {
+.removed-services-searchbar input[type="text"]:focus {
     border-color: #007bff;
 }
 
-.removed-services-search-btn {
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: #007bff;
-    color: white;
+/* Search dropdown - matches upload panel */
+.removed-services-searchbar-dropdown {
+    margin-left: 8px;
+    padding: 4px;
+    font-size: 14px;
     border-radius: 4px;
+    height: 32px;
+    margin-top: 0;
+    border: 1px solid #ccc;
+}
+
+/* Search and clear buttons - matches upload panel */
+.removed-services-search-btn,
+.removed-services-clear-btn {
+    margin-left: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    font-size: 18px;
+    transition: background 0.2s;
+    margin-top: 0;
+}
+
+.removed-services-search-btn {
+    background: #007bff;
+    color: white;
 }
 
 .removed-services-search-btn:hover {
     background: #0056b3;
+}
+
+.removed-services-clear-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.removed-services-clear-btn:hover {
+    background: #c82333;
 }
 
 /* Actions section */

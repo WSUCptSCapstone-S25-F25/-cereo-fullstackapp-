@@ -5,6 +5,7 @@ import { faTrash, faUndo, faTimes, faSearch } from '@fortawesome/free-solid-svg-
 
 function RemovedServicesPanel({ isOpen, onClose }) {
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [searchType, setSearchType] = useState('any'); // 'any', 'folder', 'service', 'layer'
     
     const mockRemovedServices = [
         {
@@ -46,6 +47,51 @@ function RemovedServicesPanel({ isOpen, onClose }) {
         }
     };
 
+    const renderSearchBar = () => (
+        <div>
+            <div className="removed-services-searchbar">
+                <input
+                    type="text"
+                    value={searchKeyword}
+                    onChange={e => setSearchKeyword(e.target.value)}
+                    placeholder="Search removed services..."
+                />
+                <select
+                    value={searchType}
+                    onChange={e => setSearchType(e.target.value)}
+                    className="removed-services-searchbar-dropdown"
+                >
+                    <option value="any">Any</option>
+                    <option value="folder">Folder</option>
+                    <option value="service">Service</option>
+                    <option value="layer">Layer</option>
+                </select>
+                <button
+                    className="removed-services-search-btn"
+                    title="Search"
+                    onClick={() => {
+                        if (!searchKeyword) {
+                            return;
+                        }
+                        console.log('Search:', searchKeyword, 'Type:', searchType);
+                    }}
+                >
+                    <FontAwesomeIcon icon={faSearch} />
+                </button>
+                <button
+                    className="removed-services-clear-btn"
+                    title="Clear Search"
+                    onClick={() => {
+                        setSearchKeyword('');
+                        setSearchType('any');
+                    }}
+                >
+                    <FontAwesomeIcon icon={faTimes} />
+                </button>
+            </div>
+        </div>
+    );
+
     if (!isOpen) return null;
 
     return (
@@ -61,17 +107,7 @@ function RemovedServicesPanel({ isOpen, onClose }) {
             </div>
 
             <div className="removed-services-search">
-                <div className="removed-services-searchbar">
-                    <input
-                        type="text"
-                        value={searchKeyword}
-                        onChange={e => setSearchKeyword(e.target.value)}
-                        placeholder="Search removed services..."
-                    />
-                    <button className="removed-services-search-btn" title="Search">
-                        <FontAwesomeIcon icon={faSearch} />
-                    </button>
-                </div>
+                {renderSearchBar()}
             </div>
 
             <div className="removed-services-actions">
