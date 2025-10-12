@@ -6,7 +6,7 @@
     height: calc(100vh - 65px);
     width: 420px;
     background: #f9f9f9;
-    border-left: 1px solid #ddd;
+    border-left: 1px solid #ec5656;
     box-shadow: 2px 0 8px rgba(0,0,0,0.07);
     z-index: 1200;
     display: flex;
@@ -165,7 +165,7 @@
 .removed-services-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 /* Individual service item */
@@ -173,7 +173,7 @@
     background: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 6px;
-    padding: 16px;
+    padding: 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     transition: box-shadow 0.2s;
 }
@@ -186,7 +186,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .removed-service-info {
@@ -195,28 +195,30 @@
 
 .removed-service-name {
     font-weight: bold;
-    font-size: 15px;
+    font-size: 14px;
     color: #333;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .removed-service-meta {
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
-    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 .removed-service-state {
     background: #007bff;
     color: white;
-    padding: 2px 6px;
+    padding: 1px 4px;
     border-radius: 3px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: bold;
 }
 
 .removed-service-separator {
-    margin: 0 6px;
+    margin: 0 4px;
 }
 
 .removed-service-folder {
@@ -224,21 +226,21 @@
 }
 
 .removed-service-date {
-    font-size: 12px;
+    font-size: 11px;
     color: #888;
 }
 
 /* Action buttons */
 .removed-service-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
 }
 
 .removed-service-restore-btn,
 .removed-service-delete-btn {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -246,6 +248,7 @@
     align-items: center;
     justify-content: center;
     transition: background-color 0.2s, transform 0.1s;
+    font-size: 12px;
 }
 
 .removed-service-restore-btn {
@@ -271,7 +274,7 @@
 /* Removed layers section */
 .removed-service-layers {
     border-top: 1px solid #f0f0f0;
-    padding-top: 12px;
+    padding-top: 8px;
 }
 
 .removed-service-layers-title {
@@ -284,16 +287,16 @@
 .removed-service-layers-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
 }
 
 .removed-service-layer-tag {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
     color: #495057;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
     white-space: nowrap;
 }
 

@@ -6,7 +6,6 @@ import { faTrash, faUndo, faTimes, faSearch } from '@fortawesome/free-solid-svg-
 function RemovedServicesPanel({ isOpen, onClose }) {
     const [searchKeyword, setSearchKeyword] = useState('');
     
-    // Mock data for removed services (for UI demonstration)
     const mockRemovedServices = [
         {
             key: 'removed-wa-aq-1',
@@ -15,26 +14,9 @@ function RemovedServicesPanel({ isOpen, onClose }) {
             folder: 'Environmental',
             removedDate: '2024-10-12T10:30:00Z',
             layersRemoved: ['PM2.5 Monitoring Stations', 'Ozone Levels']
-        },
-        {
-            key: 'removed-id-water-1', 
-            label: 'Water Resources',
-            state: 'ID',
-            folder: 'Hydrology',
-            removedDate: '2024-10-11T14:15:00Z',
-            layersRemoved: ['Stream Flow', 'Water Quality Points']
-        },
-        {
-            key: 'removed-or-fire-1',
-            label: 'Fire Hazard Zones',
-            state: 'OR',
-            folder: 'Emergency Management',
-            removedDate: '2024-10-10T09:45:00Z',
-            layersRemoved: ['High Risk Areas', 'Fire Stations', 'Evacuation Routes']
         }
     ];
 
-    // Filter services based on search
     const filteredServices = mockRemovedServices.filter(service =>
         service.label.toLowerCase().includes(searchKeyword.toLowerCase()) ||
         service.folder.toLowerCase().includes(searchKeyword.toLowerCase()) ||
@@ -48,13 +30,11 @@ function RemovedServicesPanel({ isOpen, onClose }) {
 
     const handleRestore = (service) => {
         console.log('Restore service:', service);
-        // TODO: Implement restore functionality
         alert(`Restore functionality for "${service.label}" will be implemented in the future`);
     };
 
     const handlePermanentDelete = (service) => {
         console.log('Permanently delete service:', service);
-        // TODO: Implement permanent delete functionality
         if (window.confirm(`Are you sure you want to permanently delete "${service.label}"? This action cannot be undone.`)) {
             alert(`Permanent delete functionality for "${service.label}" will be implemented in the future`);
         }
@@ -80,7 +60,6 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                 </button>
             </div>
 
-            {/* Search bar */}
             <div className="removed-services-search">
                 <div className="removed-services-searchbar">
                     <input
@@ -95,7 +74,6 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                 </div>
             </div>
 
-            {/* Action buttons */}
             <div className="removed-services-actions">
                 <button 
                     className="removed-services-clear-all-btn"
@@ -106,7 +84,6 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                 </button>
             </div>
 
-            {/* Services list */}
             <div className="removed-services-content">
                 {filteredServices.length === 0 ? (
                     <div className="removed-services-empty">
@@ -143,9 +120,10 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                                             <span className="removed-service-state">{service.state}</span>
                                             <span className="removed-service-separator">•</span>
                                             <span className="removed-service-folder">{service.folder}</span>
-                                        </div>
-                                        <div className="removed-service-date">
-                                            Removed: {formatDate(service.removedDate)}
+                                            <span className="removed-service-separator">•</span>
+                                            <span className="removed-service-date">
+                                                {formatDate(service.removedDate)}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="removed-service-actions">
@@ -166,12 +144,8 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                                     </div>
                                 </div>
                                 
-                                {/* Show removed layers */}
                                 {service.layersRemoved && service.layersRemoved.length > 0 && (
                                     <div className="removed-service-layers">
-                                        <div className="removed-service-layers-title">
-                                            Removed layers ({service.layersRemoved.length}):
-                                        </div>
                                         <div className="removed-service-layers-list">
                                             {service.layersRemoved.map((layer, index) => (
                                                 <span key={index} className="removed-service-layer-tag">
@@ -187,7 +161,6 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                 )}
             </div>
 
-            {/* Footer info */}
             <div className="removed-services-footer">
                 <div className="removed-services-info">
                     Removed services are kept for 30 days before permanent deletion.
