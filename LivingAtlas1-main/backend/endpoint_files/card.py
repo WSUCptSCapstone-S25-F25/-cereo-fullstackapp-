@@ -527,22 +527,42 @@ async def upload_form(
                 nextfileid = (maxFileid[0] or 0) + 1
 
                 # Upload to GCS
-                blob_name = f"files/{nextfileid}_{uuid.uuid4().hex}_{zip_filename}"
+                # Upload to GCS (keep original filename, organize by card/user)
+                safe_filename = os.path.basename(file.filename)
+                destination_path = f"files/{username}/{safe_filename}"
+
                 with open(zip_path, "rb") as fzip:
-                    upload_ok = upload_to_bucket(blob_name, fzip, "application/zip", bucket_name)
+                    upload_ok = upload_to_bucket(destination_path, fzip, "application/zip", bucket_name)
                 if not upload_ok:
                     raise HTTPException(status_code=500, detail="Failed to upload file")
 
-                public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+                # Public URL (matches the cleaner path)
+                public_url = f"https://storage.googleapis.com/{bucket_name}/{destination_path}"
 
                 # Save DB record
                 cur.execute(
                     'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
-                    (nextfileid, nextcardid, zip_filename, public_url, filesizeNEW, ".zip")
+                    (nextfileid, nextcardid, safe_filename, public_url, filesizeNEW, ".zip")
                 )
 
                 print(f"Ready to commit COMPRESSED FILE {file.filename} TO DB")
                 enable_commits = True
+                # blob_name = f"files/{nextfileid}_{uuid.uuid4().hex}_{zip_filename}"
+                # with open(zip_path, "rb") as fzip:
+                #     upload_ok = upload_to_bucket(blob_name, fzip, "application/zip", bucket_name)
+                # if not upload_ok:
+                #     raise HTTPException(status_code=500, detail="Failed to upload file")
+
+                # public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+
+                # # Save DB record
+                # cur.execute(
+                #     'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
+                #     (nextfileid, nextcardid, zip_filename, public_url, filesizeNEW, ".zip")
+                # )
+
+                # print(f"Ready to commit COMPRESSED FILE {file.filename} TO DB")
+                # enable_commits = True
 
             except Exception as e:
                 conn.rollback()
