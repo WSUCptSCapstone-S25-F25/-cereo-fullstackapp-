@@ -9,7 +9,11 @@ import { faBookmark as regularBookmark } from '@fortawesome/free-regular-svg-ico
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [formData, setFormData] = useState(props.formData || {});
+    const [formData, setFormData] = useState({
+        ...props.formData,
+        files: props.formData?.files || [],      // <-- ensure files array always exists
+        filesToUpload: []                        // <-- temp storage for new uploads
+    });
     const [loading, setLoading] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
     const [thumbnail, setThumbnail] = useState(null);
@@ -24,15 +28,18 @@ function Card(props) {
     }, [props.isFavorited]);
 
     // Ensure username and name always have safe defaults
-    useEffect(() => {
+    // Now handled by handleEdit
+    /* useEffect(() => {
         if (props.formData) {
             setFormData({
                 ...props.formData,
                 username: props.formData.username || '',
-                name: props.formData.name || ''
+                name: props.formData.name || '',
+                files: props.formData.files || [],
+                filesToUpload: []
             });
         }
-    }, [props.formData]);
+    }, [props.formData]); */
 
     useEffect(() => {
         if ((!formData.thumbnail_link || formData.thumbnail_link === "") && formData.cardID) {
@@ -56,12 +63,20 @@ function Card(props) {
     };
   
     const handleEdit = (e) => {
+        e.stopPropagation();
+        setFormData({ 
+            ...props.formData,
+            original_username: props.formData.username, 
+            original_email: props.formData.email,
+        });
+        /*
         setFormData(prev => ({ 
             ...prev, 
             original_username: prev.username, 
             original_email: prev.email,
+            filesToUpload: [] // reset upload buffer when editing
         }));
-        e.stopPropagation();
+        */
         setIsEditModalOpen(true);
     };
 
@@ -159,45 +174,58 @@ function Card(props) {
 
         // Extra guard for username and name
         if (!formData.username?.trim() || !formData.name?.trim()) {
-            alert("Both Username and Name are required.");
+            alert("Both Username and name are required.");
             return;
         }
 
         const formDataToSend = new FormData();
         Object.keys(formData).forEach((key) => {
-            if (formData[key] !== undefined && formData[key] !== null) {
+            if (
+                key !== "files" && key !== "filesToUpload" && // don’t accidentally append arrays
+                formData[key] !== undefined && formData[key] !== null
+            ) {
                 formDataToSend.append(key, formData[key]);
             }
         });
 
-        formDataToSend.append('update', true);
+        //Only true if editing an existing card
+        formDataToSend.append("update", !!formData.cardID);
 
-        if (formData.original_username || formData.username) {
-            formDataToSend.append('original_username', formData.original_username || formData.username);
-        }
-
-        if (formData.original_email || formData.email) {
-            formDataToSend.append('original_email', formData.original_email || formData.email);
-        }
+        // Always include originals, fallback to current for new cards
+        formDataToSend.append(
+            "original_username",
+            formData.original_username || formData.username
+        );
+        formDataToSend.append(
+            "original_email",
+            formData.original_email || formData.email
+        );
 
         if (thumbnail) {
-            formDataToSend.append('thumbnail', thumbnail);
+            formDataToSend.append("thumbnail", thumbnail);
+        }
+
+        //Append multiple files safely
+        if (formData.filesToUpload && formData.filesToUpload.length > 0) {
+            formData.filesToUpload.forEach((file) => {
+                formDataToSend.append("files", file);
+            });
         }
 
         setLoading(true);
         try {
-            await api.post('/uploadForm', formDataToSend);
-            alert('Card Information Saved. Please reload the page.');
+            await api.post("/uploadForm", formDataToSend);
+            alert("Card Information Saved. Please reload the page.");
             setIsEditModalOpen(false);
 
-            if (typeof props.onCardUpdate === 'function') {
+            if (typeof props.onCardUpdate === "function") {
                 props.onCardUpdate();
             } else {
                 window.location.reload();
             }
         } catch (error) {
-            console.error('Failed to save the card:', error);
-            alert('Failed to save the card. Please try again.');
+            console.error("Failed to save the card:", error);
+            alert("Failed to save the card. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -252,8 +280,8 @@ function Card(props) {
             {/* Learn More Modal */}
             <Modal isOpen={isModalOpen} onRequestClose={() => setIsModalOpen(false)} className="Modal">
                 <h2>{formData.title}</h2>
-                <p><strong>Name:</strong> {formData.name}</p>
-                <p><strong>Username:</strong> {formData.username}</p>
+                <p><strong>Author:</strong> {formData.name}</p>
+                <p><strong>Card Creator:</strong> {formData.username}</p>
                 <p><strong>Email:</strong> {formData.email}</p>
                 <p><strong>Funding:</strong> {formData.funding}</p>
                 <p><strong>Organization:</strong> {formData.org}</p>
@@ -270,10 +298,24 @@ function Card(props) {
                 <p><strong>Latitude:</strong> {formData.latitude}</p>
                 <p><strong>Longitude:</strong> {formData.longitude}</p>
 
-                {formData.fileID && (
-                    <button className="card-button" onClick={() => props.downloadFile(formData.fileID)}>
-                        Download {formData.fileEXT}
-                    </button>
+                {/* Downloadable Files */}
+                {formData.files && formData.files.length > 0 && (
+                    <div className="file-list">
+                        <h3>Downloadable Files:</h3>
+                        <ul>
+                            {formData.files.map((file, idx) => (
+                                <li key={file.fileid || idx}>
+                                    <a
+                                        href={file.file_link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        {file.filename || `Download ${file.fileextension}`}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
 
                 <button
@@ -298,7 +340,7 @@ function Card(props) {
                     <label>Username:
                         <input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} required />
                     </label>
-                    <label>Name:
+                    <label>Full Name:
                         <input type="text" name="name" value={formData.name || ''} onChange={handleInputChange} required />
                     </label>
                     <label>Email:
@@ -333,6 +375,22 @@ function Card(props) {
                     </label>
                     <label>Thumbnail:
                         <input type="file" accept="image/png, image/jpeg, image/gif" onChange={handleImageChange} />
+                    </label>
+
+                    {/* Multiple file input */}
+                    <label>Files:
+                        <input
+                            type="file"
+                            name="files"
+                            multiple
+                            onChange={(e) => {
+                                const selectedFiles = Array.from(e.target.files);
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    filesToUpload: selectedFiles
+                                }));
+                            }}
+                        />
                     </label>
 
                     <input type="hidden" name="original_username" value={formData.original_username || ''} />

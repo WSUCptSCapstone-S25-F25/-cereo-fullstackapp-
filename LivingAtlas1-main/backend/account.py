@@ -152,31 +152,47 @@ async def make_account(
 @account_router.get("/profileCards")
 def profileCards(username: str):
     cur.execute("""
-        SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted,
-               Cards.description, Cards.organization, Cards.funding, Cards.link,
-               STRING_AGG(Tags.TagLabel, ', ') AS TagLabels,
-               Cards.latitude, Cards.longitude,
-               Cards.thumbnail_link,  -- added
-               Files.FileExtension, Files.FileID
-        FROM Cards
-        INNER JOIN Categories ON Cards.CategoryID = Categories.CategoryID
-        LEFT JOIN Files ON Cards.CardID = Files.CardID
-        LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
-        LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
-        INNER JOIN Users ON Cards.UserID = Users.UserID
-        WHERE Users.Username = %s
-        GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID,
-                 Users.Username, Users.Email, Cards.thumbnail_link  -- added to GROUP BY
-        ORDER BY Cards.CardID DESC;
+        SELECT 
+            u.Username,
+            u.Email,
+            c.Title,
+            cat.CategoryLabel,
+            c.DatePosted,
+            c.Description,
+            c.Organization,
+            c.Funding,
+            c.Link,
+            STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
+            c.Latitude,
+            c.Longitude,
+            c.Thumbnail_Link,
+            COALESCE(
+                json_agg(
+                    DISTINCT jsonb_build_object(
+                        'fileID', f.FileID,
+                        'filename', f.FileName,
+                        'fileLink', f.FileLink,
+                        'fileEXT', f.FileExtension
+                    )
+                ) FILTER (WHERE f.FileID IS NOT NULL),
+                '[]'
+            ) AS files
+        FROM Cards c
+        INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+        LEFT JOIN Files f ON c.CardID = f.CardID
+        LEFT JOIN CardTags ct ON c.CardID = ct.CardID
+        LEFT JOIN Tags t ON ct.TagID = t.TagID
+        INNER JOIN Users u ON c.UserID = u.UserID
+        WHERE u.Username = %s
+        GROUP BY c.CardID, cat.CategoryLabel, u.Username, u.Email, c.Thumbnail_Link
+        ORDER BY c.CardID DESC;
     """, (username,))
 
-    columns = [
-        "username", "email", "title", "category", "date", "description", "org", "funding", "link",
-        "tags", "latitude", "longitude", "thumbnail_link",  # added here
-        "fileEXT", "fileID"
-    ]
-
     rows = cur.fetchall()
+    columns = [
+        "username", "email", "title", "category", "date", "description", "org",
+        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
+    ]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
 

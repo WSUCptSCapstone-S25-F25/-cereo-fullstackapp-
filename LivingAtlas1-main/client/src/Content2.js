@@ -372,11 +372,30 @@ function Content2(props) {
     const fetchAllCards = async () => {
         try {
             const response = await api.get('/allCards');
-            setCards(response.data.data);
+            console.table(response.data.data);
+            const fixedResponse = fixBadLoadMap(response.data.data);
+            setCards(fixedResponse);
         } catch (error) {
             console.error('Error fetching all cards:', error);
         }
     };
+
+    // Fix bad load where card fields are in wrong order
+    const fixBadLoadMap = (cards) => cards.map(fixBadLoad);
+
+    const fixBadLoad = (cards) => {
+        if (typeof cards.username === "number" && typeof cards.name === "number" && typeof cards.title === "number") {
+            return {
+                cardID: cards.username,
+                latitude: cards.name,
+                title: cards.email,
+                longitude: cards.title,
+                tags: cards.category,
+                category: cards.cardID
+            };
+        }
+        return cards;
+    }
 
     useEffect(() => {
         // Commented out updateBoundry logic
@@ -650,6 +669,7 @@ function Content2(props) {
                                 <Card
                                     formData={{
                                         ...card,
+                                        files: card.files || [],   // ensure it's always an array to maintain consistency
                                         cardOwner: card.username,
                                         viewerUsername: resolvedUsername,
                                         cardID: card.cardID
