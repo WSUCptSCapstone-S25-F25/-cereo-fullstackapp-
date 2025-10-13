@@ -58,7 +58,7 @@
     flex-shrink: 0;
 }
 
-/* Search bar container - matches upload panel */
+/* Search bar container */
 .removed-services-searchbar {
     display: flex;
     align-items: center;
@@ -66,7 +66,7 @@
     margin-top: 10px;
 }
 
-/* Search input - matches upload panel */
+/* Search input */
 .removed-services-searchbar input[type="text"] {
     flex: 1;
     padding: 4px 8px;
@@ -83,7 +83,7 @@
     border-color: #007bff;
 }
 
-/* Search dropdown - matches upload panel */
+/* Search dropdown */
 .removed-services-searchbar-dropdown {
     margin-left: 8px;
     padding: 4px;
@@ -94,7 +94,7 @@
     border: 1px solid #ccc;
 }
 
-/* Search and clear buttons - matches upload panel */
+/* Search and clear buttons */
 .removed-services-search-btn,
 .removed-services-clear-btn {
     margin-left: 8px;
