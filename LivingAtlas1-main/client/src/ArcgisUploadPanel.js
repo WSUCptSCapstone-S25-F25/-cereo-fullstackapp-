@@ -7,7 +7,7 @@ import {
     getArcgisTileUrl,
     fetchArcgisServiceInfo
 } from './arcgisDataUtils';
-import { fetchArcgisServicesByState } from './arcgisServicesDb'; // Fetch from DB
+import { fetchArcgisServicesByState, removeArcgisService } from './arcgisServicesDb'; // Fetch from DB
 // Import local JSON files as fallback
 import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
 import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
@@ -379,6 +379,128 @@ function ArcgisUploadPanel({
                 }
             };
         });
+    };
+
+    // Handle service removal
+    const handleRemoveService = async (service) => {
+        // Only allow removal for database services, not local fallback
+        if (usingFallback) {
+            alert('Cannot remove services when using local data. Please ensure backend connection is available.');
+            return;
+        }
+
+        const checkedIds = checkedLayerIds[service.key] || [];
+        const layersToRemove = [];
+        
+        // Get names of currently checked layers
+        if (checkedIds.length > 0) {
+            const layers = serviceLayers[service.key] || [];
+            checkedIds.forEach(layerId => {
+                const layer = layers.find(l => l.id === layerId);
+                if (layer) layersToRemove.push(layer.name);
+            });
+        }
+
+        const confirmMessage = layersToRemove.length > 0 
+            ? `Remove "${service.label}" and its ${layersToRemove.length} selected layer(s) from the map?`
+            : `Remove "${service.label}" from available services?`;
+        
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            // Show loading state
+            console.log(`Removing service: ${service.key}`);
+            
+            // Call the remove API
+            await removeArcgisService(service.key, {
+                removedBy: 'user', // You can replace this with actual user info if available
+                layersRemoved: layersToRemove
+            });
+
+            // Remove from map if it was added
+            if (serviceLayerAdded[service.key]) {
+                const map = mapInstance();
+                if (map) {
+                    // Remove all layers and sources for this service
+                    const layers = serviceLayers[service.key] || [];
+                    layers.forEach(layer => {
+                        // Remove vector layers
+                        const baseId = `arcgis-vector-layer-${service.key}-${layer.id}`;
+                        const fillId = baseId;
+                        const lineId = `${baseId}-outline`;
+                        const circleId = `${baseId}-circle`;
+                        const sourceId = `arcgis-vector-source-${service.key}-${layer.id}`;
+                        [fillId, lineId, circleId].forEach(lid => {
+                            if (map.getLayer(lid)) map.removeLayer(lid);
+                        });
+                        if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+                        // Remove raster layers
+                        const rasterSourceId = `arcgis-raster-${service.key}-${layer.id}`;
+                        const rasterLayerId = `arcgis-raster-layer-${service.key}-${layer.id}`;
+                        if (map.getLayer(rasterLayerId)) map.removeLayer(rasterLayerId);
+                        if (map.getSource(rasterSourceId)) map.removeSource(rasterSourceId);
+
+                        // Remove sublayer rasters
+                        const style = map.getStyle();
+                        if (style?.layers) {
+                            style.layers
+                                .filter(l => l.id.startsWith(`arcgis-raster-layer-${service.key}-${layer.id}`))
+                                .forEach(l => {
+                                    if (map.getLayer(l.id)) map.removeLayer(l.id);
+                                });
+                        }
+                        if (style?.sources) {
+                            Object.keys(style.sources)
+                                .filter(id => id.startsWith(`arcgis-raster-${service.key}-${layer.id}`))
+                                .forEach(id => {
+                                    if (map.getSource(id)) map.removeSource(id);
+                                });
+                        }
+                    });
+                }
+            }
+
+            // Clean up local state
+            setServiceLayers(prev => {
+                const newState = { ...prev };
+                delete newState[service.key];
+                return newState;
+            });
+            setServiceLegends(prev => {
+                const newState = { ...prev };
+                delete newState[service.key];
+                return newState;
+            });
+            setCheckedLayerIds(prev => {
+                const newState = { ...prev };
+                delete newState[service.key];
+                return newState;
+            });
+            setServiceLayerAdded(prev => {
+                const newState = { ...prev };
+                delete newState[service.key];
+                return newState;
+            });
+            setCheckedSublayerIds(prev => {
+                const newState = { ...prev };
+                delete newState[service.key];
+                return newState;
+            });
+
+            // Refresh services list from database
+            console.log('Refreshing services list...');
+            const updatedList = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
+            setServicesFromDb(updatedList);
+            
+            console.log(`✅ Service "${service.label}" removed successfully`);
+            
+        } catch (error) {
+            console.error('Failed to remove service:', error);
+            alert(`Failed to remove service: ${error.message || 'Unknown error'}`);
+        }
     };
 
     // Enhanced effect for checked layers: add/remove vector layers and individual sublayer rasters
@@ -884,7 +1006,7 @@ function ArcgisUploadPanel({
                                                         aria-label="Remove"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            // TODO: implement remove functionality
+                                                            handleRemoveService(service);
                                                         }}
                                                     >
                                                         <FontAwesomeIcon icon={faBan} />
