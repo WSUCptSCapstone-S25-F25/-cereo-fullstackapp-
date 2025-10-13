@@ -4,139 +4,159 @@
     "label": "Admin_Bounds (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Admin_Bounds/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Admin_Bounds_WM_MapServer",
     "label": "Admin_Bounds_WM (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Admin_Bounds_WM/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Bio_Wetlands_MapServer",
     "label": "Bio_Wetlands (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Bio_Wetlands/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Cadastral_PLSS_MapServer",
     "label": "Cadastral_PLSS (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Cadastral_PLSS/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Cadastral_PLSS_WM_MapServer",
     "label": "Cadastral_PLSS_WM (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Cadastral_PLSS_WM/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Haz_GeneralMap_MapServer",
     "label": "Haz_GeneralMap (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Haz_GeneralMap/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Haz_GeneralMap_WM_MapServer",
     "label": "Haz_GeneralMap_WM (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Haz_GeneralMap_WM/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Hydro_GeneralMap_MapServer",
     "label": "Hydro_GeneralMap (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Hydro_GeneralMap/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Prep_GeneralMap_MapServer",
     "label": "Prep_GeneralMap (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Prep_GeneralMap/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Trans_GeneralMap_MapServer",
     "label": "Trans_GeneralMap (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Trans_GeneralMap/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Framework_Trans_GeneralMap_WM_MapServer",
     "label": "Trans_GeneralMap_WM (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Framework/Trans_GeneralMap_WM/MapServer",
     "folder": "Framework",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Locators_gc_PLSS_GeocodeServer",
     "label": "gc_PLSS (GeocodeServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Locators/gc_PLSS/GeocodeServer",
     "folder": "Locators",
-    "type": "GeocodeServer"
+    "type": "GeocodeServer",
+    "state": "oregon"
   },
   {
     "key": "Locators_gc_StreetsORTRANS_GeocodeServer",
     "label": "gc_StreetsORTRANS (GeocodeServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Locators/gc_StreetsORTRANS/GeocodeServer",
     "folder": "Locators",
-    "type": "GeocodeServer"
+    "type": "GeocodeServer",
+    "state": "oregon"
   },
   {
     "key": "Locators_OregonAddress_GeocodeServer",
     "label": "OregonAddress (GeocodeServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Locators/OregonAddress/GeocodeServer",
     "folder": "Locators",
-    "type": "GeocodeServer"
+    "type": "GeocodeServer",
+    "state": "oregon"
   },
   {
     "key": "Projects_GEO_ImageryPortal_BaseLyr_MapServer",
     "label": "GEO_ImageryPortal_BaseLyr (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Projects/GEO_ImageryPortal_BaseLyr/MapServer",
     "folder": "Projects",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Projects_OBDD_EnterpriseZones_MapServer",
     "label": "OBDD_EnterpriseZones (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Projects/OBDD_EnterpriseZones/MapServer",
     "folder": "Projects",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Root_TestFS_FeatureServer",
     "label": "TestFS (FeatureServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/TestFS/FeatureServer",
     "folder": "Root",
-    "type": "FeatureServer"
+    "type": "FeatureServer",
+    "state": "oregon"
   },
   {
     "key": "Root_TestFS_MapServer",
     "label": "TestFS (MapServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/TestFS/MapServer",
     "folder": "Root",
-    "type": "MapServer"
+    "type": "MapServer",
+    "state": "oregon"
   },
   {
     "key": "Utilities_Geometry_GeometryServer",
     "label": "Geometry (GeometryServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Utilities/Geometry/GeometryServer",
     "folder": "Utilities",
-    "type": "GeometryServer"
+    "type": "GeometryServer",
+    "state": "oregon"
   },
   {
     "key": "Utilities_RasterUtilities_GPServer",
     "label": "RasterUtilities (GPServer)",
     "url": "https://navigator.state.or.us/arcgis/rest/services/Utilities/RasterUtilities/GPServer",
     "folder": "Utilities",
-    "type": "GPServer"
+    "type": "GPServer",
+    "state": "oregon"
   }
 ]

@@ -6,10 +6,12 @@ import Content1 from './Content1';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
-import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; // <-- Add faEarthAmericas
+import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; // faEarthAmericas
 import './Home.css';
 import './Sidebars.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
+import RemovedServicesPanel from './RemovedServicesPanel'; // Import the new panel
+import { faTrash } from '@fortawesome/free-solid-svg-icons'; // trash icon
 import FormModal from './FormModal'; // <-- import FormModal
 
 function Home(props) {
@@ -26,6 +28,7 @@ function Home(props) {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
+    const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false); // State for removed panel
     const [isFormModalOpen, setIsFormModalOpen] = useState(false); // <-- new state
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
@@ -168,7 +171,7 @@ function Home(props) {
                 >
                     <FontAwesomeIcon icon={faEarthAmericas} />
                 </button>
-                {/* Upload Button (now opens FormModal) */}
+                {/* Upload Button */}
                 <button
                     className="left-sidebar-upload-button"
                     title="Upload Card"
@@ -188,7 +191,24 @@ function Home(props) {
                 <button className="left-sidebar-toggle" onClick={toggleSidebar}>
                     <FontAwesomeIcon icon={isSidebarOpen ? faAngleDoubleLeft : faAngleDoubleRight} />
                 </button>
-                {/* Expanded Sidebar */}
+
+                {/* Trash button*/}
+                <button
+                    className="left-sidebar-upload-button"
+                    title="Removed Services"
+                    style={{ top: '150px', position: 'absolute' }}
+                    onClick={() => setIsRemovedPanelOpen(v => !v)} // Toggle removed panel
+                >
+                    <FontAwesomeIcon icon={faTrash} />
+                </button>
+
+                {/* Removed Services Panel */}
+                <RemovedServicesPanel
+                    isOpen={isRemovedPanelOpen}
+                    onClose={() => setIsRemovedPanelOpen(false)}
+                />
+
+                {/* Expanded Left Sidebar Content */}
                 {isSidebarOpen && (
                     <div className="left-sidebar-content">
                         <Header

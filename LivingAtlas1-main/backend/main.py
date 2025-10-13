@@ -1,5 +1,3 @@
-
-
 """
 -- Living Atlas Backend
 -- WSU 421/423 Senior Design Project
@@ -41,6 +39,7 @@ from endpoint_files import account_router
 from endpoint_files.card import card_router
 from endpoint_files import filterbar_router
 from endpoint_files import map_router
+from endpoint_files import arcgis_router
 
 
 
@@ -93,11 +92,12 @@ def test_cate():
 
 
 
-#Calling for the importing of endpoints from other files
+# Calling for the importing of endpoints from other files
 app.include_router(account_router)
 app.include_router(card_router)
 app.include_router(filterbar_router)
 app.include_router(map_router)
+app.include_router(arcgis_router)
 
 
 

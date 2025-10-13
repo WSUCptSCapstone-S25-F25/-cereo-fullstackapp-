@@ -2,26 +2,37 @@ import React, { useEffect, useState, useRef } from "react";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
-    ARCGIS_SERVICES_BY_STATE,
     fetchArcgisLayers,
     fetchArcgisLegend,
     getArcgisTileUrl,
-    fetchArcgisServiceInfo // <-- added
+    fetchArcgisServiceInfo
 } from './arcgisDataUtils';
+import { fetchArcgisServicesByState } from './arcgisServicesDb'; // Fetch from DB
+// Import local JSON files as fallback
+import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
+import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
+import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
-import './ArcgisUploadPanelStateMenu.css'; // <-- Add this new CSS file
+import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faPlus, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faPlus, faEllipsisH, faBan } from '@fortawesome/free-solid-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
     getLoadingMsgText
 } from './arcgisUploadMessageUtils';
 
-// --- NEW: State selector ---
+// --- State selector ---
 const STATE_CODES = ['WA', 'ID', 'OR'];
 const STATE_LABELS = { WA: 'WA', ID: 'ID', OR: 'OR' };
+
+// Local JSON fallback data
+const ARCGIS_SERVICES_BY_STATE = {
+    WA: WA_ARCGIS_SERVICES || [],
+    ID: ID_ARCGIS_SERVICES || [],
+    OR: OR_ARCGIS_SERVICES || []
+};
 
 function ArcgisUploadPanel({
     isOpen,
@@ -30,13 +41,21 @@ function ArcgisUploadPanel({
     arcgisLayerAdded: propArcgisLayerAdded,
     setArcgisLayerAdded: setPropArcgisLayerAdded,
 }) {
-    // NEW: Track selected state
+    // Track selected state
     const [selectedState, setSelectedState] = useState('WA');
 
-    // Use services for selected state
-    const ARCGIS_SERVICES = ARCGIS_SERVICES_BY_STATE[selectedState];
+    // Services fetched from DB for selected state
+    const [servicesFromDb, setServicesFromDb] = useState([]);
+    const [isLoadingServices, setIsLoadingServices] = useState(false);
+    const [servicesError, setServicesError] = useState(null);
+    const [usingFallback, setUsingFallback] = useState(false);
 
-    // Group services by folder (move this up!)
+    // Use services from database, fallback to local JSON if needed
+    const ARCGIS_SERVICES = servicesFromDb.length > 0 
+        ? servicesFromDb 
+        : (ARCGIS_SERVICES_BY_STATE[selectedState] || []);
+
+    // Group services by folder
     const servicesByFolder = {};
     ARCGIS_SERVICES.forEach(service => {
         const folder = service.folder || 'Root';
@@ -69,12 +88,57 @@ function ArcgisUploadPanel({
         showFinishedMessage
     } = useArcgisLoadingMessages();
 
-    // --- NEW: Service info modal state ---
+    // Service info modal state ---
     const [serviceInfoOpenKey, setServiceInfoOpenKey] = useState(null); // service.key
     const [serviceInfoCache, setServiceInfoCache] = useState({}); // { key: info }
     const [serviceInfoLoading, setServiceInfoLoading] = useState(false);
 
-    // Fetch layers and legends when panel opens or state changes
+    // Add new state for sublayer checkboxes (add this near other state declarations)
+    const [checkedSublayerIds, setCheckedSublayerIds] = useState({}); // { serviceKey: { layerId: [sublayerIndexes] } }
+
+    // Fetch services from DB whenever panel opens or state changes
+    useEffect(() => {
+        if (!isOpen) return;
+        let active = true;
+        
+        (async () => {
+            setIsLoadingServices(true);
+            setServicesError(null);
+            setUsingFallback(false);
+            
+            try {
+                console.log(`[ArcgisUploadPanel] Attempting to fetch services from backend for ${selectedState}...`);
+                const list = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
+                
+                if (active) {
+                    if (Array.isArray(list) && list.length > 0) {
+                        setServicesFromDb(list);
+                        setUsingFallback(false);
+                        console.log(`[ArcgisUploadPanel] ✅ Loaded ${list.length} services from backend for state ${selectedState}`);
+                    } else {
+                        console.warn(`[ArcgisUploadPanel] ⚠️ Backend returned no services for ${selectedState}, using local fallback`);
+                        setServicesFromDb([]);
+                        setUsingFallback(true);
+                    }
+                }
+            } catch (error) {
+                console.error(`[ArcgisUploadPanel] ❌ Failed to load from backend for ${selectedState}, using local fallback:`, error);
+                if (active) {
+                    setServicesFromDb([]);
+                    setUsingFallback(true);
+                    setServicesError(`Backend unavailable (using local data): ${error.message || 'Network error'}`);
+                }
+            } finally {
+                if (active) {
+                    setIsLoadingServices(false);
+                }
+            }
+        })();
+        
+        return () => { active = false; };
+    }, [isOpen, selectedState]);
+
+    // Fetch layers and legends when panel opens, state changes, or services change
     useEffect(() => {
         if (!isOpen) return;
 
@@ -88,7 +152,7 @@ function ArcgisUploadPanel({
         setServiceInfoOpenKey(null);
         prevCheckedLayerIds.current = {};
 
-        // Fetch for current state's services
+        // Fetch for current services (from DB or fallback)
         (ARCGIS_SERVICES || []).forEach(service => {
             if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
 
@@ -103,7 +167,7 @@ function ArcgisUploadPanel({
             });
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, selectedState]);
+    }, [isOpen, selectedState, servicesFromDb.length]); // React to changes in services
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
     useEffect(() => {
@@ -141,47 +205,6 @@ function ArcgisUploadPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedState, isOpen]);
 
-    // Add ArcGIS raster layer for a service
-    const addArcgisLayer = (service, layerIds) => {
-        const map = mapInstance();
-        if (!map) return;
-        const sourceId = `arcgis-raster-${service.key}`;
-        const layerId = `arcgis-raster-layer-${service.key}`;
-
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
-
-        map.addSource(sourceId, {
-            type: 'raster',
-            tiles: [
-                getArcgisTileUrl(service.url, layerIds)
-            ],
-            tileSize: 256,
-            minzoom: 5,
-            maxzoom: 12
-        });
-        map.addLayer({
-            id: layerId,
-            type: 'raster',
-            source: sourceId,
-            paint: {
-                'raster-opacity': 0.5
-            }
-        });
-        setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
-    };
-
-    // Remove ArcGIS raster layer for a service
-    const removeArcgisLayer = (service) => {
-        const map = mapInstance();
-        if (!map) return;
-        const sourceId = `arcgis-raster-${service.key}`;
-        const layerId = `arcgis-raster-layer-${service.key}`;
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
-        setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
-    };
-
     // Add/Remove button logic:
     const handleAddRemove = (service, layers) => {
         const allIds = layers.map(l => l.id);
@@ -189,12 +212,27 @@ function ArcgisUploadPanel({
             // Remove: uncheck all
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: {} }));
             layers.forEach(layer => removeLoadingMessage(getLoadingMsgId(service, layer)));
             removeLoadingMessage(getLoadingMsgId(service, null));
         } else {
             // Add: check all
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: allIds }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
+            
+            // Also check all sublayers for each layer
+            const newSublayerIds = {};
+            layers.forEach(layer => {
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                    if (legendLayer && legendLayer.legend && legendLayer.legend.length > 1) {
+                        newSublayerIds[layer.id] = legendLayer.legend.map((_, index) => index);
+                    }
+                }
+            });
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: newSublayerIds }));
+            
             // Show loading message for all layers IMMEDIATELY
             addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
         }
@@ -204,14 +242,32 @@ function ArcgisUploadPanel({
     const handleSelectAll = (service, layers) => {
         const allIds = layers.map(l => l.id);
         const isAllChecked = (checkedLayerIds[service.key] || []).length === allIds.length;
+        
         if (isAllChecked) {
+            // Uncheck all layers and sublayers
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: {} }));
             layers.forEach(layer => removeLoadingMessage(getLoadingMsgId(service, layer)));
             removeLoadingMessage(getLoadingMsgId(service, null));
         } else {
+            // Check all layers and their sublayers
             setCheckedLayerIds(prev => ({ ...prev, [service.key]: allIds }));
             setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
+            
+            // Also check all sublayers for each layer
+            const newSublayerIds = {};
+            layers.forEach(layer => {
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                    if (legendLayer && legendLayer.legend && legendLayer.legend.length > 1) {
+                        newSublayerIds[layer.id] = legendLayer.legend.map((_, index) => index);
+                    }
+                }
+            });
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: newSublayerIds }));
+            
             addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
         }
     };
@@ -221,15 +277,42 @@ function ArcgisUploadPanel({
         setCheckedLayerIds(prev => {
             const prevChecked = prev[service.key] || [];
             let newChecked;
+            
             if (prevChecked.includes(layerId)) {
                 newChecked = prevChecked.filter(id => id !== layerId);
                 const layer = layers.find(l => l.id === layerId);
                 if (layer) removeLoadingMessage(getLoadingMsgId(service, layer));
+                
+                // Uncheck all sublayers when parent is unchecked
+                setCheckedSublayerIds(prevSub => ({
+                    ...prevSub,
+                    [service.key]: {
+                        ...prevSub[service.key],
+                        [layerId]: []
+                    }
+                }));
             } else {
                 newChecked = [...prevChecked, layerId];
                 const layer = layers.find(l => l.id === layerId);
                 if (layer) addLoadingMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer));
+                
+                // Check all sublayers when parent is checked
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layerId);
+                    if (legendLayer && legendLayer.legend) {
+                        const allSublayerIndexes = legendLayer.legend.map((_, index) => index);
+                        setCheckedSublayerIds(prevSub => ({
+                            ...prevSub,
+                            [service.key]: {
+                                ...prevSub[service.key],
+                                [layerId]: allSublayerIndexes
+                            }
+                        }));
+                    }
+                }
             }
+            
             setServiceLayerAdded(prevAdded => ({
                 ...prevAdded,
                 [service.key]: newChecked.length > 0
@@ -238,7 +321,67 @@ function ArcgisUploadPanel({
         });
     };
 
-    // Effect for checked layers: add/remove vector layers for each service
+    // Add new handler for sublayer checkboxes (enhanced)
+    const handleSublayerCheckbox = (service, layerId, sublayerIndex, layers) => {
+        setCheckedSublayerIds(prev => {
+            const serviceSubIds = prev[service.key] || {};
+            const layerSubIds = serviceSubIds[layerId] || [];
+            
+            let newLayerSubIds;
+            if (layerSubIds.includes(sublayerIndex)) {
+                newLayerSubIds = layerSubIds.filter(id => id !== sublayerIndex);
+            } else {
+                newLayerSubIds = [...layerSubIds, sublayerIndex];
+            }
+            
+            // If no sublayers are checked, uncheck the parent layer
+            if (newLayerSubIds.length === 0) {
+                setCheckedLayerIds(prevChecked => ({
+                    ...prevChecked,
+                    [service.key]: (prevChecked[service.key] || []).filter(id => id !== layerId)
+                }));
+                const layer = layers.find(l => l.id === layerId);
+                if (layer) removeLoadingMessage(getLoadingMsgId(service, layer));
+            } else {
+                // If at least one sublayer is checked, check the parent layer
+                setCheckedLayerIds(prevChecked => {
+                    const currentChecked = prevChecked[service.key] || [];
+                    if (!currentChecked.includes(layerId)) {
+                        const layer = layers.find(l => l.id === layerId);
+                        if (layer) addLoadingMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer));
+                        return {
+                            ...prevChecked,
+                            [service.key]: [...currentChecked, layerId]
+                        };
+                    }
+                    return prevChecked;
+                });
+            }
+            
+            // Update service layer added status
+            setServiceLayerAdded(prevAdded => {
+                const allCheckedLayers = Object.keys({ ...serviceSubIds, [layerId]: newLayerSubIds })
+                    .filter(lid => {
+                        const subIds = lid === layerId ? newLayerSubIds : serviceSubIds[lid] || [];
+                        return subIds.length > 0;
+                    });
+                return {
+                    ...prevAdded,
+                    [service.key]: allCheckedLayers.length > 0
+                };
+            });
+            
+            return {
+                ...prev,
+                [service.key]: {
+                    ...serviceSubIds,
+                    [layerId]: newLayerSubIds
+                }
+            };
+        });
+    };
+
+    // Enhanced effect for checked layers: add/remove vector layers and individual sublayer rasters
     useEffect(() => {
         const map = mapInstance();
         if (!map) return;
@@ -247,6 +390,8 @@ function ArcgisUploadPanel({
             const layers = serviceLayers[service.key] || [];
             const prevChecked = prevCheckedLayerIds.current[service.key] || [];
             const currChecked = checkedLayerIds[service.key] || [];
+            const serviceSublayers = checkedSublayerIds[service.key] || {};
+            const prevSublayers = prevCheckedLayerIds.current[`${service.key}_sublayers`] || {};
 
             // --- VECTOR LAYERS (unchanged) ---
             const toRemove = prevChecked.filter(id => !currChecked.includes(id));
@@ -275,82 +420,185 @@ function ArcgisUploadPanel({
                 }
             });
 
-            // --- RASTER LAYER (fix here) ---
-            const rasterSourceId = `arcgis-raster-${service.key}`;
-            const rasterLayerId = `arcgis-raster-layer-${service.key}`;
+            // --- ENHANCED RASTER LAYER LOGIC WITH PROPER REMOVAL ---
+            // First, handle layers that were completely unchecked - remove ALL their raster layers
+            toRemove.forEach(layerId => {
+                const layerRasterPrefix = `arcgis-raster-layer-${service.key}-${layerId}`;
+                const style = map.getStyle();
+                if (style?.layers) {
+                    style.layers
+                        .filter(l => l.id.startsWith(layerRasterPrefix))
+                        .forEach(l => {
+                            if (map.getLayer(l.id)) map.removeLayer(l.id);
+                        });
+                }
+                if (style?.sources) {
+                    Object.keys(style.sources)
+                        .filter(id => id.startsWith(`arcgis-raster-${service.key}-${layerId}`))
+                        .forEach(id => {
+                            if (map.getSource(id)) map.removeSource(id);
+                        });
+                }
+            });
 
-            // Always remove the raster layer/source first
-            if (map.getLayer(rasterLayerId)) map.removeLayer(rasterLayerId);
-            if (map.getSource(rasterSourceId)) map.removeSource(rasterSourceId);
+            // Then handle sublayer changes for currently checked layers
+            currChecked.forEach(layerId => {
+                const layer = layers.find(l => l.id === layerId);
+                if (!layer) return;
 
-            if (currChecked.length > 0) {
-                // Add raster layer for currently checked layers
-                map.addSource(rasterSourceId, {
-                    type: 'raster',
-                    tiles: [
-                        getArcgisTileUrl(service.url, currChecked)
-                    ],
-                    tileSize: 256,
-                    minzoom: 6,
-                    maxzoom: 12
-                });
-                map.addLayer({
-                    id: rasterLayerId,
-                    type: 'raster',
-                    source: rasterSourceId,
-                    paint: {
-                        'raster-opacity': 0.4
-                    }
-                });
+                const legend = serviceLegends[service.key];
+                const legendLayer = legend?.layers?.find(l => l.layerId === layerId);
+                const legendItems = legendLayer?.legend || [];
+                const checkedSublayers = serviceSublayers[layerId] || [];
+                const prevCheckedSublayers = prevSublayers[layerId] || [];
 
-                // Show loading message (already handled in handlers)
+                // Check if sublayer selection changed
+                const sublayersChanged = JSON.stringify(checkedSublayers.sort()) !== JSON.stringify(prevCheckedSublayers.sort());
 
-                let tilesLoaded = false;
-                let renderedAfterTiles = false;
-                let finishedTimeout = null;
+                if (legendItems.length > 1) {
+                    // Multiple legends case
+                    if (sublayersChanged || toAdd.includes(layerId)) {
+                        // Remove all existing raster layers for this layer first
+                        const layerRasterPrefix = `arcgis-raster-layer-${service.key}-${layerId}`;
+                        const style = map.getStyle();
+                        if (style?.layers) {
+                            style.layers
+                                .filter(l => l.id.startsWith(layerRasterPrefix))
+                                .forEach(l => {
+                                    if (map.getLayer(l.id)) map.removeLayer(l.id);
+                            });
+                        }
+                        if (style?.sources) {
+                            Object.keys(style.sources)
+                                .filter(id => id.startsWith(`arcgis-raster-${service.key}-${layerId}`))
+                                .forEach(id => {
+                                    if (map.getSource(id)) map.removeSource(id);
+                            });
+                        }
 
-                // Listen for tiles loaded
-                const onTilesLoaded = (e) => {
-                    if (e.sourceId === rasterSourceId && map.isSourceLoaded(rasterSourceId)) {
-                        tilesLoaded = true;
-                    }
-                };
+                        // Add raster layers only for checked sublayers
+                        if (checkedSublayers.length > 0) {
+                            checkedSublayers.forEach((sublayerIndex, index) => {
+                                const legendItem = legendItems[sublayerIndex];
+                                if (!legendItem) return;
 
-                // Listen for render event after tiles are loaded
-                const onRender = () => {
-                    if (tilesLoaded && map.getLayer(rasterLayerId)) {
-                        if (!renderedAfterTiles) {
-                            renderedAfterTiles = true;
-                            finishedTimeout = setTimeout(() => {
-                                if (currChecked.length === layers.length) {
-                                    removeLoadingMessage(getLoadingMsgId(service, null));
-                                    showFinishedMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null, true));
-                                } else {
-                                    currChecked.forEach(id => {
-                                        const layer = layers.find(l => l.id === id);
-                                        if (layer) {
-                                            removeLoadingMessage(getLoadingMsgId(service, layer));
-                                            showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+                                const sublayerSourceId = `arcgis-raster-${service.key}-${layerId}-sub-${sublayerIndex}`;
+                                const sublayerLayerId = `arcgis-raster-layer-${service.key}-${layerId}-sub-${sublayerIndex}`;
+
+                                // Create tile URL for this specific sublayer
+                                const sublayerTileUrl = getArcgisTileUrl(service.url, [layerId]);
+
+                                map.addSource(sublayerSourceId, {
+                                    type: 'raster',
+                                    tiles: [sublayerTileUrl],
+                                    tileSize: 256,
+                                    minzoom: 6,
+                                    maxzoom: 12
+                                });
+
+                                map.addLayer({
+                                    id: sublayerLayerId,
+                                    type: 'raster',
+                                    source: sublayerSourceId,
+                                    paint: {
+                                        'raster-opacity': 0.7
+                                    }
+                                });
+
+                                // Add loading/finished message handling for sublayers
+                                let tilesLoaded = false;
+                                let renderedAfterTiles = false;
+                                let finishedTimeout = null;
+
+                                const onTilesLoaded = (e) => {
+                                    if (e.sourceId === sublayerSourceId && map.isSourceLoaded(sublayerSourceId)) {
+                                        tilesLoaded = true;
+                                    }
+                                };
+
+                                const onRender = () => {
+                                    if (tilesLoaded && map.getLayer(sublayerLayerId)) {
+                                        if (!renderedAfterTiles) {
+                                            renderedAfterTiles = true;
+                                            finishedTimeout = setTimeout(() => {
+                                                const sublayerMsgId = `${getLoadingMsgId(service, layer)}-sub-${sublayerIndex}`;
+                                                removeLoadingMessage(sublayerMsgId);
+                                                showFinishedMessage(sublayerMsgId, `${legendItem.label} loaded`);
+                                                map.off('sourcedata', onTilesLoaded);
+                                                map.off('render', onRender);
+                                                if (finishedTimeout) clearTimeout(finishedTimeout);
+                                            }, 500);
                                         }
-                                    });
-                                }
-                                map.off('sourcedata', onTilesLoaded);
-                                map.off('render', onRender);
-                                if (finishedTimeout) clearTimeout(finishedTimeout);
-                            }, 500); // 500ms delay after first render after tiles loaded
+                                    }
+                                };
+
+                                map.on('sourcedata', onTilesLoaded);
+                                map.on('render', onRender);
+                            });
                         }
                     }
-                };
+                } else if (toAdd.includes(layerId)) {
+                    // Single legend case - only add if this layer was just checked
+                    const rasterSourceId = `arcgis-raster-${service.key}-${layerId}`;
+                    const rasterLayerId = `arcgis-raster-layer-${service.key}-${layerId}`;
 
-                map.on('sourcedata', onTilesLoaded);
-                map.on('render', onRender);
-            }
+                    // Remove existing first (in case of re-adding)
+                    if (map.getLayer(rasterLayerId)) map.removeLayer(rasterLayerId);
+                    if (map.getSource(rasterSourceId)) map.removeSource(rasterSourceId);
 
-            // Update ref for next diff
+                    map.addSource(rasterSourceId, {
+                        type: 'raster',
+                        tiles: [getArcgisTileUrl(service.url, [layerId])],
+                        tileSize: 256,
+                        minzoom: 6,
+                        maxzoom: 12
+                    });
+
+                    map.addLayer({
+                        id: rasterLayerId,
+                        type: 'raster',
+                        source: rasterSourceId,
+                        paint: {
+                            'raster-opacity': 0.4
+                        }
+                    });
+
+                    let tilesLoaded = false;
+                    let renderedAfterTiles = false;
+                    let finishedTimeout = null;
+
+                    const onTilesLoaded = (e) => {
+                        if (e.sourceId === rasterSourceId && map.isSourceLoaded(rasterSourceId)) {
+                            tilesLoaded = true;
+                        }
+                    };
+
+                    const onRender = () => {
+                        if (tilesLoaded && map.getLayer(rasterLayerId)) {
+                            if (!renderedAfterTiles) {
+                                renderedAfterTiles = true;
+                                finishedTimeout = setTimeout(() => {
+                                    removeLoadingMessage(getLoadingMsgId(service, layer));
+                                    showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+                                    map.off('sourcedata', onTilesLoaded);
+                                    map.off('render', onRender);
+                                    if (finishedTimeout) clearTimeout(finishedTimeout);
+                                }, 500);
+                            }
+                        }
+                    };
+
+                    map.on('sourcedata', onTilesLoaded);
+                    map.on('render', onRender);
+                }
+            });
+
+            // Update refs for next diff
             prevCheckedLayerIds.current[service.key] = [...currChecked];
+            prevCheckedLayerIds.current[`${service.key}_sublayers`] = JSON.parse(JSON.stringify(serviceSublayers));
         });
         // eslint-disable-next-line
-    }, [checkedLayerIds, serviceLayers]);
+    }, [checkedLayerIds, serviceLayers, checkedSublayerIds]); // Added checkedSublayerIds as dependency
 
 
     // UI for search bar and dropdown
@@ -487,7 +735,7 @@ function ArcgisUploadPanel({
         });
     };
 
-    // --- NEW: State menu bar ---
+    // State menu bar
     const renderStateMenu = () => (
         <div className="arcgis-upload-state-menu">
             {STATE_CODES.map(code => (
@@ -502,7 +750,7 @@ function ArcgisUploadPanel({
         </div>
     );
 
-    // --- NEW: Open service info modal (fetch & cache) ---
+    // Open service info modal (fetch & cache)
     const openServiceInfo = async (service) => {
         setServiceInfoOpenKey(service.key);
         if (serviceInfoCache[service.key]) return;
@@ -533,6 +781,50 @@ function ArcgisUploadPanel({
         <>
             {/* Upload Panel */}
             <div className="upload-panel">
+                {/* Loading and status messages */}
+                {isLoadingServices && (
+                    <div style={{ 
+                        background: '#d4edda', 
+                        border: '1px solid #c3e6cb', 
+                        borderRadius: '4px', 
+                        padding: '8px', 
+                        marginBottom: '12px', 
+                        fontSize: '12px',
+                        color: '#155724'
+                    }}>
+                        🔄 Loading ArcGIS services for {selectedState}...
+                    </div>
+                )}
+                
+                {usingFallback && (
+                    <div style={{ 
+                        background: '#fff3cd', 
+                        border: '1px solid #ffecb5', 
+                        borderRadius: '4px', 
+                        padding: '8px', 
+                        marginBottom: '12px', 
+                        fontSize: '12px',
+                        color: '#856404'
+                    }}>
+                        📂 Using local data for {selectedState} ({ARCGIS_SERVICES.length} services)
+                        {servicesError && <div style={{ marginTop: '4px', fontSize: '11px' }}>{servicesError}</div>}
+                    </div>
+                )}
+
+                {!isLoadingServices && !usingFallback && servicesFromDb.length > 0 && (
+                    <div style={{ 
+                        background: '#d1ecf1', 
+                        border: '1px solid #bee5eb', 
+                        borderRadius: '4px', 
+                        padding: '8px', 
+                        marginBottom: '12px', 
+                        fontSize: '12px',
+                        color: '#0c5460'
+                    }}>
+                        🌐 Loaded from database: {servicesFromDb.length} services for {selectedState}
+                    </div>
+                )}
+                
                 {renderSearchBar()}
                 {foldersToShow.map(folder => (
                     <div key={folder}>
@@ -540,7 +832,10 @@ function ArcgisUploadPanel({
                             className="upload-folder"
                             onClick={() => handleFolderClick(folder)}
                         >
-                            {expandedFolders.has(folder) ? "▼" : "►"} {folder}
+                            <span>
+                                {expandedFolders.has(folder) ? "▼" : "►"} {folder}
+                            </span>
+                            {/* Removed folder-level remove button */}
                         </div>
                         {expandedFolders.has(folder) && (
                             <div style={{ marginLeft: 18 }}>
@@ -582,6 +877,18 @@ function ArcgisUploadPanel({
                                                     >
                                                         <FontAwesomeIcon icon={faEllipsisH} />
                                                     </button>
+                                                    {/* Keep service-level remove button (no-op) */}
+                                                    <button
+                                                        className="learn-more-btn"
+                                                        title="Remove"
+                                                        aria-label="Remove"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            // TODO: implement remove functionality
+                                                        }}
+                                                    >
+                                                        <FontAwesomeIcon icon={faBan} />
+                                                    </button>
                                                 </div>
                                             </div>
                                             {expandedServices.has(service.key) && (
@@ -602,24 +909,102 @@ function ArcgisUploadPanel({
                                                                 const legend = serviceLegends[service.key];
                                                                 if (legend && legend.layers) {
                                                                     const legendLayer = legend.layers.find(l => l.layerId === layer.id);
-                                                                    if (legendLayer) legendItems = legendLayer.legend;
+                                                                    if (legendLayer) legendItems = legendLayer.legend || [];
                                                                 }
+
+                                                                // Check if this layer has multiple legend items
+                                                                const hasMultipleLegends = legendItems.length > 1;
+                                                                const checkedSublayers = checkedSublayerIds[service.key]?.[layer.id] || [];
+
                                                                 return (
-                                                                    <li key={layer.id} className="upload-layer-row">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={checkedIds.includes(layer.id)}
-                                                                            onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
-                                                                            style={{ marginRight: 8 }}
-                                                                        />
-                                                                        {legendItems.length > 0 && (
-                                                                            <img
-                                                                                src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
-                                                                                alt={legendItems[0].label}
-                                                                                className="legend-img"
+                                                                    <li key={layer.id} className="upload-layer-row" style={{ 
+                                                                        flexDirection: 'column', 
+                                                                        alignItems: 'flex-start',
+                                                                        marginBottom: hasMultipleLegends ? 8 : 2
+                                                                    }}>
+                                                                        {/* Main layer row */}
+                                                                        <div style={{ 
+                                                                            display: 'flex', 
+                                                                            alignItems: 'center', 
+                                                                            gap: 4, 
+                                                                            minHeight: 20,
+                                                                            width: '100%'
+                                                                        }}>
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={checkedIds.includes(layer.id)}
+                                                                                onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
+                                                                                style={{ marginRight: 8 }}
                                                                             />
+                                                                            {/* Show legend icon only if there's exactly one legend item */}
+                                                                            {legendItems.length === 1 && (
+                                                                                <img
+                                                                                    src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
+                                                                                    alt={legendItems[0].label}
+                                                                                    className="legend-img"
+                                                                                />
+                                                                            )}
+                                                                            <span>{layer.name}</span>
+                                                                            {hasMultipleLegends && (
+                                                                                <span style={{ 
+                                                                                    fontSize: '11px', 
+                                                                                    color: '#888', 
+                                                                                    marginLeft: 8 
+                                                                                }}>
+                                                                                    ({checkedSublayers.length}/{legendItems.length})
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Show sublayers/legends if there are multiple */}
+                                                                        {hasMultipleLegends && (
+                                                                            <div style={{ 
+                                                                                marginLeft: 24, 
+                                                                                marginTop: 4,
+                                                                                width: 'calc(100% - 24px)'
+                                                                            }}>
+                                                                                {legendItems.map((legendItem, index) => (
+                                                                                    <div 
+                                                                                        key={index} 
+                                                                                        className="upload-layer-sublayer"
+                                                                                        style={{ 
+                                                                                            display: 'flex', 
+                                                                                            alignItems: 'center', 
+                                                                                            gap: 4, 
+                                                                                            marginBottom: 3,
+                                                                                            fontSize: '12px',
+                                                                                            color: '#666',
+                                                                                            minHeight: '18px'
+                                                                                        }}
+                                                                                    >
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            checked={checkedSublayers.includes(index)}
+                                                                                            onChange={() => handleSublayerCheckbox(service, layer.id, index, layersToShow)}
+                                                                                            style={{ 
+                                                                                                marginRight: 6,
+                                                                                                width: '12px',
+                                                                                                height: '12px',
+                                                                                                flexShrink: 0
+                                                                                            }}
+                                                                                        />
+                                                                                        <img
+                                                                                            src={`data:${legendItem.contentType};base64,${legendItem.imageData}`}
+                                                                                            alt={legendItem.label}
+                                                                                            className="legend-img"
+                                                                                            style={{ 
+                                                                                                width: '14px', 
+                                                                                                height: '14px',
+                                                                                                marginRight: '6px'
+                                                                                            }}
+                                                                                        />
+                                                                                        <span title={legendItem.label}>
+                                                                                            {legendItem.label}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
                                                                         )}
-                                                                        <span>{layer.name}</span>
                                                                     </li>
                                                                 );
                                                             })}
@@ -634,9 +1019,12 @@ function ArcgisUploadPanel({
                         )}
                     </div>
                 ))}
+                
+                {/* Attribution */}
                 <div className="upload-panel-attribution">
-                    Data sources: <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
+                    Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
                 </div>
+                
                 <div className="arcgis-loading-messages">
                     {messages.map((msg, idx) => (
                         <div key={msg.id} className={`arcgis-loading-message ${msg.type}`}>
@@ -648,9 +1036,7 @@ function ArcgisUploadPanel({
 
             {/* Service info modal (right side) */}
             {serviceInfoOpenKey && (
-                <div
-                    className="arcgis-service-info-modal"
-                >
+                <div className="arcgis-service-info-modal">
                     <div className="arcgis-service-info-modal-header">
                         <strong>Service info</strong>
                         <button
@@ -665,13 +1051,33 @@ function ArcgisUploadPanel({
                         {serviceInfoLoading && <div>Loading service info…</div>}
                         {!serviceInfoLoading && (() => {
                             const info = serviceInfoCache[serviceInfoOpenKey] || {};
+                            const currentService = ARCGIS_SERVICES.find(s => s.key === serviceInfoOpenKey);
+                            
                             if (!info || Object.keys(info).length === 0) {
-                                return <div className="arcgis-service-info-empty">No information available.</div>;
+                                return (
+                                    <div>
+                                        <div className="arcgis-service-info-empty">No information available.</div>
+                                        {currentService && currentService.url && (
+                                            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                                <a 
+                                                    href={currentService.url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    style={{ color: '#1976d2', textDecoration: 'none' }}
+                                                >
+                                                    View ArcGIS Service Page →
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
                             }
+                            
                             const sr = info.spatialReference || {};
                             const srText = sr.latestWkid
                                 ? `WKID ${sr.latestWkid}`
                                 : (sr.wkid ? `WKID ${sr.wkid}` : (sr.wkt ? 'WKT' : '—'));
+                            
                             return (
                                 <div>
                                     {info.serviceDescription || info.description ? (
@@ -691,6 +1097,20 @@ function ArcgisUploadPanel({
                                     <div className="arcgis-service-info-row">
                                         <strong>Spatial Reference:</strong> {srText}
                                     </div>
+                                    
+                                    {/* Add the ArcGIS service page link at the bottom */}
+                                    {currentService && currentService.url && (
+                                        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                            <a 
+                                                href={currentService.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                style={{ color: '#1976d2', textDecoration: 'none' }}
+                                            >
+                                                View ArcGIS Service Page →
+                            </a>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })()}

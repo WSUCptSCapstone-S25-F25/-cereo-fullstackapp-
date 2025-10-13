@@ -1,0 +1,356 @@
+/* Main panel container */
+.removed-services-panel {
+    position: fixed;
+    top: 65px;
+    left: 60px;
+    height: calc(100vh - 65px);
+    width: 420px;
+    background: #f9f9f9;
+    border-left: 1px solid #ec5656;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.07);
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    color: #222;
+    border-top: 3px solid #dc3545; /* Red accent to indicate "removed" */
+}
+
+/* Header */
+.removed-services-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 18px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+.removed-services-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #dc3545;
+    display: flex;
+    align-items: center;
+}
+
+.removed-services-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #666;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.removed-services-close:hover {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+/* Search section */
+.removed-services-search {
+    padding: 12px 18px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+/* Search bar container - matches upload panel */
+.removed-services-searchbar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    margin-top: 10px;
+}
+
+/* Search input - matches upload panel */
+.removed-services-searchbar input[type="text"] {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    height: 32px;
+    margin-top: 0;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.removed-services-searchbar input[type="text"]:focus {
+    border-color: #007bff;
+}
+
+/* Search dropdown - matches upload panel */
+.removed-services-searchbar-dropdown {
+    margin-left: 8px;
+    padding: 4px;
+    font-size: 14px;
+    border-radius: 4px;
+    height: 32px;
+    margin-top: 0;
+    border: 1px solid #ccc;
+}
+
+/* Search and clear buttons - matches upload panel */
+.removed-services-search-btn,
+.removed-services-clear-btn {
+    margin-left: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: background 0.2s;
+    margin-top: 0;
+}
+
+.removed-services-search-btn {
+    background: #007bff;
+    color: white;
+}
+
+.removed-services-search-btn:hover {
+    background: #0056b3;
+}
+
+.removed-services-clear-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.removed-services-clear-btn:hover {
+    background: #c82333;
+}
+
+/* Actions section */
+.removed-services-actions {
+    padding: 12px 18px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+.removed-services-clear-all-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.removed-services-clear-all-btn:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.removed-services-clear-all-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Content area */
+.removed-services-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+}
+
+/* Empty state */
+.removed-services-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    text-align: center;
+    color: #666;
+}
+
+.removed-services-empty p {
+    margin: 8px 0;
+}
+
+.removed-services-clear-search {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: background-color 0.2s;
+}
+
+.removed-services-clear-search:hover {
+    background: #0056b3;
+}
+
+/* Services list */
+.removed-services-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Individual service item */
+.removed-service-item {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s;
+}
+
+.removed-service-item:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.removed-service-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.removed-service-info {
+    flex: 1;
+}
+
+.removed-service-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.removed-service-meta {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.removed-service-state {
+    background: #007bff;
+    color: white;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.removed-service-separator {
+    margin: 0 4px;
+}
+
+.removed-service-folder {
+    font-style: italic;
+}
+
+.removed-service-date {
+    font-size: 11px;
+    color: #888;
+}
+
+/* Action buttons */
+.removed-service-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.removed-service-restore-btn,
+.removed-service-delete-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.1s;
+    font-size: 12px;
+}
+
+.removed-service-restore-btn {
+    background: #28a745;
+    color: white;
+}
+
+.removed-service-restore-btn:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.removed-service-delete-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.removed-service-delete-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+/* Removed layers section */
+.removed-service-layers {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 8px;
+}
+
+.removed-service-layers-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 8px;
+}
+
+.removed-service-layers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.removed-service-layer-tag {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+/* Footer */
+.removed-services-footer {
+    padding: 12px 18px;
+    background: #f8f9fa;
+    border-top: 1px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+.removed-services-info {
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-height: 600px) {
+    .removed-services-empty {
+        height: 150px;
+    }
+}

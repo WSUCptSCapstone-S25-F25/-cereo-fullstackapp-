@@ -18,15 +18,16 @@
     "install": "^0.13.0",
     "leaflet": "^1.9.4",
     "mapbox-gl": "^2.15.0",
+    "node-fetch": "^2.7.0",
     "npm": "^10.2.3",
+    "pg": "^8.16.3",
     "react": "^18.2.0",
     "react-bootstrap": "^2.9.1",
     "react-dom": "^18.2.0",
     "react-modal": "^3.16.1",
     "react-router-dom": "^5.3.4",
     "selenium-webdriver": "^4.14.0",
-    "web-vitals": "^2.1.4",
-    "node-fetch": "^3.3.2"
+    "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
