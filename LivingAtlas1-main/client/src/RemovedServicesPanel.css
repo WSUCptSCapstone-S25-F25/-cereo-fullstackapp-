@@ -201,14 +201,42 @@
     gap: 8px;
 }
 
+/* Folder styling - matches upload panel */
+.removed-services-folder {
+    cursor: pointer;
+    font-weight: bold;
+    margin: 8px 0 4px 0;
+    padding: 4px 6px 4px 4px;
+    border-radius: 4px;
+    background: #ececec;
+    transition: background 0.2s;
+    color: #dc3545 !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.removed-services-folder:hover {
+    background: #e0e0e0;
+}
+
+.removed-services-folder-count {
+    font-size: 12px;
+    color: #666;
+    font-weight: normal;
+}
+
 /* Individual service item */
 .removed-service-item {
     background: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 6px;
-    padding: 12px;
+    padding: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     transition: box-shadow 0.2s;
+    margin-bottom: 4px;
 }
 
 .removed-service-item:hover {
@@ -219,7 +247,14 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.removed-service-header:hover {
+    background: #f8f9fa;
 }
 
 .removed-service-info {
@@ -308,6 +343,7 @@
 .removed-service-layers {
     border-top: 1px solid #f0f0f0;
     padding-top: 8px;
+    margin-top: 8px;
 }
 
 .removed-service-layers-title {
@@ -315,6 +351,31 @@
     font-weight: bold;
     color: #555;
     margin-bottom: 8px;
+}
+
+.removed-service-layer {
+    margin-bottom: 8px;
+    padding: 4px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.removed-service-layer-name {
+    font-weight: bold;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.removed-service-sublayers {
+    margin-left: 12px;
+}
+
+.removed-service-sublayer {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 2px;
+    padding: 1px 0;
 }
 
 .removed-service-layers-list {
