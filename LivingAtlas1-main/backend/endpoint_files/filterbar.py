@@ -11,41 +11,57 @@ from database import conn, cur
 
 filterbar_router = APIRouter()
 
-#This endpoint gives all the data with the labels in the return 
+
+# This endpoint gives all the data with the labels in the return 
 @filterbar_router.get("/allCards")
 def allCards():
-    cur.execute(f"""
-                SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Cards.thumbnail_link, Files.FileExtension, Files.FileID
-                FROM Cards
-                INNER JOIN Categories
-                ON Cards.CategoryID = Categories.CategoryID
-                LEFT JOIN Files
-                ON Cards.CardID = Files.CardID
-                LEFT JOIN CardTags
-                ON Cards.CardID = CardTags.CardID
-                LEFT JOIN Tags
-                ON CardTags.TagID = Tags.TagID
-                INNER JOIN Users
-                ON Cards.UserID = Users.UserID
-                GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Users.Username, Users.Email
-                ORDER BY Cards.CardID DESC;
-                
-                """)
-                #LIMIT 6;
-
-    print("[DEBUG] Rows:", cur.fetchall())
+    cur.execute("""
+        SELECT 
+            u.Username,
+            u.Email,
+            c.Title,
+            cat.CategoryLabel,
+            c.DatePosted,
+            c.Description,
+            c.Organization,
+            c.Funding,
+            c.Link,
+            STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
+            c.Latitude,
+            c.Longitude,
+            c.Thumbnail_Link,
+            COALESCE(
+                json_agg(
+                    DISTINCT jsonb_build_object(
+                        'fileid', f.fileid,
+                        'filename', f.filename,
+                        'file_link', f.file_link,
+                        'fileextension', f.fileextension
+                    )
+                ) FILTER (WHERE f.fileid IS NOT NULL),
+                '[]'
+            ) AS files
+        FROM Cards c
+        INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+        LEFT JOIN Files f ON c.CardID = f.CardID
+        LEFT JOIN CardTags ct ON c.CardID = ct.CardID
+        LEFT JOIN Tags t ON ct.TagID = t.TagID
+        INNER JOIN Users u ON c.UserID = u.UserID
+        GROUP BY c.CardID, cat.CategoryLabel, u.Username, u.Email
+        ORDER BY c.CardID DESC;
+    """)
     
-    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "fileEXT", "fileID"]
+    rows = cur.fetchall()
+    columns = [
+        "username", "email", "title", "category", "date", "description", "org",
+        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
+    ]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
 
 
 
-
-
-
-
-#This returns the every tag label for the drop down menu.
+# This returns every tag label for the drop down menu.
 @filterbar_router.get("/tagList")
 def tagList():
     cur.execute('SELECT taglabel FROM tags ORDER BY taglabel')
@@ -54,119 +70,143 @@ def tagList():
 
 
 
-
-
-
-
-#This endpoint gives all the data with the labels in the return from the filtered tag that was selected
+# This endpoint gives all the data with the labels in the return from the filtered tag that was selected
 @filterbar_router.get("/allCardsByTag")
 async def allCardsByTag(categoryString: str = None, tagString: str = None, sortString: str = None):
 
-    # if parameters are empty then cut this endpoint off fast
     if categoryString is None and tagString is None:
         return {"Parameter Error": "Need to pass something to this endpoint to return a card"}
 
-    # Define the query strings
     finalQUERY = ("""
-        SELECT Users.Username, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, 
-        STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Cards.thumbnail_link, Files.FileExtension, Files.FileID
+        SELECT 
+            u.Username,
+            u.Email,
+            c.Title,
+            cat.CategoryLabel,
+            c.DatePosted,
+            c.Description,
+            c.Organization,
+            c.Funding,
+            c.Link,
+            STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
+            c.Latitude,
+            c.Longitude,
+            c.Thumbnail_Link,
+            COALESCE(
+                json_agg(
+                    DISTINCT jsonb_build_object(
+                        'fileid', f.fileid,
+                        'filename', f.filename,
+                        'file_link', f.file_link,
+                        'fileextension', f.fileextension
+                    )
+                ) FILTER (WHERE f.fileid IS NOT NULL),
+                '[]'
+            ) AS files
     """)
-        # SELECT u.Username, u.Email, c.Title, cat.CategoryLabel, c.DatePosted, c.Description, c.Organization, c.Funding, c.Link, 
-        # STRING_AGG(t.TagLabel, ', ') AS TagLabels, c.Latitude, c.Longitude, f.FileExtension, f.FileID
 
     if sortString:
         sortSplit = sortString.split(',')
         if sortSplit[0] == "ClosestToMe":
             latitude = sortSplit[1]
             longitude = sortSplit[2]
-            finalQUERY += (f""", SQRT(POWER(Cards.Latitude - {latitude}, 2) + POWER(Cards.Longitude - {longitude}, 2)) AS distance
-            """)
+            finalQUERY += f""", SQRT(POWER(c.Latitude - {latitude}, 2) + POWER(c.Longitude - {longitude}, 2)) AS distance"""
 
+    finalQUERY += """
+        FROM Users u
+        JOIN Cards c ON u.UserID = c.UserID
+        LEFT JOIN CardTags ct ON c.CardID = ct.CardID
+        LEFT JOIN Tags t ON ct.TagID = t.TagID
+        JOIN Categories cat ON c.CategoryID = cat.CategoryID
+        LEFT JOIN Files f ON c.CardID = f.CardID
+    """
 
-    finalQUERY += ("""
-        FROM Users
-        JOIN Cards ON Users.UserID = Cards.UserID
-        LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
-        LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
-        JOIN Categories ON Cards.CategoryID = Categories.CategoryID
-        LEFT JOIN Files ON Cards.CardID = Files.CardID
-    """)
-
-    botStringQuery = ("""
-        GROUP BY Cards.CardID, Users.Username, Users.Email, Cards.Title, Categories.CategoryLabel, Cards.DatePosted, Cards.Description, 
-        Cards.Organization, Cards.Funding, Cards.Link, Cards.Latitude, Cards.Longitude, Files.FileExtension, Files.FileID
-    """)
+    botStringQuery = """
+        GROUP BY c.CardID, cat.CategoryLabel, u.Username, u.Email
+    """
 
     if categoryString or tagString:
-        finalQUERY += """
-            WHERE 
-        """
-        # Add category filter with case-insensitivity
+        finalQUERY += " WHERE "
         if categoryString:
-            finalQUERY += f"LOWER(Categories.CategoryLabel) = LOWER('{categoryString}')"
+            finalQUERY += f"LOWER(cat.CategoryLabel) = LOWER('{categoryString}')"
             if tagString:
-                finalQUERY += "\nAND "
-
-        # Add tag filter with case-insensitivity
+                finalQUERY += " AND "
         if tagString:
             tags = tagString.split(',')
             tags = ', '.join(f"LOWER('{tag.strip()}')" for tag in tags)
             tag_count = len(tags.split(','))
-            justWHERE_TAG = (f"""
+            finalQUERY += f"""
                 (SELECT COUNT(*) 
-                FROM CardTags
-                JOIN Tags ON CardTags.TagID = Tags.TagID
-                WHERE CardTags.CardID = Cards.CardID AND LOWER(Tags.TagLabel) IN ({tags})) = {tag_count}
-            """)
-            finalQUERY += justWHERE_TAG
+                 FROM CardTags
+                 JOIN Tags ON CardTags.TagID = Tags.TagID
+                 WHERE CardTags.CardID = c.CardID AND LOWER(Tags.TagLabel) IN ({tags})) = {tag_count}
+            """
 
     finalQUERY += botStringQuery
 
     if sortString:
         sortSplit = sortString.split(',')
         if sortSplit[0] == "ClosestToMe":
-            finalQUERY += """
-            ORDER BY distance ASC;
-            """
+            finalQUERY += " ORDER BY distance ASC"
         elif sortSplit[0] == "RecentlyAdded":
-            finalQUERY += """
-            ORDER BY Cards.DatePosted DESC;
-            """
+            finalQUERY += " ORDER BY c.DatePosted DESC"
 
     cur.execute(finalQUERY)
     rows = cur.fetchall()
-    columns = ["username", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "fileEXT", "fileID"]
+    columns = [
+        "username", "email", "title", "category", "date", "description", "org",
+        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
+    ]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
-
-
-
-
 
 
 
 @filterbar_router.get("/searchBar")
 def searchBar(titleSearch: str):
    cur.execute("""
-           SELECT Users.Username, Cards.name, Users.Email, Cards.title, Categories.CategoryLabel, Cards.dateposted, Cards.description, Cards.organization, Cards.funding, Cards.link, STRING_AGG(Tags.TagLabel, ', ') AS TagLabels, Cards.latitude, Cards.longitude, Cards.thumbnail_link, Files.FileExtension, Files.FileID
-           FROM Cards
-           INNER JOIN Categories
-           ON Cards.CategoryID = Categories.CategoryID
-           LEFT JOIN Files
-           ON Cards.CardID = Files.CardID
-           LEFT JOIN CardTags
-           ON Cards.CardID = CardTags.CardID
-           LEFT JOIN Tags
-           ON CardTags.TagID = Tags.TagID
-           INNER JOIN Users
-           ON Cards.UserID = Users.UserID
-           WHERE Cards.title ILIKE %s
-           GROUP BY Cards.CardID, Categories.CategoryLabel, Files.FileExtension, Files.FileID, Users.Username, Users.Email
-           
-           """, ('%' + titleSearch + '%',))
+      SELECT 
+            u.Username,
+            c.Name,
+            u.Email,
+            c.Title,
+            cat.CategoryLabel,
+            c.DatePosted,
+            c.Description,
+            c.Organization,
+            c.Funding,
+            c.Link,
+            STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
+            c.Latitude,
+            c.Longitude,
+            c.Thumbnail_Link,
+            COALESCE(
+                json_agg(
+                    DISTINCT jsonb_build_object(
+                        'fileid', f.fileid,
+                        'filename', f.filename,
+                        'file_link', f.file_link,
+                        'fileextension', f.fileextension
+                    )
+                ) FILTER (WHERE f.fileid IS NOT NULL),
+                '[]'
+            ) AS files
+      FROM Cards c
+      INNER JOIN Categories
+      INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+      LEFT JOIN Files f ON c.CardID = f.CardID
+      LEFT JOIN CardTags ct ON c.CardID = ct.CardID
+      LEFT JOIN Tags t ON ct.TagID = t.TagID
+      INNER JOIN Users u ON c.UserID = u.UserID
+      WHERE c.Title ILIKE %s
+      GROUP BY c.CardID, cat.CategoryLabel, u.Username, u.Email
+      ORDER BY c.CardID DESC
+   """, ('%' + titleSearch + '%',))
    
    rows = cur.fetchall()
-   columns = ["username", "name", "email", "title", "category", "date", "description", "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "fileEXT", "fileID"]
+   columns = [
+        "username", "name", "email", "title", "category", "date", "description", "org",
+        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
+    ]
    data = [dict(zip(columns, row)) for row in rows]
    return {"data": data}
-

@@ -58,6 +58,13 @@ const SERVERS = {
   OR: 'https://navigator.state.or.us/arcgis/rest/services/'
 };
 
+// Human-readable state names to embed in records
+const STATE_NAMES = {
+  WA: 'washington',
+  ID: 'idaho',
+  OR: 'oregon'
+};
+
 // Output files (kept next to existing arcgis_services.json for WA-only)
 const OUTPUT_FILES = {
   WA: path.join(__dirname, 'arcgis_services_wa.json'),
@@ -75,7 +82,7 @@ const SUPPORTED_TYPES = [
 ];
 
 // Recursively fetch folders/services under a base URL
-async function fetchServicesRecursive(baseUrl, currentPath = '') {
+async function fetchServicesRecursive(baseUrl, currentPath = '', stateName) {
   const url = baseUrl + currentPath + (currentPath.endsWith('/') ? '' : '') + '?f=json';
   const res = await resilientFetch(url);
   if (!res.ok) {
@@ -89,7 +96,7 @@ async function fetchServicesRecursive(baseUrl, currentPath = '') {
   if (Array.isArray(data.folders)) {
     for (const sub of data.folders) {
       const subPath = (currentPath ? currentPath : '') + sub + '/';
-      const subServices = await fetchServicesRecursive(baseUrl, subPath);
+      const subServices = await fetchServicesRecursive(baseUrl, subPath, stateName);
       services = services.concat(subServices);
     }
   }
@@ -107,7 +114,8 @@ async function fetchServicesRecursive(baseUrl, currentPath = '') {
           label: `${serviceName} (${svc.type})`,
           url: `${baseUrl}${currentPath}${serviceName}/${svc.type}`,
           folder: folderLabel || 'Root',
-          type: svc.type
+          type: svc.type,
+          state: stateName
         });
       }
     }
@@ -119,9 +127,10 @@ async function fetchServicesRecursive(baseUrl, currentPath = '') {
 async function fetchAndSave(serverKey) {
   const baseUrl = SERVERS[serverKey];
   const outFile = OUTPUT_FILES[serverKey];
+  const stateName = STATE_NAMES[serverKey];
 
   console.log(`[fetchArcgisServices] Fetching ${serverKey} from ${baseUrl}`);
-  const list = await fetchServicesRecursive(baseUrl, '');
+  const list = await fetchServicesRecursive(baseUrl, '', stateName);
   // Sort for stable diffs
   list.sort((a, b) => a.folder.localeCompare(b.folder) || a.label.localeCompare(b.label));
 

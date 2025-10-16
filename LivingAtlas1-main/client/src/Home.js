@@ -6,10 +6,13 @@ import Content1 from './Content1';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
-import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; // <-- Add faEarthAmericas
+import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; // faEarthAmericas
 import './Home.css';
 import './Sidebars.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
+import RemovedServicesPanel from './RemovedServicesPanel'; // Import the new panel
+import { faTrash } from '@fortawesome/free-solid-svg-icons'; // trash icon
+import FormModal from './FormModal'; // <-- import FormModal
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -25,11 +28,13 @@ function Home(props) {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
+    const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false); // State for removed panel
+    const [isFormModalOpen, setIsFormModalOpen] = useState(false); // <-- new state
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
     const [arcgisLayers, setArcgisLayers] = useState([]);
     const [arcgisLegend, setArcgisLegend] = useState(null);
-    const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false); // State to track if AQ layer is added
+    const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
 
     // Fetch layers and legend for demo folder/item
     useEffect(() => {
@@ -39,7 +44,6 @@ function Home(props) {
                 .then(res => res.json())
                 .then(data => {
                     setArcgisLayers(prevLayers => {
-                        // Only reset checked layers if the layers list actually changed
                         if (JSON.stringify(prevLayers) !== JSON.stringify(data.layers || [])) {
                             setCheckedArcgisLayerIds([]);
                         }
@@ -52,7 +56,6 @@ function Home(props) {
         }
     }, [isUploadPanelOpen]);
 
-    // State to track selected card coordinates
     const [selectedCardCoords, setSelectedCardCoords] = useState(null);
 
     const handleCardClick = (coords) => {
@@ -72,10 +75,8 @@ function Home(props) {
         setIsCollapsed(!isCollapsed);
     };
 
-    // Helper to access the Mapbox map instance
     const getMapboxMap = () => window.atlasMapInstance;
 
-    // Add AQ Layer
     const addArcgisLayer = (layerIds = checkedArcgisLayerIds) => {
         const map = window.atlasMapInstance;
         if (!map) return;
@@ -108,7 +109,6 @@ function Home(props) {
         setArcgisLayerAdded(true);
     };
 
-    // Remove AQ Layer
     const removeArcgisLayer = () => {
         const map = window.atlasMapInstance;
         if (!map) return;
@@ -117,7 +117,7 @@ function Home(props) {
         setArcgisLayerAdded(false);
     };
 
-    const [checkedArcgisLayerIds, setCheckedArcgisLayerIds] = useState([]); // IDs of checked layers
+    const [checkedArcgisLayerIds, setCheckedArcgisLayerIds] = useState([]);
 
     const handleLayerCheckbox = (layerId) => {
         let newChecked;
@@ -128,7 +128,6 @@ function Home(props) {
         }
         setCheckedArcgisLayerIds(newChecked);
         if (arcgisLayerAdded) {
-            // Update AQ layer on map
             addArcgisLayer(newChecked);
         }
     };
@@ -136,7 +135,7 @@ function Home(props) {
     const handleSelectAll = () => {
         if (checkedArcgisLayerIds.length === arcgisLayers.length) {
             setCheckedArcgisLayerIds([]);
-            if (arcgisLayerAdded) removeArcgisLayer(); // Remove the AQ layer if none selected
+            if (arcgisLayerAdded) removeArcgisLayer();
         } else {
             const allIds = arcgisLayers.map(l => l.id);
             setCheckedArcgisLayerIds(allIds);
@@ -164,18 +163,19 @@ function Home(props) {
                 <button className="left-sidebar-search-button" onClick={toggleSearchModal}>
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
-                {/* GIS Services Button (was Upload Button) */}
+                {/* GIS Services Button */}
                 <button
-                    className="left-sidebar-gis-button" // <-- Changed class name
+                    className="left-sidebar-gis-button"
                     onClick={() => setIsUploadPanelOpen(v => !v)}
                     title="Browse GIS Services"
                 >
                     <FontAwesomeIcon icon={faEarthAmericas} />
                 </button>
-                {/* New Upload Button */}
+                {/* Upload Button */}
                 <button
                     className="left-sidebar-upload-button"
-                    title="Upload"
+                    title="Upload Card"
+                    onClick={() => setIsFormModalOpen(true)}   // <-- hook in modal
                 >
                     <FontAwesomeIcon icon={faUpload} />
                 </button>
@@ -187,11 +187,26 @@ function Home(props) {
                     arcgisLayerAdded={arcgisLayerAdded}
                     setArcgisLayerAdded={setArcgisLayerAdded}
                 />
-
                 {/* Left Sidebar toggle Button */}
                 <button className="left-sidebar-toggle" onClick={toggleSidebar}>
                     <FontAwesomeIcon icon={isSidebarOpen ? faAngleDoubleLeft : faAngleDoubleRight} />
                 </button>
+
+                {/* Trash button*/}
+                <button
+                    className="left-sidebar-upload-button"
+                    title="Removed Services"
+                    style={{ top: '150px', position: 'absolute' }}
+                    onClick={() => setIsRemovedPanelOpen(v => !v)} // Toggle removed panel
+                >
+                    <FontAwesomeIcon icon={faTrash} />
+                </button>
+
+                {/* Removed Services Panel */}
+                <RemovedServicesPanel
+                    isOpen={isRemovedPanelOpen}
+                    onClose={() => setIsRemovedPanelOpen(false)}
+                />
 
                 {/* Expanded Left Sidebar Content */}
                 {isSidebarOpen && (
@@ -214,14 +229,13 @@ function Home(props) {
                 )}
             </div>
 
-           {/* Search Modal */}
-           {isSearchModalOpen && (
+            {/* Search Modal */}
+            {isSearchModalOpen && (
                 <div className="search-modal">
                     <div className="search-modal-content">
                         <button className="close-modal" onClick={toggleSearchModal}>
                             &times;
                         </button>
-                        {/* Reuse the Header component */}
                         <Header
                             isLoggedIn={props.isLoggedIn}
                             filterCondition={filterCondition}
@@ -240,13 +254,7 @@ function Home(props) {
                 </div>
             )}
 
-            {/* Right Sidebar */}
-            {/* <div id="right-sidebar">
-                <div className="collapse-toggle" onClick={toggleCollapse}>
-                    <FontAwesomeIcon icon={isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
-                </div>
-            </div> */}
-
+            {/* Main Map + Right Sidebar */}
             <Main
                 filterCondition={filterCondition}
                 setFilterCondition={setFilterCondition}
@@ -281,8 +289,14 @@ function Home(props) {
                 setIsCollapsed={setIsCollapsed}
                 onCardClick={handleCardClick}
             />
-            {props.isLoggedIn && props.isAdmin}
-            {/* {<p>Welcome, admin user!</p>} */}
+
+            {/* FormModal for Upload */}
+            <FormModal
+                isOpen={isFormModalOpen}
+                onRequestClose={() => setIsFormModalOpen(false)}
+                username={props.username}
+                email={props.email}
+            />
         </div>
     );
 }

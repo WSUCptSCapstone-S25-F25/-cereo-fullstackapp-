@@ -31,7 +31,7 @@ const FormModal = (props) => {
         longitude: '',
     });
 
-    const [selectedFile, setSelectedFile] = useState(null);
+    const [selectedFiles, setSelectedFiles] = useState([]);   // <-- multiple files
     const [thumbnailFile, setThumbnailFile] = useState(null);
     const [thumbnailPreview, setThumbnailPreview] = useState(null);
 
@@ -43,12 +43,17 @@ const FormModal = (props) => {
     };
 
     const handleFileInput = (e) => {
-        const file = e.target.files[0];
-        if (file && file.size > MAX_FILE_SIZE) {
-            alert(`File size should not exceed ${MAX_FILE_SIZE / 1024 / 1024} MB`);
-            return;
+        const files = Array.from(e.target.files);
+        const validFiles = [];
+
+        for (let file of files) {
+            if (file.size > MAX_FILE_SIZE) {
+                alert(`File "${file.name}" exceeds ${MAX_FILE_SIZE / 1024 / 1024} MB`);
+                return;
+            }
+            validFiles.push(file);
         }
-        setSelectedFile(file);
+        setSelectedFiles(validFiles);
     };
 
     const handleThumbnailInput = (e) => {
@@ -96,7 +101,13 @@ const FormModal = (props) => {
             }
         });
 
-        if (selectedFile) formData2.append('file', selectedFile);
+        // append multiple files
+        if (selectedFiles.length > 0) {
+            selectedFiles.forEach((file) => {
+                formData2.append('files', file);
+            });
+        }
+        
         if (thumbnailFile) formData2.append('thumbnail', thumbnailFile);
 
         console.log("Uploading FormData:", [...formData2.entries()]);
@@ -178,8 +189,8 @@ const FormModal = (props) => {
                     <input type="file" accept="image/*" onChange={handleThumbnailInput} />
                     {thumbnailPreview && <img src={thumbnailPreview} alt="Preview" style={{ width: "100px", marginBottom: "10px" }} />}
 
-                    <label>Upload File:</label>
-                    <input type="file" onChange={handleFileInput} />
+                    <label>Upload Files:</label>
+                    <input type="file" multiple onChange={handleFileInput} />
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
                         <button type="submit">Submit</button>

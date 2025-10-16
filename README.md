@@ -23,18 +23,24 @@ FastAPI: Backend framework for efficient server-side operations. <br>
 PostGIS: Geospatial database extension for PostgreSQL to store and query spatial data.
 ### Installation Steps
 * Clone the repository: <br>
+```
 git clone https://github.com/yourusername/cereo-living-atlas.git <br>
 cd cereo-living-atlas <br>
+```
 * Set up the backend: <br>
+```
 cd backend <br>
 pipenv install <br>
 pipenv shell <br>
 python manage.py migrate <br>
 python manage.py runserver <br>
+```
 * Set up the frontend: <br>
+```
 cd frontend <br>
 npm install <br>
 npm start <br>
+```
 * Seed the database (optional): <br>
 python manage.py loaddata seed_data.json <br>
 

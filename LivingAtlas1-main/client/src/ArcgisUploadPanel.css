@@ -51,14 +51,21 @@
     cursor: pointer;
     font-weight: bold;
     margin: 8px 0 4px 0;
-    padding: 4px 0 4px 4px;
+    padding: 4px 6px 4px 4px;
     border-radius: 4px;
     background: #ececec;
     transition: background 0.2s;
     color: #222 !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
-.upload-folder:hover {
-    background: #e0e0e0;
+
+.upload-folder-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .upload-item {
@@ -140,6 +147,66 @@
     margin-right: 4px;
     width: 13px;
     height: 13px;
+    flex-shrink: 0;
+}
+
+/* Sublayer/legend item styles */
+.upload-layer-sublayer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 3px;
+    font-size: 12px;
+    color: #666;
+    padding-left: 4px;
+    min-height: 18px;
+    transition: background-color 0.2s;
+}
+
+.upload-layer-sublayer:hover {
+    background-color: rgba(25, 118, 210, 0.05);
+    border-radius: 3px;
+}
+
+.upload-layer-sublayer input[type="checkbox"] {
+    width: 12px !important;
+    height: 12px !important;
+    margin-right: 6px !important;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.upload-layer-sublayer img {
+    width: 14px !important;
+    height: 14px !important;
+    margin-right: 6px !important;
+    flex-shrink: 0;
+}
+
+.upload-layer-sublayer span {
+    line-height: 1.2;
+    word-break: break-word;
+    cursor: default;
+}
+
+/* Parent layer counter styling */
+.upload-layer-row .layer-counter {
+    font-size: 11px;
+    color: #888;
+    margin-left: 8px;
+    font-weight: normal;
+}
+
+/* Legend image base styles */
+.upload-panel .legend-img {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+    flex-shrink: 0;
 }
 
 .upload-panel .select-all-label {

@@ -1,17 +1,70 @@
-import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
-import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
-import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
+import { fetchArcgisServicesByState, fetchServicesByStateMap } from './arcgisServicesDb';
 
-// Utility to get services by state
-export const ARCGIS_SERVICES_BY_STATE = {
-    WA: WA_ARCGIS_SERVICES.filter(s => s.type === 'MapServer'),
-    ID: ID_ARCGIS_SERVICES.filter(s => s.type === 'MapServer'),
-    OR: OR_ARCGIS_SERVICES.filter(s => s.type === 'MapServer')
+// Cache for services by state - will be populated from backend
+let servicesCache = {
+    WA: [],
+    ID: [],
+    OR: []
 };
 
-// Utility to get service by key and state
-export function getServiceByKey(state, key) {
-    return ARCGIS_SERVICES_BY_STATE[state].find(s => s.key === key);
+// Cache timestamp to refresh periodically (24 hours)
+let cacheTimestamp = 0;
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+// Initialize services cache from backend
+async function initializeServicesCache() {
+    const now = Date.now();
+    
+    // Check if cache is still valid
+    if (cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+        return;
+    }
+    
+    try {
+        console.log('[arcgisDataUtils] Initializing services cache from backend...');
+        const servicesByState = await fetchServicesByStateMap(['WA', 'ID', 'OR'], { type: 'MapServer' });
+        
+        servicesCache.WA = servicesByState.WA || [];
+        servicesCache.ID = servicesByState.ID || [];
+        servicesCache.OR = servicesByState.OR || [];
+        
+        cacheTimestamp = now;
+        console.log('[arcgisDataUtils] Services cache initialized:', {
+            WA: servicesCache.WA.length,
+            ID: servicesCache.ID.length,
+            OR: servicesCache.OR.length
+        });
+    } catch (error) {
+        console.warn('[arcgisDataUtils] Failed to initialize services cache:', error);
+        // Keep existing cache if update fails
+    }
+}
+
+// Utility to get services by state (async)
+export async function getServicesByState(state, type = 'MapServer') {
+    await initializeServicesCache();
+    const services = servicesCache[state] || [];
+    return type === 'MapServer' ? services.filter(s => s.type === 'MapServer') : services;
+}
+
+// Legacy compatibility: synchronous access (returns cached data)
+export const ARCGIS_SERVICES_BY_STATE = {
+    get WA() { return servicesCache.WA.filter(s => s.type === 'MapServer'); },
+    get ID() { return servicesCache.ID.filter(s => s.type === 'MapServer'); },
+    get OR() { return servicesCache.OR.filter(s => s.type === 'MapServer'); }
+};
+
+// Utility to get service by key and state (async)
+export async function getServiceByKey(state, key) {
+    await initializeServicesCache();
+    return servicesCache[state]?.find(s => s.key === key);
+}
+
+// Utility to refresh services cache manually
+export async function refreshServicesCache() {
+    cacheTimestamp = 0; // Force refresh
+    await initializeServicesCache();
+    return servicesCache;
 }
 
 // Fetch layers for a given service
