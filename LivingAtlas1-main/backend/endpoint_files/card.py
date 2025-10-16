@@ -125,6 +125,21 @@ async def deleteCard(username: str, title: str):
             delete_from_bucket(blob_path)
         except Exception as e:
             print(f"[WARN] Failed to parse/delete thumbnail: {e}")
+    
+    # Delete file in cloud service
+    cur.execute("""
+        SELECT FileID, DirectoryPath 
+        FROM Files
+        WHERE CardID = %s
+    """, (cardID,))
+    result = cur.fetchone()
+    if result:
+        try:
+            fileID, directoryPath = result
+            blob_path = f"{fileID}/{directoryPath}"
+            delete_from_bucket(blob_path)
+        except Exception as e:
+            print(f"[WARN] Failed to parse/delete file: {e}")
 
     cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
     cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))

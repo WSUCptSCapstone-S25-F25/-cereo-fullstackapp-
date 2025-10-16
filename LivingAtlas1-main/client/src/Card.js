@@ -303,10 +303,10 @@ function Card(props) {
                     e.stopPropagation();
                     saveEdits(); 
                 }}>
-                    <label>Username:
+                    <label>Card Creator:
                         <input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} required />
                     </label>
-                    <label>Full Name:
+                    <label>Author:
                         <input type="text" name="name" value={formData.name || ''} onChange={handleInputChange} required />
                     </label>
                     <label>Email:

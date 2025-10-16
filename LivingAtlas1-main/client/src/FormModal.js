@@ -130,7 +130,7 @@ const FormModal = (props) => {
                 </button>
                 <h2>Upload Document</h2>
                 <form onSubmit={handleSubmit}>
-                    <label>Name (required):</label>
+                    <label>Author Name (required):</label>
                     <input 
                         type="text" 
                         name="name" 
