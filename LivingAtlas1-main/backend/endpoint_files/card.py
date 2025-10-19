@@ -109,45 +109,50 @@ async def deleteCard(username: str, title: str):
     if not isinstance(username, str) or not isinstance(title, str):
         raise HTTPException(status_code=422, detail="Username and title must be strings")
 
-    cur.execute("""
-        SELECT Cards.CardID, Cards.thumbnail_link
-        FROM Users
-        JOIN Cards ON Users.UserID = Cards.UserID
-        WHERE Users.Username = %s AND Cards.Title = %s
-    """, (username, title))
-    result = cur.fetchone()
-    if result is None:
-        raise HTTPException(status_code=404, detail="Card not found")
-    cardID, thumbnail_link = result
+    try:
+        cur.execute("""
+            SELECT Cards.CardID, Cards.thumbnail_link
+            FROM Users
+            JOIN Cards ON Users.UserID = Cards.UserID
+            WHERE Users.Username = %s AND Cards.Title = %s
+        """, (username, title))
+        result = cur.fetchone()
+        print(f"Card fetch result: {result}")
+        if result is None:
+            raise HTTPException(status_code=404, detail="Card not found")
+        cardID, thumbnail_link = result
 
-    if thumbnail_link and thumbnail_link != DEFAULT_THUMBNAIL_URL:
-        # Convert full URL to blob path by stripping bucket URL prefix:
-        try:
-            blob_path = thumbnail_link.replace(f"https://storage.googleapis.com/{bucket_name}/", "")
-            delete_from_bucket(blob_path)
-        except Exception as e:
-            print(f"[WARN] Failed to parse/delete thumbnail: {e}")
-    
-    # Delete file in cloud service
-    cur.execute("""
-        SELECT FileID, DirectoryPath 
-        FROM Files
-        WHERE CardID = %s
-    """, (cardID,))
-    result = cur.fetchone()
-    if result:
-        try:
-            fileID, directoryPath = result
-            blob_path = f"{fileID}/{directoryPath}"
-            delete_from_bucket(blob_path)
-        except Exception as e:
-            print(f"[WARN] Failed to parse/delete file: {e}")
+        if thumbnail_link and thumbnail_link != DEFAULT_THUMBNAIL_URL:
+            # Convert full URL to blob path by stripping bucket URL prefix:
+            try:
+                blob_path = thumbnail_link.replace(f"https://storage.googleapis.com/{bucket_name}/", "")
+                delete_from_bucket(blob_path)
+            except Exception as e:
+                print(f"[WARN] Failed to parse/delete thumbnail: {e}")
+        
+        # Delete file in cloud service
+        cur.execute("""
+            SELECT file_link 
+            FROM Files
+            WHERE CardID = %s
+        """, (cardID,))
+        file_link = cur.fetchone()
+        if file_link:
+            try:
+                blob_path = file_link[0].replace(f"https://storage.googleapis.com/{bucket_name}/", "")
+                delete_from_bucket(blob_path)
+            except Exception as e:
+                print(f"[WARN] Failed to parse/delete file: {e}")
 
-    cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
-    cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
-    cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
-    conn.commit()
-    return {"Success": "The card is deleted"}
+        cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
+        cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
+        cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
+        conn.commit()
+        return {"Success": "The card is deleted"}
+    except Exception as e:
+        conn.rollback()
+        print(f"Failed to delete card: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete card: {e}")
 
 @card_router.post("/bookmarkCard")
 async def bookmark_card(username: str = Form(...), cardID: int = Form(...)):
@@ -562,11 +567,18 @@ async def upload_form(
             except Exception as e:
                 conn.rollback()
                 print(f"[FILE ERROR] {e}")
-                raise HTTPException(status_code=500, detail="Error inserting file")
+                raise HTTPException(status_code=500, detail=f"Error inserting file: {e}")
             finally:
                 for path in [tmp_path, zip_path]:
                     if os.path.exists(path):
                         os.remove(path)
+    if enable_commits:
+        conn.commit()
+        print("All changes committed to database")
+    else:
+        print("No changes committed to database")
+    return {"message": "Form submitted successfully", "cardID": nextcardid}
+        
 
 
 
