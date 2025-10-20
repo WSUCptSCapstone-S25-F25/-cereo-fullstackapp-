@@ -5,7 +5,8 @@ import {
     fetchArcgisLayers,
     fetchArcgisLegend,
     getArcgisTileUrl,
-    fetchArcgisServiceInfo
+    fetchArcgisServiceInfo,
+    fetchArcgisLayerInfo
 } from './arcgisDataUtils';
 import { fetchArcgisServicesByState, removeArcgisService } from './arcgisServicesDb'; // Fetch from DB
 // Import local JSON files as fallback
@@ -93,6 +94,11 @@ function ArcgisUploadPanel({
     const [serviceInfoCache, setServiceInfoCache] = useState({}); // { key: info }
     const [serviceInfoLoading, setServiceInfoLoading] = useState(false);
 
+    // Layer info modal state ---
+    const [layerInfoOpen, setLayerInfoOpen] = useState(null); // { serviceKey, layerId, layerName, serviceUrl }
+    const [layerInfoCache, setLayerInfoCache] = useState({}); // { "serviceKey-layerId": info }
+    const [layerInfoLoading, setLayerInfoLoading] = useState(false);
+
     // Add new state for sublayer checkboxes (add this near other state declarations)
     const [checkedSublayerIds, setCheckedSublayerIds] = useState({}); // { serviceKey: { layerId: [sublayerIndexes] } }
 
@@ -114,15 +120,15 @@ function ArcgisUploadPanel({
                     if (Array.isArray(list) && list.length > 0) {
                         setServicesFromDb(list);
                         setUsingFallback(false);
-                        console.log(`[ArcgisUploadPanel] ✅ Loaded ${list.length} services from backend for state ${selectedState}`);
+                        console.log(`[ArcgisUploadPanel] Loaded ${list.length} services from backend for state ${selectedState}`);
                     } else {
-                        console.warn(`[ArcgisUploadPanel] ⚠️ Backend returned no services for ${selectedState}, using local fallback`);
+                        console.warn(`[ArcgisUploadPanel] Backend returned no services for ${selectedState}, using local fallback`);
                         setServicesFromDb([]);
                         setUsingFallback(true);
                     }
                 }
             } catch (error) {
-                console.error(`[ArcgisUploadPanel] ❌ Failed to load from backend for ${selectedState}, using local fallback:`, error);
+                console.error(`[ArcgisUploadPanel] Failed to load from backend for ${selectedState}, using local fallback:`, error);
                 if (active) {
                     setServicesFromDb([]);
                     setUsingFallback(true);
@@ -888,6 +894,32 @@ function ArcgisUploadPanel({
         setServiceInfoOpenKey(null);
     };
 
+    // Open layer info modal (fetch & cache)
+    const openLayerInfo = async (service, layer) => {
+        const layerData = {
+            serviceKey: service.key,
+            layerId: layer.id,
+            layerName: layer.name,
+            serviceUrl: service.url
+        };
+        setLayerInfoOpen(layerData);
+        
+        const cacheKey = `${service.key}-${layer.id}`;
+        if (layerInfoCache[cacheKey]) return;
+        
+        setLayerInfoLoading(true);
+        try {
+            const info = await fetchArcgisLayerInfo(service.url, layer.id);
+            setLayerInfoCache(prev => ({ ...prev, [cacheKey]: info || {} }));
+        } finally {
+            setLayerInfoLoading(false);
+        }
+    };
+
+    const closeLayerInfo = () => {
+        setLayerInfoOpen(null);
+    };
+
     // Helper: convert HTML to plain text (for Service Description)
     function toPlainText(html) {
         if (!html) return '';
@@ -1066,7 +1098,7 @@ function ArcgisUploadPanel({
                                                                                     className="legend-img"
                                                                                 />
                                                                             )}
-                                                                            <span>{layer.name}</span>
+                                                                            <span style={{ flex: 1 }}>{layer.name}</span>
                                                                             {hasMultipleLegends && (
                                                                                 <span style={{ 
                                                                                     fontSize: '11px', 
@@ -1076,6 +1108,24 @@ function ArcgisUploadPanel({
                                                                                     ({checkedSublayers.length}/{legendItems.length})
                                                                                 </span>
                                                                             )}
+                                                                            {/* Layer Learn More button */}
+                                                                            <button
+                                                                                className="learn-more-btn"
+                                                                                title="Learn More about this layer"
+                                                                                aria-label="Learn More"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    openLayerInfo(service, layer);
+                                                                                }}
+                                                                                style={{ 
+                                                                                    fontSize: '10px', 
+                                                                                    padding: '2px 6px', 
+                                                                                    height: '18px',
+                                                                                    minWidth: '50px'
+                                                                                }}
+                                                                            >
+                                                                                <FontAwesomeIcon icon={faEllipsisH} />
+                                                                            </button>
                                                                         </div>
 
                                                                         {/* Show sublayers/legends if there are multiple */}
@@ -1233,6 +1283,124 @@ function ArcgisUploadPanel({
                             </a>
                                         </div>
                                     )}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
+
+            {/* Layer Info Modal */}
+            {layerInfoOpen && (
+                <div className="arcgis-service-info-modal">
+                    <div className="arcgis-service-info-modal-header">
+                        <strong>Layer Info: {layerInfoOpen.layerName}</strong>
+                        <button
+                            className="arcgis-service-info-modal-close"
+                            onClick={closeLayerInfo}
+                            aria-label="Close"
+                        >
+                            &times;
+                        </button>
+                    </div>
+                    <div className="arcgis-service-info-modal-content">
+                        {layerInfoLoading && <div>Loading layer info…</div>}
+                        {!layerInfoLoading && (() => {
+                            const cacheKey = `${layerInfoOpen.serviceKey}-${layerInfoOpen.layerId}`;
+                            const info = layerInfoCache[cacheKey];
+                            
+                            if (!info || Object.keys(info).length === 0) {
+                                return (
+                                    <div>
+                                        <div className="arcgis-service-info-empty">No layer information available.</div>
+                                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                            <a 
+                                                href={`${layerInfoOpen.serviceUrl}/${layerInfoOpen.layerId}`} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                style={{ color: '#1976d2', textDecoration: 'none' }}
+                                            >
+                                                View ArcGIS Layer Page →
+                                            </a>
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            
+                            return (
+                                <div>
+                                    {info.description && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Description:</strong>
+                                            <div className="arcgis-service-info-description">
+                                                {toPlainText(info.description)}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {info.name && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Layer Name:</strong> {info.name}
+                                        </div>
+                                    )}
+                                    
+                                    {info.type && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Geometry Type:</strong> {info.type}
+                                        </div>
+                                    )}
+                                    
+                                    {info.copyrightText && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Copyright Text:</strong> {toPlainText(info.copyrightText)}
+                                        </div>
+                                    )}
+                                    
+                                    {info.minScale && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Min Scale:</strong> {info.minScale.toLocaleString()}
+                                        </div>
+                                    )}
+                                    
+                                    {info.maxScale && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Max Scale:</strong> {info.maxScale.toLocaleString()}
+                                        </div>
+                                    )}
+                                    
+                                    {info.defaultVisibility !== undefined && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Default Visibility:</strong> {info.defaultVisibility ? 'Visible' : 'Hidden'}
+                                        </div>
+                                    )}
+                                    
+                                    {info.hasAttachments !== undefined && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Has Attachments:</strong> {info.hasAttachments ? 'Yes' : 'No'}
+                                        </div>
+                                    )}
+                                    
+                                    {info.fields && info.fields.length > 0 && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Fields:</strong> {info.fields.length} field(s)
+                                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                                {info.fields.slice(0, 5).map(field => field.name).join(', ')}
+                                                {info.fields.length > 5 && '...'}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Link to the actual layer page */}
+                                    <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                        <a 
+                                            href={`${layerInfoOpen.serviceUrl}/${layerInfoOpen.layerId}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            style={{ color: '#1976d2', textDecoration: 'none' }}
+                                        >
+                                            View ArcGIS Layer Page →
+                                        </a>
+                                    </div>
                                 </div>
                             );
                         })()}
