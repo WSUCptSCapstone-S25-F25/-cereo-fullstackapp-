@@ -164,49 +164,61 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
 
 @filterbar_router.get("/searchBar")
 def searchBar(titleSearch: str):
-   cur.execute("""
-      SELECT 
-            u.Username,
-            c.Name,
-            u.Email,
-            c.Title,
-            cat.CategoryLabel,
-            c.DatePosted,
-            c.Description,
-            c.Organization,
-            c.Funding,
-            c.Link,
-            STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
-            c.Latitude,
-            c.Longitude,
-            c.Thumbnail_Link,
-            COALESCE(
-                json_agg(
-                    DISTINCT jsonb_build_object(
-                        'fileid', f.fileid,
-                        'filename', f.filename,
-                        'file_link', f.file_link,
-                        'fileextension', f.fileextension
-                    )
-                ) FILTER (WHERE f.fileid IS NOT NULL),
-                '[]'
-            ) AS files
-      FROM Cards c
-      INNER JOIN Categories
-      INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
-      LEFT JOIN Files f ON c.CardID = f.CardID
-      LEFT JOIN CardTags ct ON c.CardID = ct.CardID
-      LEFT JOIN Tags t ON ct.TagID = t.TagID
-      INNER JOIN Users u ON c.UserID = u.UserID
-      WHERE c.Title ILIKE %s
-      GROUP BY c.CardID, cat.CategoryLabel, u.Username, u.Email
-      ORDER BY c.CardID DESC
-   """, ('%' + titleSearch + '%',))
-   
-   rows = cur.fetchall()
-   columns = [
-        "username", "name", "email", "title", "category", "date", "description", "org",
-        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
-    ]
-   data = [dict(zip(columns, row)) for row in rows]
-   return {"data": data}
+    # Always reset transaction in case of prior failure
+    try:
+        conn.rollback()
+    except:
+        pass
+
+    try:
+        cur.execute("""
+            SELECT 
+                u.Username,
+                c.Name,
+                u.Email,
+                c.Title,
+                cat.CategoryLabel,
+                c.DatePosted,
+                c.Description,
+                c.Organization,
+                c.Funding,
+                c.Link,
+                STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
+                c.Latitude,
+                c.Longitude,
+                c.Thumbnail_Link,
+                COALESCE(
+                    json_agg(
+                        DISTINCT jsonb_build_object(
+                            'fileid', f.fileid,
+                            'filename', f.filename,
+                            'file_link', f.file_link,
+                            'fileextension', f.fileextension
+                        )
+                    ) FILTER (WHERE f.fileid IS NOT NULL),
+                    '[]'
+                ) AS files
+            FROM Cards c
+            INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+            LEFT JOIN Files f ON c.CardID = f.CardID
+            LEFT JOIN CardTags ct ON c.CardID = ct.CardID
+            LEFT JOIN Tags t ON ct.TagID = t.TagID
+            INNER JOIN Users u ON c.UserID = u.UserID
+            WHERE c.Title ILIKE %s
+            GROUP BY c.CardID, cat.CategoryLabel, u.Username, u.Email, c.Name
+            ORDER BY c.CardID DESC
+        """, (f"%{titleSearch}%",))
+
+        rows = cur.fetchall()
+        columns = [
+            "username", "name", "email", "title", "category", "date",
+            "description", "org", "funding", "link", "tags",
+            "latitude", "longitude", "thumbnail_link", "files"
+        ]
+        data = [dict(zip(columns, row)) for row in rows]
+        return {"data": data}
+
+    except Exception as e:
+        conn.rollback()
+        print(f"[SEARCHBAR ERROR] {e}")
+        raise HTTPException(status_code=500, detail="Error executing search query")
