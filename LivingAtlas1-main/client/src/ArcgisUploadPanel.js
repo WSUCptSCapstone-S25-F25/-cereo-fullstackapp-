@@ -997,7 +997,11 @@ function ArcgisUploadPanel({
                                     const layers = serviceLayers[service.key] || [];
                                     const checkedIds = checkedLayerIds[service.key] || [];
                                     const isAnyChecked = checkedIds.length > 0;
-                                    const layersToShow = service.layers || layers;
+                                    // Filter out placeholder layers (case-insensitive name check)
+                                    const rawLayers = service.layers || layers;
+                                    const layersToShow = Array.isArray(rawLayers)
+                                        ? rawLayers.filter(l => !(typeof l.name === 'string' && l.name.trim().toLowerCase() === 'placeholder'))
+                                        : rawLayers;
 
                                     return (
                                         <div key={service.key} style={{ marginBottom: 12 }}>
