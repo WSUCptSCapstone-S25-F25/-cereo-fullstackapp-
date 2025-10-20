@@ -76,6 +76,7 @@ function ArcgisUploadPanel({
     const [searchResult, setSearchResult] = useState(null);
     const [expandedFolders, setExpandedFolders] = useState(new Set());
     const [expandedServices, setExpandedServices] = useState(new Set());
+    const [expandedLayers, setExpandedLayers] = useState(new Set()); // Track which layers are expanded
     // State for added-only checkbox
     const [showAddedOnly, setShowAddedOnly] = useState(false);
 
@@ -155,6 +156,7 @@ function ArcgisUploadPanel({
         setServiceLayerAdded({});
         setExpandedFolders(new Set());
         setExpandedServices(new Set());
+        setExpandedLayers(new Set()); // Reset expanded layers when switching states
         setServiceInfoOpenKey(null);
         prevCheckedLayerIds.current = {};
 
@@ -757,6 +759,7 @@ function ArcgisUploadPanel({
                             setSearchResult(null);
                             setExpandedFolders(new Set());
                             setExpandedServices(new Set());
+                            setExpandedLayers(new Set());
                             return;
                         }
                         const result = filterUploadPanelData({
@@ -780,6 +783,7 @@ function ArcgisUploadPanel({
                         setSearchResult(null);
                         setExpandedFolders(new Set());
                         setExpandedServices(new Set());
+                        setExpandedLayers(new Set());
                     }}
                 >
                     <FontAwesomeIcon icon={faTimes} />
@@ -812,6 +816,7 @@ function ArcgisUploadPanel({
                             } else {
                                 setExpandedFolders(new Set());
                                 setExpandedServices(new Set());
+                                setExpandedLayers(new Set());
                             }
                         }}
                         style={{ marginRight: 8 }}
@@ -859,6 +864,17 @@ function ArcgisUploadPanel({
             const newSet = new Set(prev);
             if (newSet.has(serviceKey)) newSet.delete(serviceKey);
             else newSet.add(serviceKey);
+            return newSet;
+        });
+    };
+
+    // Layer click (for layers with sublayers)
+    const handleLayerClick = (serviceKey, layerId) => {
+        const layerKey = `${serviceKey}-${layerId}`;
+        setExpandedLayers(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(layerKey)) newSet.delete(layerKey);
+            else newSet.add(layerKey);
             return newSet;
         });
     };
@@ -1081,19 +1097,35 @@ function ArcgisUploadPanel({
                                                                         marginBottom: hasMultipleLegends ? 8 : 2
                                                                     }}>
                                                                         {/* Main layer row */}
-                                                                        <div style={{ 
-                                                                            display: 'flex', 
-                                                                            alignItems: 'center', 
-                                                                            gap: 4, 
-                                                                            minHeight: 20,
-                                                                            width: '100%'
-                                                                        }}>
+                                                                        <div 
+                                                                            style={{ 
+                                                                                display: 'flex', 
+                                                                                alignItems: 'center', 
+                                                                                gap: 4, 
+                                                                                minHeight: 20,
+                                                                                width: '100%',
+                                                                                cursor: hasMultipleLegends ? 'pointer' : 'default'
+                                                                            }}
+                                                                            onClick={hasMultipleLegends ? () => handleLayerClick(service.key, layer.id) : undefined}
+                                                                        >
                                                                             <input
                                                                                 type="checkbox"
                                                                                 checked={checkedIds.includes(layer.id)}
                                                                                 onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
                                                                                 style={{ marginRight: 8 }}
+                                                                                onClick={(e) => e.stopPropagation()} // Prevent layer click when clicking checkbox
                                                                             />
+                                                                            {/* Show expand/collapse arrow for layers with multiple legend items */}
+                                                                            {hasMultipleLegends && (
+                                                                                <span style={{ 
+                                                                                    fontSize: '12px', 
+                                                                                    color: '#666', 
+                                                                                    marginRight: 4,
+                                                                                    userSelect: 'none'
+                                                                                }}>
+                                                                                    {expandedLayers.has(`${service.key}-${layer.id}`) ? "▼" : "►"}
+                                                                                </span>
+                                                                            )}
                                                                             {/* Show legend icon only if there's exactly one legend item */}
                                                                             {legendItems.length === 1 && (
                                                                                 <img
@@ -1132,8 +1164,8 @@ function ArcgisUploadPanel({
                                                                             </button>
                                                                         </div>
 
-                                                                        {/* Show sublayers/legends if there are multiple */}
-                                                                        {hasMultipleLegends && (
+                                                                        {/* Show sublayers/legends if there are multiple AND layer is expanded */}
+                                                                        {hasMultipleLegends && expandedLayers.has(`${service.key}-${layer.id}`) && (
                                                                             <div style={{ 
                                                                                 marginLeft: 24, 
                                                                                 marginTop: 4,
