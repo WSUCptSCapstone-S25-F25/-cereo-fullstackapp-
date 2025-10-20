@@ -54,15 +54,15 @@ def delete_from_bucket(blob_name):
         return
 
 # Function to upload files to Google Cloud
-def upload_to_bucket(blob_name, file_obj, file_type, bucket_name):
+def upload_to_bucket(destination_path, local_path, file_type, bucket_name):
     try:
         bucket = storage_client.get_bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-        blob.content_type = file_type
-        blob.upload_from_file(file_obj)
+        blob = bucket.blob(destination_path)
+        blob.upload_from_filename(local_path, content_type=file_type)
+        blob.make_public()
         return True
     except Exception as e:
-        print(e)
+        print(f"[UPLOAD ERROR] {e}")
         return False
 
 # Function to upload an image to Google Cloud Storage and return its URL
@@ -526,17 +526,21 @@ async def upload_form(
                 maxFileid = cur.fetchone()
                 nextfileid = (maxFileid[0] or 0) + 1
 
-                # Upload to GCS
-                # Upload to GCS (keep original filename, organize by card/user)
-                safe_filename = os.path.basename(file.filename)
-                destination_path = f"files/{username}/{safe_filename}"
+                # Always compress first
+                zip_path = compress_file(tmp_path, original_name=file.filename)
+                zip_filename = os.path.basename(zip_path)
+                filesizeNEW = os.path.getsize(zip_path)
 
-                with open(zip_path, "rb") as fzip:
-                    upload_ok = upload_to_bucket(destination_path, fzip, "application/zip", bucket_name)
+                # Clean filename and destination (keep organized per user/card)
+                safe_filename = os.path.splitext(os.path.basename(file.filename))[0]  # strip extension
+                destination_path = f"files/{username}/{safe_filename}.zip"
+
+                # Upload the ZIP file
+                upload_ok = upload_to_bucket(destination_path, zip_path, "application/zip", bucket_name)
                 if not upload_ok:
                     raise HTTPException(status_code=500, detail="Failed to upload file")
 
-                # Public URL (matches the cleaner path)
+                # Public URL
                 public_url = f"https://storage.googleapis.com/{bucket_name}/{destination_path}"
 
                 # Save DB record
