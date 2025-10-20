@@ -63,7 +63,7 @@ def upload_to_bucket(destination_path, local_path, file_type, bucket_name):
         with open(local_path, "rb") as f:
             blob.upload_from_file(f, content_type=file_type)
 
-        blob.make_public()
+        
         print(f"[UPLOAD SUCCESS] {destination_path}")
         return True
     except Exception as e:
