@@ -139,6 +139,39 @@ async def deleteCard(username: str, title: str):
     conn.commit()
     return {"Success": "The card is deleted"}
 
+@card_router.delete("/deleteFile")
+async def delete_file(fileID: int):
+    """
+    Deletes a file from both the database and Google Cloud Storage.
+    """
+    try:
+        # Get file info
+        cur.execute("SELECT file_link FROM Files WHERE fileid = %s", (fileID,))
+        result = cur.fetchone()
+        if not result:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        file_link = result[0]
+        blob_path = file_link.replace(f"https://storage.googleapis.com/{bucket_name}/", "")
+
+        # Delete from GCS
+        try:
+            delete_from_bucket(blob_path)
+            print(f"[FILE DELETE] Deleted from GCS: {blob_path}")
+        except Exception as e:
+            print(f"[WARN] Could not delete from GCS: {e}")
+
+        # Delete from DB
+        cur.execute("DELETE FROM Files WHERE fileid = %s", (fileID,))
+        conn.commit()
+
+        return {"success": True, "message": f"File {fileID} deleted successfully."}
+
+    except Exception as e:
+        conn.rollback()
+        print(f"[DELETE FILE ERROR] {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting file: {e}")
+
 @card_router.post("/bookmarkCard")
 async def bookmark_card(username: str = Form(...), cardID: int = Form(...)):
     try:
@@ -326,7 +359,8 @@ async def upload_form(
     link: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
     files: Optional[list[UploadFile]] = File(None),
-    thumbnail: Optional[UploadFile] = File(None)
+    thumbnail: Optional[UploadFile] = File(None),
+    thumbnail_link: Optional[str] = Form(None)
 ):
     """
     Create or update a Card with metadata, thumbnail, and optional files.
@@ -390,7 +424,17 @@ async def upload_form(
         # --------------------------------------------------
         # Upload thumbnail (custom or default)
         # --------------------------------------------------
-        thumbnail_url = upload_image(thumbnail)
+        if thumbnail is not None:
+            # User uploaded a new file
+            thumbnail_url = upload_image(thumbnail)
+        elif thumbnail_link:
+            # User kept the existing thumbnail
+            thumbnail_url = thumbnail_link
+        else:
+            # No thumbnail provided at all — use default
+            thumbnail_url = DEFAULT_THUMBNAIL_URL
+
+        print(f"[THUMBNAIL HANDLING] Using thumbnail URL: {thumbnail_url}")
 
         # --------------------------------------------------
         # Insert or update card metadata
