@@ -56,15 +56,20 @@ def delete_from_bucket(blob_name):
 # Function to upload files to Google Cloud
 def upload_to_bucket(destination_path, local_path, file_type, bucket_name):
     try:
-        bucket = storage_client.get_bucket(bucket_name)
+        # Always reopen the file to ensure readable stream
+        bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(destination_path)
-        blob.upload_from_filename(local_path, content_type=file_type)
+
+        with open(local_path, "rb") as f:
+            blob.upload_from_file(f, content_type=file_type)
+
         blob.make_public()
+        print(f"[UPLOAD SUCCESS] {destination_path}")
         return True
     except Exception as e:
         print(f"[UPLOAD ERROR] {e}")
         return False
-
+    
 # Function to upload an image to Google Cloud Storage and return its URL
 def upload_image(file: Optional[UploadFile]) -> str:
     if not file:
@@ -320,95 +325,76 @@ async def upload_form(
     org: Optional[str] = Form(None),
     link: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
-    files: Optional[list[UploadFile]] = File(None),   # <-- multiple files supported
-    thumbnail: Optional[UploadFile] = File(None)      # THIS IS IMPORTANT
+    files: Optional[list[UploadFile]] = File(None),
+    thumbnail: Optional[UploadFile] = File(None)
 ):
     """
-    This endpoint submits/updates a Card
+    Create or update a Card with metadata, thumbnail, and optional files.
+    Ensures uploaded files are compressed, stored in GCS, and recorded in the database.
     """
     enable_commits = False
-
-    # Safe debug print (avoid None concatenation)
     print(f"[UPLOAD] username={username}, email={email}, orig_username={original_username or ''}, orig_email={original_email or ''}")
 
-    # Get next CardID
-    cur.execute("SELECT MAX(CardID) FROM Cards")
-    maxcardid = cur.fetchone()
-    nextcardid = (maxcardid[0] or 0) + 1
-
-    # Identify user performing the update/insert
-    if update:
-        # Updating → use original identity
-        cur.execute(
-            "SELECT userID FROM Users WHERE username = %s AND email = %s",
-            (original_username, original_email)
-        )
-    else:
-        # New card → use current username/email
-        cur.execute(
-            "SELECT userID FROM Users WHERE username = %s AND email = %s",
-            (username, email)
-        )
-
-    user_row = cur.fetchone()
-    if not user_row:
-        raise HTTPException(status_code=404, detail="User not found")
-    userID = user_row[0]
-
-    # Convert category string to categoryID
-    if category == "River":
-        categoryID = 1
-    elif category == "Watershed":
-        categoryID = 2
-    elif category == "Places":
-        categoryID = 3
-    else:
-        raise HTTPException(status_code=400, detail="Category is not a valid item")
-
-    # Define schema limits for testing
-    title_limit = 255
-    latitude_limit = (10, 8)
-    longitude_limit = (11, 8)
-    description_limit = 2000
-    organization_limit = 255
-    link_limit = 255
-
-    # Validate fields
-    if len(title) > title_limit:
-        raise HTTPException(status_code=400, detail="Title exceeds 255 characters")
-
     try:
-        latitude_val = float(latitude)
+        # --------------------------------------------------
+        # Determine next CardID
+        # --------------------------------------------------
+        cur.execute("SELECT MAX(CardID) FROM Cards")
+        maxcardid = cur.fetchone()
+        nextcardid = (maxcardid[0] or 0) + 1
+
+        # --------------------------------------------------
+        # Identify user performing the operation
+        # --------------------------------------------------
+        if update:
+            cur.execute(
+                "SELECT userID FROM Users WHERE username = %s AND email = %s",
+                (original_username, original_email)
+            )
+        else:
+            cur.execute(
+                "SELECT userID FROM Users WHERE username = %s AND email = %s",
+                (username, email)
+            )
+        user_row = cur.fetchone()
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+        userID = user_row[0]
+
+        # --------------------------------------------------
+        # Map category name to ID
+        # --------------------------------------------------
+        category_map = {"River": 1, "Watershed": 2, "Places": 3}
+        if category not in category_map:
+            raise HTTPException(status_code=400, detail="Invalid category")
+        categoryID = category_map[category]
+
+        # --------------------------------------------------
+        # Validate inputs
+        # --------------------------------------------------
+        if len(title) > 255:
+            raise HTTPException(status_code=400, detail="Title exceeds 255 characters")
+        try:
+            latitude_val = float(latitude)
+            longitude_val = float(longitude)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Latitude/Longitude must be numeric")
+
         if not (-90 <= latitude_val <= 90):
-            raise HTTPException(status_code=400, detail="Latitude is out of bounds (-90 to 90)")
-        if len(str(latitude_val).split('.')[-1]) > 8:
-            raise HTTPException(status_code=400, detail="Latitude decimal places exceed 8")
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Latitude is not a valid decimal number")
-
-    try:
-        longitude_val = float(longitude)
+            raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90")
         if not (-180 <= longitude_val <= 180):
-            raise HTTPException(status_code=400, detail="Longitude is out of bounds (-180 to 180)")
-        if len(str(longitude_val).split('.')[-1]) > 8:
-            raise HTTPException(status_code=400, detail="Longitude decimal places exceed 8")
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Longitude is not a valid decimal number")
+            raise HTTPException(status_code=400, detail="Longitude must be between -180 and 180")
 
-    if description is not None and len(description) > description_limit:
-        raise HTTPException(status_code=400, detail="Description exceeds 2000 characters")
-    if org is not None and len(org) > organization_limit:
-        raise HTTPException(status_code=400, detail="Organization exceeds 255 characters")
-    if link is not None and len(link) > link_limit:
-        raise HTTPException(status_code=400, detail="Link exceeds 255 characters")
+        print(f"[VALIDATED] CardID={nextcardid}, category={categoryID}")
 
-    print("Card Data Validated for CardID: ", nextcardid)
+        # --------------------------------------------------
+        # Upload thumbnail (custom or default)
+        # --------------------------------------------------
+        thumbnail_url = upload_image(thumbnail)
 
-    # Upload thumbnail (custom or default)
-    thumbnail_url = upload_image(thumbnail)
-
-    # Inserting/Updating Card Data (includes thumbnail_url)
-    try:
+        # --------------------------------------------------
+        # Insert or update card metadata
+        # --------------------------------------------------
         enable_commits = False
         if update:
             cur.execute("""
@@ -430,154 +416,126 @@ async def upload_form(
                     raise HTTPException(status_code=404, detail="New username not found")
                 userID = new_user[0]
 
-            insert_script = """
+            cur.execute("""
                 UPDATE Cards
-                SET Name=%s,
-                    Latitude=%s,
-                    Longitude=%s,
-                    CategoryID=%s,
-                    Description=%s,
-                    Organization=%s,
-                    Funding=%s,
-                    Link=%s,
-                    Thumbnail_Link=COALESCE(%s, Thumbnail_Link),
-                    UserID=%s
+                SET Name=%s, Latitude=%s, Longitude=%s, CategoryID=%s,
+                    Description=%s, Organization=%s, Funding=%s, Link=%s,
+                    Thumbnail_Link=COALESCE(%s, Thumbnail_Link), UserID=%s
                 WHERE CardID=%s
-            """
-            insert_value = (name, latitude_val, longitude_val, categoryID, description, org, funding,
-                            link, thumbnail_url, userID, nextcardid)
-            cur.execute(insert_script, insert_value)
-
+            """, (name, latitude_val, longitude_val, categoryID, description, org,
+                  funding, link, thumbnail_url, userID, nextcardid))
             cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
         else:
-            insert_script = """
+            cur.execute("""
                 INSERT INTO Cards
                     (CardID, UserID, Name, Title, Latitude, Longitude, CategoryID,
                      Description, Organization, Funding, Link, Thumbnail_Link)
                 VALUES
                     (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            insert_value = (nextcardid, userID, name, title, latitude_val, longitude_val,
-                            categoryID, description, org, funding, link, thumbnail_url)
-            cur.execute(insert_script, insert_value)
+            """, (nextcardid, userID, name, title, latitude_val, longitude_val,
+                  categoryID, description, org, funding, link, thumbnail_url))
 
-        print("Ready to commit CARDS to DB")
+        print("[DB] Card record inserted/updated")
         enable_commits = True
-    except psycopg2.DatabaseError as e:
-        print(f"[DB ERROR] {e}")
-        conn.rollback()
-        raise HTTPException(status_code=500, detail="An error occurred while inserting the data.")
-    except Exception as e:
-        print(f"[UNEXPECTED ERROR] {e}")
-        raise HTTPException(status_code=500, detail="Unexpected error while inserting card data.")
 
-    # Inserting Unique Tag items if any
-    if tags is not None and tags.strip() != "":
-        try:
+        # --------------------------------------------------
+        # Handle Tags
+        # --------------------------------------------------
+        if tags:
             user_tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
             cur.execute("SELECT TagLabel FROM Tags")
             all_tag_list = cur.fetchall()
-            masterTags = set(tag[0] for tag in all_tag_list)
+            master_tags = set(tag[0] for tag in all_tag_list)
+            new_tags = list(set(user_tags) - master_tags)
+            existing_tags = list(set(user_tags) & master_tags)
 
-            userTagsSet = set(user_tags)
-            uniqueUserTags = list(userTagsSet - masterTags)
-            existingUserTagsList = list(userTagsSet & masterTags)
-
-            if uniqueUserTags:
+            if new_tags:
                 cur.execute("SELECT MAX(TagID) FROM Tags")
                 maxtagid = cur.fetchone()
                 start_id = (maxtagid[0] or 0) + 1
-                nextTagIDsList = [start_id + i for i in range(len(uniqueUserTags))]
+                new_tag_ids = [start_id + i for i in range(len(new_tags))]
                 cur.executemany("INSERT INTO Tags (TagID, TagLabel) VALUES (%s, %s)",
-                                list(zip(nextTagIDsList, uniqueUserTags)))
-                cardTagIDTuple = [(nextcardid, num) for num in nextTagIDsList]
-                cur.executemany("INSERT INTO CardTags (CardID, TagID) VALUES (%s, %s)", cardTagIDTuple)
+                                list(zip(new_tag_ids, new_tags)))
+                cur.executemany("INSERT INTO CardTags (CardID, TagID) VALUES (%s, %s)",
+                                [(nextcardid, tag_id) for tag_id in new_tag_ids])
 
-            if existingUserTagsList:
-                data = tuple(existingUserTagsList)
-                cur.execute("SELECT TagID FROM Tags WHERE TagLabel IN %s", (data,))
+            if existing_tags:
+                cur.execute("SELECT TagID FROM Tags WHERE TagLabel IN %s", (tuple(existing_tags),))
                 results = cur.fetchall()
-                existingUserTagID = [item[0] for item in results]
-                cardTagIDTuple = [(nextcardid, num) for num in existingUserTagID]
-                cur.executemany("INSERT INTO CardTags (CardID, TagID) VALUES (%s, %s)", cardTagIDTuple)
+                cur.executemany("INSERT INTO CardTags (CardID, TagID) VALUES (%s, %s)",
+                                [(nextcardid, tag_id[0]) for tag_id in results])
 
-            print("Ready to commit TAGS to DB")
-            enable_commits = True
-        except Exception as e:
-            print(f"[TAG ERROR] {e}")
+            print("[DB] Tags processed successfully")
 
-    # Inserting Files to Database then Google Cloud
-    if files is not None:
-        for file in files:
-            enable_commits = False
-            try:
-                # Save uploaded file to temp path
-                with tempfile.NamedTemporaryFile(delete=False) as tmp:
-                    file.file.seek(0)
-                    tmp.write(file.file.read())
-                    tmp_path = tmp.name
+        # --------------------------------------------------
+        # Handle file uploads (compress → upload → record)
+        # --------------------------------------------------
+        if files:
+            print("[FILES] Beginning upload process...")
+            for file in files:
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                        file.file.seek(0)
+                        tmp.write(file.file.read())
+                        tmp_path = tmp.name
 
-                # Let compress_file() decide how to handle it
-                zip_path = compress_file(tmp_path, original_name=file.filename)
-                zip_filename = os.path.basename(zip_path)
-                filesizeNEW = os.path.getsize(zip_path)
+                    zip_path = compress_file(tmp_path, original_name=file.filename)
+                    zip_filename = os.path.basename(zip_path)
+                    filesizeNEW = os.path.getsize(zip_path)
 
-                cur.execute("SELECT MAX(FileID) FROM Files")
-                maxFileid = cur.fetchone()
-                nextfileid = (maxFileid[0] or 0) + 1
+                    cur.execute("SELECT MAX(FileID) FROM Files")
+                    maxFileid = cur.fetchone()
+                    nextfileid = (maxFileid[0] or 0) + 1
 
-                # Always compress first
-                zip_path = compress_file(tmp_path, original_name=file.filename)
-                zip_filename = os.path.basename(zip_path)
-                filesizeNEW = os.path.getsize(zip_path)
+                    safe_filename = os.path.splitext(os.path.basename(file.filename))[0]
+                    destination_path = f"files/{username}/{safe_filename}.zip"
 
-                # Clean filename and destination (keep organized per user/card)
-                safe_filename = os.path.splitext(os.path.basename(file.filename))[0]  # strip extension
-                destination_path = f"files/{username}/{safe_filename}.zip"
+                    print(f"[UPLOAD] Uploading compressed file {zip_filename} → {destination_path}")
+                    upload_ok = upload_to_bucket(destination_path, zip_path, "application/zip", bucket_name)
+                    if not upload_ok:
+                        raise Exception("Upload to GCS failed")
 
-                # Upload the ZIP file
-                upload_ok = upload_to_bucket(destination_path, zip_path, "application/zip", bucket_name)
-                if not upload_ok:
-                    raise HTTPException(status_code=500, detail="Failed to upload file")
+                    public_url = f"https://storage.googleapis.com/{bucket_name}/{destination_path}"
 
-                # Public URL
-                public_url = f"https://storage.googleapis.com/{bucket_name}/{destination_path}"
+                    cur.execute(
+                        'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) '
+                        'VALUES (%s, %s, %s, %s, %s, %s)',
+                        (nextfileid, nextcardid, safe_filename, public_url, filesizeNEW, ".zip")
+                    )
 
-                # Save DB record
-                cur.execute(
-                    'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
-                    (nextfileid, nextcardid, safe_filename, public_url, filesizeNEW, ".zip")
-                )
+                    print(f"[DB] File record added: {safe_filename}")
+                    enable_commits = True
 
-                print(f"Ready to commit COMPRESSED FILE {file.filename} TO DB")
-                enable_commits = True
-                # blob_name = f"files/{nextfileid}_{uuid.uuid4().hex}_{zip_filename}"
-                # with open(zip_path, "rb") as fzip:
-                #     upload_ok = upload_to_bucket(blob_name, fzip, "application/zip", bucket_name)
-                # if not upload_ok:
-                #     raise HTTPException(status_code=500, detail="Failed to upload file")
+                except Exception as e:
+                    conn.rollback()
+                    print(f"[FILE ERROR] {e}")
+                    raise HTTPException(status_code=500, detail=f"File upload failed: {e}")
+                finally:
+                    for path in [tmp_path, zip_path]:
+                        if os.path.exists(path):
+                            os.remove(path)
+            print("[FILES] Upload process complete.")
 
-                # public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+        # --------------------------------------------------
+        # Final commit
+        # --------------------------------------------------
+        if enable_commits:
+            conn.commit()
+            print("[COMMIT] All changes committed successfully")
 
-                # # Save DB record
-                # cur.execute(
-                #     'INSERT INTO Files (fileid, CardID, filename, file_link, filesize, fileextension) VALUES (%s, %s, %s, %s, %s, %s)',
-                #     (nextfileid, nextcardid, zip_filename, public_url, filesizeNEW, ".zip")
-                # )
+        return {"message": "Card uploaded successfully", "card_id": nextcardid}
 
-                # print(f"Ready to commit COMPRESSED FILE {file.filename} TO DB")
-                # enable_commits = True
+    except Exception as e:
+        conn.rollback()
+        print(f"[UPLOADFORM ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        try:
+            conn.rollback()
+        except:
+            pass
 
-            except Exception as e:
-                conn.rollback()
-                print(f"[FILE ERROR] {e}")
-                raise HTTPException(status_code=500, detail="Error inserting file")
-            finally:
-                for path in [tmp_path, zip_path]:
-                    if os.path.exists(path):
-                        os.remove(path)
-
-
+# New API's to support edit card funtions for thumbnails and for attached files
 
 # ------------------------------------------------------------
 # DEPRECATED LOCAL FS EXAMPLES (kept for reference)
