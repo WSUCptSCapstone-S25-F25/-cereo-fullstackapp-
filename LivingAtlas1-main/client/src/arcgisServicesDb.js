@@ -113,3 +113,25 @@ export async function fetchServicesByStateMap(codes = ['WA', 'ID', 'OR'], { type
   }
   return results;
 }
+
+// Remove an ArcGIS service by its key
+export async function removeArcgisService(serviceKey, { removedBy = null, layersRemoved = [] } = {}) {
+    try {
+        console.log(`[arcgisServicesDb] Removing service ${serviceKey}...`);
+        
+        const requestBody = {
+            service_key: serviceKey,
+            removed_by: removedBy,
+            layers_removed: layersRemoved
+        };
+        
+        const response = await api.post('/arcgis/services/remove', requestBody);
+        
+        console.log(`[arcgisServicesDb] Successfully removed service ${serviceKey}`);
+        return response.data;
+        
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to remove service ${serviceKey}:`, error);
+        throw error;
+    }
+}
