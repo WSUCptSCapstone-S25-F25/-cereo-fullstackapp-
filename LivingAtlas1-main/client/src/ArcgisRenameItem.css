@@ -1,0 +1,44 @@
+/* Styles for ArcGIS rename component */
+
+.arcgis-rename-text {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+    padding: 2px 4px;
+    border-radius: 3px;
+    display: inline-block;
+    min-width: 50px;
+    margin-left: 4px; /* Space after expand/collapse arrow */
+}
+
+.arcgis-rename-text:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.arcgis-rename-text.disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.arcgis-rename-text.disabled:hover {
+    background-color: transparent;
+}
+
+.arcgis-rename-input {
+    border: 2px solid #007bff;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: inherit;
+    font-family: inherit;
+    background: white;
+    color: #333;
+    outline: none;
+    min-width: 150px;
+    max-width: 300px;
+    margin-left: 4px; /* Space after expand/collapse arrow */
+}
+
+.arcgis-rename-input:focus {
+    border-color: #0056b3;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
