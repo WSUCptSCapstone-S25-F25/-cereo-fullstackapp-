@@ -8,7 +8,13 @@ import {
     fetchArcgisServiceInfo,
     fetchArcgisLayerInfo
 } from './arcgisDataUtils';
-import { fetchArcgisServicesByState, removeArcgisService } from './arcgisServicesDb'; // Fetch from DB
+import { 
+    fetchArcgisServicesByState, 
+    removeArcgisService, 
+    renameFolderServices, 
+    renameService 
+} from './arcgisServicesDb'; // Fetch from DB
+import ArcgisRenameItem from './ArcgisRenameItem';
 // Import local JSON files as fallback
 import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
 import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
@@ -35,6 +41,7 @@ const ARCGIS_SERVICES_BY_STATE = {
     OR: OR_ARCGIS_SERVICES || []
 };
 
+// Main component
 function ArcgisUploadPanel({
     isOpen,
     onClose,
@@ -503,11 +510,83 @@ function ArcgisUploadPanel({
             const updatedList = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
             setServicesFromDb(updatedList);
             
-            console.log(`✅ Service "${service.label}" removed successfully`);
+            console.log(`Service "${service.label}" removed successfully`);
             
         } catch (error) {
             console.error('Failed to remove service:', error);
             alert(`Failed to remove service: ${error.message || 'Unknown error'}`);
+        }
+    };
+
+    // Handle folder rename
+    const handleFolderRename = async (oldFolderName, newFolderName) => {
+        if (!newFolderName || newFolderName.trim() === '') {
+            alert('Folder name cannot be empty');
+            return;
+        }
+
+        if (oldFolderName === newFolderName) {
+            return; // No change needed
+        }
+
+        try {
+            console.log(`Renaming folder "${oldFolderName}" to "${newFolderName}"`);
+            
+            // Call API to rename folder
+            const stateName = {
+                'WA': 'washington',
+                'ID': 'idaho', 
+                'OR': 'oregon'
+            }[selectedState];
+            
+            await renameFolderServices(oldFolderName, newFolderName, stateName);
+            
+            // Refresh services list from database
+            console.log('Refreshing services list after folder rename...');
+            const updatedList = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
+            setServicesFromDb(updatedList);
+            
+            // Update expanded folders to reflect the new name
+            setExpandedFolders(prev => {
+                const newSet = new Set(prev);
+                if (newSet.has(oldFolderName)) {
+                    newSet.delete(oldFolderName);
+                    newSet.add(newFolderName);
+                }
+                return newSet;
+            });
+            
+            console.log(`Folder "${oldFolderName}" renamed to "${newFolderName}" successfully`);
+            
+        } catch (error) {
+            console.error('Failed to rename folder:', error);
+            alert(`Failed to rename folder: ${error.message || 'Unknown error'}`);
+        }
+    };
+
+    // Handle service rename
+    const handleServiceRename = async (serviceKey, newLabel) => {
+        if (!newLabel || newLabel.trim() === '') {
+            alert('Service name cannot be empty');
+            return;
+        }
+
+        try {
+            console.log(`Renaming service "${serviceKey}" to "${newLabel}"`);
+            
+            // Call API to rename service
+            await renameService(serviceKey, newLabel);
+            
+            // Refresh services list from database
+            console.log('Refreshing services list after service rename...');
+            const updatedList = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
+            setServicesFromDb(updatedList);
+            
+            console.log(`Service "${serviceKey}" renamed to "${newLabel}" successfully`);
+            
+        } catch (error) {
+            console.error('Failed to rename service:', error);
+            alert(`Failed to rename service: ${error.message || 'Unknown error'}`);
         }
     };
 
@@ -550,7 +629,6 @@ function ArcgisUploadPanel({
                 }
             });
 
-            // --- ENHANCED RASTER LAYER LOGIC WITH PROPER REMOVAL ---
             // First, handle layers that were completely unchecked - remove ALL their raster layers
             toRemove.forEach(layerId => {
                 const layerRasterPrefix = `arcgis-raster-layer-${service.key}-${layerId}`;
@@ -879,7 +957,7 @@ function ArcgisUploadPanel({
         });
     };
 
-    // State menu bar
+    // State selection menu that sets selectedState and resets relevant state variables based on selection
     const renderStateMenu = () => (
         <div className="arcgis-upload-state-menu">
             {STATE_CODES.map(code => (
@@ -947,6 +1025,7 @@ function ArcgisUploadPanel({
 
     if (!isOpen) return null;
 
+    // JSX return that renders the upload panel UI 
     return (
         <>
             {/* Upload Panel */}
@@ -1003,7 +1082,13 @@ function ArcgisUploadPanel({
                             onClick={() => handleFolderClick(folder)}
                         >
                             <span>
-                                {expandedFolders.has(folder) ? "▼" : "►"} {folder}
+                                {expandedFolders.has(folder) ? "▼" : "►"} 
+                                <ArcgisRenameItem
+                                    value={folder}
+                                    onSave={(newName) => handleFolderRename(folder, newName)}
+                                    placeholder="Enter folder name..."
+                                    isFolder={true}
+                                />
                             </span>
                             {/* Removed folder-level remove button */}
                         </div>
@@ -1026,7 +1111,13 @@ function ArcgisUploadPanel({
                                                 onClick={() => handleServiceClick(service.key)}
                                             >
                                                 <span>
-                                                    {expandedServices.has(service.key) ? "▼" : "►"} {service.label}
+                                                    {expandedServices.has(service.key) ? "▼" : "►"} 
+                                                    <ArcgisRenameItem
+                                                        value={service.label}
+                                                        onSave={(newLabel) => handleServiceRename(service.key, newLabel)}
+                                                        placeholder="Enter service name..."
+                                                        isFolder={false}
+                                                    />
                                                 </span>
                                                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                                     <button
@@ -1365,6 +1456,7 @@ function ArcgisUploadPanel({
                             
                             return (
                                 <div>
+                                    {/* Display various layer info fields if they exist */}
                                     {info.description && (
                                         <div className="arcgis-service-info-row">
                                             <strong>Description:</strong>

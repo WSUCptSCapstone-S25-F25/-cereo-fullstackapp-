@@ -135,3 +135,46 @@ export async function removeArcgisService(serviceKey, { removedBy = null, layers
         throw error;
     }
 }
+
+// Rename a folder for all services in that folder
+export async function renameFolderServices(oldFolderName, newFolderName, stateCode) {
+    try {
+        console.log(`[arcgisServicesDb] Renaming folder ${oldFolderName} to ${newFolderName} for state ${stateCode}...`);
+        
+        const requestBody = {
+            old_folder_name: oldFolderName,
+            new_folder_name: newFolderName,
+            state: stateCode
+        };
+        
+        const response = await api.put('/arcgis/services/rename-folder', requestBody);
+        
+        console.log(`[arcgisServicesDb] Successfully renamed folder ${oldFolderName} to ${newFolderName}`);
+        return response.data;
+        
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to rename folder ${oldFolderName}:`, error);
+        throw error;
+    }
+}
+
+// Rename a specific service
+export async function renameService(serviceKey, newLabel) {
+    try {
+        console.log(`[arcgisServicesDb] Renaming service ${serviceKey} to ${newLabel}...`);
+        
+        const requestBody = {
+            service_key: serviceKey,
+            new_label: newLabel
+        };
+        
+        const response = await api.put('/arcgis/services/rename', requestBody);
+        
+        console.log(`[arcgisServicesDb] Successfully renamed service ${serviceKey} to ${newLabel}`);
+        return response.data;
+        
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to rename service ${serviceKey}:`, error);
+        throw error;
+    }
+}
