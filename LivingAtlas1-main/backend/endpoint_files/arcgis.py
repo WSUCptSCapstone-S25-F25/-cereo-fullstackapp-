@@ -25,6 +25,15 @@ class RemoveServiceRequest(BaseModel):
     removed_by: Optional[str] = None
     layers_removed: Optional[List[str]] = None
 
+class RenameFolderRequest(BaseModel):
+    old_folder_name: str
+    new_folder_name: str
+    state: Optional[str] = None
+
+class RenameServiceRequest(BaseModel):
+    service_key: str
+    new_label: str
+
 @arcgis_router.get("/services")
 def get_services(
     state: Optional[str] = Query(None, description="WA|ID|OR or full state name"),
@@ -176,3 +185,132 @@ def get_removed_services(
     columns = ["key", "label", "url", "folder", "type", "state", "removed_date", "removed_by", "layers_removed"]
     data = [dict(zip(columns, row)) for row in rows]
     return data
+
+@arcgis_router.put("/services/rename-folder")
+def rename_folder(request: RenameFolderRequest):
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    
+    # Validate input
+    if not request.new_folder_name.strip():
+        raise HTTPException(status_code=400, detail="New folder name cannot be empty")
+    
+    if len(request.new_folder_name.strip()) > 255:
+        raise HTTPException(status_code=400, detail="Folder name cannot exceed 255 characters")
+    
+    if request.old_folder_name.strip() == request.new_folder_name.strip():
+        raise HTTPException(status_code=400, detail="New folder name must be different from current name")
+
+    try:
+        # Start transaction
+        conn.autocommit = False
+        
+        # Build WHERE clause
+        where_clauses = ["COALESCE(folder, 'Root') = %s"]
+        params = [request.old_folder_name or 'Root']
+        
+        if request.state:
+            norm_state = _normalize_state(request.state)
+            if norm_state:
+                where_clauses.append("LOWER(state) = %s")
+                params.append(norm_state)
+        
+        # Check if any services exist with the old folder name
+        check_sql = f"""
+            SELECT COUNT(*) FROM arcgis_services 
+            WHERE {' AND '.join(where_clauses)}
+        """
+        
+        cur.execute(check_sql, params)
+        count = cur.fetchone()[0]
+        
+        if count == 0:
+            conn.rollback()
+            conn.autocommit = True
+            raise HTTPException(status_code=404, detail="No services found with the specified folder name")
+        
+        # Update folder name for all matching services
+        update_sql = f"""
+            UPDATE arcgis_services 
+            SET folder = %s 
+            WHERE {' AND '.join(where_clauses)}
+        """
+        
+        update_params = [request.new_folder_name.strip()] + params
+        cur.execute(update_sql, update_params)
+        
+        updated_count = cur.rowcount
+        
+        # Commit transaction
+        conn.commit()
+        conn.autocommit = True
+        
+        return {
+            "success": True,
+            "message": f"Successfully renamed folder '{request.old_folder_name}' to '{request.new_folder_name}'",
+            "services_updated": updated_count
+        }
+        
+    except Exception as e:
+        conn.rollback()
+        conn.autocommit = True
+        raise HTTPException(status_code=500, detail=f"Failed to rename folder: {str(e)}")
+
+@arcgis_router.put("/services/rename")
+def rename_service(request: RenameServiceRequest):
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    
+    # Validate input
+    if not request.new_label.strip():
+        raise HTTPException(status_code=400, detail="New service label cannot be empty")
+    
+    if len(request.new_label.strip()) > 255:
+        raise HTTPException(status_code=400, detail="Service label cannot exceed 255 characters")
+
+    try:
+        # Start transaction
+        conn.autocommit = False
+        
+        # Check if service exists
+        cur.execute("""
+            SELECT label FROM arcgis_services 
+            WHERE service_key = %s
+        """, (request.service_key,))
+        
+        result = cur.fetchone()
+        if not result:
+            conn.rollback()
+            conn.autocommit = True
+            raise HTTPException(status_code=404, detail="Service not found")
+        
+        old_label = result[0]
+        
+        if old_label == request.new_label.strip():
+            conn.rollback()
+            conn.autocommit = True
+            raise HTTPException(status_code=400, detail="New service label must be different from current label")
+        
+        # Update service label
+        cur.execute("""
+            UPDATE arcgis_services 
+            SET label = %s 
+            WHERE service_key = %s
+        """, (request.new_label.strip(), request.service_key))
+        
+        # Commit transaction
+        conn.commit()
+        conn.autocommit = True
+        
+        return {
+            "success": True,
+            "message": f"Successfully renamed service from '{old_label}' to '{request.new_label}'",
+            "service_key": request.service_key,
+            "old_label": old_label,
+            "new_label": request.new_label.strip()
+        }
+        
+    except Exception as e:
+        conn.rollback()
+        conn.autocommit = True
+        raise HTTPException(status_code=500, detail=f"Failed to rename service: {str(e)}")
