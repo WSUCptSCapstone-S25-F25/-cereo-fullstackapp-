@@ -13,7 +13,7 @@ function LayerPanel({
     return (
         <div className="layer-panel">
             <div className="layer-panel-header">
-                <h3 style={{ margin: 0 }}>Layers</h3>
+                <h3 style={{ margin: 0 }}>Toggle Layers</h3>
                 <button
                     className="layer-panel-close-btn"
                     onClick={onClose}
@@ -25,14 +25,14 @@ function LayerPanel({
             <div style={{ marginTop: 20 }}>
                 {/* Card marker checkboxes */}
                 <div style={{ marginBottom: 16 }}>
-                    <strong>Card Markers</strong>
+                    <strong>Filter by Card Category</strong>
                     <label style={{ display: "block", marginBottom: 8, marginTop: 8 }}>
                         <input
                             type="checkbox"
                             checked={layerVisibility.River}
                             onChange={() => handleLayerCheckbox("River")}
                         />{" "}
-                        River Card
+                        River Cards
                     </label>
                     <label style={{ display: "block", marginBottom: 8 }}>
                         <input
@@ -40,7 +40,7 @@ function LayerPanel({
                             checked={layerVisibility.Watershed}
                             onChange={() => handleLayerCheckbox("Watershed")}
                         />{" "}
-                        Watershed Card
+                        Watershed Cards
                     </label>
                     <label style={{ display: "block", marginBottom: 8 }}>
                         <input
@@ -48,20 +48,21 @@ function LayerPanel({
                             checked={layerVisibility.Places}
                             onChange={() => handleLayerCheckbox("Places")}
                         />{" "}
-                        Places Card
+                        Places Cards
                     </label>
                 </div>
                 {/* Colored area checkboxes */}
                 <div>
-                    <strong>Colored Areas</strong>
+                    <strong>Filter by Spatial Area Category</strong>
                     <label style={{ display: "block", marginBottom: 8, marginTop: 8 }}>
                         <input
                             type="checkbox"
                             checked={areaVisibility.River}
                             onChange={() => handleAreaCheckbox("River")}
                         />{" "}
-                        River Area
+                        Hydrological Boundaries
                     </label>
+                    {/*
                     <label style={{ display: "block", marginBottom: 8 }}>
                         <input
                             type="checkbox"
@@ -69,14 +70,14 @@ function LayerPanel({
                             onChange={() => handleAreaCheckbox("Watershed")}
                         />{" "}
                         Watershed Area
-                    </label>
+                    </label> */}
                     <label style={{ display: "block", marginBottom: 8 }}>
                         <input
                             type="checkbox"
                             checked={areaVisibility.Places}
                             onChange={() => handleAreaCheckbox("Places")}
                         />{" "}
-                        Places Area
+                        City Limits
                     </label>
                 </div>
             </div>

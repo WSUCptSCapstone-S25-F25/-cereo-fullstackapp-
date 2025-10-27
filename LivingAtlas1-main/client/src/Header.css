@@ -39,9 +39,8 @@ nav ul li a {
 }
 
 
-
 /* Styling for "Select Category" */
-.custom-category {
+/*.custom-category {
     background-color: #4CAF50;
     border: none;
     color: white;
@@ -52,7 +51,7 @@ nav ul li a {
     margin-left: 10px;
     cursor: pointer;
     border-radius: 5px;
-}
+}*/
 
 /* Styling for "Add Custom filters" */
 .custom-filter {

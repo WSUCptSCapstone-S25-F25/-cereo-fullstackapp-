@@ -3,14 +3,19 @@ import Header from './Header';
 import Main from './Main';
 import Content2 from './Content2';
 import Content1 from './Content1';
+import LayerPanel from './LayerPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
 import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; // faEarthAmericas
 import './Home.css';
 import './Sidebars.css';
+import './LayerPanel.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
 import RemovedServicesPanel from './RemovedServicesPanel'; // Import the new panel
+import { applyAreaVisibility } from './AreaFilter';
+import { showAll } from "./Filter.js";
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons'; // layer group icon
 import { faTrash } from '@fortawesome/free-solid-svg-icons'; // trash icon
 import FormModal from './FormModal'; // <-- import FormModal
 
@@ -29,12 +34,13 @@ function Home(props) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false); // State for removed panel
-    const [isFormModalOpen, setIsFormModalOpen] = useState(false); // <-- new state
+    const [isModalOpen, setIsModalOpen] = useState(false); // <-- new state
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
     const [arcgisLayers, setArcgisLayers] = useState([]);
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
+    const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
 
     // Fetch layers and legend for demo folder/item
     useEffect(() => {
@@ -63,9 +69,11 @@ function Home(props) {
         setSelectedCardCoords(coords);
     };
 
+    /*
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
+    */
 
     const toggleSearchModal = () => {
         setIsSearchModalOpen(!isSearchModalOpen);
@@ -156,6 +164,69 @@ function Home(props) {
         // eslint-disable-next-line
     }, [checkedArcgisLayerIds]);
 
+    // Card marker visibility state
+    const [layerVisibility, setLayerVisibility] = useState({
+        River: true,
+        Watershed: true,
+        Places: true,
+    });
+
+    // Colored area (vector tile) visibility state
+    const [areaVisibility, setAreaVisibility] = useState({
+        River: true,
+        Watershed: true,
+        Places: true,
+    });
+
+    // Helper to show/hide markers by class
+    const updateLayerVisibility = (visibility) => {
+        // Rivers
+        const rivers = document.getElementsByClassName("blue-marker");
+        for (let i = 0; i < rivers.length; i++) {
+            rivers[i].style.visibility = visibility.River ? "visible" : "hidden";
+        }
+        // Watersheds
+        const watersheds = document.getElementsByClassName("green-marker");
+        for (let i = 0; i < watersheds.length; i++) {
+            watersheds[i].style.visibility = visibility.Watershed ? "visible" : "hidden";
+        }
+        // Places
+        const places = document.getElementsByClassName("yellow-marker");
+        for (let i = 0; i < places.length; i++) {
+            places[i].style.visibility = visibility.Places ? "visible" : "hidden";
+        }
+    };
+
+    // Show/hide colored areas (vector tile layers)
+    useEffect(() => {
+        applyAreaVisibility(areaVisibility);
+    }, [areaVisibility]);
+
+    // Update marker visibility when checkboxes change
+    useEffect(() => {
+        // If all are checked, show all
+        if (layerVisibility.River && layerVisibility.Watershed && layerVisibility.Places) {
+            showAll();
+        } else {
+            updateLayerVisibility(layerVisibility);
+        }
+    }, [layerVisibility]);
+
+    // Checkbox handlers
+    const handleCategoryLayerCheckbox = (category) => {
+        setLayerVisibility((prev) => ({
+            ...prev,
+            [category]: !prev[category],
+        }));
+    };
+
+    const handleAreaCheckbox = (category) => {
+        setAreaVisibility((prev) => ({
+            ...prev,
+            [category]: !prev[category],
+        }));
+    };
+
     return (
         <div className="home-container">
             <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`}>
@@ -175,7 +246,7 @@ function Home(props) {
                 <button
                     className="left-sidebar-upload-button"
                     title="Upload Card"
-                    onClick={() => setIsFormModalOpen(true)}   // <-- hook in modal
+                    onClick={() => setIsModalOpen(true)}   // <-- hook in modal
                 >
                     <FontAwesomeIcon icon={faUpload} />
                 </button>
@@ -188,15 +259,23 @@ function Home(props) {
                     setArcgisLayerAdded={setArcgisLayerAdded}
                 />
                 {/* Left Sidebar toggle Button */}
+                {/*
                 <button className="left-sidebar-toggle" onClick={toggleSidebar}>
                     <FontAwesomeIcon icon={isSidebarOpen ? faAngleDoubleLeft : faAngleDoubleRight} />
                 </button>
-
+                */}
+                {/* Layers Button */}
+                <button
+                    className="left-sidebar-layers-button"
+                    onClick={() => setIsLayerPanelOpen((prev) => !prev)}
+                    title="Toggle Layers"
+                >
+                    <FontAwesomeIcon icon={faLayerGroup} />
+                </button>
                 {/* Trash button*/}
                 <button
-                    className="left-sidebar-upload-button"
+                    className="left-sidebar-trash-button"
                     title="Removed Services"
-                    style={{ top: '150px', position: 'absolute' }}
                     onClick={() => setIsRemovedPanelOpen(v => !v)} // Toggle removed panel
                 >
                     <FontAwesomeIcon icon={faTrash} />
@@ -271,6 +350,9 @@ function Home(props) {
                 isCollapsed={isCollapsed}
                 setIsCollapsed={setIsCollapsed}
                 isSidebarOpen={isSidebarOpen}
+                isUploadPanelOpen={isUploadPanelOpen}
+                isRemovedPanelOpen={isRemovedPanelOpen}
+                isLayerPanelOpen={isLayerPanelOpen}
                 selectedCardCoords={selectedCardCoords}
             />
             <Content2
@@ -292,10 +374,20 @@ function Home(props) {
 
             {/* FormModal for Upload */}
             <FormModal
-                isOpen={isFormModalOpen}
-                onRequestClose={() => setIsFormModalOpen(false)}
-                username={props.username}
+                isOpen={isModalOpen}
+                onRequestClose={() => setIsModalOpen(false)}
+                username={props.username || localStorage.getItem("username")}
                 email={props.email}
+            />
+
+            {/* Layer Panel */}
+            <LayerPanel
+                isOpen={isLayerPanelOpen}
+                onClose={() => setIsLayerPanelOpen(false)}
+                layerVisibility={layerVisibility}
+                areaVisibility={areaVisibility}
+                handleLayerCheckbox={handleCategoryLayerCheckbox}
+                handleAreaCheckbox={handleAreaCheckbox}
             />
         </div>
     );

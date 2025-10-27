@@ -1,7 +1,7 @@
 .layer-panel {
     position: fixed;
     top: 65px;
-    right: 60px;
+    left: 60px;
     width: 350px;
     height: calc(100vh - 65px);
     background: #222;

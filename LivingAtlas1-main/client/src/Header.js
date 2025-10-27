@@ -33,7 +33,7 @@ function Header(props) {
     const [activeSort, setActiveSort] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
-
+    /*
     const handleFilterChange = (event) => {
         let filterValue = event.target.value;
     
@@ -58,6 +58,7 @@ function Header(props) {
             console.log(`${filterValue} applied`);
         }
     };
+    */
     
     
     const executeSearch = () => {
@@ -149,74 +150,57 @@ function Header(props) {
                 </button>
             </div>
 
-            {/* <div className="nav-buttons"> */}
-            <select onChange={handleFilterChange} className='custom-category'>
-                    <option value="">Select a Category...</option>
-                    <option value="River">River</option>
-                    <option value="Watershed">Watershed</option>
-                    {/* change Communities to Places in future */}
-                    <option value="Places">Places</option>
+            {/* <button onClick={addCustomFilter} className='custom-filter'>Add Custom filters</button> */}
+            {/* New Custom Filter popup */}
+            <button onClick={openFilterPopup} className="add-custom-filters-button">Add Custom Filters</button>
 
-                    {/* <option value="Communities">Communities</option>
-                    <option value="Landscapes">Landscapes</option>
-                    <option value="Organisms">Organisms</option>
-                    <option value="Stories">Stories</option>
-                    <option value="Watershed">Watershed</option>
-                    <option value="People">People</option> */}
-                    {/* Add more filters as needed */}
-                </select>
-
-                {/* <button onClick={addCustomFilter} className='custom-filter'>Add Custom filters</button> */}
-                {/* New Custom Filter popup */}
-                <button onClick={openFilterPopup} className="add-custom-filters-button">Add Custom Filters</button>
-
-                {/* Modal for Add Customer Filter */}
-                <Modal
-                    isOpen={isAddFilterOpen}
-                    onRequestClose={closeFilterPopup}
-                    className="form-modal">                           
-                        {isAddFilterOpen && (                   
-                            <div>
-                                <input
-                                    type="text"
-                                    onChange={handleCustomFilterChange}
-                                    placeholder="Enter a custom filter..."
-                                />
-                                <button onClick={closeFilterPopup} style={{background: 'red', padding:'10px' }}>Close</button>
-                                <button onClick={addCustomFilter} style={{background: 'green'}}>Add Filter</button>
-                            </div>           
-                        )}    
-                </Modal>
-
-                <select onChange={handleSortChange} className='sort-by'>
-                    <option value="">Sort By...</option>
-                    <option value="ClosestToMe">Closest To Me</option>
-                    <option value="RecentlyAdded">Recently Added</option>
-                </select>
-
-                {/* {isAddFilterOpen && (
-                    <div className="modal" style={{ paddingLeft: '10px', zIndex: 1, }} >
-                        <div className="overlay"></div>
-                        <div className="modal-content">
+            {/* Modal for Add Customer Filter */}
+            <Modal
+                isOpen={isAddFilterOpen}
+                onRequestClose={closeFilterPopup}
+                className="form-modal">                           
+                    {isAddFilterOpen && (                   
+                        <div>
                             <input
                                 type="text"
                                 onChange={handleCustomFilterChange}
                                 placeholder="Enter a custom filter..."
                             />
-                            <button onClick={closeFilterPopup} style={{ background: 'red', color: 'white', padding: '10px' }}>Close</button>
-                            <button onClick={addCustomFilter}>Add Filter</button>
-                        </div>
+                            <button onClick={closeFilterPopup} style={{background: 'red', padding:'10px' }}>Close</button>
+                            <button onClick={addCustomFilter} style={{background: 'green'}}>Add Filter</button>
+                        </div>           
+                    )}    
+            </Modal>
+
+            <select onChange={handleSortChange} className='sort-by'>
+                <option value="">Sort By...</option>
+                <option value="ClosestToMe">Closest To Me</option>
+                <option value="RecentlyAdded">Recently Added</option>
+            </select>
+
+            {/* {isAddFilterOpen && (
+                <div className="modal" style={{ paddingLeft: '10px', zIndex: 1, }} >
+                    <div className="overlay"></div>
+                    <div className="modal-content">
+                        <input
+                            type="text"
+                            onChange={handleCustomFilterChange}
+                            placeholder="Enter a custom filter..."
+                        />
+                        <button onClick={closeFilterPopup} style={{ background: 'red', color: 'white', padding: '10px' }}>Close</button>
+                        <button onClick={addCustomFilter}>Add Filter</button>
                     </div>
-                )} */}
+                </div>
+            )} */}
 
 
 
-                {
-                    props.isLoggedIn && <FormModal className="form-modal-button" email={props.email} username={props.username} />
+            {/*
+                props.isLoggedIn && <FormModal className="form-modal-button" email={props.email} username={props.username} />
 
-                }
+            */}
 
-                {/* </div> */}
+            {/* </div> */}
 
             <div>
                 {activeFilters.map(filter => (

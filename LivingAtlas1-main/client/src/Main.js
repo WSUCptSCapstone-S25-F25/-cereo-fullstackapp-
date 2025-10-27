@@ -25,7 +25,10 @@ function Main(props) {
                 setFilterCondition={props.setFilterCondition}
                 isCollapsed={props.isCollapsed}
                 setIsCollapsed={props.setIsCollapsed}
-                isSidebarOpen={props.isSidebarOpen}
+                //isSidebarOpen={props.isSidebarOpen}
+                isUploadPanelOpen={props.isUploadPanelOpen}
+                isRemovedPanelOpen={props.isRemovedPanelOpen}
+                isLayerPanelOpen={props.isLayerPanelOpen}
                 selectedCardCoords={props.selectedCardCoords}
             />
         </main>

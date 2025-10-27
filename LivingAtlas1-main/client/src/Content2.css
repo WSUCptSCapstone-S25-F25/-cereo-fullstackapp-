@@ -33,7 +33,7 @@ It adjusts the layout of the .card-container and .card elements for smaller scre
 #content-2 {
   position: fixed; /* Fixed to the left of the right sidebar */
   top: 65px; /* Ensures it does not overlap with the navbar */
-  right: 60px; /* Adjacent to the right sidebar */
+  right: 0px; /* Adjacent to the right sidebar */
   width: 500px; /* Width of the card container */
   height: calc(100vh - 65px); /* Height adapts to the viewport minus the navbar height */
   background-color: #ddd;

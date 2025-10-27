@@ -3,7 +3,7 @@
   position: fixed;
   top: 65px; /* height of navbar */
   left: 60px; /* width of left sidebar (closed) */
-  right: 60px; /* width of right sidebar */
+  right: 0px; /* width of right sidebar */
   bottom: 0;
   width: auto;
   height: calc(100vh - 65px);

@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './Content2.css';
 import './Sidebars.css';
-import './LayerPanel.css';
 import Card from './Card.js';
 import FormModal from './FormModal';
 import axios from 'axios';
@@ -10,14 +9,15 @@ import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
+/*
 import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { faBook } from '@fortawesome/free-solid-svg-icons'; // <-- Add this import for the new button icon
-import LayerPanel from './LayerPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { faCheckSquare } from '@fortawesome/free-solid-svg-icons';
 import { faTrash } from '@fortawesome/free-solid-svg-icons'; // <-- NEW: Trash icon
+*/
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
@@ -487,6 +487,7 @@ function Content2(props) {
         }
     };
 
+    /*
     // State for layer panel
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
 
@@ -551,6 +552,7 @@ function Content2(props) {
             [category]: !prev[category],
         }));
     };
+    */
 
     return (
         <>
@@ -559,6 +561,7 @@ function Content2(props) {
                 <div className="collapse-toggle" onClick={toggleCollapse}>
                     <FontAwesomeIcon icon={props.isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
                 </div>
+                {/*
                 <button 
                     className="add-card-button" 
                     onClick={openModal} 
@@ -567,7 +570,6 @@ function Content2(props) {
                 >
                     <FontAwesomeIcon icon={faPlus} />
                 </button>
-                {/* Layer Button */}
                 <button
                     className="layer-panel-button"
                     onClick={() => setIsLayerPanelOpen((prev) => !prev)}
@@ -576,7 +578,6 @@ function Content2(props) {
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
                 </button>
-                {/* Open Card Container Button */}
                 <button
                     className="open-card-container-button"
                     onClick={toggleCollapse}
@@ -585,10 +586,10 @@ function Content2(props) {
                 >
                     <FontAwesomeIcon icon={faBook} />
                 </button>
-                
+                */}
             </div>
 
-            {/* Layer Panel */}
+            {/* Layer Panel
             <LayerPanel
                 isOpen={isLayerPanelOpen}
                 onClose={() => setIsLayerPanelOpen(false)}
@@ -597,6 +598,7 @@ function Content2(props) {
                 handleLayerCheckbox={handleLayerCheckbox}
                 handleAreaCheckbox={handleAreaCheckbox}
             />
+            */}
 
             <FormModal 
                 username={resolvedUsername} 
