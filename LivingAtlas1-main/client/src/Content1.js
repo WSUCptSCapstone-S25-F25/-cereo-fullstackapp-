@@ -66,16 +66,16 @@ const Content1 = (props) => {
   // Resize map when sidebars open or close
   useEffect(() => {
     if (mapContainerRef.current) {
-      if (props.isCollapsed && !(props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isLayerPanelOpen)) {
+      if (props.isCollapsed && !(props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen || props.isLayerPanelOpen)) {
         mapContainerRef.current.style.width = '100%';
         mapContainerRef.current.style.left = '0';
-      } else if (props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen)) {
+      } else if (props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)) {
         mapContainerRef.current.style.width = '71.1%';
         mapContainerRef.current.style.left = '420px';
-      } else if (!props.isCollapsed && !(props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isLayerPanelOpen)) {
+      } else if (!props.isCollapsed && !(props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen || props.isLayerPanelOpen)) {
         mapContainerRef.current.style.width = '79.4%';
         mapContainerRef.current.style.left = '0';
-      } else if (!props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen)) {
+      } else if (!props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)) {
         mapContainerRef.current.style.width = '50.5%';
         mapContainerRef.current.style.left = '420px';
       } else if (props.isCollapsed && props.isLayerPanelOpen) {
@@ -86,7 +86,7 @@ const Content1 = (props) => {
         mapContainerRef.current.style.left = '350px';
       }
     }
-  }, [props.isCollapsed, props.isUploadPanelOpen, props.isRemovedPanelOpen, props.isLayerPanelOpen]);
+  }, [props.isCollapsed, props.isUploadPanelOpen, props.isRemovedPanelOpen, props.isLayerPanelOpen, props.isModalOpen]);
 
   // Adjust map size to resized map container
   useEffect(() => {

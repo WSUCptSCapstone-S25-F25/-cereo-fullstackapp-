@@ -246,7 +246,7 @@ function Home(props) {
                 <button
                     className="left-sidebar-upload-button"
                     title="Upload Card"
-                    onClick={() => setIsModalOpen(true)}   // <-- hook in modal
+                    onClick={() => setIsModalOpen(v => !v)}   // <-- hook in modal
                 >
                     <FontAwesomeIcon icon={faUpload} />
                 </button>
@@ -353,6 +353,7 @@ function Home(props) {
                 isUploadPanelOpen={isUploadPanelOpen}
                 isRemovedPanelOpen={isRemovedPanelOpen}
                 isLayerPanelOpen={isLayerPanelOpen}
+                isModalOpen={isModalOpen}
                 selectedCardCoords={selectedCardCoords}
             />
             <Content2

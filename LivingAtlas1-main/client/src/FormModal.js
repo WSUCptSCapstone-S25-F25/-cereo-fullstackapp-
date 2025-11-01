@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Modal from 'react-modal';
+import mapboxgl from 'mapbox-gl';
 import './FormModal.css';
 import api from './api.js';
 
@@ -7,10 +8,16 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const FormModal = (props) => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
+    const [isSelectingLocation, setIsSelectingLocation] = useState(false);
     const isModalOpen = modalIsOpen || props.isOpen;
+    const selectLocationMarker = useRef(null);
 
     const handleCloseModal = () => {
         setModalIsOpen(false);
+        if (selectLocationMarker.current) {
+            selectLocationMarker.current.remove();
+            selectLocationMarker.current = null;
+        }
         if (props.onRequestClose) {
             props.onRequestClose();
         }
@@ -126,6 +133,33 @@ const FormModal = (props) => {
         handleCloseModal(); 
     };
 
+    const handleSelectLocation = () => {
+        const map = window.atlasMapInstance;
+
+        if (!map) {
+            console.error("Map not found");
+            return;
+        }
+
+        setIsSelectingLocation(true);
+
+        map.once("click", (e) => {
+            const { lat, lng } = e.lngLat;
+
+            setFormData((prevData) => ({
+                ...prevData,
+                latitude: lat.toFixed(6),
+                longitude: lng.toFixed(6),
+            }));
+
+            if (selectLocationMarker.current) {
+                selectLocationMarker.current.remove();
+            }
+            selectLocationMarker.current = new mapboxgl.Marker({ color: "red" }).setLngLat([lng, lat]).addTo(map);
+            setIsSelectingLocation(false);
+        });
+    };
+
     return (
         <div>
             <button className="open-form-button" onClick={() => setModalIsOpen(true)}>Upload</button>
@@ -176,6 +210,16 @@ const FormModal = (props) => {
                     <label>Link:</label>
                     <input type="text" name="link" value={formData.link} onChange={handleInputChange} />
 
+                    <button type="button" className="location_button" onClick={handleSelectLocation}>
+                        Select Location
+                    </button>
+
+                    {isSelectingLocation && (
+                        <span className="select-location-message">
+                            Click on the map to select location.
+                        </span>
+                    )}
+
                     <label>Latitude (required):</label>
                     <input type="text" name="latitude" value={formData.latitude} onChange={handleInputChange} required />
 
@@ -194,7 +238,7 @@ const FormModal = (props) => {
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
                         <button type="submit">Submit</button>
-                        <button type="button" onClick={() => setModalIsOpen(false)}>Cancel</button>
+                        <button type="button" className="cancel_button" onClick={handleCloseModal}>Cancel</button>
                     </div>
                 </form>
             </Modal>

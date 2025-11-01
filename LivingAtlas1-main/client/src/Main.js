@@ -29,6 +29,7 @@ function Main(props) {
                 isUploadPanelOpen={props.isUploadPanelOpen}
                 isRemovedPanelOpen={props.isRemovedPanelOpen}
                 isLayerPanelOpen={props.isLayerPanelOpen}
+                isModalOpen={props.isModalOpen}
                 selectedCardCoords={props.selectedCardCoords}
             />
         </main>
