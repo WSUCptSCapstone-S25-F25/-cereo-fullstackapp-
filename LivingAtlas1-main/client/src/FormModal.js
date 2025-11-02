@@ -17,8 +17,9 @@ const FormModal = (props) => {
     };
 
     const [formData, setFormData] = useState({
-        username: props.username,
-        email: props.email,
+        username: props.username || '',   // required account login
+        name: '',                         // display name
+        email: props.email || '',
         title: '',
         category: '',
         description: '',
@@ -30,7 +31,7 @@ const FormModal = (props) => {
         longitude: '',
     });
 
-    const [selectedFile, setSelectedFile] = useState(null);
+    const [selectedFiles, setSelectedFiles] = useState([]);   // <-- multiple files
     const [thumbnailFile, setThumbnailFile] = useState(null);
     const [thumbnailPreview, setThumbnailPreview] = useState(null);
 
@@ -42,12 +43,17 @@ const FormModal = (props) => {
     };
 
     const handleFileInput = (e) => {
-        const file = e.target.files[0];
-        if (file && file.size > MAX_FILE_SIZE) {
-            alert(`File size should not exceed ${MAX_FILE_SIZE / 1024 / 1024} MB`);
-            return;
+        const files = Array.from(e.target.files);
+        const validFiles = [];
+
+        for (let file of files) {
+            if (file.size > MAX_FILE_SIZE) {
+                alert(`File "${file.name}" exceeds ${MAX_FILE_SIZE / 1024 / 1024} MB`);
+                return;
+            }
+            validFiles.push(file);
         }
-        setSelectedFile(file);
+        setSelectedFiles(validFiles);
     };
 
     const handleThumbnailInput = (e) => {
@@ -62,6 +68,8 @@ const FormModal = (props) => {
 
     const validateForm = () => {
         const errors = [];
+        if (!formData.username.trim()) errors.push("Username is required.");
+        if (!formData.name.trim()) errors.push("Name is required.");
         if (!formData.title.trim() || formData.title.length > 255) errors.push("Title is required and must be <256 chars.");
         if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.latitude)) errors.push("Latitude format is invalid.");
         if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.longitude)) errors.push("Longitude format is invalid.");
@@ -80,17 +88,26 @@ const FormModal = (props) => {
             return;
         }
 
-        // Re-enforce username (name) from props before submitting
-        formData.name = props.username;
+        // Always use current props.username to avoid stale state
+        const payload = {
+            ...formData,
+            username: props.username || formData.username
+        };
 
         const formData2 = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-            if (value) {
+        Object.entries(payload).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
                 formData2.append(key, value);
             }
         });
 
-        if (selectedFile) formData2.append('file', selectedFile);
+        // append multiple files
+        if (selectedFiles.length > 0) {
+            selectedFiles.forEach((file) => {
+                formData2.append('files', file);
+            });
+        }
+        
         if (thumbnailFile) formData2.append('thumbnail', thumbnailFile);
 
         console.log("Uploading FormData:", [...formData2.entries()]);
@@ -113,23 +130,25 @@ const FormModal = (props) => {
         <div>
             <button className="open-form-button" onClick={() => setModalIsOpen(true)}>Upload</button>
             <Modal
-                // isOpen={props.isOpen} // Use the isOpen prop from the parent
-                // onRequestClose={props.onRequestClose} // Use the onRequestClose prop from the parent
                 isOpen={isModalOpen}
                 onRequestClose={handleCloseModal}
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
                 ariaHideApp={false}
-
             >
-
-                <button className="close-modal-button"  onClick={handleCloseModal}>
+                <button className="close-modal-button" onClick={handleCloseModal}>
                     &times;
                 </button>
                 <h2>Upload Document</h2>
                 <form onSubmit={handleSubmit}>
                     <label>Name (required):</label>
-                    <input type="text" name="name" value={formData.name} readOnly />
+                    <input 
+                        type="text" 
+                        name="name" 
+                        value={formData.name} 
+                        onChange={handleInputChange} 
+                        required 
+                    />
 
                     <label>Email (required):</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
@@ -170,8 +189,8 @@ const FormModal = (props) => {
                     <input type="file" accept="image/*" onChange={handleThumbnailInput} />
                     {thumbnailPreview && <img src={thumbnailPreview} alt="Preview" style={{ width: "100px", marginBottom: "10px" }} />}
 
-                    <label>Upload File:</label>
-                    <input type="file" onChange={handleFileInput} />
+                    <label>Upload Files:</label>
+                    <input type="file" multiple onChange={handleFileInput} />
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
                         <button type="submit">Submit</button>

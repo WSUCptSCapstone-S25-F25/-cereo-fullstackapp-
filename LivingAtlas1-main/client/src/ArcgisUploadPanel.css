@@ -1,0 +1,446 @@
+/* Upload Panel: attaches to right of left sidebar */
+.upload-panel {
+    position: fixed;
+    top: 65px;
+    left: 60px;
+    height: calc(100vh - 65px);
+    width: 420px;
+    background: #f7f7f7;
+    border-left: 1px solid #ddd;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.07);
+    z-index: 1200;
+    padding: 18px 18px 18px 18px;
+    font-size: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    color: #222;
+}
+
+.upload-panel * {
+    color: #222 !important;
+}
+
+.upload-panel-close-btn {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    width: 32px;
+    height: 32px;
+    background: #fff;
+    border: 1px solid #ddd;
+    color: #1976d2 !important;
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 1201;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0px;
+}
+.upload-panel-close-btn:hover {
+    background: #e3f2fd;
+    color: #1565c0 !important;
+    box-shadow: 0 4px 12px rgba(25,118,210,0.12);
+}
+
+.upload-folder {
+    cursor: pointer;
+    font-weight: bold;
+    margin: 8px 0 4px 0;
+    padding: 4px 6px 4px 4px;
+    border-radius: 4px;
+    background: #ececec;
+    transition: background 0.2s;
+    color: #222 !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.upload-folder-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.upload-item {
+    cursor: pointer;
+    font-weight: bold;
+    margin: 2px 0;
+    padding: 2px 0 2px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 4px;
+    background: #ececec;
+    transition: background 0.2s;
+    color: #222 !important;
+    min-height: 24px;
+    font-size: 13px;
+    padding: 2px 0 2px 4px;
+    flex-wrap: wrap;
+}
+
+.upload-item:hover {
+    background: #e0e0e0;
+}
+
+.upload-item > span {
+    white-space: nowrap;
+}
+
+.upload-item > div:last-child {
+    margin-left: auto;
+}
+
+.upload-panel ul {
+    padding-left: 10px;
+    margin: 0 0 4px 0;
+}
+
+.upload-panel li {
+    margin: 2px 0;
+    font-size: 14px;
+    color: #222;
+}
+
+.upload-panel .legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px;
+    gap: 8px;
+}
+
+.upload-panel .legend-item img {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+}
+
+.upload-panel .legend-layer-title {
+    font-weight: 600;
+    margin: 8px 0 2px 0;
+    font-size: 15px;
+    color: #333;
+    padding-left: 2px;
+}
+
+.upload-layer-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px;
+    font-size: 13px;
+    gap: 4px;
+    min-height: 20px;
+}
+
+.upload-layer-row input[type="checkbox"] {
+    margin-right: 4px;
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+/* Sublayer/legend item styles */
+.upload-layer-sublayer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 3px;
+    font-size: 12px;
+    color: #666;
+    padding-left: 4px;
+    min-height: 18px;
+    transition: background-color 0.2s;
+}
+
+.upload-layer-sublayer:hover {
+    background-color: rgba(25, 118, 210, 0.05);
+    border-radius: 3px;
+}
+
+.upload-layer-sublayer input[type="checkbox"] {
+    width: 12px !important;
+    height: 12px !important;
+    margin-right: 6px !important;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.upload-layer-sublayer img {
+    width: 14px !important;
+    height: 14px !important;
+    margin-right: 6px !important;
+    flex-shrink: 0;
+}
+
+.upload-layer-sublayer span {
+    line-height: 1.2;
+    word-break: break-word;
+    cursor: default;
+}
+
+/* Parent layer counter styling */
+.upload-layer-row .layer-counter {
+    font-size: 11px;
+    color: #888;
+    margin-left: 8px;
+    font-weight: normal;
+}
+
+/* Legend image base styles */
+.upload-panel .legend-img {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+    flex-shrink: 0;
+}
+
+.upload-panel .select-all-label {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+/* Make upload items and add/remove buttons compact */
+.upload-item {
+    min-height: 24px;
+    font-size: 13px;
+    padding: 2px 0 2px 4px;
+}
+
+.upload-layer-row {
+    min-height: 20px;
+    font-size: 12.5px;
+    margin-bottom: 1px;
+    gap: 3px;
+}
+
+.upload-layer-row input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+    margin-right: 3px;
+}
+
+.upload-panel .add-btn,
+.upload-panel .remove-btn {
+    min-height: 22px;
+    height: 26px;
+    font-size: 12px;
+    padding: 0 8px;
+    margin-left: 8px;
+    border-radius: 4px;
+    border: none;
+    background: #90caf9;
+    color: #0d47a1;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.upload-panel .remove-btn {
+    background: #fca5a5;
+    color: #7f1d1d;
+}
+
+.upload-panel .add-btn:hover,
+.upload-panel .remove-btn:hover {
+    background: #e0e0e0;
+}
+
+.upload-panel .learn-more-btn {
+    min-height: 22px;
+    height: 26px;
+    font-size: 12px;
+    padding: 0 8px;
+    margin-left: 0;
+    border-radius: 4px;
+    border: none;
+    background: #90caf9;
+    color: #0d47a1;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+}
+.upload-panel .learn-more-btn:hover {
+    background: #e0e0e0;
+}
+
+/* Search bar container */
+.upload-panel-searchbar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    margin-top: 10px;
+}
+
+/* Search input */
+.upload-panel-searchbar input[type="text"] {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    height: 32px;
+    margin-top: 0;
+}
+
+/* Search dropdown */
+.upload-panel-searchbar-dropdown {
+    margin-left: 8px;
+    padding: 4px;
+    font-size: 14px;
+    border-radius: 4px;
+    height: 32px;
+    margin-top: 0;
+}
+
+/* Search and clear buttons */
+.upload-panel-searchbar-btn {
+    margin-left: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: background 0.2s;
+    margin-top: 0;
+}
+
+/* Attribution at bottom */
+.upload-panel-attribution {
+    font-size: 12px;
+    color: #555;
+    margin-top: 12px;
+    text-align: center;
+}
+
+.arcgis-loading-messages {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    pointer-events: none;
+}
+
+.arcgis-loading-message {
+    background: #fff;
+    color: #333;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    padding: 8px 18px;
+    margin-bottom: 8px;
+    font-size: 15px;
+    min-width: 220px;
+    text-align: center;
+    pointer-events: auto;
+    border-left: 5px solid #1976d2;
+    transition: opacity 0.3s;
+}
+
+.arcgis-loading-message.finished {
+    border-left: 5px solid #22c55e;
+    background: #f0fff4;
+}
+
+.upload-panel-added-checkbox-row {
+    margin: 8px 0 12px 0;
+    padding-left: 2px;
+    font-size: 14px;
+    color: #1976d2;
+    display: flex;
+    align-items: center;
+    user-select: none;
+}
+
+/* Service Info Modal */
+.arcgis-service-info-modal {
+    margin-top: 200px;
+    position: fixed;
+    top: 65px;
+    left: calc(60px + 420px + 12px);
+    width: 380px;
+    max-height: calc(100vh - 80px);
+    overflow: auto;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.15);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    padding: 12px;
+    z-index: 3000;
+    border-radius: 6px;
+    color: #222;
+}
+
+/* Modal header */
+.arcgis-service-info-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Close button */
+.arcgis-service-info-modal-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #222;
+}
+
+/* Modal content */
+.arcgis-service-info-modal-content {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #333;
+}
+
+/* Rows and description */
+.arcgis-service-info-row {
+    margin-bottom: 6px;
+}
+.arcgis-service-info-description {
+    margin-top: 4px;
+    white-space: pre-wrap;
+}
+
+/* Empty state */
+.arcgis-service-info-empty {
+    color: #666;
+}
+
+/* Raw JSON section */
+.arcgis-service-info-raw summary {
+    cursor: pointer;
+}
+.arcgis-service-info-raw pre {
+    white-space: pre-wrap;
+    font-size: 12px;
+    background: #f6f6f6;
+    padding: 8px;
+    border-radius: 4px;
+    margin: 6px 0 0 0;
+}

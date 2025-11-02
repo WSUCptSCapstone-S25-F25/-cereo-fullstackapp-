@@ -1,0 +1,2138 @@
+[
+  {
+    "key": "Administrative_AdministrativeBasins_FeatureServer",
+    "label": "AdministrativeBasins (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/AdministrativeBasins/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_AdministrativeBasins_MapServer",
+    "label": "AdministrativeBasins (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/AdministrativeBasins/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_BearRiverBasinAdjudicationAdministrativeBasins_FeatureServer",
+    "label": "BearRiverBasinAdjudicationAdministrativeBasins (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/BearRiverBasinAdjudicationAdministrativeBasins/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_BearRiverBasinAdjudicationAdministrativeBasins_MapServer",
+    "label": "BearRiverBasinAdjudicationAdministrativeBasins (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/BearRiverBasinAdjudicationAdministrativeBasins/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_BearRiverBasinAdjudicationBoundary_FeatureServer",
+    "label": "BearRiverBasinAdjudicationBoundary (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/BearRiverBasinAdjudicationBoundary/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_BearRiverBasinAdjudicationBoundary_MapServer",
+    "label": "BearRiverBasinAdjudicationBoundary (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/BearRiverBasinAdjudicationBoundary/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_IdwrOffices_FeatureServer",
+    "label": "IdwrOffices (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/IdwrOffices/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_IdwrOffices_MapServer",
+    "label": "IdwrOffices (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/IdwrOffices/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_IdwrRegions_FeatureServer",
+    "label": "IdwrRegions (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/IdwrRegions/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_IdwrRegions_MapServer",
+    "label": "IdwrRegions (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/IdwrRegions/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_LinearAdministrativeBasins_FeatureServer",
+    "label": "LinearAdministrativeBasins (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/LinearAdministrativeBasins/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_LinearAdministrativeBasins_MapServer",
+    "label": "LinearAdministrativeBasins (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/LinearAdministrativeBasins/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_NorthernIdahoAdjudicationAreas_FeatureServer",
+    "label": "NorthernIdahoAdjudicationAreas (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/NorthernIdahoAdjudicationAreas/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_NorthernIdahoAdjudicationAreas_MapServer",
+    "label": "NorthernIdahoAdjudicationAreas (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/NorthernIdahoAdjudicationAreas/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_NorthernIdahoAdjudicationBoundary_FeatureServer",
+    "label": "NorthernIdahoAdjudicationBoundary (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/NorthernIdahoAdjudicationBoundary/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_NorthernIdahoAdjudicationBoundary_MapServer",
+    "label": "NorthernIdahoAdjudicationBoundary (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/NorthernIdahoAdjudicationBoundary/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_SnakeRiverBasinAdjudication_FeatureServer",
+    "label": "SnakeRiverBasinAdjudication (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/SnakeRiverBasinAdjudication/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_SnakeRiverBasinAdjudication_MapServer",
+    "label": "SnakeRiverBasinAdjudication (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/SnakeRiverBasinAdjudication/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_SnakeRiverBasinAdjudicationReportingAreas_FeatureServer",
+    "label": "SnakeRiverBasinAdjudicationReportingAreas (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/SnakeRiverBasinAdjudicationReportingAreas/FeatureServer",
+    "folder": "Administrative",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Administrative_SnakeRiverBasinAdjudicationReportingAreas_MapServer",
+    "label": "SnakeRiverBasinAdjudicationReportingAreas (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Administrative/SnakeRiverBasinAdjudicationReportingAreas/MapServer",
+    "folder": "Administrative",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AdjudicationClaimPods_FeatureServer",
+    "label": "AdjudicationClaimPods (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AdjudicationClaimPods/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AdjudicationClaimPods_MapServer",
+    "label": "AdjudicationClaimPods (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AdjudicationClaimPods/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AdjudicationClaimPous_FeatureServer",
+    "label": "AdjudicationClaimPous (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AdjudicationClaimPous/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AdjudicationClaimPous_MapServer",
+    "label": "AdjudicationClaimPous (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AdjudicationClaimPous/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AdjudicationRecommendationPods_FeatureServer",
+    "label": "AdjudicationRecommendationPods (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AdjudicationRecommendationPods/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AdjudicationRecommendationPods_MapServer",
+    "label": "AdjudicationRecommendationPods (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AdjudicationRecommendationPods/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AdjudicationRecommendationPous_FeatureServer",
+    "label": "AdjudicationRecommendationPous (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AdjudicationRecommendationPous/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AdjudicationRecommendationPous_MapServer",
+    "label": "AdjudicationRecommendationPous (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AdjudicationRecommendationPous/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AppropriationApplicationPods_FeatureServer",
+    "label": "AppropriationApplicationPods (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AppropriationApplicationPods/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AppropriationApplicationPods_MapServer",
+    "label": "AppropriationApplicationPods (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AppropriationApplicationPods/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AppropriationApplicationPous_FeatureServer",
+    "label": "AppropriationApplicationPous (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AppropriationApplicationPous/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AppropriationApplicationPous_MapServer",
+    "label": "AppropriationApplicationPous (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AppropriationApplicationPous/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AppropriationPermitPods_FeatureServer",
+    "label": "AppropriationPermitPods (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AppropriationPermitPods/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AppropriationPermitPods_MapServer",
+    "label": "AppropriationPermitPods (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AppropriationPermitPods/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AppropriationPermitPous_FeatureServer",
+    "label": "AppropriationPermitPous (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AppropriationPermitPous/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_AppropriationPermitPous_MapServer",
+    "label": "AppropriationPermitPous (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/AppropriationPermitPous/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_WaterRightPods_FeatureServer",
+    "label": "WaterRightPods (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/WaterRightPods/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_WaterRightPods_MapServer",
+    "label": "WaterRightPods (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/WaterRightPods/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_WaterRightPous_FeatureServer",
+    "label": "WaterRightPous (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/WaterRightPous/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_WaterRightPous_MapServer",
+    "label": "WaterRightPous (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/WaterRightPous/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_WaterSupplyBankLeasePods_FeatureServer",
+    "label": "WaterSupplyBankLeasePods (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/WaterSupplyBankLeasePods/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_WaterSupplyBankLeasePods_MapServer",
+    "label": "WaterSupplyBankLeasePods (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/WaterSupplyBankLeasePods/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_WaterSupplyBankRentalPods_FeatureServer",
+    "label": "WaterSupplyBankRentalPods (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/WaterSupplyBankRentalPods/FeatureServer",
+    "folder": "Allocation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Allocation_WaterSupplyBankRentalPods_MapServer",
+    "label": "WaterSupplyBankRentalPods (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/WaterSupplyBankRentalPods/MapServer",
+    "folder": "Allocation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Doqq_MapServer",
+    "label": "Doqq (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Doqq/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Landsat19971998Mosaic_MapServer",
+    "label": "Landsat19971998Mosaic (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Landsat19971998Mosaic/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Naip2006NorthernTrueColor_MapServer",
+    "label": "Naip2006NorthernTrueColor (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Naip2006NorthernTrueColor/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Naip2006TrueColor_MapServer",
+    "label": "Naip2006TrueColor (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Naip2006TrueColor/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Naip2009FalseColor_MapServer",
+    "label": "Naip2009FalseColor (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Naip2009FalseColor/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Naip2009TrueColor_MapServer",
+    "label": "Naip2009TrueColor (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Naip2009TrueColor/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Naip2013FalseColor_MapServer",
+    "label": "Naip2013FalseColor (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Naip2013FalseColor/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Naip2013TrueColor_MapServer",
+    "label": "Naip2013TrueColor (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Naip2013TrueColor/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Naip2015FalseColor_MapServer",
+    "label": "Naip2015FalseColor (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Naip2015FalseColor/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_Naip2015TrueColor_MapServer",
+    "label": "Naip2015TrueColor (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/Naip2015TrueColor/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "BasemapImagery_SrbaPhotos_MapServer",
+    "label": "SrbaPhotos (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/BasemapImagery/SrbaPhotos/MapServer",
+    "folder": "BasemapImagery",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Compliance_AccountingModel_FeatureServer",
+    "label": "AccountingModel (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Compliance/AccountingModel/FeatureServer",
+    "folder": "Compliance",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Compliance_AccountingModel_MapServer",
+    "label": "AccountingModel (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Compliance/AccountingModel/MapServer",
+    "folder": "Compliance",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Compliance_Dams_FeatureServer",
+    "label": "Dams (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Compliance/Dams/FeatureServer",
+    "folder": "Compliance",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Compliance_Dams_MapServer",
+    "label": "Dams (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Compliance/Dams/MapServer",
+    "folder": "Compliance",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Compliance_DiversionDataSites_FeatureServer",
+    "label": "DiversionDataSites (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Compliance/DiversionDataSites/FeatureServer",
+    "folder": "Compliance",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Compliance_DiversionDataSites_MapServer",
+    "label": "DiversionDataSites (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Compliance/DiversionDataSites/MapServer",
+    "folder": "Compliance",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Compliance_Wmis_FeatureServer",
+    "label": "Wmis (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Compliance/Wmis/FeatureServer",
+    "folder": "Compliance",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Compliance_Wmis_MapServer",
+    "label": "Wmis (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Compliance/Wmis/MapServer",
+    "folder": "Compliance",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_EdmsWellsWithSamples_FeatureServer",
+    "label": "EdmsWellsWithSamples (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/EdmsWellsWithSamples/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_EdmsWellsWithSamples_MapServer",
+    "label": "EdmsWellsWithSamples (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/EdmsWellsWithSamples/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_FlowSystems_FeatureServer",
+    "label": "FlowSystems (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/FlowSystems/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_FlowSystems_MapServer",
+    "label": "FlowSystems (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/FlowSystems/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_FlowSystemsArc_FeatureServer",
+    "label": "FlowSystemsArc (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/FlowSystemsArc/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_FlowSystemsArc_MapServer",
+    "label": "FlowSystemsArc (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/FlowSystemsArc/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_FlowSystemsGroundClassification_FeatureServer",
+    "label": "FlowSystemsGroundClassification (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/FlowSystemsGroundClassification/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_FlowSystemsGroundClassification_MapServer",
+    "label": "FlowSystemsGroundClassification (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/FlowSystemsGroundClassification/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_FlowSystemsLine_FeatureServer",
+    "label": "FlowSystemsLine (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/FlowSystemsLine/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_FlowSystemsLine_MapServer",
+    "label": "FlowSystemsLine (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/FlowSystemsLine/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_GeothermalSprings_FeatureServer",
+    "label": "GeothermalSprings (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/GeothermalSprings/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_GeothermalSprings_MapServer",
+    "label": "GeothermalSprings (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/GeothermalSprings/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_GeothermalWells_FeatureServer",
+    "label": "GeothermalWells (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/GeothermalWells/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_GeothermalWells_MapServer",
+    "label": "GeothermalWells (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/GeothermalWells/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_InjectionWells_FeatureServer",
+    "label": "InjectionWells (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/InjectionWells/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_InjectionWells_MapServer",
+    "label": "InjectionWells (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/InjectionWells/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_MoscowPullmanAquifer_FeatureServer",
+    "label": "MoscowPullmanAquifer (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/MoscowPullmanAquifer/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_MoscowPullmanAquifer_MapServer",
+    "label": "MoscowPullmanAquifer (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/MoscowPullmanAquifer/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_SpokaneRathdrumAquifer_MapServer",
+    "label": "SpokaneRathdrumAquifer (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/SpokaneRathdrumAquifer/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_SpokaneRathdrumAquiferComplete_FeatureServer",
+    "label": "SpokaneRathdrumAquiferComplete (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/SpokaneRathdrumAquiferComplete/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_SpokaneRathdrumAquiferComplete_MapServer",
+    "label": "SpokaneRathdrumAquiferComplete (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/SpokaneRathdrumAquiferComplete/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_Wells_FeatureServer",
+    "label": "Wells (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer",
+    "folder": "Groundwater",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Groundwater_Wells_MapServer",
+    "label": "Wells (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/MapServer",
+    "folder": "Groundwater",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Hosted_Watermaster_Contact_Info_Table_FeatureServer",
+    "label": "Watermaster_Contact_Info_Table (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Hosted/Watermaster_Contact_Info_Table/FeatureServer",
+    "folder": "Hosted",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_1976BearRiver_MapServer",
+    "label": "1976BearRiver (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/1976BearRiver/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_1986EasternSnakePlain_MapServer",
+    "label": "1986EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/1986EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_1987TreasureValley_MapServer",
+    "label": "1987TreasureValley (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/1987TreasureValley/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_1994TreasureValley_MapServer",
+    "label": "1994TreasureValley (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/1994TreasureValley/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_1996EasternSnakePlain_MapServer",
+    "label": "1996EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/1996EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_1997TreasureValley_MapServer",
+    "label": "1997TreasureValley (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/1997TreasureValley/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2000EasternSnakePlain_MapServer",
+    "label": "2000EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2000EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2000TreasureValley_MapServer",
+    "label": "2000TreasureValley (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2000TreasureValley/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2002EasternSnakePlain_MapServer",
+    "label": "2002EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2002EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2004TreasureValley_MapServer",
+    "label": "2004TreasureValley (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2004TreasureValley/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2006EasternSnakePlain_MapServer",
+    "label": "2006EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2006EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2007TreasureValley_MapServer",
+    "label": "2007TreasureValley (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2007TreasureValley/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2008EasternSnakePlain_MapServer",
+    "label": "2008EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2008EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2009BearRiver_MapServer",
+    "label": "2009BearRiver (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2009BearRiver/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2009EasternSnakePlain_MapServer",
+    "label": "2009EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2009EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2010EasternSnakePlain_MapServer",
+    "label": "2010EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2010EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2010MountainHome_MapServer",
+    "label": "2010MountainHome (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2010MountainHome/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2010TreasureValley_MapServer",
+    "label": "2010TreasureValley (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2010TreasureValley/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2011EasternSnakePlain_MapServer",
+    "label": "2011EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2011EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2012EasternSnakePlain_MapServer",
+    "label": "2012EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2012EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2013EasternSnakePlain_MapServer",
+    "label": "2013EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2013EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2014EasternSnakePlain_MapServer",
+    "label": "2014EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2014EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2015EasternSnakePlain_MapServer",
+    "label": "2015EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2015EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2015TreasureValley_MapServer",
+    "label": "2015TreasureValley (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2015TreasureValley/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2016CamasPrairie_MapServer",
+    "label": "2016CamasPrairie (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2016CamasPrairie/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2016EasternSnakePlain_MapServer",
+    "label": "2016EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2016EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2017EasternSnakePlain_MapServer",
+    "label": "2017EasternSnakePlain (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2017EasternSnakePlain/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2017MaladValley_MapServer",
+    "label": "2017MaladValley (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2017MaladValley/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2017RaftRiver_MapServer",
+    "label": "2017RaftRiver (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2017RaftRiver/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2019BearRiver_MapServer",
+    "label": "2019BearRiver (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2019BearRiver/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2019CamasPrairie_MapServer",
+    "label": "2019CamasPrairie (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2019CamasPrairie/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "IrrigatedLands_2021CamasPrairie_MapServer",
+    "label": "2021CamasPrairie (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/IrrigatedLands/2021CamasPrairie/MapServer",
+    "folder": "IrrigatedLands",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Irrigation_ConsumptiveUse_FeatureServer",
+    "label": "ConsumptiveUse (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Irrigation/ConsumptiveUse/FeatureServer",
+    "folder": "Irrigation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Irrigation_ConsumptiveUse_MapServer",
+    "label": "ConsumptiveUse (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Irrigation/ConsumptiveUse/MapServer",
+    "folder": "Irrigation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Irrigation_HeadgateRequirement_FeatureServer",
+    "label": "HeadgateRequirement (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Irrigation/HeadgateRequirement/FeatureServer",
+    "folder": "Irrigation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Irrigation_HeadgateRequirement_MapServer",
+    "label": "HeadgateRequirement (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Irrigation/HeadgateRequirement/MapServer",
+    "folder": "Irrigation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Irrigation_IrrigationOrganizations_FeatureServer",
+    "label": "IrrigationOrganizations (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Irrigation/IrrigationOrganizations/FeatureServer",
+    "folder": "Irrigation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Irrigation_IrrigationOrganizations_MapServer",
+    "label": "IrrigationOrganizations (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Irrigation/IrrigationOrganizations/MapServer",
+    "folder": "Irrigation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Irrigation_SeasonOfUse_FeatureServer",
+    "label": "SeasonOfUse (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Irrigation/SeasonOfUse/FeatureServer",
+    "folder": "Irrigation",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Irrigation_SeasonOfUse_MapServer",
+    "label": "SeasonOfUse (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Irrigation/SeasonOfUse/MapServer",
+    "folder": "Irrigation",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "MapAutomation_Layouts_GPServer",
+    "label": "Layouts (GPServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/MapAutomation/Layouts/GPServer",
+    "folder": "MapAutomation",
+    "type": "GPServer",
+    "state": "idaho"
+  },
+  {
+    "key": "MapAutomation_PrintMap_GPServer",
+    "label": "PrintMap (GPServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/MapAutomation/PrintMap/GPServer",
+    "folder": "MapAutomation",
+    "type": "GPServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_12DigitHydrologicUnit_FeatureServer",
+    "label": "12DigitHydrologicUnit (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/12DigitHydrologicUnit/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_12DigitHydrologicUnit_MapServer",
+    "label": "12DigitHydrologicUnit (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/12DigitHydrologicUnit/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_8DigitHydrologicUnit_FeatureServer",
+    "label": "8DigitHydrologicUnit (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/8DigitHydrologicUnit/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_8DigitHydrologicUnit_MapServer",
+    "label": "8DigitHydrologicUnit (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/8DigitHydrologicUnit/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP1980_GW_Contours_FeatureServer",
+    "label": "ESPA_SP1980_GW_Contours (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP1980_GW_Contours/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP1980_GW_Contours_MapServer",
+    "label": "ESPA_SP1980_GW_Contours (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP1980_GW_Contours/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2008_GW_Contours_FeatureServer",
+    "label": "ESPA_SP2008_GW_Contours (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2008_GW_Contours/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2008_GW_Contours_MapServer",
+    "label": "ESPA_SP2008_GW_Contours (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2008_GW_Contours/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2013_GW_Contours_25_FeatureServer",
+    "label": "ESPA_SP2013_GW_Contours_25 (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2013_GW_Contours_25/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2013_GW_Contours_25_MapServer",
+    "label": "ESPA_SP2013_GW_Contours_25 (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2013_GW_Contours_25/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2013_GW_Contours_50_FeatureServer",
+    "label": "ESPA_SP2013_GW_Contours_50 (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2013_GW_Contours_50/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2013_GW_Contours_50_MapServer",
+    "label": "ESPA_SP2013_GW_Contours_50 (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2013_GW_Contours_50/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2018_GW_Contours_25_FeatureServer",
+    "label": "ESPA_SP2018_GW_Contours_25 (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2018_GW_Contours_25/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2018_GW_Contours_25_MapServer",
+    "label": "ESPA_SP2018_GW_Contours_25 (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2018_GW_Contours_25/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2018_GW_Contours_50_FeatureServer",
+    "label": "ESPA_SP2018_GW_Contours_50 (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2018_GW_Contours_50/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2018_GW_Contours_50_MapServer",
+    "label": "ESPA_SP2018_GW_Contours_50 (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2018_GW_Contours_50/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2023_GW_Contours_25_FeatureServer",
+    "label": "ESPA_SP2023_GW_Contours_25 (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2023_GW_Contours_25/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2023_GW_Contours_25_MapServer",
+    "label": "ESPA_SP2023_GW_Contours_25 (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2023_GW_Contours_25/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2023_GW_Contours_50_FeatureServer",
+    "label": "ESPA_SP2023_GW_Contours_50 (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2023_GW_Contours_50/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_ESPA_SP2023_GW_Contours_50_MapServer",
+    "label": "ESPA_SP2023_GW_Contours_50 (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/ESPA_SP2023_GW_Contours_50/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_Espa22SteadyStateResponseFunction_FeatureServer",
+    "label": "Espa22SteadyStateResponseFunction (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/Espa22SteadyStateResponseFunction/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_Espa22SteadyStateResponseFunction_MapServer",
+    "label": "Espa22SteadyStateResponseFunction (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/Espa22SteadyStateResponseFunction/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaACGWSBoundary_FeatureServer",
+    "label": "EspaACGWSBoundary (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaACGWSBoundary/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaACGWSBoundary_MapServer",
+    "label": "EspaACGWSBoundary (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaACGWSBoundary/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelGrid_FeatureServer",
+    "label": "EspaModelGrid (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelGrid/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelGrid_MapServer",
+    "label": "EspaModelGrid (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelGrid/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelOutline_FeatureServer",
+    "label": "EspaModelOutline (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelOutline/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelOutline_MapServer",
+    "label": "EspaModelOutline (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelOutline/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelRiverCells_FeatureServer",
+    "label": "EspaModelRiverCells (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelRiverCells/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelRiverCells_MapServer",
+    "label": "EspaModelRiverCells (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelRiverCells/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelSpringCells_FeatureServer",
+    "label": "EspaModelSpringCells (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelSpringCells/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelSpringCells_MapServer",
+    "label": "EspaModelSpringCells (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelSpringCells/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelTributaryCells_FeatureServer",
+    "label": "EspaModelTributaryCells (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelTributaryCells/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaModelTributaryCells_MapServer",
+    "label": "EspaModelTributaryCells (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaModelTributaryCells/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaWatersheds_FeatureServer",
+    "label": "EspaWatersheds (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaWatersheds/FeatureServer",
+    "folder": "Modeling",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Modeling_EspaWatersheds_MapServer",
+    "label": "EspaWatersheds (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Modeling/EspaWatersheds/MapServer",
+    "folder": "Modeling",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_AdjacentStates_MapServer",
+    "label": "AdjacentStates (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/AdjacentStates/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_BlmFieldOffices_MapServer",
+    "label": "BlmFieldOffices (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/BlmFieldOffices/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_Cities_FeatureServer",
+    "label": "Cities (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Cities/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_Cities_MapServer",
+    "label": "Cities (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Cities/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_CommonLocations_FeatureServer",
+    "label": "CommonLocations (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/CommonLocations/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_CommonLocations_MapServer",
+    "label": "CommonLocations (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/CommonLocations/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_Counties_FeatureServer",
+    "label": "Counties (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Counties/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_Counties_MapServer",
+    "label": "Counties (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Counties/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_LandManagementAgencies_MapServer",
+    "label": "LandManagementAgencies (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/LandManagementAgencies/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_LandsatPathsRows_MapServer",
+    "label": "LandsatPathsRows (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/LandsatPathsRows/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_MajorRivers_FeatureServer",
+    "label": "MajorRivers (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/MajorRivers/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_MajorRivers_MapServer",
+    "label": "MajorRivers (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/MajorRivers/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_NhdArea_FeatureServer",
+    "label": "NhdArea (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/NhdArea/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_NhdArea_MapServer",
+    "label": "NhdArea (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/NhdArea/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_NhdFlowline_FeatureServer",
+    "label": "NhdFlowline (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/NhdFlowline/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_NhdFlowline_MapServer",
+    "label": "NhdFlowline (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/NhdFlowline/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_NhdPoint_FeatureServer",
+    "label": "NhdPoint (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/NhdPoint/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_NhdPoint_MapServer",
+    "label": "NhdPoint (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/NhdPoint/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_NhdWaterbody_FeatureServer",
+    "label": "NhdWaterbody (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/NhdWaterbody/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_NhdWaterbody_MapServer",
+    "label": "NhdWaterbody (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/NhdWaterbody/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_NrcsSnotelStations_MapServer",
+    "label": "NrcsSnotelStations (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/NrcsSnotelStations/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_Parcels_FeatureServer",
+    "label": "Parcels (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Parcels/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_Parcels_MapServer",
+    "label": "Parcels (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Parcels/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_PlsQuarterQuarterAndOther_FeatureServer",
+    "label": "PlsQuarterQuarterAndOther (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/PlsQuarterQuarterAndOther/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_PlsQuarterQuarterAndOther_MapServer",
+    "label": "PlsQuarterQuarterAndOther (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/PlsQuarterQuarterAndOther/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_PlsSections_FeatureServer",
+    "label": "PlsSections (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/PlsSections/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_PlsSections_MapServer",
+    "label": "PlsSections (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/PlsSections/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_PlsTownshipAndRange_FeatureServer",
+    "label": "PlsTownshipAndRange (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/PlsTownshipAndRange/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_PlsTownshipAndRange_MapServer",
+    "label": "PlsTownshipAndRange (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/PlsTownshipAndRange/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_StateOutline_FeatureServer",
+    "label": "StateOutline (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/StateOutline/FeatureServer",
+    "folder": "Reference",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_StateOutline_MapServer",
+    "label": "StateOutline (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/StateOutline/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_UsbrHydrometStations_MapServer",
+    "label": "UsbrHydrometStations (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/UsbrHydrometStations/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_UsfsRangerDistricts_MapServer",
+    "label": "UsfsRangerDistricts (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/UsfsRangerDistricts/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_UsgsGagesAndDiversions_MapServer",
+    "label": "UsgsGagesAndDiversions (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/UsgsGagesAndDiversions/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Reference_UsgsSprings_MapServer",
+    "label": "UsgsSprings (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Reference/UsgsSprings/MapServer",
+    "folder": "Reference",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_AreasOfDrillingConcern_FeatureServer",
+    "label": "AreasOfDrillingConcern (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/AreasOfDrillingConcern/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_AreasOfDrillingConcern_MapServer",
+    "label": "AreasOfDrillingConcern (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/AreasOfDrillingConcern/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_AreasOfGroundwaterConcern_FeatureServer",
+    "label": "AreasOfGroundwaterConcern (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/AreasOfGroundwaterConcern/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_AreasOfGroundwaterConcern_MapServer",
+    "label": "AreasOfGroundwaterConcern (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/AreasOfGroundwaterConcern/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_BaseFloodElevation_MapServer",
+    "label": "BaseFloodElevation (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/BaseFloodElevation/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_BruneauGroundwaterManagementDistrict_FeatureServer",
+    "label": "BruneauGroundwaterManagementDistrict (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/BruneauGroundwaterManagementDistrict/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_BruneauGroundwaterManagementDistrict_MapServer",
+    "label": "BruneauGroundwaterManagementDistrict (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/BruneauGroundwaterManagementDistrict/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_CriticalGroundwaterAreas_FeatureServer",
+    "label": "CriticalGroundwaterAreas (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/CriticalGroundwaterAreas/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_CriticalGroundwaterAreas_MapServer",
+    "label": "CriticalGroundwaterAreas (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/CriticalGroundwaterAreas/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_CrossSections_MapServer",
+    "label": "CrossSections (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/CrossSections/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_FemaGisDataStatus_FeatureServer",
+    "label": "FemaGisDataStatus (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/FemaGisDataStatus/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_FemaGisDataStatus_MapServer",
+    "label": "FemaGisDataStatus (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/FemaGisDataStatus/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_FloodControlDistricts_MapServer",
+    "label": "FloodControlDistricts (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/FloodControlDistricts/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_FloodZones_MapServer",
+    "label": "FloodZones (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/FloodZones/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_GeothermalMoratoriumAreas_FeatureServer",
+    "label": "GeothermalMoratoriumAreas (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/GeothermalMoratoriumAreas/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_GeothermalMoratoriumAreas_MapServer",
+    "label": "GeothermalMoratoriumAreas (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/GeothermalMoratoriumAreas/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_GroundwaterDistricts_FeatureServer",
+    "label": "GroundwaterDistricts (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/GroundwaterDistricts/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_GroundwaterDistricts_MapServer",
+    "label": "GroundwaterDistricts (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/GroundwaterDistricts/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_GroundwaterManagementAreas_FeatureServer",
+    "label": "GroundwaterManagementAreas (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/GroundwaterManagementAreas/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_GroundwaterManagementAreas_MapServer",
+    "label": "GroundwaterManagementAreas (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/GroundwaterManagementAreas/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_LetterOfMapRevisionBoundaries_MapServer",
+    "label": "LetterOfMapRevisionBoundaries (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/LetterOfMapRevisionBoundaries/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_LowerSnakeRiverAquiferRechargeDistrict_FeatureServer",
+    "label": "LowerSnakeRiverAquiferRechargeDistrict (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/LowerSnakeRiverAquiferRechargeDistrict/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_LowerSnakeRiverAquiferRechargeDistrict_MapServer",
+    "label": "LowerSnakeRiverAquiferRechargeDistrict (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/LowerSnakeRiverAquiferRechargeDistrict/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_MinimumLakeLevel_MapServer",
+    "label": "MinimumLakeLevel (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/MinimumLakeLevel/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_MinimumStreamFlow_MapServer",
+    "label": "MinimumStreamFlow (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/MinimumStreamFlow/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_MinimumStreamFlowPoints_MapServer",
+    "label": "MinimumStreamFlowPoints (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/MinimumStreamFlowPoints/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_MoratoriumAreas_FeatureServer",
+    "label": "MoratoriumAreas (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/MoratoriumAreas/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_MoratoriumAreas_MapServer",
+    "label": "MoratoriumAreas (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/MoratoriumAreas/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_NitratePriorityAreas_MapServer",
+    "label": "NitratePriorityAreas (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/NitratePriorityAreas/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_NonTrustWaterArea_FeatureServer",
+    "label": "NonTrustWaterArea (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/NonTrustWaterArea/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_NonTrustWaterArea_MapServer",
+    "label": "NonTrustWaterArea (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/NonTrustWaterArea/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_ScannedFirm_MapServer",
+    "label": "ScannedFirm (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/ScannedFirm/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_ScannedFirmForCity_FeatureServer",
+    "label": "ScannedFirmForCity (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/ScannedFirmForCity/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_ScannedFirmForCity_MapServer",
+    "label": "ScannedFirmForCity (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/ScannedFirmForCity/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_SmallScaleMiningStreams_FeatureServer",
+    "label": "SmallScaleMiningStreams (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/SmallScaleMiningStreams/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_SmallScaleMiningStreams_MapServer",
+    "label": "SmallScaleMiningStreams (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/SmallScaleMiningStreams/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_StateProtectedStreams_FeatureServer",
+    "label": "StateProtectedStreams (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/StateProtectedStreams/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_StateProtectedStreams_MapServer",
+    "label": "StateProtectedStreams (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/StateProtectedStreams/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_TrustWaterArea_FeatureServer",
+    "label": "TrustWaterArea (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/TrustWaterArea/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_TrustWaterArea_MapServer",
+    "label": "TrustWaterArea (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/TrustWaterArea/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_Vulnerability_FeatureServer",
+    "label": "Vulnerability (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/Vulnerability/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_Vulnerability_MapServer",
+    "label": "Vulnerability (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/Vulnerability/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_WastewaterBufferZonesIndustrial_MapServer",
+    "label": "WastewaterBufferZonesIndustrial (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/WastewaterBufferZonesIndustrial/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_WastewaterBufferZonesMunicipal_MapServer",
+    "label": "WastewaterBufferZonesMunicipal (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/WastewaterBufferZonesMunicipal/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_WaterDistricts_FeatureServer",
+    "label": "WaterDistricts (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/WaterDistricts/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_WaterDistricts_MapServer",
+    "label": "WaterDistricts (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/WaterDistricts/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_WaterMeasurementDistricts_FeatureServer",
+    "label": "WaterMeasurementDistricts (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/WaterMeasurementDistricts/FeatureServer",
+    "folder": "Regulatory",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_WaterMeasurementDistricts_MapServer",
+    "label": "WaterMeasurementDistricts (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/WaterMeasurementDistricts/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Regulatory_WildAndScenicWatersheds_MapServer",
+    "label": "WildAndScenicWatersheds (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Regulatory/WildAndScenicWatersheds/MapServer",
+    "folder": "Regulatory",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "ScientificRasters_EtCirStatistics_GPServer",
+    "label": "EtCirStatistics (GPServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/ScientificRasters/EtCirStatistics/GPServer",
+    "folder": "ScientificRasters",
+    "type": "GPServer",
+    "state": "idaho"
+  },
+  {
+    "key": "ScientificRasters_ETData_MapServer",
+    "label": "ETData (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/ScientificRasters/ETData/MapServer",
+    "folder": "ScientificRasters",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "ScientificRasters_EtIdahoStations_FeatureServer",
+    "label": "EtIdahoStations (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/ScientificRasters/EtIdahoStations/FeatureServer",
+    "folder": "ScientificRasters",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "ScientificRasters_EtIdahoStations_MapServer",
+    "label": "EtIdahoStations (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/ScientificRasters/EtIdahoStations/MapServer",
+    "folder": "ScientificRasters",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Utilities_Geometry_GeometryServer",
+    "label": "Geometry (GeometryServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Utilities/Geometry/GeometryServer",
+    "folder": "Utilities",
+    "type": "GeometryServer",
+    "state": "idaho"
+  },
+  {
+    "key": "Utilities_PrintingTools_GPServer",
+    "label": "PrintingTools (GPServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/Utilities/PrintingTools/GPServer",
+    "folder": "Utilities",
+    "type": "GPServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WaterPlans_EasternSnakeComprehensiveAquiferManagementPlan_FeatureServer",
+    "label": "EasternSnakeComprehensiveAquiferManagementPlan (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WaterPlans/EasternSnakeComprehensiveAquiferManagementPlan/FeatureServer",
+    "folder": "WaterPlans",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WaterPlans_EasternSnakeComprehensiveAquiferManagementPlan_MapServer",
+    "label": "EasternSnakeComprehensiveAquiferManagementPlan (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WaterPlans/EasternSnakeComprehensiveAquiferManagementPlan/MapServer",
+    "folder": "WaterPlans",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WaterPlans_PlanningBasins_FeatureServer",
+    "label": "PlanningBasins (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WaterPlans/PlanningBasins/FeatureServer",
+    "folder": "WaterPlans",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WaterPlans_PlanningBasins_MapServer",
+    "label": "PlanningBasins (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WaterPlans/PlanningBasins/MapServer",
+    "folder": "WaterPlans",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WaterPlans_RathdrumComprehensiveAquiferManagementPlan_MapServer",
+    "label": "RathdrumComprehensiveAquiferManagementPlan (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WaterPlans/RathdrumComprehensiveAquiferManagementPlan/MapServer",
+    "folder": "WaterPlans",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WaterPlans_TreasureValleyComprehensiveAquiferManagementPlan_FeatureServer",
+    "label": "TreasureValleyComprehensiveAquiferManagementPlan (FeatureServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WaterPlans/TreasureValleyComprehensiveAquiferManagementPlan/FeatureServer",
+    "folder": "WaterPlans",
+    "type": "FeatureServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WaterPlans_TreasureValleyComprehensiveAquiferManagementPlan_MapServer",
+    "label": "TreasureValleyComprehensiveAquiferManagementPlan (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WaterPlans/TreasureValleyComprehensiveAquiferManagementPlan/MapServer",
+    "folder": "WaterPlans",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WillBeDeleted_AllIrrigatedLands_MapServer",
+    "label": "AllIrrigatedLands (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WillBeDeleted/AllIrrigatedLands/MapServer",
+    "folder": "WillBeDeleted",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WillBeDeleted_DrillingRestrictionAreas_MapServer",
+    "label": "DrillingRestrictionAreas (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WillBeDeleted/DrillingRestrictionAreas/MapServer",
+    "folder": "WillBeDeleted",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WillBeDeleted_OnlineClaimsTaking_MapServer",
+    "label": "OnlineClaimsTaking (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WillBeDeleted/OnlineClaimsTaking/MapServer",
+    "folder": "WillBeDeleted",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WillBeDeleted_PLSS_MapServer",
+    "label": "PLSS (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WillBeDeleted/PLSS/MapServer",
+    "folder": "WillBeDeleted",
+    "type": "MapServer",
+    "state": "idaho"
+  },
+  {
+    "key": "WillBeDeleted_WaterRights_MapServer",
+    "label": "WaterRights (MapServer)",
+    "url": "https://gis.idwr.idaho.gov/hosting/rest/services/WillBeDeleted/WaterRights/MapServer",
+    "folder": "WillBeDeleted",
+    "type": "MapServer",
+    "state": "idaho"
+  }
+]

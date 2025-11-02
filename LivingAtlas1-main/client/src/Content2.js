@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import './Content2.css';
 import './Sidebars.css';
 import './LayerPanel.css';
+import './LayerPanel.css';
 import Card from './Card.js';
 import FormModal from './FormModal';
 import axios from 'axios';
@@ -17,6 +18,7 @@ import { faBook } from '@fortawesome/free-solid-svg-icons'; // <-- Add this impo
 import LayerPanel from './LayerPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { faCheckSquare } from '@fortawesome/free-solid-svg-icons';
+import { faTrash } from '@fortawesome/free-solid-svg-icons'; // <-- NEW: Trash icon
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
@@ -566,7 +568,7 @@ function Content2(props) {
                 >
                     <FontAwesomeIcon icon={faPlus} />
                 </button>
-                {/* New Layer Button */}
+                {/* Layer Button */}
                 <button
                     className="layer-panel-button"
                     onClick={() => setIsLayerPanelOpen((prev) => !prev)}
@@ -575,7 +577,7 @@ function Content2(props) {
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
                 </button>
-                {/* New: Open Card Container Button */}
+                {/* Open Card Container Button */}
                 <button
                     className="open-card-container-button"
                     onClick={toggleCollapse}
@@ -584,6 +586,7 @@ function Content2(props) {
                 >
                     <FontAwesomeIcon icon={faBook} />
                 </button>
+                
             </div>
 
             {/* Layer Panel */}
@@ -655,24 +658,28 @@ function Content2(props) {
                     </div>
                 )}
 
-                {bookmarksLoaded && cards.length > 0 && (
-                    <div className="card-container">
-                        {cards
+                <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
+                    {cards
                         .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
                         .map((card, index) => (
-                            <div key={card.cardID} onClick={() => handleCardClick(card)}>
-                            <Card
-                                formData={{
-                                ...card,
-                                files: card.files || [],
-                                cardOwner: card.username,
-                                viewerUsername: resolvedUsername,
-                                cardID: card.cardID,
-                                }}
-                                isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                                username={resolvedUsername}
-                                fetchBookmarks={fetchBookmarks}
-                            />
+                            <div
+                                key={`${card.cardID}-${index}`}
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => handleCardClick(card)} // Always shift view on card click
+                            >
+                                <Card
+                                    formData={{
+                                        ...card,
+                                        files: card.files || [],   // ensure it's always an array to maintain consistency
+                                        cardOwner: card.username,
+                                        viewerUsername: resolvedUsername,
+                                        cardID: card.cardID
+                                    }}
+                                    isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                    username={resolvedUsername}
+                                    fetchBookmarks={fetchBookmarks}
+                                    // No need to pass onLearnMore for fly-to
+                                />
                             </div>
                         ))}
                     </div>
