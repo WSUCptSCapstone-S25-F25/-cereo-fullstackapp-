@@ -314,3 +314,70 @@ def rename_service(request: RenameServiceRequest):
         conn.rollback()
         conn.autocommit = True
         raise HTTPException(status_code=500, detail=f"Failed to rename service: {str(e)}")
+
+class BulkAddServicesRequest(BaseModel):
+    services: List[dict]
+
+@arcgis_router.post("/services/bulk-add")
+def bulk_add_services(request: BulkAddServicesRequest):
+    """Add multiple new ArcGIS services to the database (skips existing ones by key)"""
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    
+    if not request.services:
+        return {"success": True, "added": 0, "skipped": 0, "message": "No services provided"}
+    
+    try:
+        # Start transaction
+        conn.autocommit = False
+        
+        added_count = 0
+        skipped_count = 0
+        
+        for service in request.services:
+            # Validate required fields
+            required_fields = ['key', 'label', 'url', 'folder', 'type', 'state']
+            if not all(field in service for field in required_fields):
+                continue
+            
+            # Check if service already exists by key
+            cur.execute("""
+                SELECT COUNT(*) FROM arcgis_services 
+                WHERE service_key = %s
+            """, (service['key'],))
+            
+            exists = cur.fetchone()[0] > 0
+            
+            if not exists:
+                # Insert new service
+                cur.execute("""
+                    INSERT INTO arcgis_services (service_key, label, url, folder, type, state)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    service['key'],
+                    service['label'],
+                    service['url'],
+                    service['folder'],
+                    service['type'],
+                    service['state']
+                ))
+                added_count += 1
+            else:
+                skipped_count += 1
+        
+        # Commit transaction
+        conn.commit()
+        conn.autocommit = True
+        
+        return {
+            "success": True,
+            "added": added_count,
+            "skipped": skipped_count,
+            "total_processed": len(request.services),
+            "message": f"Successfully added {added_count} new services, skipped {skipped_count} existing ones"
+        }
+        
+    except Exception as e:
+        conn.rollback()
+        conn.autocommit = True
+        raise HTTPException(status_code=500, detail=f"Failed to bulk add services: {str(e)}")
