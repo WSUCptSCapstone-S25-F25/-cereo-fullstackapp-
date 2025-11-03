@@ -23,7 +23,7 @@ import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faPlus, faEllipsisH, faBan } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faPlus, faEllipsisH, faBan, faDownload } from '@fortawesome/free-solid-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
@@ -1330,6 +1330,21 @@ function ArcgisUploadPanel({
                             {msg.text}
                         </div>
                     ))}
+                </div>
+                
+                {/* Update button at the bottom */}
+                <div className="upload-panel-update-section">
+                    <button 
+                        className="upload-panel-update-btn"
+                        onClick={() => {
+                            
+                            console.log('Update button clicked');
+                        }}
+                        title="Update services data"
+                    >
+                        <FontAwesomeIcon icon={faDownload} />
+                        <span>Update</span>
+                    </button>
                 </div>
             </div>
 

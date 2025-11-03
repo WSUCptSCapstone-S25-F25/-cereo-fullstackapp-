@@ -444,3 +444,43 @@
     border-radius: 4px;
     margin: 6px 0 0 0;
 }
+
+/* Update button section */
+.upload-panel-update-section {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: center;
+}
+
+.upload-panel-update-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.upload-panel-update-btn:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 123, 255, 0.3);
+}
+
+.upload-panel-update-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.upload-panel-update-btn svg {
+    font-size: 14px;
+}
