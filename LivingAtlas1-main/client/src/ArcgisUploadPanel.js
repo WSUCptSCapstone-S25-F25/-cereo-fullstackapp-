@@ -42,6 +42,22 @@ const ARCGIS_SERVICES_BY_STATE = {
     OR: OR_ARCGIS_SERVICES || []
 };
 
+// State-specific attribution information
+const STATE_ATTRIBUTION = {
+    WA: {
+        name: 'Washington State',
+        url: 'https://gis.ecology.wa.gov/serverext/rest/services'
+    },
+    ID: {
+        name: 'Idaho',
+        url: 'https://gis.idwr.idaho.gov/hosting/rest/services'
+    },
+    OR: {
+        name: 'Oregon',
+        url: 'https://navigator.state.or.us/arcgis/rest/services'
+    }
+};
+
 // Main component
 function ArcgisUploadPanel({
     isOpen,
@@ -1368,7 +1384,7 @@ function ArcgisUploadPanel({
                 
                 {/* Attribution */}
                 <div className="upload-panel-attribution">
-                    Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href="https://gis.ecology.wa.gov/serverext/rest/services" target="_blank" rel="noopener noreferrer">Washington State ArcGIS Services</a>
+                    Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[selectedState]?.url || STATE_ATTRIBUTION.WA.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[selectedState]?.name || 'Washington State'} ArcGIS Services</a>
                 </div>
                 
                 <div className="arcgis-loading-messages">
