@@ -14,6 +14,7 @@ import {
     renameFolderServices, 
     renameService 
 } from './arcgisServicesDb'; // Fetch from DB
+import { updateCurrentStateServices } from './arcgisUpdateServices';
 import ArcgisRenameItem from './ArcgisRenameItem';
 // Import local JSON files as fallback
 import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
@@ -23,7 +24,7 @@ import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faPlus, faEllipsisH, faBan } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faPlus, faEllipsisH, faBan, faDownload } from '@fortawesome/free-solid-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
@@ -109,6 +110,11 @@ function ArcgisUploadPanel({
 
     // Add new state for sublayer checkboxes (add this near other state declarations)
     const [checkedSublayerIds, setCheckedSublayerIds] = useState({}); // { serviceKey: { layerId: [sublayerIndexes] } }
+
+    // Update functionality state
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [updateProgress, setUpdateProgress] = useState('');
+    const [updateResults, setUpdateResults] = useState(null);
 
     // Fetch services from DB whenever panel opens or state changes
     useEffect(() => {
@@ -587,6 +593,47 @@ function ArcgisUploadPanel({
         } catch (error) {
             console.error('Failed to rename service:', error);
             alert(`Failed to rename service: ${error.message || 'Unknown error'}`);
+        }
+    };
+
+    // Handle update button click
+    const handleUpdateServices = async () => {
+        if (isUpdating) return; // Prevent multiple simultaneous updates
+
+        setIsUpdating(true);
+        setUpdateProgress('Starting update...');
+        setUpdateResults(null);
+
+        try {
+            const result = await updateCurrentStateServices(selectedState, (progressMessage) => {
+                setUpdateProgress(progressMessage);
+            });
+
+            setUpdateResults(result);
+            
+            if (result.success && result.newCount > 0) {
+                // Refresh the services list to show new services
+                console.log('Refreshing services list after update...');
+                const updatedList = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
+                setServicesFromDb(updatedList);
+                
+                setUpdateProgress(`✅ Update complete! Added ${result.newCount} new services.`);
+            } else if (result.success && result.newCount === 0) {
+                setUpdateProgress('✅ Update complete! No new services found.');
+            }
+            
+        } catch (error) {
+            console.error('Update failed:', error);
+            setUpdateProgress(`❌ Update failed: ${error.message}`);
+            setUpdateResults({ success: false, error: error.message });
+        } finally {
+            setIsUpdating(false);
+            
+            // Clear progress message after 5 seconds
+            setTimeout(() => {
+                setUpdateProgress('');
+                setUpdateResults(null);
+            }, 5000);
         }
     };
 
@@ -1330,6 +1377,39 @@ function ArcgisUploadPanel({
                             {msg.text}
                         </div>
                     ))}
+                </div>
+                
+                {/* Update button at the bottom */}
+                <div className="upload-panel-update-section">
+                    <button 
+                        className="upload-panel-update-btn"
+                        onClick={handleUpdateServices}
+                        disabled={isUpdating}
+                        title="Update services data from ArcGIS REST servers"
+                    >
+                        <FontAwesomeIcon icon={faDownload} />
+                        <span>{isUpdating ? 'Updating...' : 'Update'}</span>
+                    </button>
+                    
+                    {/* Update progress display */}
+                    {(updateProgress || updateResults) && (
+                        <div className="upload-panel-update-progress">
+                            {updateProgress && (
+                                <div className={`update-progress-message ${isUpdating ? 'updating' : 'complete'}`}>
+                                    {updateProgress}
+                                </div>
+                            )}
+                            {updateResults && updateResults.success && (
+                                <div className="update-results">
+                                    <small>
+                                        Found: {updateResults.totalFound || 0} | 
+                                        Existing: {updateResults.existingCount || 0} | 
+                                        New: {updateResults.newCount || 0}
+                                    </small>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
