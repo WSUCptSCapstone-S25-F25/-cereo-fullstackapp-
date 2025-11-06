@@ -1,16 +1,16 @@
 .form-modal {
     position: fixed;
-    top: 50%;
-    left: 50%;
+    top: 401px;
+    left: 270px;
     transform: translate(-50%, -50%);
     background-color: #fff;
     padding: 30px;
     border-radius: 5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     z-index: 9999;
-    width: 90vw;               /* responsive width */
+    width: 420px;
     max-width: 500px;          /* limit width on large screens */
-    max-height: 90vh;          /* fit inside the screen vertically */
+    max-height: 91.2vh;          /* fit inside the screen vertically */
     overflow-y: auto;          /* allow scrolling inside modal */
 }
 
@@ -39,6 +39,21 @@
     resize: none;
 }
 
+.location_button {
+    background-color: #0077c0;
+    color: #fff;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.select-location-message {
+  font-size: 12px;
+}
+
 .form-modal button[type="submit"] {
     background-color: #0077c0;
     color: #fff;
@@ -50,19 +65,19 @@
     margin-right: 10px;
 }
 
-.form-modal button[type="cancel"]:hover {
+.cancel_button:hover {
     background-color: rgb(193, 2, 2);
 }
 
-.form-modal button[type="cancel"] {
+.cancel_button {
     background-color: red;
-    color: #fff;
-    padding: 8px 16px;
+    color: white;
     border: none;
-    border-radius: 4px;
+    padding: 10px 20px;
+    margin-right: 10px;
     cursor: pointer;
     font-size: 16px;
-    margin-right: 10px;
+    margin-top: 10px;
 }
 
 .form-modal button[type="submit"]:hover {
@@ -85,16 +100,6 @@
 
 .open-form-button:hover {
     background-color: #0069d9 !important;
-}
-
-.form-modal button[type="button"] {
-    background-color: red;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    margin-right: 10px;
-    cursor: pointer;
-    margin-top: 10px;
 }
 
 

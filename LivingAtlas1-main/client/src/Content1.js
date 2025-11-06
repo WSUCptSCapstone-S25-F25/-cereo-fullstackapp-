@@ -66,21 +66,27 @@ const Content1 = (props) => {
   // Resize map when sidebars open or close
   useEffect(() => {
     if (mapContainerRef.current) {
-      if (props.isCollapsed && !props.isSidebarOpen) {
+      if (props.isCollapsed && !(props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen || props.isLayerPanelOpen)) {
         mapContainerRef.current.style.width = '100%';
         mapContainerRef.current.style.left = '0';
-      } else if (props.isCollapsed && props.isSidebarOpen) {
-        mapContainerRef.current.style.width = '82.8%';
-        mapContainerRef.current.style.left = '240px';
-      } else if (!props.isCollapsed && !props.isSidebarOpen) {
-        mapContainerRef.current.style.width = '78.5%';
+      } else if (props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)) {
+        mapContainerRef.current.style.width = '71.1%';
+        mapContainerRef.current.style.left = '420px';
+      } else if (!props.isCollapsed && !(props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen || props.isLayerPanelOpen)) {
+        mapContainerRef.current.style.width = '79.4%';
         mapContainerRef.current.style.left = '0';
-      } else if (!props.isCollapsed && props.isSidebarOpen) {
-        mapContainerRef.current.style.width = '61.3%';
-        mapContainerRef.current.style.left = '240px';
+      } else if (!props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)) {
+        mapContainerRef.current.style.width = '50.5%';
+        mapContainerRef.current.style.left = '420px';
+      } else if (props.isCollapsed && props.isLayerPanelOpen) {
+        mapContainerRef.current.style.width = '75.9%';
+        mapContainerRef.current.style.left = '350px';
+      } else if (!props.isCollapsed && props.isLayerPanelOpen) {
+        mapContainerRef.current.style.width = '55.3%';
+        mapContainerRef.current.style.left = '350px';
       }
     }
-  }, [props.isCollapsed, props.isSidebarOpen]);
+  }, [props.isCollapsed, props.isUploadPanelOpen, props.isRemovedPanelOpen, props.isLayerPanelOpen, props.isModalOpen]);
 
   // Adjust map size to resized map container
   useEffect(() => {

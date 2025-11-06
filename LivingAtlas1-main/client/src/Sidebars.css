@@ -31,6 +31,7 @@
     width: 300px;
 }
 
+/*
 .left-sidebar-toggle {
     background: none;
     border: none;
@@ -39,6 +40,7 @@
     margin: 10px 0;
     cursor: pointer;
 }
+*/
 
 .left-sidebar-content {
     margin-top: 20px;
@@ -71,6 +73,7 @@
 }
 
 /* Left Sidebar Toggle Button */
+/*
 .left-sidebar-toggle {
     position: absolute;
     bottom: 0px;
@@ -81,6 +84,7 @@
     cursor: pointer;
     z-index: 1001;
 }
+*/
 
 
 /* Search Button */
@@ -209,10 +213,10 @@
 #right-sidebar {
     position: fixed; /* Fixed on the right side of the page */
     top: 65px; /* Ensures it does not overlap with the navbar */
-    right: 0;
+    right: -60px;
     width: 60px; /* Width of the right sidebar */
     height: calc(100vh - 65px); /* Height adapts to the viewport minus the navbar height */
-    background-color: #333; /* Background color */
+    background-color: transparent; /* Background color */
     display: flex;
     flex-direction: column; /* Vertical alignment of child elements */
     align-items: center;
@@ -221,6 +225,7 @@
     transition: width 0.3s ease; /* Smooth transition effect */
   }
   
+/*
 .add-card-button {
     background: none;
     border: none;
@@ -238,6 +243,7 @@
 }
 
 /* Layer Panel Button */
+/*
 .layer-panel-button {
     background: none;
     border: none;
@@ -269,9 +275,12 @@
 .open-card-container-button:hover {
     color: lightgray;
 }
+*/
 
 .left-sidebar-gis-button,
-.left-sidebar-upload-button {
+.left-sidebar-upload-button,
+.left-sidebar-layers-button, 
+.left-sidebar-trash-button {
     background: none;
     border: none;
     color: white;

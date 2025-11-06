@@ -343,22 +343,16 @@ function Card(props) {
                 className="Modal"
             >
                 <h2>{formData.cardID ? "Edit Card" : "Create Card"}</h2>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        saveEdits();
-                    }}
-                >
-                    <label>
-                        Username:
-                        <input
-                            type="text"
-                            name="username"
-                            value={formData.username || ""}
-                            onChange={handleInputChange}
-                            required
-                        />
+                <form onSubmit={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    saveEdits(); 
+                }}>
+                    <label>Card Creator:
+                        <input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} required />
+                    </label>
+                    <label>Author:
+                        <input type="text" name="name" value={formData.name || ''} onChange={handleInputChange} required />
                     </label>
                     <label>
                         Full Name:
