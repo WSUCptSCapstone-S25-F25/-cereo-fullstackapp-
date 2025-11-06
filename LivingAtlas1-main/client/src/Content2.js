@@ -43,7 +43,7 @@ function Content2(props) {
     const didMountRef = useRef(false);
 
     // Collapse card container
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
 
     const toggleCollapse = () => {
         props.setIsCollapsed?.(!props.isCollapsed);
@@ -361,7 +361,7 @@ function Content2(props) {
     
             console.log("[fetchBookmarks] Parsed Set of bookmarked IDs:", cardIDs);
     
-            setBookmarkedCardIDs(cardIDs);
+            setBookmarkedCardIDs(new Set(cardIDs));
             setBookmarksLoaded(true);
         } catch (error) {
             console.error("[fetchBookmarks] Error fetching bookmarks:", error);
@@ -659,31 +659,29 @@ function Content2(props) {
                     </div>
                 )}
 
-                <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
-                    {cards
+                {bookmarksLoaded ? (
+                    <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
+                        {cards
                         .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
-                        .map((card, index) => (
-                            <div
-                                key={`${card.cardID}-${index}`}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => handleCardClick(card)} // Always shift view on card click
-                            >
-                                <Card
-                                    formData={{
-                                        ...card,
-                                        files: card.files || [],   // ensure it's always an array to maintain consistency
-                                        cardOwner: card.username,
-                                        viewerUsername: resolvedUsername,
-                                        cardID: card.cardID
-                                    }}
-                                    isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                                    username={resolvedUsername}
-                                    fetchBookmarks={fetchBookmarks}
-                                    // No need to pass onLearnMore for fly-to
-                                />
+                        .map((card) => (
+                            <div key={card.cardID} onClick={() => handleCardClick(card)}>
+                            <Card
+                                formData={{
+                                ...card,
+                                files: card.files || [],
+                                viewerUsername: resolvedUsername,
+                                cardID: card.cardID
+                                }}
+                                isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                username={resolvedUsername}
+                                fetchBookmarks={fetchBookmarks}
+                            />
                             </div>
                         ))}
-                </div>
+                    </div>
+                    ) : (
+                    <p style={{ padding: "20px", textAlign: "center" }}>Loading favorites...</p>
+                    )}
             </section>
         </>
     );

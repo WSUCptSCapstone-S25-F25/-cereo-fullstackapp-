@@ -444,3 +444,91 @@
     border-radius: 4px;
     margin: 6px 0 0 0;
 }
+
+/* Update button section */
+.upload-panel-update-section {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: center;
+}
+
+.upload-panel-update-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.upload-panel-update-btn:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 123, 255, 0.3);
+}
+
+.upload-panel-update-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.upload-panel-update-btn svg {
+    font-size: 14px;
+}
+
+.upload-panel-update-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
+}
+
+.upload-panel-update-btn:disabled:hover {
+    background: #6c757d;
+    transform: none;
+    box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
+}
+
+/* Update progress display */
+.upload-panel-update-progress {
+    margin-top: 12px;
+    text-align: center;
+}
+
+.update-progress-message {
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 6px;
+    word-wrap: break-word;
+}
+
+.update-progress-message.updating {
+    background: #fff3cd;
+    border: 1px solid #ffecb5;
+    color: #856404;
+}
+
+.update-progress-message.complete {
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+.update-results {
+    font-size: 11px;
+    color: #666;
+    padding: 4px 8px;
+    background: #f8f9fa;
+    border-radius: 3px;
+    border: 1px solid #e9ecef;
+}

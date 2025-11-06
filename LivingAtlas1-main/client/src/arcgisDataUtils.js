@@ -106,3 +106,20 @@ export async function fetchArcgisServiceInfo(serviceUrl) {
         return {};
     }
 }
+
+// Fetch layer info from ArcGIS REST (e.g. .../MapServer/1?f=json)
+// Returns parsed JSON with layer details or empty object on error.
+export async function fetchArcgisLayerInfo(serviceUrl, layerId) {
+    try {
+        const layerUrl = `${serviceUrl}/${layerId}`;
+        const res = await fetch(`${layerUrl}?f=json`);
+        if (!res.ok) {
+            console.warn('fetchArcgisLayerInfo failed with status', res.status, 'for', layerUrl);
+            return {};
+        }
+        return await res.json();
+    } catch (err) {
+        console.warn('fetchArcgisLayerInfo error for', serviceUrl, layerId, err);
+        return {};
+    }
+}
