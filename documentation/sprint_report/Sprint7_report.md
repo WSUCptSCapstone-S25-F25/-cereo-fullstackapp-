@@ -1,6 +1,6 @@
-# Sprint 6 Report (9/14/2025 - 10/11/2025)
+# Sprint 7 Report (10/12/2025 - 11/8/2025)
 
- * [Sprint Demo Video]()
+ * [Sprint Demo Video](https://www.youtube.com/watch?v=mziTJDRZ-0c)
 
 ## What's New (User Facing)
  * Folder and Service Renaming - Users can rename folders or services by double-clicking and saving via keyboard shortcuts.
@@ -103,4 +103,5 @@ Here are changes we plan to implement in the next sprint:
    * Improve search and sorting integration within the layer panel.
    * Conduct end-to-end testing to ensure all new features are stable and production-ready.
    * Fix the admin-page user deletion crash.
+
    * Meet with the client to review the development plans for the next sprint.
