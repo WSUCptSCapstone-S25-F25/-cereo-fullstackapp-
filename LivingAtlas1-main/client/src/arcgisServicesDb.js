@@ -178,3 +178,18 @@ export async function renameService(serviceKey, newLabel) {
         throw error;
     }
 }
+
+// Fetch removed ArcGIS services from backend
+export async function fetchRemovedArcgisServices(stateCode = null, { type = 'MapServer' } = {}) {
+    const paths = ['/arcgis/services/removed', '/api/arcgis/services/removed'];
+    const params = new URLSearchParams();
+    
+    if (stateCode) {
+        params.append('state', stateCode);
+    }
+    if (type && type.toLowerCase() !== 'all') {
+        params.append('type', type);
+    }
+    
+    return await tryGetServices(params, paths);
+}
