@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './RemovedServicesPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faUndo, faTimes, faSearch, faSpinner, faSync } from '@fortawesome/free-solid-svg-icons';
-import { fetchRemovedArcgisServices } from './arcgisServicesDb';
+import { fetchRemovedArcgisServices, restoreArcgisService, permanentlyDeleteRemovedService, clearAllRemovedServices } from './arcgisServicesDb';
 
 function RemovedServicesPanel({ isOpen, onClose }) {
     const [searchKeyword, setSearchKeyword] = useState('');
@@ -142,21 +142,105 @@ function RemovedServicesPanel({ isOpen, onClose }) {
         }
     };
 
-    const handleRestore = (service) => {
-        console.log('Restore service:', service);
-        alert(`Restore functionality for "${service.label}" will be implemented in the future`);
-    };
+    const handleRestore = async (service) => {
+        if (!window.confirm(`Are you sure you want to restore "${service.label}" to active services?`)) {
+            return;
+        }
 
-    const handlePermanentDelete = (service) => {
-        console.log('Permanently delete service:', service);
-        if (window.confirm(`Are you sure you want to permanently delete "${service.label}"? This action cannot be undone.`)) {
-            alert(`Permanent delete functionality for "${service.label}" will be implemented in the future`);
+        try {
+            setLoading(true);
+            await restoreArcgisService(service.key);
+            
+            // Remove the service from the local state
+            setRemovedServices(prev => prev.filter(s => s.key !== service.key));
+            
+            // Show success message
+            alert(`Service "${service.label}" has been successfully restored to active services.`);
+            
+        } catch (error) {
+            console.error('Error restoring service:', error);
+            
+            // Show user-friendly error message
+            let errorMessage = 'Failed to restore service. ';
+            if (error.response?.status === 404) {
+                errorMessage += 'The service was not found in removed services.';
+            } else if (error.response?.status === 409) {
+                errorMessage += 'The service already exists in active services.';
+            } else if (error.response?.data?.detail) {
+                errorMessage += error.response.data.detail;
+            } else {
+                errorMessage += 'Please try again later.';
+            }
+            
+            alert(errorMessage);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const clearAllRemoved = () => {
-        if (window.confirm('Are you sure you want to clear all removed services? This action cannot be undone.')) {
-            alert('Clear all functionality will be implemented in the future');
+    const handlePermanentDelete = async (service) => {
+        if (!window.confirm(`Are you sure you want to permanently delete "${service.label}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await permanentlyDeleteRemovedService(service.key);
+            
+            // Remove the service from the local state
+            setRemovedServices(prev => prev.filter(s => s.key !== service.key));
+            
+            // Show success message
+            alert(`Service "${service.label}" has been permanently deleted.`);
+            
+        } catch (error) {
+            console.error('Error permanently deleting service:', error);
+            
+            // Show user-friendly error message
+            let errorMessage = 'Failed to permanently delete service. ';
+            if (error.response?.status === 404) {
+                errorMessage += 'The service was not found in removed services.';
+            } else if (error.response?.data?.detail) {
+                errorMessage += error.response.data.detail;
+            } else {
+                errorMessage += 'Please try again later.';
+            }
+            
+            alert(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const clearAllRemoved = async () => {
+        if (!window.confirm('Are you sure you want to clear all removed services? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const result = await clearAllRemovedServices();
+            
+            // Clear the local state
+            setRemovedServices([]);
+            
+            // Show success message with count
+            alert(`Successfully cleared ${result.count} removed service(s).`);
+            
+        } catch (error) {
+            console.error('Error clearing all removed services:', error);
+            
+            // Show user-friendly error message
+            let errorMessage = 'Failed to clear all removed services. ';
+            if (error.response?.data?.detail) {
+                errorMessage += error.response.data.detail;
+            } else {
+                errorMessage += 'Please try again later.';
+            }
+            
+            alert(errorMessage);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -353,6 +437,7 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                                                                 handleRestore(service);
                                                             }}
                                                             title="Restore service"
+                                                            disabled={loading}
                                                         >
                                                             <FontAwesomeIcon icon={faUndo} />
                                                         </button>
@@ -363,6 +448,7 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                                                                 handlePermanentDelete(service);
                                                             }}
                                                             title="Delete permanently"
+                                                            disabled={loading}
                                                         >
                                                             <FontAwesomeIcon icon={faTimes} />
                                                         </button>
