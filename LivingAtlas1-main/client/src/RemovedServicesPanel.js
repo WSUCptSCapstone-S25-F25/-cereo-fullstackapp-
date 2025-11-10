@@ -1,13 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './RemovedServicesPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faUndo, faTimes, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faUndo, faTimes, faSearch, faSpinner, faSync } from '@fortawesome/free-solid-svg-icons';
+import { fetchRemovedArcgisServices } from './arcgisServicesDb';
 
 function RemovedServicesPanel({ isOpen, onClose }) {
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('any'); // 'any', 'folder', 'service', 'layer'
     const [expandedFolders, setExpandedFolders] = useState(new Set());
     const [expandedServices, setExpandedServices] = useState(new Set());
+    const [removedServices, setRemovedServices] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    
+    // Fetch removed services from database
+    const fetchData = async () => {
+        if (!isOpen) return;
+        
+        setLoading(true);
+        setError(null);
+        
+        try {
+            const data = await fetchRemovedArcgisServices(null, { type: 'all' });
+            console.log('Fetched removed services:', data);
+            setRemovedServices(data || []);
+        } catch (err) {
+            console.error('Error fetching removed services:', err);
+            setError('Failed to load removed services. Please try again.');
+            setRemovedServices([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    // Fetch data when panel opens
+    useEffect(() => {
+        fetchData();
+    }, [isOpen]);
     
     const mockRemovedServices = [
         {
@@ -63,11 +92,35 @@ function RemovedServicesPanel({ isOpen, onClose }) {
         }
     ];
 
-    const filteredServices = mockRemovedServices.filter(service =>
-        service.label.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-        service.folder.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-        service.state.toLowerCase().includes(searchKeyword.toLowerCase())
-    );
+    // Filter services based on search criteria
+    const filteredServices = removedServices.filter(service => {
+        const keyword = searchKeyword.toLowerCase();
+        const matchesKeyword = !keyword || 
+            service.label?.toLowerCase().includes(keyword) ||
+            service.folder?.toLowerCase().includes(keyword) ||
+            service.state?.toLowerCase().includes(keyword);
+
+        if (!matchesKeyword) return false;
+
+        // Filter by search type if keyword is provided
+        if (keyword && searchType !== 'any') {
+            switch (searchType) {
+                case 'folder':
+                    return service.folder?.toLowerCase().includes(keyword);
+                case 'service':
+                    return service.label?.toLowerCase().includes(keyword);
+                case 'layer':
+                    // Check if any layer names match
+                    return service.layers_removed?.some(layer => 
+                        layer.name?.toLowerCase().includes(keyword)
+                    );
+                default:
+                    return true;
+            }
+        }
+
+        return true;
+    });
 
     // Group services by folder
     const servicesByFolder = {};
@@ -79,8 +132,14 @@ function RemovedServicesPanel({ isOpen, onClose }) {
     const folderNames = Object.keys(servicesByFolder).sort();
 
     const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (!dateString) return 'Unknown date';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'Invalid date';
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (err) {
+            return 'Invalid date';
+        }
     };
 
     const handleRestore = (service) => {
@@ -175,9 +234,19 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                     <FontAwesomeIcon icon={faTrash} style={{ marginRight: '8px' }} />
                     Removed Services
                 </div>
-                <button className="removed-services-close" onClick={onClose} title="Close">
-                    <FontAwesomeIcon icon={faTimes} />
-                </button>
+                <div className="removed-services-header-actions">
+                    <button 
+                        className="removed-services-refresh" 
+                        onClick={fetchData} 
+                        title="Refresh"
+                        disabled={loading}
+                    >
+                        <FontAwesomeIcon icon={faSync} spin={loading} />
+                    </button>
+                    <button className="removed-services-close" onClick={onClose} title="Close">
+                        <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                </div>
             </div>
 
             <div className="removed-services-search">
@@ -195,7 +264,22 @@ function RemovedServicesPanel({ isOpen, onClose }) {
             </div>
 
             <div className="removed-services-content">
-                {filteredServices.length === 0 ? (
+                {loading ? (
+                    <div className="removed-services-loading">
+                        <FontAwesomeIcon icon={faSpinner} spin size="2x" style={{ color: '#1976d2', marginBottom: '12px' }} />
+                        <p>Loading removed services...</p>
+                    </div>
+                ) : error ? (
+                    <div className="removed-services-error">
+                        <p style={{ color: '#d32f2f', marginBottom: '12px' }}>{error}</p>
+                        <button 
+                            className="removed-services-retry-btn"
+                            onClick={fetchData}
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                ) : filteredServices.length === 0 ? (
                     <div className="removed-services-empty">
                         {searchKeyword ? (
                             <div>
@@ -248,11 +332,17 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                                                             {service.label}
                                                         </div>
                                                         <div className="removed-service-meta">
-                                                            <span className="removed-service-state">{service.state}</span>
+                                                            <span className="removed-service-state">{service.state?.toUpperCase()}</span>
                                                             <span className="removed-service-separator">•</span>
                                                             <span className="removed-service-date">
-                                                                {formatDate(service.removedDate)}
+                                                                {formatDate(service.removed_date)}
                                                             </span>
+                                                            {service.removed_by && (
+                                                                <>
+                                                                    <span className="removed-service-separator">•</span>
+                                                                    <span className="removed-service-by">by {service.removed_by}</span>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <div className="removed-service-actions">
@@ -279,29 +369,38 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                                                     </div>
                                                 </div>
                                                 
-                                                {expandedServices.has(service.key) && service.layersRemoved && service.layersRemoved.length > 0 && (
-                                                    <div className="removed-service-layers">
-                                                        <div className="removed-service-layers-title">
-                                                            Removed layers ({service.layersRemoved.length}):
-                                                        </div>
-                                                        <div style={{ marginLeft: 12 }}>
-                                                            {service.layersRemoved.map((layer, layerIndex) => (
-                                                                <div key={layerIndex} className="removed-service-layer">
-                                                                    <div className="removed-service-layer-name">
-                                                                        {layer.name}
-                                                                    </div>
-                                                                    {layer.sublayers && layer.sublayers.length > 0 && (
-                                                                        <div className="removed-service-sublayers">
-                                                                            {layer.sublayers.map((sublayer, sublayerIndex) => (
-                                                                                <div key={sublayerIndex} className="removed-service-sublayer">
-                                                                                    • {sublayer}
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
+                                                {expandedServices.has(service.key) && (
+                                                    <div className="removed-service-details">
+                                                        {service.url && (
+                                                            <div className="removed-service-url">
+                                                                <strong>Service URL:</strong> {service.url}
+                                                            </div>
+                                                        )}
+                                                        {service.layers_removed && service.layers_removed.length > 0 && (
+                                                            <div className="removed-service-layers">
+                                                                <div className="removed-service-layers-title">
+                                                                    Removed layers ({service.layers_removed.length}):
                                                                 </div>
-                                                            ))}
-                                                        </div>
+                                                                <div style={{ marginLeft: 12 }}>
+                                                                    {service.layers_removed.map((layer, layerIndex) => (
+                                                                        <div key={layerIndex} className="removed-service-layer">
+                                                                            <div className="removed-service-layer-name">
+                                                                                {typeof layer === 'string' ? layer : layer.name}
+                                                                            </div>
+                                                                            {layer.sublayers && layer.sublayers.length > 0 && (
+                                                                                <div className="removed-service-sublayers">
+                                                                                    {layer.sublayers.map((sublayer, sublayerIndex) => (
+                                                                                        <div key={sublayerIndex} className="removed-service-sublayer">
+                                                                                            • {sublayer}
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
