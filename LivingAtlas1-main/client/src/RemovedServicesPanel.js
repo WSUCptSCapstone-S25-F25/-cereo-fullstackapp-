@@ -3,6 +3,7 @@ import './RemovedServicesPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faUndo, faTimes, faSearch, faSpinner, faSync } from '@fortawesome/free-solid-svg-icons';
 import { fetchRemovedArcgisServices, restoreArcgisService, permanentlyDeleteRemovedService, clearAllRemovedServices } from './arcgisServicesDb';
+import { filterRemovedServicesData, highlightSearchTerm } from './removedServicesSearchUtils';
 
 function RemovedServicesPanel({ isOpen, onClose }) {
     const [searchKeyword, setSearchKeyword] = useState('');
@@ -12,6 +13,7 @@ function RemovedServicesPanel({ isOpen, onClose }) {
     const [removedServices, setRemovedServices] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [searchResult, setSearchResult] = useState(null);
     
     // Fetch removed services from database
     const fetchData = async () => {
@@ -92,44 +94,47 @@ function RemovedServicesPanel({ isOpen, onClose }) {
         }
     ];
 
-    // Filter services based on search criteria
-    const filteredServices = removedServices.filter(service => {
-        const keyword = searchKeyword.toLowerCase();
-        const matchesKeyword = !keyword || 
-            service.label?.toLowerCase().includes(keyword) ||
-            service.folder?.toLowerCase().includes(keyword) ||
-            service.state?.toLowerCase().includes(keyword);
-
-        if (!matchesKeyword) return false;
-
-        // Filter by search type if keyword is provided
-        if (keyword && searchType !== 'any') {
-            switch (searchType) {
-                case 'folder':
-                    return service.folder?.toLowerCase().includes(keyword);
-                case 'service':
-                    return service.label?.toLowerCase().includes(keyword);
-                case 'layer':
-                    // Check if any layer names match
-                    return service.layers_removed?.some(layer => 
-                        layer.name?.toLowerCase().includes(keyword)
-                    );
-                default:
-                    return true;
-            }
-        }
-
-        return true;
-    });
+    // Use search results if available, otherwise show all services
+    const displayServices = searchResult ? 
+        Object.values(searchResult.filteredFolders).flat() : 
+        removedServices;
 
     // Group services by folder
-    const servicesByFolder = {};
-    filteredServices.forEach(service => {
-        const folder = service.folder || 'Root';
-        if (!servicesByFolder[folder]) servicesByFolder[folder] = [];
-        servicesByFolder[folder].push(service);
-    });
+    const servicesByFolder = searchResult ? 
+        searchResult.filteredFolders : 
+        (() => {
+            const folders = {};
+            removedServices.forEach(service => {
+                const folder = service.folder || 'Root';
+                if (!folders[folder]) folders[folder] = [];
+                folders[folder].push(service);
+            });
+            return folders;
+        })();
     const folderNames = Object.keys(servicesByFolder).sort();
+
+    // Update expanded folders and services based on search results
+    React.useEffect(() => {
+        if (searchResult) {
+            setExpandedFolders(searchResult.expandedFolders);
+            setExpandedServices(searchResult.expandedServices);
+        }
+    }, [searchResult]);
+
+    // Debounced search effect
+    React.useEffect(() => {
+        const delayedSearch = setTimeout(() => {
+            if (searchKeyword.trim()) {
+                performSearch();
+            } else {
+                setSearchResult(null);
+                setExpandedFolders(new Set());
+                setExpandedServices(new Set());
+            }
+        }, 300); // 300ms delay
+
+        return () => clearTimeout(delayedSearch);
+    }, [searchKeyword, searchType, removedServices]);
 
     const formatDate = (dateString) => {
         if (!dateString) return 'Unknown date';
@@ -264,6 +269,31 @@ function RemovedServicesPanel({ isOpen, onClose }) {
         });
     };
 
+    // Perform search function
+    const performSearch = () => {
+        if (!searchKeyword.trim()) {
+            setSearchResult(null);
+            setExpandedFolders(new Set());
+            setExpandedServices(new Set());
+            return;
+        }
+        const result = filterRemovedServicesData({
+            services: removedServices,
+            searchType,
+            keyword: searchKeyword.trim()
+        });
+        setSearchResult(result);
+    };
+
+    // Clear search function
+    const clearSearch = () => {
+        setSearchKeyword('');
+        setSearchType('any');
+        setSearchResult(null);
+        setExpandedFolders(new Set());
+        setExpandedServices(new Set());
+    };
+
     const renderSearchBar = () => (
         <div>
             <div className="removed-services-searchbar">
@@ -272,6 +302,13 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                     value={searchKeyword}
                     onChange={e => setSearchKeyword(e.target.value)}
                     placeholder="Search removed services..."
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            performSearch();
+                        }
+                    }}
+                    disabled={loading}
                 />
                 <select
                     value={searchType}
@@ -286,22 +323,16 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                 <button
                     className="removed-services-search-btn"
                     title="Search"
-                    onClick={() => {
-                        if (!searchKeyword) {
-                            return;
-                        }
-                        console.log('Search:', searchKeyword, 'Type:', searchType);
-                    }}
+                    onClick={performSearch}
+                    disabled={loading}
                 >
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
                 <button
                     className="removed-services-clear-btn"
                     title="Clear Search"
-                    onClick={() => {
-                        setSearchKeyword('');
-                        setSearchType('any');
-                    }}
+                    onClick={clearSearch}
+                    disabled={loading}
                 >
                     <FontAwesomeIcon icon={faTimes} />
                 </button>
@@ -341,9 +372,9 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                 <button 
                     className="removed-services-clear-all-btn"
                     onClick={clearAllRemoved}
-                    disabled={filteredServices.length === 0}
+                    disabled={removedServices.length === 0 || loading}
                 >
-                    Clear All ({filteredServices.length})
+                    Clear All ({removedServices.length})
                 </button>
             </div>
 
@@ -363,7 +394,7 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                             Try Again
                         </button>
                     </div>
-                ) : filteredServices.length === 0 ? (
+                ) : displayServices.length === 0 ? (
                     <div className="removed-services-empty">
                         {searchKeyword ? (
                             <div>
@@ -413,7 +444,13 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                                                             <span style={{ marginRight: '8px' }}>
                                                                 {expandedServices.has(service.key) ? "▼" : "►"}
                                                             </span>
-                                                            {service.label}
+                                                            <span 
+                                                                dangerouslySetInnerHTML={{
+                                                                    __html: searchKeyword && searchResult ? 
+                                                                        highlightSearchTerm(service.label, searchKeyword) : 
+                                                                        service.label
+                                                                }}
+                                                            />
                                                         </div>
                                                         <div className="removed-service-meta">
                                                             <span className="removed-service-state">{service.state?.toUpperCase()}</span>
