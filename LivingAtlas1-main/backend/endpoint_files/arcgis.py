@@ -315,8 +315,149 @@ def rename_service(request: RenameServiceRequest):
         conn.autocommit = True
         raise HTTPException(status_code=500, detail=f"Failed to rename service: {str(e)}")
 
+class RestoreServiceRequest(BaseModel):
+    service_key: str
+
+class DeleteRemovedServiceRequest(BaseModel):
+    service_key: str
+
 class BulkAddServicesRequest(BaseModel):
     services: List[dict]
+
+@arcgis_router.post("/services/restore")
+def restore_service(request: RestoreServiceRequest):
+    """Restore a service from removed_arcgis_services back to arcgis_services"""
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+
+    try:
+        # Start transaction
+        conn.autocommit = False
+        
+        # First, get the service details from the removed table
+        cur.execute("""
+            SELECT service_key, label, url, folder, type, state 
+            FROM removed_arcgis_services 
+            WHERE service_key = %s
+        """, (request.service_key,))
+        
+        service_row = cur.fetchone()
+        if not service_row:
+            conn.rollback()
+            conn.autocommit = True
+            raise HTTPException(status_code=404, detail="Removed service not found")
+        
+        service_key, label, url, folder, type_val, state = service_row
+        
+        # Check if service already exists in main table (to avoid duplicates)
+        cur.execute("""
+            SELECT COUNT(*) FROM arcgis_services 
+            WHERE service_key = %s
+        """, (service_key,))
+        
+        exists = cur.fetchone()[0] > 0
+        if exists:
+            conn.rollback()
+            conn.autocommit = True
+            raise HTTPException(status_code=409, detail="Service already exists in active services")
+        
+        # Insert back into main arcgis_services table
+        cur.execute("""
+            INSERT INTO arcgis_services 
+            (service_key, label, url, folder, type, state)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            service_key,
+            label, 
+            url,
+            folder,
+            type_val,
+            state
+        ))
+        
+        # Remove from removed_arcgis_services table
+        cur.execute("""
+            DELETE FROM removed_arcgis_services 
+            WHERE service_key = %s
+        """, (request.service_key,))
+        
+        # Commit transaction
+        conn.commit()
+        conn.autocommit = True
+        
+        return {
+            "success": True,
+            "message": f"Service '{label}' restored to active services",
+            "service_key": service_key
+        }
+        
+    except Exception as e:
+        conn.rollback()
+        conn.autocommit = True
+        raise HTTPException(status_code=500, detail=f"Failed to restore service: {str(e)}")
+
+@arcgis_router.delete("/services/removed")
+def permanently_delete_removed_service(request: DeleteRemovedServiceRequest):
+    """Permanently delete a service from removed_arcgis_services"""
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+
+    try:
+        # Check if service exists in removed table
+        cur.execute("""
+            SELECT label FROM removed_arcgis_services 
+            WHERE service_key = %s
+        """, (request.service_key,))
+        
+        service_row = cur.fetchone()
+        if not service_row:
+            raise HTTPException(status_code=404, detail="Removed service not found")
+        
+        label = service_row[0]
+        
+        # Permanently delete from removed_arcgis_services table
+        cur.execute("""
+            DELETE FROM removed_arcgis_services 
+            WHERE service_key = %s
+        """, (request.service_key,))
+        
+        conn.commit()
+        
+        return {
+            "success": True,
+            "message": f"Service '{label}' permanently deleted",
+            "service_key": request.service_key
+        }
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to permanently delete service: {str(e)}")
+
+@arcgis_router.delete("/services/removed/all")
+def clear_all_removed_services():
+    """Permanently delete all services from removed_arcgis_services"""
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+
+    try:
+        # Get count before deletion
+        cur.execute("SELECT COUNT(*) FROM removed_arcgis_services")
+        count_before = cur.fetchone()[0]
+        
+        # Clear all removed services
+        cur.execute("DELETE FROM removed_arcgis_services")
+        
+        conn.commit()
+        
+        return {
+            "success": True,
+            "message": f"All {count_before} removed services permanently deleted",
+            "count": count_before
+        }
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to clear all removed services: {str(e)}")
 
 @arcgis_router.post("/services/bulk-add")
 def bulk_add_services(request: BulkAddServicesRequest):

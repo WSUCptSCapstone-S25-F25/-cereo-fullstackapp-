@@ -178,3 +178,74 @@ export async function renameService(serviceKey, newLabel) {
         throw error;
     }
 }
+
+// Fetch removed ArcGIS services from backend
+export async function fetchRemovedArcgisServices(stateCode = null, { type = 'MapServer' } = {}) {
+    const paths = ['/arcgis/services/removed', '/api/arcgis/services/removed'];
+    const params = new URLSearchParams();
+    
+    if (stateCode) {
+        params.append('state', stateCode);
+    }
+    if (type && type.toLowerCase() !== 'all') {
+        params.append('type', type);
+    }
+    
+    return await tryGetServices(params, paths);
+}
+
+// Restore an ArcGIS service from removed back to active services
+export async function restoreArcgisService(serviceKey) {
+    try {
+        console.log(`[arcgisServicesDb] Restoring service ${serviceKey}...`);
+        
+        const requestBody = {
+            service_key: serviceKey
+        };
+        
+        const response = await api.post('/arcgis/services/restore', requestBody);
+        
+        console.log(`[arcgisServicesDb] Successfully restored service ${serviceKey}`);
+        return response.data;
+        
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to restore service ${serviceKey}:`, error);
+        throw error;
+    }
+}
+
+// Permanently delete a removed ArcGIS service
+export async function permanentlyDeleteRemovedService(serviceKey) {
+    try {
+        console.log(`[arcgisServicesDb] Permanently deleting removed service ${serviceKey}...`);
+        
+        const requestBody = {
+            service_key: serviceKey
+        };
+        
+        const response = await api.delete('/arcgis/services/removed', { data: requestBody });
+        
+        console.log(`[arcgisServicesDb] Successfully deleted removed service ${serviceKey}`);
+        return response.data;
+        
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to delete removed service ${serviceKey}:`, error);
+        throw error;
+    }
+}
+
+// Clear all removed ArcGIS services
+export async function clearAllRemovedServices() {
+    try {
+        console.log(`[arcgisServicesDb] Clearing all removed services...`);
+        
+        const response = await api.delete('/arcgis/services/removed/all');
+        
+        console.log(`[arcgisServicesDb] Successfully cleared all removed services`);
+        return response.data;
+        
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to clear all removed services:`, error);
+        throw error;
+    }
+}
