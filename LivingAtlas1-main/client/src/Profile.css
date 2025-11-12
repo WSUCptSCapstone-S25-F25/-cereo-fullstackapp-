@@ -26,3 +26,157 @@
     font-size: 18px;
   }
   
+    /* === Profile Layout === */
+  div.profile-container {
+    display: flex !important;
+    width: 100% !important;
+    transition: all 0.3s ease;
+    align-items: flex-start;
+  }
+
+  div.profile-left {
+    flex: 1 1 auto !important;
+    padding: 20px !important;
+    transition: all 0.3s ease;
+  }
+
+  div.profile-right {
+    width: 360px !important;
+    transition: width 0.3s ease;
+    position: relative;
+    background-color: #f5f5f5;
+    min-height: 100%;
+  }
+
+  div.profile-right.collapsed {
+    width: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+  }
+
+  div.profile-left.expanded {
+    flex: 1 1 100% !important;
+  }
+
+  button.collapse-toggle {
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #0077cc;
+    color: white;
+    border: none;
+    border-radius: 5px 0 0 5px;
+    padding: 5px 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    z-index: 10;
+  }
+
+  button.collapse-toggle:hover {
+    background-color: #005fa3;
+  }
+
+  .profile-right .collapse-toggle {
+  background-color: #0077cc !important;
+  color: white !important;
+  border-radius: 5px 0 0 5px !important;
+  width: 30px !important;
+  height: 30px !important;
+  }
+  /* Keep collapse arrow visible even when sidebar is collapsed */
+  .profile-container {
+    position: relative;
+  }
+
+  /* === Collapsible Arrow Button === */
+  .collapse-toggle {
+    position: fixed !important;
+    top: 50% !important;
+    right: 5px !important;            /* Start near right edge when collapsed */
+    transform: translateY(-50%) !important;
+    background-color: #0077cc !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 5px 0 0 5px !important;
+    width: 36px !important;
+    height: 36px !important;
+    cursor: pointer;
+    z-index: 3000 !important;
+    transition:
+      right 0.3s ease,
+      background 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Arrow rotation */
+  .collapse-toggle .arrow {
+    font-size: 20px;
+    display: inline-block;
+    transition: transform 0.3s ease;
+  }
+
+  /* When sidebar is expanded, move arrow left to hug sidebar edge */
+  .profile-right:not(.collapsed) ~ .collapse-toggle {
+    right: 360px !important; /* match sidebar width */
+  }
+
+  /* Expanded (sidebar open) → arrow points left */
+  .collapse-toggle.expanded .arrow {
+    transform: rotate(180deg);
+  }
+
+  /* Collapsed (sidebar closed) → arrow points right */
+  .collapse-toggle.collapsed .arrow {
+    transform: rotate(0deg);
+  }
+
+  /* Hover effect */
+  .collapse-toggle:hover {
+    background-color: #005fa3 !important;
+  }
+
+  /* ----- PROFILE PAGE OVERRIDES FOR THE ARROW ----- */
+
+  /* Make sure our button ignores Content2.css settings */
+  .profile-container > .collapse-toggle {
+    position: fixed !important;
+    top: 50% !important;
+    /* KEY: anchor to the RIGHT, not left */
+    left: auto !important;
+    right: 5px !important;              /* when collapsed: near the screen edge */
+    transform: translateY(-50%) !important;
+
+    background-color: #0077cc !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 5px 0 0 5px !important;
+    width: 36px !important;
+    height: 36px !important;
+    cursor: pointer;
+    z-index: 3000 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: right 0.3s ease, background 0.3s ease;
+  }
+
+  /* When the sidebar is OPEN, park the arrow against its outer edge */
+  .profile-right:not(.collapsed) ~ .collapse-toggle {
+    right: 360px !important;            /* match your sidebar width */
+  }
+
+  /* Flip animation (if you added the span.arrow) */
+  .profile-container > .collapse-toggle .arrow {
+    font-size: 20px;
+    display: inline-block;
+    transition: transform 0.3s ease;
+  }
+  .profile-container > .collapse-toggle.expanded .arrow { transform: rotate(180deg); }
+  .profile-container > .collapse-toggle.collapsed .arrow { transform: rotate(0deg); }
+
+  .profile-container > .collapse-toggle:hover {
+    background-color: #005fa3 !important;
+  }

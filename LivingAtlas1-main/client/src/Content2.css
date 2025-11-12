@@ -28,6 +28,15 @@ It adjusts the layout of the .card-container and .card elements for smaller scre
   }
 }
 
+/* Prevent fixed positioning on profile page */
+.profile-content-2 {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  background-color: transparent !important;
+  overflow: visible !important;
+  z-index: auto !important;
+}
 
 /* Card container styles */
 #content-2 {
