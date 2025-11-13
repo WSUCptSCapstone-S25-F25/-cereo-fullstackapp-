@@ -389,6 +389,12 @@ function Home(props) {
                 areaVisibility={areaVisibility}
                 handleLayerCheckbox={handleCategoryLayerCheckbox}
                 handleAreaCheckbox={handleAreaCheckbox}
+                filterCondition={filterCondition}
+                setFilterCondition={setFilterCondition}
+                sortCondition={sortCondition}
+                setSortCondition={setSortCondition}
+                CategoryCondition={CategoryCondition}
+                setCategoryCondition={setCategoryConditionCondition}
             />
         </div>
     );
