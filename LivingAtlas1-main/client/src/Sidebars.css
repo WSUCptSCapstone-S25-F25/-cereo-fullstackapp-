@@ -280,20 +280,36 @@
 .left-sidebar-gis-button,
 .left-sidebar-upload-button,
 .left-sidebar-layers-button, 
-.left-sidebar-trash-button {
+.left-sidebar-trash-button,
+.left-sidebar-ai-button,
+.left-sidebar-tutorial-button {
     background: none;
     border: none;
     color: white;
-    font-size: 22px;
+    font-size: 24px;
     cursor: pointer;
-    margin: 8px 0 0 8px;
+    margin: 12px 0 0 0;
     display: block;
-    top: 60px;
+    z-index: 1001;
+    position: static;
 }
 
-/* .left-sidebar-gis-button:hover,
-.left-sidebar-upload-button:hover {
+/* Spacer to push tutorial button to bottom */
+.left-sidebar-spacer {
+    flex-grow: 1;
+}
+
+/* Hover effects for all sidebar buttons */
+.left-sidebar-search-button:hover,
+.left-sidebar-gis-button:hover,
+.left-sidebar-upload-button:hover,
+.left-sidebar-layers-button:hover,
+.left-sidebar-trash-button:hover,
+.left-sidebar-ai-button:hover,
+.left-sidebar-tutorial-button:hover {
     background-color: #444;
     color: #e0e0e0;
-} */
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
 

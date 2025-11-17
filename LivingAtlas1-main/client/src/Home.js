@@ -17,7 +17,8 @@ import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons'; // layer group icon
 import { faTrash } from '@fortawesome/free-solid-svg-icons'; // trash icon
-import FormModal from './FormModal'; // <-- import FormModal
+import { faRobot, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+import FormModal from './FormModal';
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -280,12 +281,32 @@ function Home(props) {
                 >
                     <FontAwesomeIcon icon={faTrash} />
                 </button>
+                {/* AI Helper button*/}
+                <button
+                    className="left-sidebar-ai-button"
+                    title="AI Helper"
+                    onClick={() => {/* AI Helper logic will go here */}}
+                >
+                    <FontAwesomeIcon icon={faRobot} />
+                </button>
 
                 {/* Removed Services Panel */}
                 <RemovedServicesPanel
                     isOpen={isRemovedPanelOpen}
                     onClose={() => setIsRemovedPanelOpen(false)}
                 />
+
+                {/* Spacer to push tutorial button to bottom */}
+                <div className="left-sidebar-spacer"></div>
+                
+                {/* Tutorial button at the bottom */}
+                <button
+                    className="left-sidebar-tutorial-button"
+                    title="Tutorial"
+                    onClick={() => {/* Tutorial logic will go here */}}
+                >
+                    <FontAwesomeIcon icon={faQuestionCircle} />
+                </button>
 
                 {/* Expanded Left Sidebar Content */}
                 {isSidebarOpen && (
