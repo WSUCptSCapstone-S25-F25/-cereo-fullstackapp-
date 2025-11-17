@@ -87,6 +87,23 @@ def remove_service(request: RemoveServiceRequest):
         # Start transaction
         conn.autocommit = False
         
+        # Ensure removed_arcgis_services table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS removed_arcgis_services (
+                id SERIAL PRIMARY KEY,
+                service_key VARCHAR(255) NOT NULL,
+                label VARCHAR(255) NOT NULL,
+                url TEXT NOT NULL,
+                folder VARCHAR(255) DEFAULT 'Root',
+                type VARCHAR(50) NOT NULL,
+                state VARCHAR(50) NOT NULL,
+                removed_by VARCHAR(255),
+                layers_removed TEXT[],
+                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
+            )
+        """)
+        
         # First, get the service details from the main table
         cur.execute("""
             SELECT service_key, label, url, folder, type, state 
@@ -147,6 +164,28 @@ def get_removed_services(
     if cur is None:
         raise HTTPException(status_code=500, detail="Database connection not available")
 
+    try:
+        # Ensure removed_arcgis_services table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS removed_arcgis_services (
+                id SERIAL PRIMARY KEY,
+                service_key VARCHAR(255) NOT NULL,
+                label VARCHAR(255) NOT NULL,
+                url TEXT NOT NULL,
+                folder VARCHAR(255) DEFAULT 'Root',
+                type VARCHAR(50) NOT NULL,
+                state VARCHAR(50) NOT NULL,
+                removed_by VARCHAR(255),
+                layers_removed TEXT[],
+                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        # If table creation fails, continue anyway as it might already exist
+        pass
+
     clauses: List[str] = []
     params: List[str] = []
 
@@ -168,12 +207,12 @@ def get_removed_services(
             COALESCE(folder, 'Root') AS folder,
             type,
             state,
-            removed_date,
+            removed_at AS removed_date,
             removed_by,
             layers_removed
         FROM removed_arcgis_services
         {where_sql}
-        ORDER BY removed_date DESC
+        ORDER BY removed_at DESC
     """.strip()
 
     try:
@@ -334,6 +373,23 @@ def restore_service(request: RestoreServiceRequest):
         # Start transaction
         conn.autocommit = False
         
+        # Ensure removed_arcgis_services table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS removed_arcgis_services (
+                id SERIAL PRIMARY KEY,
+                service_key VARCHAR(255) NOT NULL,
+                label VARCHAR(255) NOT NULL,
+                url TEXT NOT NULL,
+                folder VARCHAR(255) DEFAULT 'Root',
+                type VARCHAR(50) NOT NULL,
+                state VARCHAR(50) NOT NULL,
+                removed_by VARCHAR(255),
+                layers_removed TEXT[],
+                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
+            )
+        """)
+        
         # First, get the service details from the removed table
         cur.execute("""
             SELECT service_key, label, url, folder, type, state 
@@ -403,6 +459,23 @@ def permanently_delete_removed_service(request: DeleteRemovedServiceRequest):
         raise HTTPException(status_code=500, detail="Database connection not available")
 
     try:
+        # Ensure removed_arcgis_services table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS removed_arcgis_services (
+                id SERIAL PRIMARY KEY,
+                service_key VARCHAR(255) NOT NULL,
+                label VARCHAR(255) NOT NULL,
+                url TEXT NOT NULL,
+                folder VARCHAR(255) DEFAULT 'Root',
+                type VARCHAR(50) NOT NULL,
+                state VARCHAR(50) NOT NULL,
+                removed_by VARCHAR(255),
+                layers_removed TEXT[],
+                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
+            )
+        """)
+        conn.commit()
         # Check if service exists in removed table
         cur.execute("""
             SELECT label FROM removed_arcgis_services 
@@ -440,6 +513,23 @@ def clear_all_removed_services():
         raise HTTPException(status_code=500, detail="Database connection not available")
 
     try:
+        # Ensure removed_arcgis_services table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS removed_arcgis_services (
+                id SERIAL PRIMARY KEY,
+                service_key VARCHAR(255) NOT NULL,
+                label VARCHAR(255) NOT NULL,
+                url TEXT NOT NULL,
+                folder VARCHAR(255) DEFAULT 'Root',
+                type VARCHAR(50) NOT NULL,
+                state VARCHAR(50) NOT NULL,
+                removed_by VARCHAR(255),
+                layers_removed TEXT[],
+                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
+            )
+        """)
+        conn.commit()
         # Get count before deletion
         cur.execute("SELECT COUNT(*) FROM removed_arcgis_services")
         count_before = cur.fetchone()[0]

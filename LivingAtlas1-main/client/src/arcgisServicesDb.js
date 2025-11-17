@@ -132,7 +132,13 @@ export async function removeArcgisService(serviceKey, { removedBy = null, layers
         
     } catch (error) {
         console.error(`[arcgisServicesDb] Failed to remove service ${serviceKey}:`, error);
-        throw error;
+        
+        // Provide more specific error details
+        const errorMsg = error?.response?.data?.detail || error?.message || 'Network error';
+        const enhancedError = new Error(`Failed to remove service ${serviceKey}: ${errorMsg}`);
+        enhancedError.originalError = error;
+        
+        throw enhancedError;
     }
 }
 

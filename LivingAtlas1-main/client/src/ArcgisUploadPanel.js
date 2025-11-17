@@ -568,7 +568,19 @@ function ArcgisUploadPanel({
             
         } catch (error) {
             console.error('Failed to remove service:', error);
-            alert(`Failed to remove service: ${error.message || 'Unknown error'}`);
+            
+            // Check if it's a table-related error that might succeed on retry
+            const errorMsg = error?.message || 'Unknown error';
+            const isTableError = errorMsg.includes('removed_arcgis_services') || 
+                                errorMsg.includes('relation') || 
+                                errorMsg.includes('does not exist');
+            
+            if (isTableError) {
+                // Show a different message for likely table issues
+                alert(`Database initialization error. Please try removing the service again. If the problem persists, contact support.\n\nError: ${errorMsg}`);
+            } else {
+                alert(`Failed to remove service: ${errorMsg}`);
+            }
         }
     };
 
