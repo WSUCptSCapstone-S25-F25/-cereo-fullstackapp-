@@ -69,16 +69,21 @@ function ArcgisUploadPanel({
     // Track selected state
     const [selectedState, setSelectedState] = useState('WA');
 
+    // Data source selection: 'database' or 'local'
+    const [dataSource, setDataSource] = useState('database');
+
     // Services fetched from DB for selected state
     const [servicesFromDb, setServicesFromDb] = useState([]);
     const [isLoadingServices, setIsLoadingServices] = useState(false);
     const [servicesError, setServicesError] = useState(null);
     const [usingFallback, setUsingFallback] = useState(false);
 
-    // Use services from database, fallback to local JSON if needed
-    const ARCGIS_SERVICES = servicesFromDb.length > 0 
-        ? servicesFromDb 
-        : (ARCGIS_SERVICES_BY_STATE[selectedState] || []);
+    // Use services based on data source selection
+    const ARCGIS_SERVICES = dataSource === 'local' 
+        ? (ARCGIS_SERVICES_BY_STATE[selectedState] || [])
+        : (servicesFromDb.length > 0 
+            ? servicesFromDb 
+            : (ARCGIS_SERVICES_BY_STATE[selectedState] || []));
 
     // Group services by folder
     const servicesByFolder = {};
@@ -132,9 +137,34 @@ function ArcgisUploadPanel({
     const [updateProgress, setUpdateProgress] = useState('');
     const [updateResults, setUpdateResults] = useState(null);
 
-    // Fetch services from DB whenever panel opens or state changes
+    // Handle data source switching with user feedback
+    const handleDataSourceChange = (newDataSource) => {
+        if (newDataSource === dataSource) return;
+        
+        console.log(`[ArcgisUploadPanel] Switching data source from ${dataSource} to ${newDataSource}`);
+        setDataSource(newDataSource);
+        
+        // Show temporary message about the switch
+        if (newDataSource === 'local') {
+            showFinishedMessage('Switched to local JSON data');
+        } else {
+            showFinishedMessage('Switched to database data');
+        }
+    };
+
+    // Fetch services from DB whenever panel opens, state changes, or data source changes
     useEffect(() => {
         if (!isOpen) return;
+        
+        // If local data source is selected, skip database fetch
+        if (dataSource === 'local') {
+            setServicesFromDb([]);
+            setIsLoadingServices(false);
+            setServicesError(null);
+            setUsingFallback(false);
+            return;
+        }
+
         let active = true;
         
         (async () => {
@@ -172,21 +202,23 @@ function ArcgisUploadPanel({
         })();
         
         return () => { active = false; };
-    }, [isOpen, selectedState]);
+    }, [isOpen, selectedState, dataSource]);
 
-    // Fetch layers and legends when panel opens, state changes, or services change
+    // Fetch layers and legends when panel opens, state changes, data source changes, or services change
     useEffect(() => {
         if (!isOpen) return;
 
-        // Reset per-state caches/UI
+        // Reset per-state/datasource caches/UI
         setServiceLayers({});
         setServiceLegends({});
         setCheckedLayerIds({});
         setServiceLayerAdded({});
         setExpandedFolders(new Set());
         setExpandedServices(new Set());
-        setExpandedLayers(new Set()); // Reset expanded layers when switching states
+        setExpandedLayers(new Set()); // Reset expanded layers when switching states/datasource
         setServiceInfoOpenKey(null);
+        setSearchKeyword(''); // Clear search when switching data source
+        setSearchResult(null);
         prevCheckedLayerIds.current = {};
 
         // Fetch for current services (from DB or fallback)
@@ -204,7 +236,7 @@ function ArcgisUploadPanel({
             });
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, selectedState, servicesFromDb.length]); // React to changes in services
+    }, [isOpen, selectedState, dataSource, servicesFromDb.length]); // React to changes in services or data source
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
     useEffect(() => {
@@ -1023,15 +1055,39 @@ function ArcgisUploadPanel({
     // State selection menu that sets selectedState and resets relevant state variables based on selection
     const renderStateMenu = () => (
         <div className="arcgis-upload-state-menu">
-            {STATE_CODES.map(code => (
+            {/* State selection buttons */}
+            <div className="arcgis-upload-state-buttons">
+                {STATE_CODES.map(code => (
+                    <button
+                        key={code}
+                        className={`arcgis-upload-state-btn${selectedState === code ? ' active' : ''}`}
+                        onClick={() => setSelectedState(code)}
+                        title={`Load ${STATE_LABELS[code]} services`}
+                    >
+                        {STATE_LABELS[code]}
+                    </button>
+                ))}
+            </div>
+            
+            {/* Data source toggle */}
+            <div className="arcgis-upload-datasource-toggle">
                 <button
-                    key={code}
-                    className={`arcgis-upload-state-btn${selectedState === code ? ' active' : ''}`}
-                    onClick={() => setSelectedState(code)}
+                    className={`arcgis-upload-datasource-btn${dataSource === 'database' ? ' active' : ''}`}
+                    onClick={() => handleDataSourceChange('database')}
+                    title="Load services from database (live data with user modifications)"
+                    disabled={isLoadingServices}
                 >
-                    {STATE_LABELS[code]}
+                    🌐 DB
                 </button>
-            ))}
+                <button
+                    className={`arcgis-upload-datasource-btn${dataSource === 'local' ? ' active' : ''}`}
+                    onClick={() => handleDataSourceChange('local')}
+                    title="Load services from local JSON files (original data)"
+                    disabled={isLoadingServices}
+                >
+                    📂 Local
+                </button>
+            </div>
         </div>
     );
 
@@ -1094,7 +1150,7 @@ function ArcgisUploadPanel({
             {/* Upload Panel */}
             <div className="upload-panel">
                 {/* Loading and status messages */}
-                {isLoadingServices && (
+                {isLoadingServices && dataSource === 'database' && (
                     <div style={{ 
                         background: '#d4edda', 
                         border: '1px solid #c3e6cb', 
@@ -1104,11 +1160,25 @@ function ArcgisUploadPanel({
                         fontSize: '12px',
                         color: '#155724'
                     }}>
-                        🔄 Loading ArcGIS services for {selectedState}...
+                        🔄 Loading ArcGIS services from database for {selectedState}...
                     </div>
                 )}
                 
-                {usingFallback && (
+                {dataSource === 'local' && (
+                    <div style={{ 
+                        background: '#e2e3e5', 
+                        border: '1px solid #d6d8db', 
+                        borderRadius: '4px', 
+                        padding: '8px', 
+                        marginBottom: '12px', 
+                        fontSize: '12px',
+                        color: '#383d41'
+                    }}>
+                        📂 Using local JSON data for {selectedState} ({ARCGIS_SERVICES.length} services)
+                    </div>
+                )}
+
+                {dataSource === 'database' && usingFallback && (
                     <div style={{ 
                         background: '#fff3cd', 
                         border: '1px solid #ffecb5', 
@@ -1118,12 +1188,12 @@ function ArcgisUploadPanel({
                         fontSize: '12px',
                         color: '#856404'
                     }}>
-                        📂 Using local data for {selectedState} ({ARCGIS_SERVICES.length} services)
+                        📂 Database unavailable, using local data for {selectedState} ({ARCGIS_SERVICES.length} services)
                         {servicesError && <div style={{ marginTop: '4px', fontSize: '11px' }}>{servicesError}</div>}
                     </div>
                 )}
 
-                {!isLoadingServices && !usingFallback && servicesFromDb.length > 0 && (
+                {dataSource === 'database' && !isLoadingServices && !usingFallback && servicesFromDb.length > 0 && (
                     <div style={{ 
                         background: '#d1ecf1', 
                         border: '1px solid #bee5eb', 
@@ -1137,8 +1207,11 @@ function ArcgisUploadPanel({
                     </div>
                 )}
                 
-                {renderSearchBar()}
-                {foldersToShow.map(folder => (
+                {/* Only show search bar and services when not loading database data */}
+                {!(isLoadingServices && dataSource === 'database') && (
+                    <>
+                        {renderSearchBar()}
+                        {foldersToShow.map(folder => (
                     <div key={folder}>
                         <div
                             className="upload-folder"
@@ -1427,6 +1500,8 @@ function ArcgisUploadPanel({
                         </div>
                     )}
                 </div>
+                    </>
+                )}
             </div>
 
             {/* Service info modal (right side) */}
