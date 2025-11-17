@@ -238,7 +238,10 @@ function Home(props) {
                 {/* GIS Services Button */}
                 <button
                     className="left-sidebar-gis-button"
-                    onClick={() => setIsUploadPanelOpen(v => !v)}
+                    onClick={() => {
+                        setIsUploadPanelOpen(v => !v);
+                        setIsRemovedPanelOpen(false); // Close removed services panel
+                    }}
                     title="Browse GIS Services"
                 >
                     <FontAwesomeIcon icon={faEarthAmericas} />
@@ -277,7 +280,10 @@ function Home(props) {
                 <button
                     className="left-sidebar-trash-button"
                     title="Removed Services"
-                    onClick={() => setIsRemovedPanelOpen(v => !v)} // Toggle removed panel
+                    onClick={() => {
+                        setIsRemovedPanelOpen(v => !v); // Toggle removed panel
+                        setIsUploadPanelOpen(false); // Close upload panel
+                    }}
                 >
                     <FontAwesomeIcon icon={faTrash} />
                 </button>
