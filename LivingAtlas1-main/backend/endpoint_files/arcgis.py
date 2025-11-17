@@ -99,7 +99,7 @@ def remove_service(request: RemoveServiceRequest):
                 state VARCHAR(50) NOT NULL,
                 removed_by VARCHAR(255),
                 layers_removed TEXT[],
-                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                removed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
             )
         """)
@@ -182,6 +182,7 @@ def get_removed_services(
 
     try:
         # Ensure removed_arcgis_services table exists
+        print("[DEBUG] Creating removed_arcgis_services table if not exists...")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS removed_arcgis_services (
                 id SERIAL PRIMARY KEY,
@@ -193,14 +194,19 @@ def get_removed_services(
                 state VARCHAR(50) NOT NULL,
                 removed_by VARCHAR(255),
                 layers_removed TEXT[],
-                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                removed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
             )
         """)
         conn.commit()
+        print("[DEBUG] Table created/verified successfully")
     except Exception as e:
         # If table creation fails, continue anyway as it might already exist
-        pass
+        print(f"[WARNING] Table creation failed, continuing: {e}")
+        try:
+            conn.rollback()
+        except:
+            pass
 
     clauses: List[str] = []
     params: List[str] = []
@@ -223,22 +229,29 @@ def get_removed_services(
             COALESCE(folder, 'Root') AS folder,
             type,
             state,
-            removed_at AS removed_date,
+            removed_date,
             removed_by,
             layers_removed
         FROM removed_arcgis_services
         {where_sql}
-        ORDER BY removed_at DESC
+        ORDER BY removed_date DESC
     """.strip()
 
     try:
+        print(f"[DEBUG] Executing query: {sql}")
+        print(f"[DEBUG] With params: {params}")
         cur.execute(sql, params)
         rows = cur.fetchall()
+        print(f"[DEBUG] Query returned {len(rows)} rows")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Query failed: {e}")
+        print(f"[ERROR] Database query failed: {e}")
+        print(f"[ERROR] SQL: {sql}")
+        print(f"[ERROR] Params: {params}")
+        raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
     columns = ["key", "label", "url", "folder", "type", "state", "removed_date", "removed_by", "layers_removed"]
     data = [dict(zip(columns, row)) for row in rows]
+    print(f"[DEBUG] Returning {len(data)} removed services")
     return data
 
 @arcgis_router.put("/services/rename-folder")
@@ -401,7 +414,7 @@ def restore_service(request: RestoreServiceRequest):
                 state VARCHAR(50) NOT NULL,
                 removed_by VARCHAR(255),
                 layers_removed TEXT[],
-                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                removed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
             )
         """)
@@ -491,7 +504,7 @@ def permanently_delete_removed_service(request: DeleteRemovedServiceRequest):
                 state VARCHAR(50) NOT NULL,
                 removed_by VARCHAR(255),
                 layers_removed TEXT[],
-                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                removed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
             )
         """)
@@ -545,7 +558,7 @@ def clear_all_removed_services():
                 state VARCHAR(50) NOT NULL,
                 removed_by VARCHAR(255),
                 layers_removed TEXT[],
-                removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                removed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT unique_removed_service_per_state UNIQUE (service_key, state, type)
             )
         """)
