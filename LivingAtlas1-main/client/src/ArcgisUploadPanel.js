@@ -579,9 +579,9 @@ function ArcgisUploadPanel({
             if (error.response?.status === 409) {
                 // Conflict error (duplicate in removed services)
                 if (error.response?.data?.detail) {
-                    errorMessage = error.response.data.detail;
+                    errorMessage = error.response.data.detail + '\n\nHint: Open the removed services panel (trash icon) to permanently delete the existing service.';
                 } else {
-                    errorMessage += 'A service with the same key already exists in the removed services panel. Please permanently delete the existing removed service first, then try removing again.';
+                    errorMessage += 'A service with the same key already exists in the removed services panel. Please permanently delete the existing removed service first, then try removing again.\n\nHint: Open the removed services panel (trash icon) to permanently delete the existing service.';
                 }
             } else if (error.response?.status === 404) {
                 errorMessage += 'The service was not found.';
