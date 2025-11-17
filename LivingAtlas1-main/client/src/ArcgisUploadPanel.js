@@ -185,6 +185,8 @@ function ArcgisUploadPanel({
                         console.warn(`[ArcgisUploadPanel] Backend returned no services for ${selectedState}, using local fallback`);
                         setServicesFromDb([]);
                         setUsingFallback(true);
+                        // Automatically switch to local data source when no services found in database
+                        setDataSource('local');
                     }
                 }
             } catch (error) {
@@ -193,6 +195,8 @@ function ArcgisUploadPanel({
                     setServicesFromDb([]);
                     setUsingFallback(true);
                     setServicesError(`Backend unavailable (using local data): ${error.message || 'Network error'}`);
+                    // Automatically switch to local data source when database is unavailable
+                    setDataSource('local');
                 }
             } finally {
                 if (active) {
