@@ -170,7 +170,12 @@ function RemovedServicesPanel({ isOpen, onClose }) {
             if (error.response?.status === 404) {
                 errorMessage += 'The service was not found in removed services.';
             } else if (error.response?.status === 409) {
-                errorMessage += 'The service already exists in active services.';
+                // For conflicts, use the detailed message from backend or provide helpful guidance
+                if (error.response?.data?.detail) {
+                    errorMessage = error.response.data.detail;
+                } else {
+                    errorMessage += 'A service with the same name already exists in the upload panel. Please remove the existing service from the upload panel first, then try restoring again.';
+                }
             } else if (error.response?.data?.detail) {
                 errorMessage += error.response.data.detail;
             } else {

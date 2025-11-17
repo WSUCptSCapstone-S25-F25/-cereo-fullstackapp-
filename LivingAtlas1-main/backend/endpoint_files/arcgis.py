@@ -407,15 +407,19 @@ def restore_service(request: RestoreServiceRequest):
         
         # Check if service already exists in main table (to avoid duplicates)
         cur.execute("""
-            SELECT COUNT(*) FROM arcgis_services 
+            SELECT label FROM arcgis_services 
             WHERE service_key = %s
         """, (service_key,))
         
-        exists = cur.fetchone()[0] > 0
-        if exists:
+        existing_service = cur.fetchone()
+        if existing_service:
             conn.rollback()
             conn.autocommit = True
-            raise HTTPException(status_code=409, detail="Service already exists in active services")
+            existing_label = existing_service[0]
+            raise HTTPException(
+                status_code=409, 
+                detail=f"Cannot restore '{label}': A service with the same key '{service_key}' ('{existing_label}') already exists in the upload panel. Please remove the existing service from the upload panel first, then try restoring again."
+            )
         
         # Insert back into main arcgis_services table
         cur.execute("""
