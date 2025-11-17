@@ -456,12 +456,6 @@ function ArcgisUploadPanel({
 
     // Handle service removal
     const handleRemoveService = async (service) => {
-        // Only allow removal for database services, not local fallback
-        if (usingFallback) {
-            alert('Cannot remove services when using local data. Please ensure backend connection is available.');
-            return;
-        }
-
         const checkedIds = checkedLayerIds[service.key] || [];
         const layersToRemove = [];
         
@@ -1311,18 +1305,20 @@ function ArcgisUploadPanel({
                                                     >
                                                         <FontAwesomeIcon icon={faEllipsisH} />
                                                     </button>
-                                                    {/* Keep service-level remove button (no-op) */}
-                                                    <button
-                                                        className="learn-more-btn"
-                                                        title="Remove"
-                                                        aria-label="Remove"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveService(service);
-                                                        }}
-                                                    >
-                                                        <FontAwesomeIcon icon={faBan} />
-                                                    </button>
+                                                    {/* Show remove button only for database services */}
+                                                    {dataSource === 'database' && (
+                                                        <button
+                                                            className="learn-more-btn"
+                                                            title="Remove"
+                                                            aria-label="Remove"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveService(service);
+                                                            }}
+                                                        >
+                                                            <FontAwesomeIcon icon={faBan} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                             {expandedServices.has(service.key) && (
