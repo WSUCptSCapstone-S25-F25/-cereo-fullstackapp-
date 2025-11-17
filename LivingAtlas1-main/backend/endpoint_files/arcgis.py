@@ -119,6 +119,22 @@ def remove_service(request: RemoveServiceRequest):
         
         service_key, label, url, folder, type_val, state = service_row
         
+        # Check if service with same key already exists in removed services table
+        cur.execute("""
+            SELECT label FROM removed_arcgis_services 
+            WHERE service_key = %s
+        """, (service_key,))
+        
+        existing_removed_service = cur.fetchone()
+        if existing_removed_service:
+            conn.rollback()
+            conn.autocommit = True
+            existing_removed_label = existing_removed_service[0]
+            raise HTTPException(
+                status_code=409, 
+                detail=f"Cannot remove '{label}': A service with the same key '{service_key}' ('{existing_removed_label}') already exists in the removed services panel. Please permanently delete the existing removed service first, then try removing again."
+            )
+        
         # Insert into removed_arcgis_services table
         cur.execute("""
             INSERT INTO removed_arcgis_services 
@@ -418,7 +434,7 @@ def restore_service(request: RestoreServiceRequest):
             existing_label = existing_service[0]
             raise HTTPException(
                 status_code=409, 
-                detail=f"Cannot restore '{label}': A service with the same key '{service_key}' ('{existing_label}') already exists in the upload panel. Please remove the existing service from the upload panel first, then try restoring again."
+                detail=f"Cannot restore '{label}': A service with the same key '{service_key}' already exists in the upload panel. Please delete the existing service from the upload panel first, then try restoring again."
             )
         
         # Insert back into main arcgis_services table

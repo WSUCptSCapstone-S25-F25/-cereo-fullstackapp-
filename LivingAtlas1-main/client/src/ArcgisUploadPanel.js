@@ -573,18 +573,35 @@ function ArcgisUploadPanel({
         } catch (error) {
             console.error('Failed to remove service:', error);
             
-            // Check if it's a table-related error that might succeed on retry
-            const errorMsg = error?.message || 'Unknown error';
-            const isTableError = errorMsg.includes('removed_arcgis_services') || 
-                                errorMsg.includes('relation') || 
-                                errorMsg.includes('does not exist');
+            // Handle different types of errors
+            let errorMessage = 'Failed to remove service. ';
             
-            if (isTableError) {
-                // Show a different message for likely table issues
-                alert(`Database initialization error. Please try removing the service again. If the problem persists, contact support.\n\nError: ${errorMsg}`);
+            if (error.response?.status === 409) {
+                // Conflict error (duplicate in removed services)
+                if (error.response?.data?.detail) {
+                    errorMessage = error.response.data.detail;
+                } else {
+                    errorMessage += 'A service with the same key already exists in the removed services panel. Please permanently delete the existing removed service first, then try removing again.';
+                }
+            } else if (error.response?.status === 404) {
+                errorMessage += 'The service was not found.';
+            } else if (error.response?.data?.detail) {
+                errorMessage += error.response.data.detail;
             } else {
-                alert(`Failed to remove service: ${errorMsg}`);
+                // Check if it's a table-related error that might succeed on retry
+                const errorMsg = error?.message || 'Unknown error';
+                const isTableError = errorMsg.includes('removed_arcgis_services') || 
+                                    errorMsg.includes('relation') || 
+                                    errorMsg.includes('does not exist');
+                
+                if (isTableError) {
+                    errorMessage = `Database initialization error. Please try removing the service again. If the problem persists, contact support.\n\nError: ${errorMsg}`;
+                } else {
+                    errorMessage += errorMsg;
+                }
             }
+            
+            alert(errorMessage);
         }
     };
 
