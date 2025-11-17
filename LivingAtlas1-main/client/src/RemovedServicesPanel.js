@@ -172,9 +172,9 @@ function RemovedServicesPanel({ isOpen, onClose }) {
             } else if (error.response?.status === 409) {
                 // For conflicts, use the detailed message from backend or provide helpful guidance
                 if (error.response?.data?.detail) {
-                    errorMessage = error.response.data.detail;
+                    errorMessage = error.response.data.detail + ' You can also refresh the upload panel to check for new services.';
                 } else {
-                    errorMessage += 'A service with the same name already exists in the upload panel. Please remove the existing service from the upload panel first, then try restoring again.';
+                    errorMessage += 'A service with the same key already exists in the upload panel. Please permanently delete this service from the removed services panel first, then try restoring the new one from the upload panel.';
                 }
             } else if (error.response?.data?.detail) {
                 errorMessage += error.response.data.detail;

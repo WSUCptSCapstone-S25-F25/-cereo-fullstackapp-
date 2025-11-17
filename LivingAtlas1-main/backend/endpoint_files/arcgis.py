@@ -434,7 +434,7 @@ def restore_service(request: RestoreServiceRequest):
             existing_label = existing_service[0]
             raise HTTPException(
                 status_code=409, 
-                detail=f"Cannot restore '{label}': A service with the same key '{service_key}' already exists in the upload panel. Please delete the existing service from the upload panel first, then try restoring again."
+                detail=f"Duplicate service detected: A service with the same key '{service_key}' already exists in the upload panel. To restore '{label}', please permanently delete this service from the removed services panel first using the delete button (trash icon), then try restoring the new one from the upload panel."
             )
         
         # Insert back into main arcgis_services table
