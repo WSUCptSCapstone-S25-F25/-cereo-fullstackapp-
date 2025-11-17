@@ -23,12 +23,27 @@ function RemovedServicesPanel({ isOpen, onClose }) {
         setError(null);
         
         try {
+            console.log('[RemovedServicesPanel] Starting to fetch removed services...');
             const data = await fetchRemovedArcgisServices(null, { type: 'all' });
-            console.log('Fetched removed services:', data);
-            setRemovedServices(data || []);
+            console.log('[RemovedServicesPanel] Fetched removed services:', data);
+            console.log('[RemovedServicesPanel] Data type:', typeof data, 'isArray:', Array.isArray(data), 'length:', data?.length);
+            
+            if (Array.isArray(data)) {
+                setRemovedServices(data);
+                console.log('[RemovedServicesPanel] Successfully set removed services, count:', data.length);
+            } else {
+                console.warn('[RemovedServicesPanel] Data is not an array:', data);
+                setRemovedServices([]);
+            }
         } catch (err) {
-            console.error('Error fetching removed services:', err);
-            setError('Failed to load removed services. Please try again.');
+            console.error('[RemovedServicesPanel] Error fetching removed services:', err);
+            console.error('[RemovedServicesPanel] Error details:', {
+                message: err.message,
+                status: err.response?.status,
+                data: err.response?.data,
+                stack: err.stack
+            });
+            setError(`Failed to load removed services: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
             setRemovedServices([]);
         } finally {
             setLoading(false);
