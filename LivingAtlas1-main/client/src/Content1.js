@@ -32,7 +32,7 @@ let blueMarkers = [];
 let greenMarkers = [];
 let yellowMarkers = [];
 let curLocationCoordinates = { lat: 0, lng: 0 };
-
+let searchLocationCoordinates = { lat: 0, lng: 0 };
 
 const Content1 = (props) => {
   const mapContainerRef = useRef(null);
@@ -168,19 +168,23 @@ const Content1 = (props) => {
     };
 
     // Search
-    map.addControl(
-      new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        localGeocoder: coordinatesGeocoder,
-        // zoom: 6,
-        placeholder: 'Address or LAT, LONG',
-        mapboxgl: mapboxgl,
-        reverseGeocode: true,
-        marker: {
-          color: 'green'
-        }
-      })
-    );
+    const searchBar = new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      localGeocoder: coordinatesGeocoder,
+      // zoom: 6,
+      placeholder: 'Address or LAT, LONG',
+      mapboxgl: mapboxgl,
+      reverseGeocode: true,
+      marker: {
+        color: 'green'
+      }
+    });
+    map.addControl(searchBar);
+
+    searchBar.on('result', (e) => {
+      const [lng, lat] = e.result.center;
+      searchLocationCoordinates = { lat: lat, lng: lng };
+    });
 
     map.addControl(draw);
 
@@ -517,6 +521,6 @@ const Content1 = (props) => {
 
 };
 
-export { allMarkers, draw, blueMarkers, greenMarkers, yellowMarkers, curLocationCoordinates};
+export { allMarkers, draw, blueMarkers, greenMarkers, yellowMarkers, curLocationCoordinates, searchLocationCoordinates};
 export default Content1;
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState } from 'react';
 import Modal from 'react-modal';
-import { curLocationCoordinates, turnOnCurrentLocation } from './Content1.js';
+import { curLocationCoordinates, turnOnCurrentLocation, searchLocationCoordinates} from './Content1.js';
 
 function LayerPanel({
     isOpen,
@@ -82,6 +82,18 @@ function LayerPanel({
                 {
                     console.log(curLocationCoordinates);
                     setSortCondition(sortValue + ',' + curLocationCoordinates.lat + ',' + curLocationCoordinates.lng);
+                }
+            }
+            else if (sortValue == "ClosestToPin")
+            {
+                if (searchLocationCoordinates.lat === 0 && searchLocationCoordinates.lng === 0)
+                {
+                    alert("Please search a location using the search bar to use this feature");
+                }
+                else
+                {
+                    console.log(searchLocationCoordinates);
+                    setSortCondition(sortValue + ',' + searchLocationCoordinates.lat + ',' + searchLocationCoordinates.lng);
                 }
             }
             else
@@ -187,6 +199,7 @@ function LayerPanel({
             <select onChange={handleSortChange} className='sort-by'>
                 <option value="">Sort By...</option>
                 <option value="ClosestToMe">Closest To Me</option>
+                <option value="ClosestToPin">Closest To Pin</option>
                 <option value="RecentlyAdded">Recently Added</option>
             </select>
 
