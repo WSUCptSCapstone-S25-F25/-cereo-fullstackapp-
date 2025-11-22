@@ -65,6 +65,7 @@ function ArcgisUploadPanel({
     mapInstance,
     arcgisLayerAdded: propArcgisLayerAdded,
     setArcgisLayerAdded: setPropArcgisLayerAdded,
+    isAdmin = false,
 }) {
     // Track selected state
     const [selectedState, setSelectedState] = useState('WA');
@@ -1251,6 +1252,7 @@ function ArcgisUploadPanel({
                                     onSave={(newName) => handleFolderRename(folder, newName)}
                                     placeholder="Enter folder name..."
                                     isFolder={true}
+                                    disabled={!isAdmin}
                                 />
                             </span>
                             {/* Removed folder-level remove button */}
@@ -1280,6 +1282,7 @@ function ArcgisUploadPanel({
                                                         onSave={(newLabel) => handleServiceRename(service.key, newLabel)}
                                                         placeholder="Enter service name..."
                                                         isFolder={false}
+                                                        disabled={!isAdmin}
                                                     />
                                                 </span>
                                                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1305,8 +1308,8 @@ function ArcgisUploadPanel({
                                                     >
                                                         <FontAwesomeIcon icon={faEllipsisH} />
                                                     </button>
-                                                    {/* Show remove button only for database services */}
-                                                    {dataSource === 'database' && (
+                                                    {/* Show remove button only for database services and admin users */}
+                                                    {dataSource === 'database' && isAdmin && (
                                                         <button
                                                             className="learn-more-btn"
                                                             title="Remove"

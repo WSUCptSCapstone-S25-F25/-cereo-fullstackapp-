@@ -17,7 +17,8 @@ import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons'; // layer group icon
 import { faTrash } from '@fortawesome/free-solid-svg-icons'; // trash icon
-import FormModal from './FormModal'; // <-- import FormModal
+import { faRobot, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+import FormModal from './FormModal';
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -237,7 +238,10 @@ function Home(props) {
                 {/* GIS Services Button */}
                 <button
                     className="left-sidebar-gis-button"
-                    onClick={() => setIsUploadPanelOpen(v => !v)}
+                    onClick={() => {
+                        setIsUploadPanelOpen(v => !v);
+                        setIsRemovedPanelOpen(false); // Close removed services panel
+                    }}
                     title="Browse GIS Services"
                 >
                     <FontAwesomeIcon icon={faEarthAmericas} />
@@ -257,6 +261,7 @@ function Home(props) {
                     mapInstance={getMapboxMap}
                     arcgisLayerAdded={arcgisLayerAdded}
                     setArcgisLayerAdded={setArcgisLayerAdded}
+                    isAdmin={props.isAdmin}
                 />
                 {/* Left Sidebar toggle Button */}
                 {/*
@@ -272,20 +277,46 @@ function Home(props) {
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
                 </button>
-                {/* Trash button*/}
+                {/* Trash button - only visible to admins */}
+                {props.isAdmin && (
+                    <button
+                        className="left-sidebar-trash-button"
+                        title="Removed Services"
+                        onClick={() => {
+                            setIsRemovedPanelOpen(v => !v); // Toggle removed panel
+                            setIsUploadPanelOpen(false); // Close upload panel
+                        }}
+                    >
+                        <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                )}
+                {/* AI Helper button*/}
                 <button
-                    className="left-sidebar-trash-button"
-                    title="Removed Services"
-                    onClick={() => setIsRemovedPanelOpen(v => !v)} // Toggle removed panel
+                    className="left-sidebar-ai-button"
+                    title="AI Helper"
+                    onClick={() => {/* AI Helper logic will go here */}}
                 >
-                    <FontAwesomeIcon icon={faTrash} />
+                    <FontAwesomeIcon icon={faRobot} />
                 </button>
 
                 {/* Removed Services Panel */}
                 <RemovedServicesPanel
                     isOpen={isRemovedPanelOpen}
                     onClose={() => setIsRemovedPanelOpen(false)}
+                    isAdmin={props.isAdmin}
                 />
+
+                {/* Spacer to push tutorial button to bottom */}
+                <div className="left-sidebar-spacer"></div>
+                
+                {/* Tutorial button at the bottom */}
+                <button
+                    className="left-sidebar-tutorial-button"
+                    title="Tutorial"
+                    onClick={() => {/* Tutorial logic will go here */}}
+                >
+                    <FontAwesomeIcon icon={faQuestionCircle} />
+                </button>
 
                 {/* Expanded Left Sidebar Content */}
                 {isSidebarOpen && (
