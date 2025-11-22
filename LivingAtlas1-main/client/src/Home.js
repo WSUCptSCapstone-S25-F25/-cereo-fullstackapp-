@@ -277,17 +277,19 @@ function Home(props) {
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
                 </button>
-                {/* Trash button*/}
-                <button
-                    className="left-sidebar-trash-button"
-                    title="Removed Services"
-                    onClick={() => {
-                        setIsRemovedPanelOpen(v => !v); // Toggle removed panel
-                        setIsUploadPanelOpen(false); // Close upload panel
-                    }}
-                >
-                    <FontAwesomeIcon icon={faTrash} />
-                </button>
+                {/* Trash button - only visible to admins */}
+                {props.isAdmin && (
+                    <button
+                        className="left-sidebar-trash-button"
+                        title="Removed Services"
+                        onClick={() => {
+                            setIsRemovedPanelOpen(v => !v); // Toggle removed panel
+                            setIsUploadPanelOpen(false); // Close upload panel
+                        }}
+                    >
+                        <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                )}
                 {/* AI Helper button*/}
                 <button
                     className="left-sidebar-ai-button"
