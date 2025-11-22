@@ -261,6 +261,7 @@ function Home(props) {
                     mapInstance={getMapboxMap}
                     arcgisLayerAdded={arcgisLayerAdded}
                     setArcgisLayerAdded={setArcgisLayerAdded}
+                    isAdmin={props.isAdmin}
                 />
                 {/* Left Sidebar toggle Button */}
                 {/*
@@ -300,6 +301,7 @@ function Home(props) {
                 <RemovedServicesPanel
                     isOpen={isRemovedPanelOpen}
                     onClose={() => setIsRemovedPanelOpen(false)}
+                    isAdmin={props.isAdmin}
                 />
 
                 {/* Spacer to push tutorial button to bottom */}

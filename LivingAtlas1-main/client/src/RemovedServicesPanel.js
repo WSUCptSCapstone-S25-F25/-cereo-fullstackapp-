@@ -5,7 +5,7 @@ import { faTrash, faUndo, faTimes, faSearch, faSpinner, faSync } from '@fortawes
 import { fetchRemovedArcgisServices, restoreArcgisService, permanentlyDeleteRemovedService, clearAllRemovedServices } from './arcgisServicesDb';
 import { filterRemovedServicesData, highlightSearchTerm } from './removedServicesSearchUtils';
 
-function RemovedServicesPanel({ isOpen, onClose }) {
+function RemovedServicesPanel({ isOpen, onClose, isAdmin = false }) {
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('any'); // 'any', 'folder', 'service', 'layer'
     const [expandedFolders, setExpandedFolders] = useState(new Set());
@@ -389,13 +389,15 @@ function RemovedServicesPanel({ isOpen, onClose }) {
             </div>
 
             <div className="removed-services-actions">
-                <button 
-                    className="removed-services-clear-all-btn"
-                    onClick={clearAllRemoved}
-                    disabled={removedServices.length === 0 || loading}
-                >
-                    Clear All ({removedServices.length})
-                </button>
+                {isAdmin && (
+                    <button 
+                        className="removed-services-clear-all-btn"
+                        onClick={clearAllRemoved}
+                        disabled={removedServices.length === 0 || loading}
+                    >
+                        Clear All ({removedServices.length})
+                    </button>
+                )}
             </div>
 
             <div className="removed-services-content">
@@ -486,30 +488,32 @@ function RemovedServicesPanel({ isOpen, onClose }) {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="removed-service-actions">
-                                                        <button
-                                                            className="removed-service-restore-btn"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleRestore(service);
-                                                            }}
-                                                            title="Restore service"
-                                                            disabled={loading}
-                                                        >
-                                                            <FontAwesomeIcon icon={faUndo} />
-                                                        </button>
-                                                        <button
-                                                            className="removed-service-delete-btn"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handlePermanentDelete(service);
-                                                            }}
-                                                            title="Delete permanently"
-                                                            disabled={loading}
-                                                        >
-                                                            <FontAwesomeIcon icon={faTimes} />
-                                                        </button>
-                                                    </div>
+                                                    {isAdmin && (
+                                                        <div className="removed-service-actions">
+                                                            <button
+                                                                className="removed-service-restore-btn"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleRestore(service);
+                                                                }}
+                                                                title="Restore service"
+                                                                disabled={loading}
+                                                            >
+                                                                <FontAwesomeIcon icon={faUndo} />
+                                                            </button>
+                                                            <button
+                                                                className="removed-service-delete-btn"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handlePermanentDelete(service);
+                                                                }}
+                                                                title="Delete permanently"
+                                                                disabled={loading}
+                                                            >
+                                                                <FontAwesomeIcon icon={faTimes} />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 
                                                 {expandedServices.has(service.key) && (
