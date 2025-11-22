@@ -24,6 +24,14 @@ function Card(props) {
     );
 
     useEffect(() => {
+        setFormData({
+            ...props.formData,
+            files: props.formData?.files || [],
+            filesToUpload: []
+        });
+    }, [props.formData]);
+
+    useEffect(() => {
         setIsFavorited(props.isFavorited);
     }, [props.isFavorited]);
 
@@ -47,7 +55,8 @@ function Card(props) {
                 .then((res) => {
                     if (res.data.thumbnail_link) {
                         setFormData((prev) => ({ ...prev, thumbnail_link: res.data.thumbnail_link }));
-                        setPreview(res.data.thumbnail_link);
+                        const previewThumbnail = formData.thumbnail_link || "/CEREO-logo.png";
+                        setPreview(previewThumbnail);
                     }
                 })
                 .catch((err) => {

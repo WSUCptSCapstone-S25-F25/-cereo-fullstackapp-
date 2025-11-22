@@ -13,6 +13,7 @@ import { faSearch } from '@fortawesome/free-solid-svg-icons';
 
 function Header(props) {
     // beginning of custom filter popup
+    /*
     const [isAddFilterOpen, setAddFilterOpen] = useState(false);
     const [filterInputText, setFilterInputText] = useState('');
 
@@ -27,10 +28,11 @@ function Header(props) {
     const handleCustomFilterChange = (event) => {
         setFilterInputText(event.target.value);
     };
+    */
     // end of custom filter popup
 
-    const [activeFilters, setActiveFilters] = useState([]);
-    const [activeSort, setActiveSort] = useState('');
+    // const [activeFilters, setActiveFilters] = useState([]);
+    // const [activeSort, setActiveSort] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
     /*
@@ -60,7 +62,6 @@ function Header(props) {
     };
     */
     
-    
     const executeSearch = () => {
         props.setSearchCondition(searchTerm.toLowerCase()); // Convert search term to lowercase
         console.log(`${searchTerm.toLowerCase()} applied`);
@@ -71,6 +72,7 @@ function Header(props) {
         setSearchTerm(event.target.value);
     };
 
+    /*
     const removeFilter = (filter) => {
         if (filter === "River" || filter === "Watershed" || filter === "Places") {
             props.setCategoryConditionCondition('');
@@ -125,6 +127,7 @@ function Header(props) {
                 }
                 else
                 {
+                    console.log(curLocationCoordinates);
                     props.setSortCondition(sortValue + ',' + curLocationCoordinates.lat + ',' + curLocationCoordinates.lng);
                 }
             }
@@ -134,6 +137,7 @@ function Header(props) {
             }
         }
     }
+    */
 
     return (
         <header>
@@ -152,10 +156,10 @@ function Header(props) {
 
             {/* <button onClick={addCustomFilter} className='custom-filter'>Add Custom filters</button> */}
             {/* New Custom Filter popup */}
-            <button onClick={openFilterPopup} className="add-custom-filters-button">Add Custom Filters</button>
+            {/*<button onClick={openFilterPopup} className="add-custom-filters-button">Add Custom Filters</button>*/}
 
             {/* Modal for Add Customer Filter */}
-            <Modal
+            {/*<Modal
                 isOpen={isAddFilterOpen}
                 onRequestClose={closeFilterPopup}
                 className="form-modal">                           
@@ -176,7 +180,7 @@ function Header(props) {
                 <option value="">Sort By...</option>
                 <option value="ClosestToMe">Closest To Me</option>
                 <option value="RecentlyAdded">Recently Added</option>
-            </select>
+            </select>*/}
 
             {/* {isAddFilterOpen && (
                 <div className="modal" style={{ paddingLeft: '10px', zIndex: 1, }} >
@@ -202,6 +206,7 @@ function Header(props) {
 
             {/* </div> */}
 
+            {/*
             <div>
                 {activeFilters.map(filter => (
                     <span key={filter} className="filter-tag">
@@ -209,7 +214,7 @@ function Header(props) {
                         <button onClick={() => removeFilter(filter)}>x</button>
                     </span>
                 ))}
-            </div>
+            </div>*/}
 
 
 

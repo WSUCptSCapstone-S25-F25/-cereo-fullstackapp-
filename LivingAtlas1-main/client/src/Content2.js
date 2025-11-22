@@ -29,6 +29,7 @@ function Content2(props) {
     const [isDragging, setIsDragging] = useState(false);
     const startX = useRef(0);
     const startWidth = useRef(500);
+    const [badLoad, setBadLoad] = useState(false);
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
@@ -90,9 +91,12 @@ function Content2(props) {
     // That way our team is able to show the cards again once the user closes out of the marker.
     function loadCardsByCriteria() {
 
+        /*
         if (!didMountRef.current) {
             return;
         }
+        */
+
         if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter 199" + props.filterCondition);
             showAll();
@@ -100,8 +104,11 @@ function Content2(props) {
             api.get('/allCards')
 
                 .then(response => {
+                    console.log("Loading all cards...");
                     console.log("Fetched cards:", response.data.data);
+                    console.table(response.data.data);
                     setCards(response.data.data);
+                    fixBadLoad(response.data.data);
                 })
                 .catch(error => {
                     console.error(error);
@@ -126,6 +133,8 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
+                        console.log("Loading cards... Sort Condition: " + props.sortCondition);
+                        console.table(response.data.data);
                         setCards(response.data.data); // Update the cards state with the new data
                     })
                     .catch(error => {
@@ -145,6 +154,8 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
+                        console.log("Loading cards... Sort Condition: " + props.sortCondition + ". Filter Condition: " + props.filterCondition);
+                        console.table(response.data.data);
                         setCards(response.data.data); // Update the cards state with the new data
                     })
                     .catch(error => {
@@ -164,6 +175,8 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
+                        console.log("Loading cards... Sort Condition: " + props.sortCondition);
+                        console.table(response.data.data);
                         setCards(response.data.data); // Update the cards state with the new data
                     })
                     .catch(error => {
@@ -176,6 +189,8 @@ function Content2(props) {
                     params: {sortString: props.sortCondition}
                 })
                     .then(response => {
+                        console.log("Loading cards... Filter Condition: " + props.filterCondition);
+                        console.table(response.data.data);
                         setCards(response.data.data); // Update the cards state with the new data
                     })
                     .catch(error => {
@@ -190,7 +205,6 @@ function Content2(props) {
     const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
     const [filterCondition, setFilterCondition] = useState(props.filterCondition);
     const [searchCondition, setSearchCondition] = useState(props.searchCondition);
-    const [sortCondition, setSortCondition] = useState(props.sortCondition);
     // const isInitialMount = useRef(true);
 
     useEffect(() => {
@@ -200,11 +214,28 @@ function Content2(props) {
         }
     }, [resolvedUsername]);
 
+    // Loads cards on boot
+    useEffect(() => {
+        api.get('/allCards')
+            .then(response => {
+                console.log("Loading all cards...");
+                console.log(response.data.data);
+                console.table(response.data.data);
+                setCards(response.data.data);
+                fixBadLoad(response.data.data);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }, []);
+
     useEffect(() => {
 
+        /*
         if (!didMountRef.current) {
             return;
         }
+        */
 
         if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter193" + props.filterCondition);
@@ -213,7 +244,9 @@ function Content2(props) {
             api.get('/allCards')
 
                 .then(response => {
+                    console.log("Loading all cards...");
                     console.log(response.data.data);
+                    console.table(response.data.data);
                     setCards(response.data.data);
                 })
                 .catch(error => {
@@ -239,6 +272,8 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
+                        console.log("Loading cards... Sort Condition: " + props.sortCondition);
+                        console.table(response.data.data);
                         setCards(response.data.data); // Update the cards state with the new data
                         console.log("Incoming card data:", response.data.data);
                     })
@@ -260,6 +295,8 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
+                        console.log("Loading cards... Sort Condition: " + props.sortCondition + ". Filter Condition: " + props.filterCondition);
+                        console.table(response.data.data);
                         setCards(response.data.data); // Update the cards state with the new data
                     })
                     .catch(error => {
@@ -280,6 +317,8 @@ function Content2(props) {
                     params: params
                 })
                 .then(response => {
+                    console.log("Loading cards... Sort Condition: " + props.sortCondition);
+                    console.table(response.data.data);
                     setCards(response.data.data); // Update the cards state with the new data
                 })
                 .catch(error => {
@@ -292,6 +331,8 @@ function Content2(props) {
                     params: {sortString: props.sortCondition}
                 })
                     .then(response => {
+                        console.log("Loading cards... Filter Condition: " + props.filterCondition);
+                        console.table(response.data.data);
                         setCards(response.data.data); // Update the cards state with the new data
                     })
                     .catch(error => {
@@ -314,6 +355,8 @@ function Content2(props) {
             })
                 .then(response => {
                     if (Array.isArray(response.data.data)) {
+                        console.log("Loading cards... Search Condition: " + props.searchCondition);
+                        console.table(response.data.data);
                         setCards(response.data.data);
                         console.log("Search results:", response.data.data);
                     } else {
@@ -369,9 +412,11 @@ function Content2(props) {
     };
 
     // Fetch all cards and update formData instead of using updateBoundry API call
+    /*
     const fetchAllCards = async () => {
         try {
             const response = await api.get('/allCards');
+            console.log("Loading all cards...");
             console.table(response.data.data);
             const fixedResponse = fixBadLoadMap(response.data.data);
             setCards(fixedResponse);
@@ -379,12 +424,17 @@ function Content2(props) {
             console.error('Error fetching all cards:', error);
         }
     };
+    */
 
     // Fix bad load where card fields are in wrong order
-    const fixBadLoadMap = (cards) => cards.map(fixBadLoad);
+    // const fixBadLoadMap = (cards) => cards.map(fixBadLoad);
 
-    const fixBadLoad = (cards) => {
-        if (typeof cards.username === "number" && typeof cards.name === "number" && typeof cards.title === "number") {
+    function fixBadLoad(cards) {
+        if (!Array.isArray(cards) || cards.length === 0 || (cards[0] && typeof cards[0].username === "number" && typeof cards[0].name === "number" && typeof cards[0].title === "number")) {
+            console.log("Fixing bad load...");
+            console.log(Array.isArray(cards) ? cards.length : 0);
+            setBadLoad(true);
+            /*
             return {
                 cardID: cards.username,
                 latitude: cards.name,
@@ -393,11 +443,18 @@ function Content2(props) {
                 tags: cards.category,
                 category: cards.cardID
             };
+            */
         }
-        return cards;
     }
 
     useEffect(() => {
+        if (badLoad) {
+            loadCardsByCriteria();
+            setBadLoad(false);
+        }
+    }, [badLoad]);
+
+    /*useEffect(() => {
         // Commented out updateBoundry logic
         /*
         let isMounted = true;
@@ -462,10 +519,10 @@ function Content2(props) {
         return () => {
             isMounted = false;
         };
-        */
         // Instead, always fetch all cards when boundCondition changes
         fetchAllCards();
     }, [props.boundCondition]);
+    */
 
 
 
