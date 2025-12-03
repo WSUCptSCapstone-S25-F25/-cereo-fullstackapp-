@@ -496,7 +496,8 @@ function Content2(props) {
                                     isFavorited={bookmarkedCardIDs.has(card.cardID)}
                                     username={resolvedUsername}
                                     fetchBookmarks={fetchBookmarks}
-                                    isLoggedIn={props.isLoggedIn}   // optional: let Card know login state
+                                    isLoggedIn={props.isLoggedIn}
+                                    onZoom={() => handleCardClick(card)}   // pass zoom handler down
                                 />
                             </div>
                           ))}
