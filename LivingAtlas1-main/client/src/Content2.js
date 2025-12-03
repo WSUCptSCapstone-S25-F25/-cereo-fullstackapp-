@@ -385,6 +385,32 @@ function Content2(props) {
         }
     };
 
+    // Viewport filter for cards based on current map bounds 
+    const cardsInView = cards.filter((card) => {
+        // If we don't have bounds yet, show everything
+        if (!props.boundCondition || !props.boundCondition.NE || !props.boundCondition.SW) {
+            return true;
+        }
+
+        if (!card.latitude || !card.longitude) {
+            return false;
+        }
+
+        const lat = Number(card.latitude);
+        const lng = Number(card.longitude);
+
+        if (Number.isNaN(lat) || Number.isNaN(lng)) {
+            return false;
+        }
+
+        return (
+            lat <= props.boundCondition.NE.Lat &&
+            lat >= props.boundCondition.SW.Lat &&
+            lng <= props.boundCondition.NE.Lng &&
+            lng >= props.boundCondition.SW.Lng
+        );
+    });
+
     return (
         <>
             {/* Right Sidebar */}
@@ -456,7 +482,7 @@ function Content2(props) {
 
                 {(!props.isLoggedIn || bookmarksLoaded) ? (
                     <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
-                        {cards
+                        {cardsInView
                           .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
                           .map((card) => (
                             <div key={card.cardID} onClick={() => handleCardClick(card)}>
