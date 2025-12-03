@@ -67,6 +67,7 @@ function Card(props) {
 
     const handleLearnMore = (e) => {
         e.stopPropagation();
+        props.onZoom?.();
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
     };
