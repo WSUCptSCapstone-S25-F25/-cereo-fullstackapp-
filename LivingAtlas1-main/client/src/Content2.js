@@ -497,7 +497,7 @@ function Content2(props) {
                                     username={resolvedUsername}
                                     fetchBookmarks={fetchBookmarks}
                                     isLoggedIn={props.isLoggedIn}
-                                    onZoom={() => handleCardClick(card)}   // ⭐ pass zoom handler down
+                                    onZoom={() => handleCardClick(card)}   // pass zoom handler down
                                 />
                             </div>
                           ))}
