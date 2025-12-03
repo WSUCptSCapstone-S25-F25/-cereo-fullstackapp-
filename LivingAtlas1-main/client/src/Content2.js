@@ -9,18 +9,6 @@ import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
-/*
-import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
-import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
-import { faBook } from '@fortawesome/free-solid-svg-icons'; // <-- Add this import for the new button icon
-import { applyAreaVisibility } from './AreaFilter';
-import { faCheckSquare } from '@fortawesome/free-solid-svg-icons';
-import { faTrash } from '@fortawesome/free-solid-svg-icons'; // <-- NEW: Trash icon
-*/
-
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-
 
 function Content2(props) {
     const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
@@ -29,7 +17,6 @@ function Content2(props) {
     const [isDragging, setIsDragging] = useState(false);
     const startX = useRef(0);
     const startWidth = useRef(500);
-    const [badLoad, setBadLoad] = useState(false);
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
@@ -82,21 +69,16 @@ function Content2(props) {
     }, [isDragging]);
 
     const location = useLocation();
-
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
 
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
     // Edited by Flavio: same code used to load the cards based on filter. Made it into a function in order to call it under searchConditions being reset to ''
-    // That way our team is able to show the cards again once the user closes out of the marker.
     function loadCardsByCriteria() {
 
-        /*
         if (!didMountRef.current) {
             return;
         }
-        */
-
         if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter 199" + props.filterCondition);
             showAll();
@@ -104,11 +86,8 @@ function Content2(props) {
             api.get('/allCards')
 
                 .then(response => {
-                    console.log("Loading all cards...");
                     console.log("Fetched cards:", response.data.data);
-                    console.table(response.data.data);
                     setCards(response.data.data);
-                    fixBadLoad(response.data.data);
                 })
                 .catch(error => {
                     console.error(error);
@@ -117,11 +96,8 @@ function Content2(props) {
         else {
             // Fetch cards when props.filterCondition changes
             console.log("running filter 197" + props.filterCondition);
-            //http://20.252.115.56/allCardsByTag
-            //http://localhost:8000/allCardsByTag
             if (props.filterCondition === '') {
                 console.log("running category " + props.CategoryCondition);
-                // filter markers
                 showAll();
                 filterCategory(props.CategoryCondition);
                 let params = {categoryString: props.CategoryCondition};
@@ -133,14 +109,11 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
-                        console.log("Loading cards... Sort Condition: " + props.sortCondition);
-                        console.table(response.data.data);
-                        setCards(response.data.data); // Update the cards state with the new data
+                        setCards(response.data.data);
                     })
                     .catch(error => {
-                        console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
+                        console.error('Error fetching cards by tag:', error);
                     });
-                //alert("Underconstruction");
             } else if (props.CategoryCondition === '') {
                 console.log("running filter 196 " + props.filterCondition);
                 showAll();
@@ -154,14 +127,11 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
-                        console.log("Loading cards... Sort Condition: " + props.sortCondition + ". Filter Condition: " + props.filterCondition);
-                        console.table(response.data.data);
-                        setCards(response.data.data); // Update the cards state with the new data
+                        setCards(response.data.data);
                     })
                     .catch(error => {
-                        console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
+                        console.error('Error fetching cards by tag:', error);
                     });
-                //alert("Underconstruction");
             } else if (props.CategoryCondition !== '' && props.filterCondition !== '') {
                 showAll();
                 filterCategoryAndTag(props.CategoryCondition, props.filterCondition)
@@ -175,26 +145,21 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
-                        console.log("Loading cards... Sort Condition: " + props.sortCondition);
-                        console.table(response.data.data);
-                        setCards(response.data.data); // Update the cards state with the new data
+                        setCards(response.data.data);
                     })
                     .catch(error => {
-                        console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
+                        console.error('Error fetching cards by tag:', error);
                     });
-                //alert("Underconstruction");
             } else if (props.sortCondition != '') {
                 showAll();
                 api.get('/allCardsByTag', {
                     params: {sortString: props.sortCondition}
                 })
                     .then(response => {
-                        console.log("Loading cards... Filter Condition: " + props.filterCondition);
-                        console.table(response.data.data);
-                        setCards(response.data.data); // Update the cards state with the new data
+                        setCards(response.data.data);
                     })
                     .catch(error => {
-                        console.error('Error fetching cards by tag:', props.sortCondition); // Log any error that occurs during the fetch
+                        console.error('Error fetching cards by tag:', props.sortCondition);
                     });
             }
         }
@@ -202,40 +167,27 @@ function Content2(props) {
 
     const [cards, setCards] = useState([]);
     const [bookmarkedCardIDs, setBookmarkedCardIDs] = useState(new Set());
-    const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
+    const [bookmarksLoaded, setBookmarksLoaded] = useState(false);   // keeps track of bookmark fetch
     const [filterCondition, setFilterCondition] = useState(props.filterCondition);
     const [searchCondition, setSearchCondition] = useState(props.searchCondition);
-    // const isInitialMount = useRef(true);
+    const [sortCondition, setSortCondition] = useState(props.sortCondition);
 
     useEffect(() => {
         if (resolvedUsername) {
             localStorage.setItem("username", resolvedUsername);
             fetchBookmarks();
+        } else {
+            // 🔹 NOT LOGGED IN: treat bookmarks as "loaded" with an empty set
+            setBookmarkedCardIDs(new Set());
+            setBookmarksLoaded(true);
         }
     }, [resolvedUsername]);
 
-    // Loads cards on boot
-    useEffect(() => {
-        api.get('/allCards')
-            .then(response => {
-                console.log("Loading all cards...");
-                console.log(response.data.data);
-                console.table(response.data.data);
-                setCards(response.data.data);
-                fixBadLoad(response.data.data);
-            })
-            .catch(error => {
-                console.error(error);
-            });
-    }, []);
-
     useEffect(() => {
 
-        /*
         if (!didMountRef.current) {
             return;
         }
-        */
 
         if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter193" + props.filterCondition);
@@ -244,9 +196,7 @@ function Content2(props) {
             api.get('/allCards')
 
                 .then(response => {
-                    console.log("Loading all cards...");
                     console.log(response.data.data);
-                    console.table(response.data.data);
                     setCards(response.data.data);
                 })
                 .catch(error => {
@@ -254,13 +204,9 @@ function Content2(props) {
                 });
         }
         else {
-            // Fetch cards when props.filterCondition changes
             console.log("running filter194" + props.filterCondition);
-            //http://20.252.115.56/allCardsByTag
-            //http://localhost:8000/allCardsByTag
             if (props.filterCondition === '') {
                 console.log("running category " + props.CategoryCondition);
-                // filter markers
                 showAll();
                 filterCategory(props.CategoryCondition)
 
@@ -272,15 +218,12 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
-                        console.log("Loading cards... Sort Condition: " + props.sortCondition);
-                        console.table(response.data.data);
-                        setCards(response.data.data); // Update the cards state with the new data
+                        setCards(response.data.data);
                         console.log("Incoming card data:", response.data.data);
                     })
                     .catch(error => {
-                        console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
+                        console.error('Error fetching cards by tag:', error);
                     });
-                //alert("Underconstruction");
             } else if (props.CategoryCondition === '') {
                 console.log("running filter 195" + props.filterCondition);
                 showAll();
@@ -295,14 +238,11 @@ function Content2(props) {
                     params: params
                 })
                     .then(response => {
-                        console.log("Loading cards... Sort Condition: " + props.sortCondition + ". Filter Condition: " + props.filterCondition);
-                        console.table(response.data.data);
-                        setCards(response.data.data); // Update the cards state with the new data
+                        setCards(response.data.data);
                     })
                     .catch(error => {
-                        console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
+                        console.error('Error fetching cards by tag:', error);
                     });
-                //alert("Underconstruction");
             } else if (props.CategoryCondition !== '' && props.filterCondition !== '') {
                 showAll();
                 filterCategoryAndTag(props.CategoryCondition, props.filterCondition)
@@ -317,46 +257,37 @@ function Content2(props) {
                     params: params
                 })
                 .then(response => {
-                    console.log("Loading cards... Sort Condition: " + props.sortCondition);
-                    console.table(response.data.data);
-                    setCards(response.data.data); // Update the cards state with the new data
+                    setCards(response.data.data);
                 })
                 .catch(error => {
-                    console.error('Error fetching cards by tag:', error); // Log any error that occurs during the fetch
+                    console.error('Error fetching cards by tag:', error);
                 });
-                //alert("Underconstruction");
             } else if (props.sortCondition !== '') {
                 showAll();
                 api.get('/allCardsByTag', {
                     params: {sortString: props.sortCondition}
                 })
                     .then(response => {
-                        console.log("Loading cards... Filter Condition: " + props.filterCondition);
-                        console.table(response.data.data);
-                        setCards(response.data.data); // Update the cards state with the new data
+                        setCards(response.data.data);
                     })
                     .catch(error => {
-                        console.error('Error fetching cards by tag:', props.sortCondition); // Log any error that occurs during the fetch
+                        console.error('Error fetching cards by tag:', props.sortCondition);
                     });
             }
         }
-    }, [props.filterCondition, props.CategoryCondition, props.sortCondition]); // Only run if props.filterCondition changes
+    }, [props.filterCondition, props.CategoryCondition, props.sortCondition]);
 
     useEffect(() => {
         if (props.searchCondition != '') {
             console.log("running search" + props.searchCondition);
 
-
             api.get('/searchBar', {
-
                 params: {
                     titleSearch: props.searchCondition
                 }
             })
                 .then(response => {
                     if (Array.isArray(response.data.data)) {
-                        console.log("Loading cards... Search Condition: " + props.searchCondition);
-                        console.table(response.data.data);
                         setCards(response.data.data);
                         console.log("Search results:", response.data.data);
                     } else {
@@ -372,7 +303,7 @@ function Content2(props) {
             console.log("Not running search" + props.searchCondition);
             loadCardsByCriteria();
         }
-    }, [props.searchCondition]); // Only run if props.searchCondition changes
+    }, [props.searchCondition]);
 
     const fetchBookmarks = async () => {
         console.log("Fetching bookmarks for:", resolvedUsername);
@@ -384,16 +315,12 @@ function Content2(props) {
         console.log("[fetchBookmarks] Sending GET /getBookmarkedCards request...");
 
         try {
-
             await new Promise(r => setTimeout(r, 50));
 
             const res = await api.get('/getBookmarkedCards', {
                 params: { username: resolvedUsername }
             });
-    
-            console.log("[fetchBookmarks] API call successful. Response:");
-            console.log(res);
-    
+
             console.log("[fetchBookmarks] Raw bookmarked data:", res.data.bookmarkedCards);
 
             const cardIDs = new Set(
@@ -401,22 +328,19 @@ function Content2(props) {
                     card.cardID || card.cardid || card.CardID
                 )
             );
-    
-            console.log("[fetchBookmarks] Parsed Set of bookmarked IDs:", cardIDs);
-    
+
             setBookmarkedCardIDs(new Set(cardIDs));
-            setBookmarksLoaded(true);
+            setBookmarksLoaded(true);  //  mark loaded when done
         } catch (error) {
             console.error("[fetchBookmarks] Error fetching bookmarks:", error);
+            setBookmarksLoaded(true);  // avoid infinite spinner on error
         }
     };
 
-    // Fetch all cards and update formData instead of using updateBoundry API call
-    /*
+    // Fetch all cards when boundCondition changes
     const fetchAllCards = async () => {
         try {
             const response = await api.get('/allCards');
-            console.log("Loading all cards...");
             console.table(response.data.data);
             const fixedResponse = fixBadLoadMap(response.data.data);
             setCards(fixedResponse);
@@ -424,17 +348,11 @@ function Content2(props) {
             console.error('Error fetching all cards:', error);
         }
     };
-    */
 
-    // Fix bad load where card fields are in wrong order
-    // const fixBadLoadMap = (cards) => cards.map(fixBadLoad);
+    const fixBadLoadMap = (cards) => cards.map(fixBadLoad);
 
-    function fixBadLoad(cards) {
-        if (!Array.isArray(cards) || cards.length === 0 || (cards[0] && typeof cards[0].username === "number" && typeof cards[0].name === "number" && typeof cards[0].title === "number")) {
-            console.log("Fixing bad load...");
-            console.log(Array.isArray(cards) ? cards.length : 0);
-            setBadLoad(true);
-            /*
+    const fixBadLoad = (cards) => {
+        if (typeof cards.username === "number" && typeof cards.name === "number" && typeof cards.title === "number") {
             return {
                 cardID: cards.username,
                 latitude: cards.name,
@@ -443,91 +361,14 @@ function Content2(props) {
                 tags: cards.category,
                 category: cards.cardID
             };
-            */
         }
+        return cards;
     }
 
     useEffect(() => {
-        if (badLoad) {
-            loadCardsByCriteria();
-            setBadLoad(false);
-        }
-    }, [badLoad]);
-
-    /*useEffect(() => {
-        // Commented out updateBoundry logic
-        /*
-        let isMounted = true;
-        let isfetched = true;
-
-        if (didMountRef.current) {
-            console.log("running bound" + props.boundCondition);
-            const data = {
-                "NEpoint": {
-                    "lat": props.boundCondition._ne.lat,
-                    "long": props.boundCondition._ne.lng
-                },
-                "SWpoint": {
-                    "lat": props.boundCondition._sw.lat,
-                    "long": props.boundCondition._sw.lng
-                }
-            };
-
-            // Define an async function inside useEffect
-            const fetchData = async () => {
-                try {
-                    setTimeout(500);
-                    const response = await api.post('/updateBoundry', data);
-                    if (isMounted) { // Only update state if the component is still mounted
-                        // Check if the first card's title is not a number
-                        if (response.data.data.length > 0) {
-                            const first = response.data.data[0];
-                            if (typeof first.title === 'string' && isNaN(Number(first.title))) {
-                                console.log("Incoming card data from updateBoundry:", response.data.data);
-                                setCards(response.data.data);
-                            } else {
-                                console.error('Invalid card data: title is number or invalid:', first);
-                            }
-                        } else {
-                            console.warn('No data returned from updateBoundry:', response.data.data);
-                        }
-                    }
-                } catch (error) {
-                    if (isMounted) {
-                        console.error('Error:', error);
-                    }
-                }
-            };
-
-            // Call the async function
-            fetchData();
-            // const timer = setTimeout(() => {
-            //     fetchData();
-            // }, 1000); // Delay in milliseconds
-
-            // // Clean up the timer when the component unmounts or the dependencies change
-            // return () => {
-            //     clearTimeout(timer);
-            // };
-
-
-        } else {
-            console.log("Not running bound" + props.boundCondition);
-            didMountRef.current = true;
-            setTimeout(1000);
-        }
-        return () => {
-            isMounted = false;
-        };
-        // Instead, always fetch all cards when boundCondition changes
         fetchAllCards();
     }, [props.boundCondition]);
-    */
 
-
-
-
-    // Handler for card click
     const handleCardClick = (card) => {
         console.log('[Content2] Card clicked:', card);
         if (props.onCardClick && card.latitude && card.longitude) {
@@ -544,73 +385,6 @@ function Content2(props) {
         }
     };
 
-    /*
-    // State for layer panel
-    const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
-
-    // Card marker visibility state
-    const [layerVisibility, setLayerVisibility] = useState({
-        River: true,
-        Watershed: true,
-        Places: true,
-    });
-
-    // Colored area (vector tile) visibility state
-    const [areaVisibility, setAreaVisibility] = useState({
-        River: true,
-        Watershed: true,
-        Places: true,
-    });
-
-    // Helper to show/hide markers by class
-    const updateLayerVisibility = (visibility) => {
-        // Rivers
-        const rivers = document.getElementsByClassName("blue-marker");
-        for (let i = 0; i < rivers.length; i++) {
-            rivers[i].style.visibility = visibility.River ? "visible" : "hidden";
-        }
-        // Watersheds
-        const watersheds = document.getElementsByClassName("green-marker");
-        for (let i = 0; i < watersheds.length; i++) {
-            watersheds[i].style.visibility = visibility.Watershed ? "visible" : "hidden";
-        }
-        // Places
-        const places = document.getElementsByClassName("yellow-marker");
-        for (let i = 0; i < places.length; i++) {
-            places[i].style.visibility = visibility.Places ? "visible" : "hidden";
-        }
-    };
-
-    // Show/hide colored areas (vector tile layers)
-    useEffect(() => {
-        applyAreaVisibility(areaVisibility);
-    }, [areaVisibility]);
-
-    // Update marker visibility when checkboxes change
-    useEffect(() => {
-        // If all are checked, show all
-        if (layerVisibility.River && layerVisibility.Watershed && layerVisibility.Places) {
-            showAll();
-        } else {
-            updateLayerVisibility(layerVisibility);
-        }
-    }, [layerVisibility]);
-
-    // Checkbox handlers
-    const handleLayerCheckbox = (category) => {
-        setLayerVisibility((prev) => ({
-            ...prev,
-            [category]: !prev[category],
-        }));
-    };
-    const handleAreaCheckbox = (category) => {
-        setAreaVisibility((prev) => ({
-            ...prev,
-            [category]: !prev[category],
-        }));
-    };
-    */
-
     return (
         <>
             {/* Right Sidebar */}
@@ -618,44 +392,7 @@ function Content2(props) {
                 <div className="collapse-toggle" onClick={toggleCollapse}>
                     <FontAwesomeIcon icon={props.isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
                 </div>
-                {/*
-                <button 
-                    className="add-card-button" 
-                    onClick={openModal} 
-                    title="Add Card"
-                    style={{ top: '0px', position: 'absolute' }}
-                >
-                    <FontAwesomeIcon icon={faPlus} />
-                </button>
-                <button
-                    className="layer-panel-button"
-                    onClick={() => setIsLayerPanelOpen((prev) => !prev)}
-                    title="Layers"
-                    style={{ top: '50px', position: 'absolute' }}
-                >
-                    <FontAwesomeIcon icon={faLayerGroup} />
-                </button>
-                <button
-                    className="open-card-container-button"
-                    onClick={toggleCollapse}
-                    title={isCollapsed ? "Open Card Container" : "Collapse Card Container"}
-                    style={{ top: '100px', position: 'absolute' }}
-                >
-                    <FontAwesomeIcon icon={faBook} />
-                </button>
-                */}
             </div>
-
-            {/* Layer Panel
-            <LayerPanel
-                isOpen={isLayerPanelOpen}
-                onClose={() => setIsLayerPanelOpen(false)}
-                layerVisibility={layerVisibility}
-                areaVisibility={areaVisibility}
-                handleLayerCheckbox={handleLayerCheckbox}
-                handleAreaCheckbox={handleAreaCheckbox}
-            />
-            */}
 
             <FormModal 
                 username={resolvedUsername} 
@@ -685,8 +422,8 @@ function Content2(props) {
                     onMouseDown={onMouseDown}
                 />
 
-                {/* Favorites toggle checkbox at top-left with spacing */}
-                {!props.isCollapsed && (
+                {/* Favorites toggle –  only show when LOGGED IN */}
+                {props.isLoggedIn && !props.isCollapsed && (
                     <div 
                         className="favorites-toggle-checkbox"
                         style={{
@@ -716,34 +453,34 @@ function Content2(props) {
                     </div>
                 )}
 
-                {bookmarksLoaded ? (
+
+                {(!props.isLoggedIn || bookmarksLoaded) ? (
                     <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
                         {cards
-                        .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
-                        .map((card) => (
+                          .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
+                          .map((card) => (
                             <div key={card.cardID} onClick={() => handleCardClick(card)}>
-                            <Card
-                                formData={{
-                                ...card,
-                                files: card.files || [],
-                                viewerUsername: resolvedUsername,
-                                cardID: card.cardID
-                                }}
-                                isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                                username={resolvedUsername}
-                                fetchBookmarks={fetchBookmarks}
-                            />
+                                <Card
+                                    formData={{
+                                        ...card,
+                                        files: card.files || [],
+                                        viewerUsername: resolvedUsername,
+                                        cardID: card.cardID
+                                    }}
+                                    isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                    username={resolvedUsername}
+                                    fetchBookmarks={fetchBookmarks}
+                                    isLoggedIn={props.isLoggedIn}   // optional: let Card know login state
+                                />
                             </div>
-                        ))}
+                          ))}
                     </div>
-                    ) : (
+                ) : (
                     <p style={{ padding: "20px", textAlign: "center" }}>Loading favorites...</p>
-                    )}
+                )}
             </section>
         </>
     );
-
-    
 }
 
 export default Content2;
