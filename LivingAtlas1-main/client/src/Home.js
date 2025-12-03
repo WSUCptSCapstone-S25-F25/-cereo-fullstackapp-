@@ -7,17 +7,16 @@ import LayerPanel from './LayerPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
-import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons'; // faEarthAmericas
+import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
 import './Sidebars.css';
 import './LayerPanel.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
-import RemovedServicesPanel from './RemovedServicesPanel'; // Import the new panel
+import RemovedServicesPanel from './RemovedServicesPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
-import { faLayerGroup } from '@fortawesome/free-solid-svg-icons'; // layer group icon
-import { faTrash } from '@fortawesome/free-solid-svg-icons'; // trash icon
-import { faRobot, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import FormModal from './FormModal';
 
 function Home(props) {
@@ -34,8 +33,8 @@ function Home(props) {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
-    const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false); // State for removed panel
-    const [isModalOpen, setIsModalOpen] = useState(false); // <-- new state
+    const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
     const [arcgisLayers, setArcgisLayers] = useState([]);
@@ -69,12 +68,6 @@ function Home(props) {
         console.log('[Home] handleCardClick received coords:', coords);
         setSelectedCardCoords(coords);
     };
-
-    /*
-    const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
-    };
-    */
 
     const toggleSearchModal = () => {
         setIsSearchModalOpen(!isSearchModalOpen);
@@ -181,17 +174,14 @@ function Home(props) {
 
     // Helper to show/hide markers by class
     const updateLayerVisibility = (visibility) => {
-        // Rivers
         const rivers = document.getElementsByClassName("blue-marker");
         for (let i = 0; i < rivers.length; i++) {
             rivers[i].style.visibility = visibility.River ? "visible" : "hidden";
         }
-        // Watersheds
         const watersheds = document.getElementsByClassName("green-marker");
         for (let i = 0; i < watersheds.length; i++) {
             watersheds[i].style.visibility = visibility.Watershed ? "visible" : "hidden";
         }
-        // Places
         const places = document.getElementsByClassName("yellow-marker");
         for (let i = 0; i < places.length; i++) {
             places[i].style.visibility = visibility.Places ? "visible" : "hidden";
@@ -205,7 +195,6 @@ function Home(props) {
 
     // Update marker visibility when checkboxes change
     useEffect(() => {
-        // If all are checked, show all
         if (layerVisibility.River && layerVisibility.Watershed && layerVisibility.Places) {
             showAll();
         } else {
@@ -213,7 +202,6 @@ function Home(props) {
         }
     }, [layerVisibility]);
 
-    // Checkbox handlers
     const handleCategoryLayerCheckbox = (category) => {
         setLayerVisibility((prev) => ({
             ...prev,
@@ -235,25 +223,31 @@ function Home(props) {
                 <button className="left-sidebar-search-button" onClick={toggleSearchModal}>
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
+
                 {/* GIS Services Button */}
                 <button
                     className="left-sidebar-gis-button"
-                    onClick={() => {
-                        setIsUploadPanelOpen(v => !v);
-                        setIsRemovedPanelOpen(false); // Close removed services panel
-                    }}
+                    onClick={() => setIsUploadPanelOpen(v => !v)}
                     title="Browse GIS Services"
                 >
                     <FontAwesomeIcon icon={faEarthAmericas} />
                 </button>
-                {/* Upload Button */}
+
+                {/* Upload Button (blocked if not logged in) */}
                 <button
                     className="left-sidebar-upload-button"
                     title="Upload Card"
-                    onClick={() => setIsModalOpen(v => !v)}   // <-- hook in modal
+                    onClick={() => {
+                        if (!props.isLoggedIn) {
+                            alert("Please log in to upload a data card.");
+                            return;
+                        }
+                        setIsModalOpen(true);
+                    }}
                 >
                     <FontAwesomeIcon icon={faUpload} />
                 </button>
+
                 {/* Upload Panel */}
                 <ArcgisUploadPanel
                     isOpen={isUploadPanelOpen}
@@ -261,14 +255,8 @@ function Home(props) {
                     mapInstance={getMapboxMap}
                     arcgisLayerAdded={arcgisLayerAdded}
                     setArcgisLayerAdded={setArcgisLayerAdded}
-                    isAdmin={props.isAdmin}
                 />
-                {/* Left Sidebar toggle Button */}
-                {/*
-                <button className="left-sidebar-toggle" onClick={toggleSidebar}>
-                    <FontAwesomeIcon icon={isSidebarOpen ? faAngleDoubleLeft : faAngleDoubleRight} />
-                </button>
-                */}
+
                 {/* Layers Button */}
                 <button
                     className="left-sidebar-layers-button"
@@ -277,46 +265,21 @@ function Home(props) {
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
                 </button>
-                {/* Trash button - only visible to admins */}
-                {props.isAdmin && (
-                    <button
-                        className="left-sidebar-trash-button"
-                        title="Removed Services"
-                        onClick={() => {
-                            setIsRemovedPanelOpen(v => !v); // Toggle removed panel
-                            setIsUploadPanelOpen(false); // Close upload panel
-                        }}
-                    >
-                        <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                )}
-                {/* AI Helper button*/}
+
+                {/* Trash button*/}
                 <button
-                    className="left-sidebar-ai-button"
-                    title="AI Helper"
-                    onClick={() => {/* AI Helper logic will go here */}}
+                    className="left-sidebar-trash-button"
+                    title="Removed Services"
+                    onClick={() => setIsRemovedPanelOpen(v => !v)}
                 >
-                    <FontAwesomeIcon icon={faRobot} />
+                    <FontAwesomeIcon icon={faTrash} />
                 </button>
 
                 {/* Removed Services Panel */}
                 <RemovedServicesPanel
                     isOpen={isRemovedPanelOpen}
                     onClose={() => setIsRemovedPanelOpen(false)}
-                    isAdmin={props.isAdmin}
                 />
-
-                {/* Spacer to push tutorial button to bottom */}
-                <div className="left-sidebar-spacer"></div>
-                
-                {/* Tutorial button at the bottom */}
-                <button
-                    className="left-sidebar-tutorial-button"
-                    title="Tutorial"
-                    onClick={() => {/* Tutorial logic will go here */}}
-                >
-                    <FontAwesomeIcon icon={faQuestionCircle} />
-                </button>
 
                 {/* Expanded Left Sidebar Content */}
                 {isSidebarOpen && (
@@ -378,6 +341,7 @@ function Home(props) {
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 isAdmin={props.isAdmin}
                 username={props.username}
+                isLoggedIn={props.isLoggedIn}            /* <-- added */
                 isCollapsed={isCollapsed}
                 setIsCollapsed={setIsCollapsed}
                 isSidebarOpen={isSidebarOpen}
@@ -387,6 +351,7 @@ function Home(props) {
                 isModalOpen={isModalOpen}
                 selectedCardCoords={selectedCardCoords}
             />
+
             <Content2
                 filterCondition={filterCondition}
                 setFilterCondition={setFilterCondition}
@@ -399,6 +364,7 @@ function Home(props) {
                 CategoryCondition={CategoryCondition}
                 setCategoryConditionCondition={setCategoryConditionCondition}
                 username={props.username}
+                isLoggedIn={props.isLoggedIn}             /* <-- added */
                 isCollapsed={isCollapsed}
                 setIsCollapsed={setIsCollapsed}
                 onCardClick={handleCardClick}
@@ -410,6 +376,7 @@ function Home(props) {
                 onRequestClose={() => setIsModalOpen(false)}
                 username={props.username || localStorage.getItem("username")}
                 email={props.email}
+                isLoggedIn={props.isLoggedIn}             /* <-- extra prop if needed */
             />
 
             {/* Layer Panel */}
@@ -420,12 +387,6 @@ function Home(props) {
                 areaVisibility={areaVisibility}
                 handleLayerCheckbox={handleCategoryLayerCheckbox}
                 handleAreaCheckbox={handleAreaCheckbox}
-                filterCondition={filterCondition}
-                setFilterCondition={setFilterCondition}
-                sortCondition={sortCondition}
-                setSortCondition={setSortCondition}
-                CategoryCondition={CategoryCondition}
-                setCategoryCondition={setCategoryConditionCondition}
             />
         </div>
     );
