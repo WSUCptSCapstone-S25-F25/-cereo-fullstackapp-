@@ -9,23 +9,25 @@ account
 from fastapi import APIRouter, Form, HTTPException
 from database import conn, cur
 from pydantic import BaseModel
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-import smtplib
+
 import urllib.parse
 import requests
 
 import os
 import hashlib
 
-# Email configuration - Use environment variables for Render deployment
+# Email configuration - Use SendGrid for cloud deployment
 import os
 
-# Try Render's SMTP first, fallback to Gmail for local development
-SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "cereo.atlas@gmail.com")
-SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "yqbr duhc ytcv ydjq")
+
+# SendGrid Email: wsu.cereoatlas26@gmail.com
+# SendGrid Password: LivingAtlas25$
+# SendGrid Recovery Code: 8W6JXAUWQZWSNVJXA4VH2CXV
+# SendGrid API Key: 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
+
+# SendGrid configuration
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "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")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "wsu.cereoatlas26@gmail.com")
 
 # SMTP_SERVER = "smtp.gmail.com"
 # SMTP_PORT = 465
@@ -68,15 +70,10 @@ def get_short_url(long_url):
         print(f"Bitly API error: {e} - using long URL")
         return long_url
 
-# Helper function to send the recovery email
+# Helper function to send the recovery email using SendGrid
 def send_recovery_email(recipient_email):
     try:
         print(f"DEBUG: Preparing to send email to {recipient_email}...")
-
-        msg = MIMEMultipart()
-        msg['From'] = SENDER_EMAIL
-        msg['To'] = recipient_email
-        msg['Subject'] = "Password Reset Request"
 
         # Construct the long URL with the recipient's email
         encoded_email = urllib.parse.quote(recipient_email)
@@ -87,7 +84,8 @@ def send_recovery_email(recipient_email):
         short_reset_url = get_short_url(long_url)
         print(f"DEBUG: Short URL obtained: {short_reset_url}")
 
-        # Email body content with hyperlink
+        # Email content
+        subject = "Password Reset Request"
         body = f"""
         <html>
             <body>
@@ -100,27 +98,62 @@ def send_recovery_email(recipient_email):
         </html>
         """
 
-        msg.attach(MIMEText(body, 'html'))  # Set content type to 'html' for the email body
+        # Send via SendGrid
+        print(f"DEBUG: Attempting to send via SendGrid...")
+        if send_via_sendgrid(recipient_email, subject, body):
+            print(f"DEBUG: SendGrid email sent successfully to {recipient_email}!")
+            return
+        else:
+            raise Exception("SendGrid email sending failed")
 
-        print(f"DEBUG: Connecting to SMTP server...")
-        # Send the email using Gmail's SMTP server with timeout
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15)
-        server.starttls()  # Enable TLS encryption
-        print(f"DEBUG: TLS enabled, logging in...")
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-
-        print(f"DEBUG: Logged into SMTP server as {SENDER_EMAIL}, sending email...")
-
-        server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
-        server.quit()
-
-        print(f"DEBUG: Recovery email sent successfully to {recipient_email}!")
-    except smtplib.SMTPException as smtp_error:
-        print(f"DEBUG: SMTP error occurred: {smtp_error}")
-        raise Exception(f"SMTP error: {smtp_error}")
     except Exception as e:
         print(f"DEBUG: Failed to send email: {e}")
         raise Exception(f"Email sending failed: {e}")
+
+def send_via_sendgrid(recipient_email, subject, body):
+    """Send email using SendGrid API"""
+    try:
+        print("DEBUG: Sending via SendGrid API...")
+        
+        payload = {
+            "personalizations": [
+                {
+                    "to": [{"email": recipient_email}],
+                    "subject": subject
+                }
+            ],
+            "from": {"email": SENDER_EMAIL, "name": "Living Atlas"},
+            "content": [
+                {
+                    "type": "text/html",
+                    "value": body
+                }
+            ]
+        }
+        
+        headers = {
+            "Authorization": f"Bearer {SENDGRID_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        if response.status_code == 202:
+            print(f"DEBUG: SendGrid email sent successfully!")
+            return True
+        else:
+            print(f"DEBUG: SendGrid failed with status {response.status_code}: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"DEBUG: SendGrid error: {e}")
+        return False
+
 
 # Helper function to hash the password (same as current setup)
 def hash_password(password: str, salt: bytes) -> str:
