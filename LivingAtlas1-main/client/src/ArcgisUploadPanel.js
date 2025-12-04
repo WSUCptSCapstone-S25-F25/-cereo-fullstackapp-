@@ -113,12 +113,26 @@ function ArcgisUploadPanel({
     // Track previous checkedLayerIds for diffing
     const prevCheckedLayerIds = useRef({});
 
+    // Track loading states for layers to reliably check completion
+    const loadingStates = useRef({}); // { messageId: boolean }
+
     const {
         messages,
-        addLoadingMessage,
-        removeLoadingMessage,
+        addLoadingMessage: originalAddLoadingMessage,
+        removeLoadingMessage: originalRemoveLoadingMessage,
         showFinishedMessage
     } = useArcgisLoadingMessages();
+
+    // Wrapped functions to track loading states
+    const addLoadingMessage = (id, text) => {
+        loadingStates.current[id] = true;
+        originalAddLoadingMessage(id, text);
+    };
+
+    const removeLoadingMessage = (id) => {
+        loadingStates.current[id] = false;
+        originalRemoveLoadingMessage(id);
+    };
 
     // Service info modal state ---
     const [serviceInfoOpenKey, setServiceInfoOpenKey] = useState(null); // service.key
@@ -209,15 +223,14 @@ function ArcgisUploadPanel({
         return () => { active = false; };
     }, [isOpen, selectedState, dataSource]);
 
-    // Fetch layers and legends when panel opens, state changes, data source changes, or services change
+    // Reset state when state or data source changes (but not when panel just opens/closes)
     useEffect(() => {
-        if (!isOpen) return;
-
         // Reset per-state/datasource caches/UI
         setServiceLayers({});
         setServiceLegends({});
         setCheckedLayerIds({});
         setServiceLayerAdded({});
+        setCheckedSublayerIds({});
         setExpandedFolders(new Set());
         setExpandedServices(new Set());
         setExpandedLayers(new Set()); // Reset expanded layers when switching states/datasource
@@ -225,6 +238,13 @@ function ArcgisUploadPanel({
         setSearchKeyword(''); // Clear search when switching data source
         setSearchResult(null);
         prevCheckedLayerIds.current = {};
+        loadingStates.current = {}; // Clear loading states when switching state/datasource
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedState, dataSource, servicesFromDb.length]); // Only reset when state/datasource changes, not panel open/close
+
+    // Fetch layers and legends when panel opens or when services change
+    useEffect(() => {
+        if (!isOpen) return;
 
         // Fetch for current services (from DB or fallback)
         (ARCGIS_SERVICES || []).forEach(service => {
@@ -232,8 +252,10 @@ function ArcgisUploadPanel({
 
             fetchArcgisLayers(service.url).then(layers => {
                 setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
-                setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
-                setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+                // Only set initial empty state if service doesn't have existing checked layers
+                setCheckedLayerIds(prev => prev[service.key] ? prev : { ...prev, [service.key]: [] });
+                setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
+                setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
             });
 
             fetchArcgisLegend(service.url).then(legend => {
@@ -241,11 +263,10 @@ function ArcgisUploadPanel({
             });
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, selectedState, dataSource, servicesFromDb.length]); // React to changes in services or data source
+    }, [isOpen, ARCGIS_SERVICES]); // React to panel opening and services changing
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
     useEffect(() => {
-        if (!isOpen) return;
         const map = mapInstance && mapInstance();
         if (!map || !map.getStyle) return;
 
@@ -277,7 +298,14 @@ function ArcgisUploadPanel({
         // Also reset our internal ref used for diffs
         prevCheckedLayerIds.current = {};
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedState, isOpen]);
+    }, [selectedState]); // Only clean up when state changes, not when panel opens/closes
+
+    // Clear loading states when panel closes
+    useEffect(() => {
+        if (!isOpen) {
+            loadingStates.current = {};
+        }
+    }, [isOpen]);
 
     // Add/Remove button logic:
     const handleAddRemove = (service, layers) => {
@@ -855,6 +883,35 @@ function ArcgisUploadPanel({
                                                 const sublayerMsgId = `${getLoadingMsgId(service, layer)}-sub-${sublayerIndex}`;
                                                 removeLoadingMessage(sublayerMsgId);
                                                 showFinishedMessage(sublayerMsgId, `${legendItem.label} loaded`);
+                                                
+                                                            // Check if this was the last sublayer to finish loading
+                                                const allSublayersFinished = checkedSublayers.every(subIdx => {
+                                                    const subMsgId = `${getLoadingMsgId(service, layer)}-sub-${subIdx}`;
+                                                    return !loadingStates.current[subMsgId];
+                                                });
+                                                
+                                                // If all sublayers are finished, remove the layer-level loading message
+                                                if (allSublayersFinished) {
+                                                    removeLoadingMessage(getLoadingMsgId(service, layer));
+                                                    showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+                                                    
+                                                    // Also check if all layers for this service have finished loading
+                                                    const allServiceLayersFinished = currChecked.every(layerId => {
+                                                        const layerMsgId = getLoadingMsgId(service, layers.find(l => l.id === layerId));
+                                                        return !loadingStates.current[layerMsgId];
+                                                    });
+                                                    
+                                                    // Remove the "All layers" message if all individual layers are done
+                                                    if (allServiceLayersFinished && currChecked.length > 0) {
+                                                        const allLayersMessageId = getLoadingMsgId(service, null);
+                                                        // Only remove if it's currently loading
+                                                        if (loadingStates.current[allLayersMessageId]) {
+                                                            removeLoadingMessage(allLayersMessageId);
+                                                            showFinishedMessage(allLayersMessageId, getLoadingMsgText(service, null, true));
+                                                        }
+                                                    }
+                                                }
+                                                
                                                 map.off('sourcedata', onTilesLoaded);
                                                 map.off('render', onRender);
                                                 if (finishedTimeout) clearTimeout(finishedTimeout);
@@ -911,6 +968,23 @@ function ArcgisUploadPanel({
                                 finishedTimeout = setTimeout(() => {
                                     removeLoadingMessage(getLoadingMsgId(service, layer));
                                     showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+                                    
+                                    // Check if all layers for this service have finished loading
+                                    const allServiceLayersFinished = currChecked.every(layerId => {
+                                        const layerMsgId = getLoadingMsgId(service, layers.find(l => l.id === layerId));
+                                        return !loadingStates.current[layerMsgId];
+                                    });
+                                    
+                                    // Remove the "All layers" message if all individual layers are done
+                                    if (allServiceLayersFinished && currChecked.length > 0) {
+                                        const allLayersMessageId = getLoadingMsgId(service, null);
+                                        // Only remove if it's currently loading
+                                        if (loadingStates.current[allLayersMessageId]) {
+                                            removeLoadingMessage(allLayersMessageId);
+                                            showFinishedMessage(allLayersMessageId, getLoadingMsgText(service, null, true));
+                                        }
+                                    }
+                                    
                                     map.off('sourcedata', onTilesLoaded);
                                     map.off('render', onRender);
                                     if (finishedTimeout) clearTimeout(finishedTimeout);
@@ -953,7 +1027,7 @@ function ArcgisUploadPanel({
                     <option value="layer">Layer</option>
                 </select>
                 <button
-                    className="search-btn upload-panel-searchbar-btn"
+                    className="search-btn upload-panel-searchbar-btn search"
                     title="Search"
                     onClick={() => {
                         if (!searchKeyword) {
@@ -977,7 +1051,7 @@ function ArcgisUploadPanel({
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
                 <button
-                    className="clear-btn upload-panel-searchbar-btn"
+                    className="clear-btn upload-panel-searchbar-btn clear"
                     title="Clear Search"
                     onClick={() => {
                         setSearchKeyword('');
@@ -1311,7 +1385,7 @@ function ArcgisUploadPanel({
                                                     {/* Show remove button only for database services and admin users */}
                                                     {dataSource === 'database' && isAdmin && (
                                                         <button
-                                                            className="learn-more-btn"
+                                                            className="ban-service-btn"
                                                             title="Remove"
                                                             aria-label="Remove"
                                                             onClick={(e) => {
