@@ -268,33 +268,54 @@ async def forgot_password(request: ForgotPasswordRequest):
 @account_router.post("/reset-password")
 async def reset_password(request: ResetPasswordRequest):
     try:
+        print(f"DEBUG: Processing reset password request")
+        
         # Extract email and new_password from the request
         email = request.email
         new_password = request.new_password
+        
+        print(f"DEBUG: Email: {email}")
+        print(f"DEBUG: New password length: {len(new_password) if new_password else 0}")
+
+        if not email or not new_password:
+            print(f"DEBUG: Missing email or password")
+            raise HTTPException(status_code=400, detail="Email and password are required")
 
         # Check if the email exists in the database
+        print(f"DEBUG: Checking if email exists in database...")
         cur.execute("SELECT userid FROM users WHERE email = %s", (email,))
         user = cur.fetchone()
+        print(f"DEBUG: User found: {user is not None}")
 
         if not user:
+            print(f"DEBUG: Email not found in database: {email}")
             raise HTTPException(status_code=400, detail="Invalid email")
 
         # Generate a new salt for the new password
+        print(f"DEBUG: Generating new salt and hashing password...")
         new_salt = os.urandom(32)
 
         # Hash the new password with the new salt
         hashed_password = hash_password(new_password, new_salt)
+        print(f"DEBUG: Password hashed successfully")
 
         # Update the password and salt in the database
+        print(f"DEBUG: Updating password in database...")
         cur.execute(
             "UPDATE users SET hashedpassword = %s, salt = %s WHERE email = %s",
             (hashed_password, new_salt, email)
         )
         conn.commit()
+        print(f"DEBUG: Password updated successfully for {email}")
 
         return {"success": True, "message": "Password has been reset successfully"}
 
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"DEBUG: Exception in reset_password: {str(e)}")
+        import traceback
+        print(f"DEBUG: Full traceback: {traceback.format_exc()}")
         return {"success": False, "message": str(e)}
 
 #This takes the users email and password and then returns the account information to show for the profile page
