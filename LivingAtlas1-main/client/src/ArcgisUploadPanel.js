@@ -223,15 +223,14 @@ function ArcgisUploadPanel({
         return () => { active = false; };
     }, [isOpen, selectedState, dataSource]);
 
-    // Fetch layers and legends when panel opens, state changes, data source changes, or services change
+    // Reset state when state or data source changes (but not when panel just opens/closes)
     useEffect(() => {
-        if (!isOpen) return;
-
         // Reset per-state/datasource caches/UI
         setServiceLayers({});
         setServiceLegends({});
         setCheckedLayerIds({});
         setServiceLayerAdded({});
+        setCheckedSublayerIds({});
         setExpandedFolders(new Set());
         setExpandedServices(new Set());
         setExpandedLayers(new Set()); // Reset expanded layers when switching states/datasource
@@ -240,6 +239,12 @@ function ArcgisUploadPanel({
         setSearchResult(null);
         prevCheckedLayerIds.current = {};
         loadingStates.current = {}; // Clear loading states when switching state/datasource
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedState, dataSource, servicesFromDb.length]); // Only reset when state/datasource changes, not panel open/close
+
+    // Fetch layers and legends when panel opens or when services change
+    useEffect(() => {
+        if (!isOpen) return;
 
         // Fetch for current services (from DB or fallback)
         (ARCGIS_SERVICES || []).forEach(service => {
@@ -247,8 +252,10 @@ function ArcgisUploadPanel({
 
             fetchArcgisLayers(service.url).then(layers => {
                 setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
-                setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
-                setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+                // Only set initial empty state if service doesn't have existing checked layers
+                setCheckedLayerIds(prev => prev[service.key] ? prev : { ...prev, [service.key]: [] });
+                setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
+                setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
             });
 
             fetchArcgisLegend(service.url).then(legend => {
@@ -256,11 +263,10 @@ function ArcgisUploadPanel({
             });
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, selectedState, dataSource, servicesFromDb.length]); // React to changes in services or data source
+    }, [isOpen, ARCGIS_SERVICES]); // React to panel opening and services changing
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
     useEffect(() => {
-        if (!isOpen) return;
         const map = mapInstance && mapInstance();
         if (!map || !map.getStyle) return;
 
@@ -291,13 +297,15 @@ function ArcgisUploadPanel({
 
         // Also reset our internal ref used for diffs
         prevCheckedLayerIds.current = {};
-        
-        // Clear loading states when panel closes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedState]); // Only clean up when state changes, not when panel opens/closes
+
+    // Clear loading states when panel closes
+    useEffect(() => {
         if (!isOpen) {
             loadingStates.current = {};
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedState, isOpen]);
+    }, [isOpen]);
 
     // Add/Remove button logic:
     const handleAddRemove = (service, layers) => {
