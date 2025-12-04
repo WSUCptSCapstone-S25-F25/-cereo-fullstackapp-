@@ -182,7 +182,7 @@ function LayerPanel({
             <Modal
                 isOpen={isAddFilterOpen}
                 onRequestClose={closeFilterPopup}
-                className="form-modal">                           
+                className="filter-modal">                           
                     {isAddFilterOpen && (                   
                         <div>
                             <input

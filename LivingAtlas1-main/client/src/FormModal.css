@@ -1,11 +1,12 @@
 .form-modal {
-    position: fixed;
+    position: absolute;
     top: 401px !important;
     left: 18px !important;
-    transform: translate(-50%, -50%);
+    transform: translate(10%, -50%);
+    background: white;
     background-color: #fff;
-    padding: 30px;
-    border-radius: 5px;
+    border-radius: 10px;
+    padding: 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     z-index: 9999;
     width: 420px !important;
