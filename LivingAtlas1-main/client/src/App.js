@@ -13,6 +13,22 @@ import Reset from './Reset';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
+function safeParseBooleanFromStorage(key) {
+  const raw = localStorage.getItem(key);
+
+  // Guard against null, "undefined", "null", or empty string
+  if (!raw || raw === 'undefined' || raw === 'null') {
+    return false;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn(`Failed to parse boolean from localStorage for key "${key}":`, raw, e);
+    return false;
+  }
+}
+
 function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,24 +39,24 @@ function App() {
 
   // Load login state from localStorage on component mount
   useEffect(() => {
-    const savedIsLoggedIn = JSON.parse(localStorage.getItem('isLoggedIn'));
-    const savedEmail = localStorage.getItem('email');
-    const savedUsername = localStorage.getItem('username');
-    const savedIsAdmin = JSON.parse(localStorage.getItem('isAdmin'));
+    const savedIsLoggedIn = safeParseBooleanFromStorage('isLoggedIn');
+    const savedIsAdmin = safeParseBooleanFromStorage('isAdmin');
+    const savedEmail = localStorage.getItem('email') || '';
+    const savedUsername = localStorage.getItem('username') || '';
 
     if (savedIsLoggedIn) {
       setIsLoggedIn(savedIsLoggedIn);
-      setEmail(savedEmail || '');
-      setUsername(savedUsername || '');
-      setIsAdmin(savedIsAdmin || false);
+      setEmail(savedEmail);
+      setUsername(savedUsername);
+      setIsAdmin(savedIsAdmin);
     }
   }, []);
 
   // Update localStorage when login state changes
   useEffect(() => {
     localStorage.setItem('isLoggedIn', JSON.stringify(isLoggedIn));
-    localStorage.setItem('email', email);
-    localStorage.setItem('username', username);
+    localStorage.setItem('email', email || '');
+    localStorage.setItem('username', username || '');
     localStorage.setItem('isAdmin', JSON.stringify(isAdmin));
   }, [isLoggedIn, email, username, isAdmin]);
 
