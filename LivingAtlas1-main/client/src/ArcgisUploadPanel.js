@@ -113,12 +113,26 @@ function ArcgisUploadPanel({
     // Track previous checkedLayerIds for diffing
     const prevCheckedLayerIds = useRef({});
 
+    // Track loading states for layers to reliably check completion
+    const loadingStates = useRef({}); // { messageId: boolean }
+
     const {
         messages,
-        addLoadingMessage,
-        removeLoadingMessage,
+        addLoadingMessage: originalAddLoadingMessage,
+        removeLoadingMessage: originalRemoveLoadingMessage,
         showFinishedMessage
     } = useArcgisLoadingMessages();
+
+    // Wrapped functions to track loading states
+    const addLoadingMessage = (id, text) => {
+        loadingStates.current[id] = true;
+        originalAddLoadingMessage(id, text);
+    };
+
+    const removeLoadingMessage = (id) => {
+        loadingStates.current[id] = false;
+        originalRemoveLoadingMessage(id);
+    };
 
     // Service info modal state ---
     const [serviceInfoOpenKey, setServiceInfoOpenKey] = useState(null); // service.key
@@ -225,6 +239,7 @@ function ArcgisUploadPanel({
         setSearchKeyword(''); // Clear search when switching data source
         setSearchResult(null);
         prevCheckedLayerIds.current = {};
+        loadingStates.current = {}; // Clear loading states when switching state/datasource
 
         // Fetch for current services (from DB or fallback)
         (ARCGIS_SERVICES || []).forEach(service => {
@@ -276,6 +291,11 @@ function ArcgisUploadPanel({
 
         // Also reset our internal ref used for diffs
         prevCheckedLayerIds.current = {};
+        
+        // Clear loading states when panel closes
+        if (!isOpen) {
+            loadingStates.current = {};
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedState, isOpen]);
 
@@ -855,6 +875,35 @@ function ArcgisUploadPanel({
                                                 const sublayerMsgId = `${getLoadingMsgId(service, layer)}-sub-${sublayerIndex}`;
                                                 removeLoadingMessage(sublayerMsgId);
                                                 showFinishedMessage(sublayerMsgId, `${legendItem.label} loaded`);
+                                                
+                                                            // Check if this was the last sublayer to finish loading
+                                                const allSublayersFinished = checkedSublayers.every(subIdx => {
+                                                    const subMsgId = `${getLoadingMsgId(service, layer)}-sub-${subIdx}`;
+                                                    return !loadingStates.current[subMsgId];
+                                                });
+                                                
+                                                // If all sublayers are finished, remove the layer-level loading message
+                                                if (allSublayersFinished) {
+                                                    removeLoadingMessage(getLoadingMsgId(service, layer));
+                                                    showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+                                                    
+                                                    // Also check if all layers for this service have finished loading
+                                                    const allServiceLayersFinished = currChecked.every(layerId => {
+                                                        const layerMsgId = getLoadingMsgId(service, layers.find(l => l.id === layerId));
+                                                        return !loadingStates.current[layerMsgId];
+                                                    });
+                                                    
+                                                    // Remove the "All layers" message if all individual layers are done
+                                                    if (allServiceLayersFinished && currChecked.length > 0) {
+                                                        const allLayersMessageId = getLoadingMsgId(service, null);
+                                                        // Only remove if it's currently loading
+                                                        if (loadingStates.current[allLayersMessageId]) {
+                                                            removeLoadingMessage(allLayersMessageId);
+                                                            showFinishedMessage(allLayersMessageId, getLoadingMsgText(service, null, true));
+                                                        }
+                                                    }
+                                                }
+                                                
                                                 map.off('sourcedata', onTilesLoaded);
                                                 map.off('render', onRender);
                                                 if (finishedTimeout) clearTimeout(finishedTimeout);
@@ -911,6 +960,23 @@ function ArcgisUploadPanel({
                                 finishedTimeout = setTimeout(() => {
                                     removeLoadingMessage(getLoadingMsgId(service, layer));
                                     showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+                                    
+                                    // Check if all layers for this service have finished loading
+                                    const allServiceLayersFinished = currChecked.every(layerId => {
+                                        const layerMsgId = getLoadingMsgId(service, layers.find(l => l.id === layerId));
+                                        return !loadingStates.current[layerMsgId];
+                                    });
+                                    
+                                    // Remove the "All layers" message if all individual layers are done
+                                    if (allServiceLayersFinished && currChecked.length > 0) {
+                                        const allLayersMessageId = getLoadingMsgId(service, null);
+                                        // Only remove if it's currently loading
+                                        if (loadingStates.current[allLayersMessageId]) {
+                                            removeLoadingMessage(allLayersMessageId);
+                                            showFinishedMessage(allLayersMessageId, getLoadingMsgText(service, null, true));
+                                        }
+                                    }
+                                    
                                     map.off('sourcedata', onTilesLoaded);
                                     map.off('render', onRender);
                                     if (finishedTimeout) clearTimeout(finishedTimeout);
