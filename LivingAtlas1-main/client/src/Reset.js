@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import api from './api';
 
 const Reset = () => {
     const [newPassword, setNewPassword] = useState('');
@@ -27,26 +28,20 @@ const Reset = () => {
         }
 
         try {
-            // Make POST request to reset the password
-            const response = await fetch('https://livingatlasbackend-36wl.onrender.com/reset-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: email,
-                    new_password: newPassword
-                }),
+            // Make POST request to reset the password using the api instance
+            const response = await api.post('/reset-password', {
+                email: email,
+                new_password: newPassword
             });
 
-            const data = await response.json();
-            if (data.success) {
+            if (response.data.success) {
                 setMessage("Password reset successful!");
             } else {
-                setMessage(data.message || "Failed to reset password.");
+                setMessage(response.data.message || "Failed to reset password.");
             }
         } catch (error) {
             setMessage("An error occurred. Please try again.");
+            console.error('Reset password error:', error);
         }
     };
 
