@@ -74,7 +74,7 @@ def tagList():
 @filterbar_router.get("/allCardsByTag")
 async def allCardsByTag(categoryString: str = None, tagString: str = None, sortString: str = None):
 
-    if categoryString is None and tagString is None:
+    if categoryString is None and tagString is None and sortString is None:
         return {"Parameter Error": "Need to pass something to this endpoint to return a card"}
 
     finalQUERY = ("""
