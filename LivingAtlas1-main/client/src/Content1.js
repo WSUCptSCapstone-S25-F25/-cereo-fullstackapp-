@@ -32,7 +32,7 @@ let yellowMarkers = [];
 let curLocationCoordinates = { lat: 0, lng: 0 };
 let searchLocationCoordinates = { lat: 0, lng: 0 };
 
-// ⭐ ADDED helper to convert mapbox bounds → your Home.js bounding format
+// helper to convert mapbox bounds → your Home.js bounding format
 const convertBounds = (b) => ({
   NE: { Lat: b._ne.lat, Lng: b._ne.lng },
   SW: { Lat: b._sw.lat, Lng: b._sw.lng }
@@ -113,7 +113,7 @@ const Content1 = (props) => {
     // INITIAL bounds sync
     let b = map.getBounds();
     setBounds(b);
-    props.setboundCondition(convertBounds(b)); // FIXED
+    props.setboundCondition(convertBounds(b));
 
     // Update center + zoom UI
     map.on('move', () => {
@@ -192,13 +192,23 @@ const Content1 = (props) => {
       curLocationCoordinates = { lat: e.coords.latitude, lng: e.coords.longitude };
     });
 
+    // Clear any existing markers from previous instances
+    allMarkers.forEach(m => m.remove());
+    allMarkers = [];
+    blueMarkers = [];
+    greenMarkers = [];
+    yellowMarkers = [];
+
     // FETCH MARKERS
     async function fetchData() {
       try {
         const response = await api.get('/getMarkers');
         const data = response.data;
 
-        for (let feature of data.data) {
+        // if backend returns { data: [...] }
+        const markersData = Array.isArray(data) ? data : data.data || [];
+
+        for (let feature of markersData) {
           const el = document.createElement('div');
 
           if (feature.category === "River") {
@@ -216,7 +226,9 @@ const Content1 = (props) => {
 
           if (!isNaN(feature.longitude) && !isNaN(feature.latitude)) {
             marker.setLngLat([feature.longitude, feature.latitude]);
-          } else continue;
+          } else {
+            continue;
+          }
 
           marker.setPopup(
             new mapboxgl.Popup({ offset: 25 })
@@ -320,8 +332,11 @@ const Content1 = (props) => {
       });
     });
 
-    return () => map.remove();
-  }, []); // end map initialization
+    return () => {
+      // clean up map instance on unmount / login change
+      map.remove();
+    };
+  }, [props.isLoggedIn]); // re-init map when login state changes
 
   return (
     <div className="AtlasMap">
