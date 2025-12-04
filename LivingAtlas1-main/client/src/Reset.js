@@ -42,6 +42,9 @@ const Reset = () => {
         setMessage('Processing password reset...');
 
         try {
+            // Debug the API URL being used
+            console.log('DEBUG: Using API baseURL:', api.defaults.baseURL);
+            
             // Make POST request to reset the password using the api instance
             const response = await api.post('/reset-password', {
                 email: email,

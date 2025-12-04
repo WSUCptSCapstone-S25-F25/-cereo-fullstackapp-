@@ -60,16 +60,18 @@ origins = [
     "https://65458b6817130a911cac80a9--verdant-smakager-ef450d.netlify.app",
     "https://65459daee8a10b1fed3df76c--resonant-basbousa-1a5433.netlify.app",
     "https://67f74e0aa010dfc87b1e32f0--willowy-twilight-157839.netlify.app",
-    "https://willowy-twilight-157839.netlify.app"
+    "https://willowy-twilight-157839.netlify.app",
+    "*"  # Allow all origins for debugging (remove in production)
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition"]
+    expose_headers=["Content-Disposition"],
+    max_age=3600  # Cache preflight requests for 1 hour
 )
 
 
