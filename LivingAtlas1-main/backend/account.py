@@ -18,11 +18,14 @@ import requests
 import os
 import hashlib
 
-# Email configuration for Gmail
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-SENDER_EMAIL = "cereo.atlas@gmail.com"
-SENDER_PASSWORD = "yqbr duhc ytcv ydjq"
+# Email configuration - Use environment variables for Render deployment
+import os
+
+# Try Render's SMTP first, fallback to Gmail for local development
+SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "cereo.atlas@gmail.com")
+SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "yqbr duhc ytcv ydjq")
 
 # SMTP_SERVER = "smtp.gmail.com"
 # SMTP_PORT = 465
