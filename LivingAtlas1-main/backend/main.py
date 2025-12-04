@@ -35,7 +35,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 #importing functions from other files
 from database import conn, cur
-from endpoint_files import account_router
+from account import account_router
 from endpoint_files.card import card_router
 from endpoint_files import filterbar_router
 from endpoint_files import map_router
@@ -60,7 +60,7 @@ origins = [
     "https://65458b6817130a911cac80a9--verdant-smakager-ef450d.netlify.app",
     "https://65459daee8a10b1fed3df76c--resonant-basbousa-1a5433.netlify.app",
     "https://67f74e0aa010dfc87b1e32f0--willowy-twilight-157839.netlify.app",
-    "https://willowy-twilight-157839.netlify.app",
+    "https://willowy-twilight-157839.netlify.app"
 ]
 
 app.add_middleware(

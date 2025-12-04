@@ -6,20 +6,111 @@ account
 
 """
 
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Form, HTTPException
 from database import conn, cur
 from pydantic import BaseModel
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
+import urllib.parse
+import requests
 
 import os
 import hashlib
 
+# Email configuration for Gmail
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SENDER_EMAIL = "cereo.atlas@gmail.com"
+SENDER_PASSWORD = "yqbr duhc ytcv ydjq"
+
+# SMTP_SERVER = "smtp.gmail.com"
+# SMTP_PORT = 465
+# SENDER_EMAIL = "cereofullstack@gmail.com"
+# SENDER_PASSWORD = "ljun kiiz ngod ypjv"
 
 account_router = APIRouter()
+
+# Model for password reset
+class ResetPasswordRequest(BaseModel):
+    email: str
+    new_password: str
+
+# Model for forgot password request
+class ForgotPasswordRequest(BaseModel):
+    email: str
 
 #Retrieve names and emails of all users for the administration page
 class User(BaseModel):
     name: str
     email: str
+
+# Function to get short URL using Bitly
+def get_short_url(long_url):
+    # Using Bitly's API
+    BITLY_API_URL = "https://api-ssl.bitly.com/v4/shorten"
+    headers = {"Authorization": "Bearer 9b023a4be0d1aa1f667eae09b3b7e959af52acf2", "Content-Type": "application/json"}
+    data = {"long_url": long_url}
+    response = requests.post(BITLY_API_URL, json=data, headers=headers)
+    if response.status_code == 200 or response.status_code == 201:
+        return response.json()["link"]
+    else:
+        print("Error shortening URL:", response.text)
+        return long_url  # Fallback to long URL
+
+# Helper function to send the recovery email
+def send_recovery_email(recipient_email):
+    try:
+        print(f"Preparing to send email to {recipient_email}...")  # Debug logging
+
+        msg = MIMEMultipart()
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = recipient_email
+        msg['Subject'] = "Password Reset Request"
+
+        # Construct the long URL with the recipient's email
+        encoded_email = urllib.parse.quote(recipient_email)
+        long_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={encoded_email}"
+        
+        # Get a short URL from the dynamic URL shortener (e.g., Bitly)
+        short_reset_url = get_short_url(long_url)
+
+        # Email body content with hyperlink
+        body = f"""
+        <html>
+            <body>
+                <p>Hi,<br><br>
+                You requested a password reset. Click the link below to reset your password:<br><br>
+                <a href="{short_reset_url}">Reset Password</a><br><br>
+                If you did not request this, please ignore this email.
+                </p>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(body, 'html'))  # Set content type to 'html' for the email body
+
+        # Send the email using Gmail's SMTP server
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()  # Enable TLS encryption
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+        print(f"Logged into SMTP server as {SENDER_EMAIL}")  # Debug logging
+
+        server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        server.quit()
+
+        print(f"Recovery email sent successfully to {recipient_email}!")
+    except smtplib.SMTPException as smtp_error:
+        print(f"SMTP error occurred: {smtp_error}")  # Catch SMTP-specific errors
+    except Exception as e:
+        print(f"Failed to send email: {e}")  # Catch all other errors
+
+# Helper function to hash the password (same as current setup)
+def hash_password(password: str, salt: bytes) -> str:
+    pepper = bytes("xe5Dx93xefx16x9ax12wy", 'utf-8')
+    return hashlib.sha256(bytes(password, 'utf-8') + salt + pepper).hexdigest()
+
 @account_router.post("/list_database")
 async def list_database():
     try:
@@ -96,9 +187,59 @@ async def delete_user(email: str):
     except Exception as e:
         return {"error": str(e)}
 
+# Forgot password endpoint
+@account_router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    try:
+        # Check if the email exists in the database
+        cur.execute("SELECT userid FROM users WHERE email = %s", (request.email,))
+        user = cur.fetchone()
 
+        if not user:
+            raise HTTPException(status_code=400, detail="Email not found")
 
+        # Send the recovery email
+        send_recovery_email(request.email)
 
+        return {"success": True, "message": "Password recovery email sent."}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send recovery email: {str(e)}")
+
+# Reset password endpoint
+@account_router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest):
+    try:
+        # Extract email and new_password from the request
+        email = request.email
+        new_password = request.new_password
+
+        # Check if the email exists in the database
+        cur.execute("SELECT userid FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid email")
+
+        # Generate a new salt for the new password
+        new_salt = os.urandom(32)
+
+        # Hash the new password with the new salt
+        hashed_password = hash_password(new_password, new_salt)
+
+        # Update the password and salt in the database
+        cur.execute(
+            "UPDATE users SET hashedpassword = %s, salt = %s WHERE email = %s",
+            (hashed_password, new_salt, email)
+        )
+        conn.commit()
+
+        return {"success": True, "message": "Password has been reset successfully"}
+
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 #This takes the users email and password and then returns the account information to show for the profile page
 @account_router.get("/profileAccount")
