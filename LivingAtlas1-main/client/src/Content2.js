@@ -75,10 +75,39 @@ function Content2(props) {
 
     // Edited by Flavio: same code used to load the cards based on filter. Made it into a function in order to call it under searchConditions being reset to ''
     function loadCardsByCriteria() {
+        let params = {};
 
+        if (props.CategoryCondition) params.categoryString = props.CategoryCondition;
+        if (props.filterCondition) params.tagString = props.filterCondition;
+        if (props.sortCondition) params.sortString = props.sortCondition;
+
+        // Show all locally if no filters
+        if (!props.CategoryCondition && !props.filterCondition && !props.searchCondition && !props.sortCondition) {
+            showAll();
+            api.get('/allCards')
+                .then(response => {
+                    const cardData = response.data?.data || [];
+                    console.table(cardData);
+                    setCards(cardData);
+                })
+                .catch(error => console.error(error));
+            return;
+        }
+
+        // Always fetch filtered/sorted cards from the server
+        showAll();
+        api.get('/allCardsByTag', { params })
+            .then(response => {
+                const cardData = response.data?.data || [];
+                console.table(cardData);
+                setCards(cardData);
+            })
+            .catch(error => console.error('Error fetching cards by criteria:', error));
+        /*
         if (!didMountRef.current) {
             return;
         }
+        console.log(props.filterCondition, props.CategoryCondition, props.sortCondition, props.searchCondition);
         if (props.filterCondition === '' && props.searchCondition === '' && props.CategoryCondition === '' && props.sortCondition === '') {
             console.log("running filter 199" + props.filterCondition);
             showAll();
@@ -104,6 +133,9 @@ function Content2(props) {
                 if (props.sortCondition) {
                     params.sortString = props.sortCondition;
                 }
+                if (props.searchCondition) {
+                    params.titleSearch = props.searchCondition
+                }
 
                 api.get('/allCardsByTag', {
                     params: params
@@ -121,6 +153,9 @@ function Content2(props) {
                 let params = {tagString: props.filterCondition};
                 if (props.sortCondition) {
                     params.sortString = props.sortCondition;
+                }
+                if (props.searchCondition) {
+                    params.titleSearch = props.searchCondition
                 }
 
                 api.get('/allCardsByTag', {
@@ -140,6 +175,9 @@ function Content2(props) {
                 if (props.sortCondition) {
                     params.sortString = props.sortCondition;
                 }
+                if (props.searchCondition) {
+                    params.titleSearch = props.searchCondition
+                }
 
                 api.get('/allCardsByTag', {
                     params: params
@@ -150,10 +188,14 @@ function Content2(props) {
                     .catch(error => {
                         console.error('Error fetching cards by tag:', error);
                     });
-            } else if (props.sortCondition != '') {
+            } else if (props.sortCondition !== '') {
                 showAll();
+                let params = {sortString: props.sortCondition};
+                if (props.searchCondition) {
+                    params.titleSearch = props.searchCondition
+                }
                 api.get('/allCardsByTag', {
-                    params: {sortString: props.sortCondition}
+                    params: params
                 })
                     .then(response => {
                         setCards(response.data.data);
@@ -161,8 +203,19 @@ function Content2(props) {
                     .catch(error => {
                         console.error('Error fetching cards by tag:', props.sortCondition);
                     });
+            } else if (props.searchCondition !== '') {
+                api.get('/allCardsByTag', {
+                    params: {titleSearch: props.searchCondition}
+                })
+                    .then(response => {
+                        setCards(response.data.data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching cards by tag:', props.searchCondition);
+                    });
             }
         }
+        */
     }
 
     const [cards, setCards] = useState([]);
@@ -184,7 +237,8 @@ function Content2(props) {
     }, [resolvedUsername]);
 
     useEffect(() => {
-
+        loadCardsByCriteria();
+        /*
         if (!didMountRef.current) {
             return;
         }
@@ -275,11 +329,13 @@ function Content2(props) {
                     });
             }
         }
+        */
     }, [props.filterCondition, props.CategoryCondition, props.sortCondition]);
 
     useEffect(() => {
         if (props.searchCondition != '') {
             console.log("running search" + props.searchCondition);
+
 
             api.get('/searchBar', {
                 params: {
@@ -340,10 +396,12 @@ function Content2(props) {
     // Fetch all cards when boundCondition changes
     const fetchAllCards = async () => {
         try {
+            /*
             const response = await api.get('/allCards');
             console.table(response.data.data);
             const fixedResponse = fixBadLoadMap(response.data.data);
             setCards(fixedResponse);
+            */
         } catch (error) {
             console.error('Error fetching all cards:', error);
         }
@@ -366,7 +424,8 @@ function Content2(props) {
     }
 
     useEffect(() => {
-        fetchAllCards();
+        //fetchAllCards();
+        loadCardsByCriteria();
     }, [props.boundCondition]);
 
     const handleCardClick = (card) => {
