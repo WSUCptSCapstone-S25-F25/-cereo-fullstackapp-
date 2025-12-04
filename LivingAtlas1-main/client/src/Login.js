@@ -81,13 +81,24 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
 
     const handleForgotPasswordSubmit = (e) => {
         e.preventDefault();
+        console.log('DEBUG: Forgot password form submitted');
+        console.log('DEBUG: Email entered:', forgotPasswordEmail);
+        console.log('DEBUG: API base URL:', api.defaults.baseURL);
+        
+        setMessage('Sending password recovery email...');
+        
         api.post('/forgot-password', { email: forgotPasswordEmail })
             .then(response => {
-                setMessage('Password recovery email sent.');
+                console.log('DEBUG: Forgot password API response:', response);
+                console.log('DEBUG: Response data:', response.data);
+                setMessage('Password recovery email sent successfully!');
             })
             .catch(error => {
-                setMessage('Error sending password recovery email.');
-                console.error(error);
+                console.error('DEBUG: Forgot password API error:', error);
+                console.error('DEBUG: Error response:', error.response);
+                console.error('DEBUG: Error data:', error.response?.data);
+                console.error('DEBUG: Error status:', error.response?.status);
+                setMessage(`Error: ${error.response?.data?.message || error.message || 'Failed to send recovery email'}`);
             });
     };
 

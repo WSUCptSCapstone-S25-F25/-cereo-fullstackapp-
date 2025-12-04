@@ -34,6 +34,23 @@ from fastapi import HTTPException
 
 import os 
 
+# Health check endpoint for debugging
+@account_router.get("/health")
+async def health_check():
+    print("DEBUG: Health check endpoint called")
+    return {"status": "OK", "message": "Account router is working"}
+
+# Debug endpoint to test email configuration
+@account_router.get("/email-config")
+async def email_config_check():
+    print("DEBUG: Email config check called")
+    return {
+        "smtp_server": SMTP_SERVER,
+        "smtp_port": SMTP_PORT,
+        "sender_email": SENDER_EMAIL,
+        "password_configured": "Yes" if SENDER_PASSWORD else "No"
+    }
+
 # Pydantic model for the signup notification request
 class SignupNotificationRequest(BaseModel):
     username: str
@@ -125,36 +142,53 @@ async def reset_password(request: ResetPasswordRequest):
 
 def get_short_url(long_url):
     # Using Bitly's API
+    print(f"DEBUG: Starting URL shortening for: {long_url}")
     BITLY_API_URL = "https://api-ssl.bitly.com/v4/shorten"
     headers = {"Authorization": "Bearer 9b023a4be0d1aa1f667eae09b3b7e959af52acf2", "Content-Type": "application/json"}
     data = {"long_url": long_url}
-    response = requests.post(BITLY_API_URL, json=data, headers=headers)
-    if response.status_code == 200 or response.status_code == 201:
-        return response.json()["link"]
-    else:
-        print("Error shortening URL:", response.text)
-        return long_url  # Fallback to long URL
+    
+    print(f"DEBUG: Making request to Bitly API: {BITLY_API_URL}")
+    print(f"DEBUG: Request data: {data}")
+    
+    try:
+        response = requests.post(BITLY_API_URL, json=data, headers=headers)
+        print(f"DEBUG: Bitly API response status: {response.status_code}")
+        print(f"DEBUG: Bitly API response text: {response.text}")
+        
+        if response.status_code == 200 or response.status_code == 201:
+            short_link = response.json()["link"]
+            print(f"DEBUG: Successfully shortened URL to: {short_link}")
+            return short_link
+        else:
+            print(f"DEBUG: Error shortening URL - Status: {response.status_code}, Response: {response.text}")
+            return long_url  # Fallback to long URL
+    except Exception as e:
+        print(f"DEBUG: Exception in get_short_url: {e}")
+        print(f"DEBUG: Using fallback long URL")
+        return long_url
     
 # Helper function to send the recovery email
 def send_recovery_email(recipient_email):
     try:
-        print(f"Preparing to send email to {recipient_email}...")  # Debug logging
+        print(f"DEBUG: Starting send_recovery_email for {recipient_email}")
+        print(f"DEBUG: SMTP config - Server: {SMTP_SERVER}, Port: {SMTP_PORT}")
+        print(f"DEBUG: Sender email: {SENDER_EMAIL}")
         
         msg = MIMEMultipart()
         msg['From'] = SENDER_EMAIL
         msg['To'] = recipient_email
         msg['Subject'] = "Password Reset Request"
-
-        # URL for the password reset link, using the email
-        # reset_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={recipient_email}"
+        print(f"DEBUG: Email headers set")
 
         # Construct the long URL with the recipient's email
         encoded_email = urllib.parse.quote(recipient_email)
         long_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={encoded_email}"
+        print(f"DEBUG: Long URL created: {long_url}")
         
         # Get a short URL from the dynamic URL shortener (e.g., Bitly)
+        print(f"DEBUG: Getting short URL from Bitly...")
         short_reset_url = get_short_url(long_url)
-
+        print(f"DEBUG: Short URL received: {short_reset_url}")
 
         # Email body content with hyperlink
         body = f"""
@@ -169,24 +203,37 @@ def send_recovery_email(recipient_email):
         </html>
         """
 
-        msg.attach(MIMEText(body, 'html'))  # Set content type to 'html' for the email body
+        msg.attach(MIMEText(body, 'html'))
+        print(f"DEBUG: Email body attached")
 
         # Send the email using Gmail's SMTP server
+        print(f"DEBUG: Connecting to SMTP server...")
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()  # Enable TLS encryption
+        print(f"DEBUG: Connected to SMTP server")
+        
+        server.starttls()
+        print(f"DEBUG: TLS encryption enabled")
+        
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
-
-        print(f"Logged into SMTP server as {SENDER_EMAIL}")  # Debug logging
+        print(f"DEBUG: Successfully logged into SMTP server as {SENDER_EMAIL}")
 
         server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        print(f"DEBUG: Email sent via SMTP")
         
         server.quit()
+        print(f"DEBUG: SMTP connection closed")
 
-        print(f"Recovery email sent successfully to {recipient_email}!")
+        print(f"DEBUG: Recovery email sent successfully to {recipient_email}!")
     except smtplib.SMTPException as smtp_error:
-        print(f"SMTP error occurred: {smtp_error}")  # Catch SMTP-specific errors
+        print(f"DEBUG: SMTP error occurred: {smtp_error}")
+        print(f"DEBUG: SMTP error type: {type(smtp_error)}")
+        import traceback
+        print(f"DEBUG: SMTP error traceback: {traceback.format_exc()}")
     except Exception as e:
-        print(f"Failed to send email: {e}")  # Catch all other errors
+        print(f"DEBUG: General error in send_recovery_email: {e}")
+        print(f"DEBUG: Error type: {type(e)}")
+        import traceback
+        print(f"DEBUG: Error traceback: {traceback.format_exc()}")
 
 # Password recovery endpoint
 # Create a model for the request body
@@ -197,22 +244,31 @@ class ForgotPasswordRequest(BaseModel):
 @account_router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
     try:
+        print(f"DEBUG: Forgot password endpoint called")
         email = request.email  # Extract the email from the request body
+        print(f"DEBUG: Received email: {email}")
         
         # Verify if the email exists in the database
+        print(f"DEBUG: Checking if email exists in database...")
         cur.execute(f"SELECT email FROM users WHERE email = %s", (email,))
         user = cur.fetchone()
+        print(f"DEBUG: Database query result: {user}")
 
         if not user:
+            print(f"DEBUG: Email {email} not found in database")
             return {"success": False, "message": "Email not found"}
 
-
+        print(f"DEBUG: Email found in database, sending recovery email...")
         # Send the recovery email
         send_recovery_email(email)
-
+        print(f"DEBUG: Recovery email function completed")
 
         return {"success": True, "message": "Recovery email sent"}
     except Exception as e:
+        print(f"DEBUG: Exception in forgot_password endpoint: {str(e)}")
+        print(f"DEBUG: Exception type: {type(e)}")
+        import traceback
+        print(f"DEBUG: Full traceback: {traceback.format_exc()}")
         return {"success": False, "message": str(e)}
 
 

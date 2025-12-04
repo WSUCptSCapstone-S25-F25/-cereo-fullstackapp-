@@ -47,21 +47,28 @@ class User(BaseModel):
 
 # Function to get short URL using Bitly
 def get_short_url(long_url):
-    # Using Bitly's API
-    BITLY_API_URL = "https://api-ssl.bitly.com/v4/shorten"
-    headers = {"Authorization": "Bearer 9b023a4be0d1aa1f667eae09b3b7e959af52acf2", "Content-Type": "application/json"}
-    data = {"long_url": long_url}
-    response = requests.post(BITLY_API_URL, json=data, headers=headers)
-    if response.status_code == 200 or response.status_code == 201:
-        return response.json()["link"]
-    else:
-        print("Error shortening URL:", response.text)
-        return long_url  # Fallback to long URL
+    try:
+        # Using Bitly's API with timeout
+        BITLY_API_URL = "https://api-ssl.bitly.com/v4/shorten"
+        headers = {"Authorization": "Bearer 9b023a4be0d1aa1f667eae09b3b7e959af52acf2", "Content-Type": "application/json"}
+        data = {"long_url": long_url}
+        response = requests.post(BITLY_API_URL, json=data, headers=headers, timeout=10)
+        if response.status_code == 200 or response.status_code == 201:
+            return response.json()["link"]
+        else:
+            print("Error shortening URL:", response.text)
+            return long_url  # Fallback to long URL
+    except requests.Timeout:
+        print("Bitly API timeout - using long URL")
+        return long_url
+    except Exception as e:
+        print(f"Bitly API error: {e} - using long URL")
+        return long_url
 
 # Helper function to send the recovery email
 def send_recovery_email(recipient_email):
     try:
-        print(f"Preparing to send email to {recipient_email}...")  # Debug logging
+        print(f"DEBUG: Preparing to send email to {recipient_email}...")
 
         msg = MIMEMultipart()
         msg['From'] = SENDER_EMAIL
@@ -72,8 +79,10 @@ def send_recovery_email(recipient_email):
         encoded_email = urllib.parse.quote(recipient_email)
         long_url = f"https://willowy-twilight-157839.netlify.app/reset-password?email={encoded_email}"
         
+        print(f"DEBUG: Getting short URL for {long_url}")
         # Get a short URL from the dynamic URL shortener (e.g., Bitly)
         short_reset_url = get_short_url(long_url)
+        print(f"DEBUG: Short URL obtained: {short_reset_url}")
 
         # Email body content with hyperlink
         body = f"""
@@ -90,21 +99,25 @@ def send_recovery_email(recipient_email):
 
         msg.attach(MIMEText(body, 'html'))  # Set content type to 'html' for the email body
 
-        # Send the email using Gmail's SMTP server
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        print(f"DEBUG: Connecting to SMTP server...")
+        # Send the email using Gmail's SMTP server with timeout
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=15)
         server.starttls()  # Enable TLS encryption
+        print(f"DEBUG: TLS enabled, logging in...")
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
 
-        print(f"Logged into SMTP server as {SENDER_EMAIL}")  # Debug logging
+        print(f"DEBUG: Logged into SMTP server as {SENDER_EMAIL}, sending email...")
 
         server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
         server.quit()
 
-        print(f"Recovery email sent successfully to {recipient_email}!")
+        print(f"DEBUG: Recovery email sent successfully to {recipient_email}!")
     except smtplib.SMTPException as smtp_error:
-        print(f"SMTP error occurred: {smtp_error}")  # Catch SMTP-specific errors
+        print(f"DEBUG: SMTP error occurred: {smtp_error}")
+        raise Exception(f"SMTP error: {smtp_error}")
     except Exception as e:
-        print(f"Failed to send email: {e}")  # Catch all other errors
+        print(f"DEBUG: Failed to send email: {e}")
+        raise Exception(f"Email sending failed: {e}")
 
 # Helper function to hash the password (same as current setup)
 def hash_password(password: str, salt: bytes) -> str:
@@ -191,21 +204,28 @@ async def delete_user(email: str):
 @account_router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
     try:
+        print(f"DEBUG: Processing forgot password request for {request.email}")
+        
         # Check if the email exists in the database
         cur.execute("SELECT userid FROM users WHERE email = %s", (request.email,))
         user = cur.fetchone()
 
         if not user:
+            print(f"DEBUG: Email not found: {request.email}")
             raise HTTPException(status_code=400, detail="Email not found")
 
+        print(f"DEBUG: Email found, sending recovery email to {request.email}")
+        
         # Send the recovery email
         send_recovery_email(request.email)
 
+        print(f"DEBUG: Recovery email process completed for {request.email}")
         return {"success": True, "message": "Password recovery email sent."}
 
     except HTTPException:
         raise
     except Exception as e:
+        print(f"DEBUG: Exception in forgot_password: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to send recovery email: {str(e)}")
 
 # Reset password endpoint
