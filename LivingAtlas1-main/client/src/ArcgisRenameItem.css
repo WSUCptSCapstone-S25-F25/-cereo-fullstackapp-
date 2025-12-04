@@ -17,7 +17,8 @@
 
 .arcgis-rename-text.disabled {
     cursor: default;
-    opacity: 0.6;
+    opacity: 1;
+    color: #222 !important;
 }
 
 .arcgis-rename-text.disabled:hover {
