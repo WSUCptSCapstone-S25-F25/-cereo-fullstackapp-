@@ -245,22 +245,35 @@
     margin-left: 8px;
     border-radius: 4px;
     border: none;
-    background: #90caf9;
-    color: #0d47a1;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
+    font-weight: 500;
 }
 
+/* Add/Load button - Green */
+.upload-panel .add-btn {
+    background: #28a745;
+    color: white;
+}
+
+.upload-panel .add-btn:hover {
+    background: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+/* Remove button - Red */
 .upload-panel .remove-btn {
-    background: #fca5a5;
-    color: #7f1d1d;
+    background: #dc3545;
+    color: white;
 }
 
-.upload-panel .add-btn:hover,
 .upload-panel .remove-btn:hover {
-    background: #e0e0e0;
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
 }
 
 .upload-panel .learn-more-btn {
@@ -271,15 +284,43 @@
     margin-left: 0;
     border-radius: 4px;
     border: none;
-    background: #90caf9;
-    color: #0d47a1;
+    background: #007bff;
+    color: white;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
+    font-weight: 500;
 }
+
 .upload-panel .learn-more-btn:hover {
-    background: #e0e0e0;
+    background: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+/* Remove/Ban service button - Red */
+.upload-panel .ban-service-btn {
+    min-height: 22px;
+    height: 26px;
+    font-size: 12px;
+    padding: 0 8px;
+    margin-left: 0;
+    border-radius: 4px;
+    border: none;
+    background: #dc3545;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.upload-panel .ban-service-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
 }
 
 /* Search bar container */
@@ -325,6 +366,26 @@
     font-size: 18px;
     transition: background 0.2s;
     margin-top: 0;
+}
+
+/* Search button - Blue */
+.upload-panel-searchbar-btn.search {
+    background: #007bff;
+    color: white;
+}
+
+.upload-panel-searchbar-btn.search:hover {
+    background: #0056b3;
+}
+
+/* Clear search button - Red */
+.upload-panel-searchbar-btn.clear {
+    background: #dc3545;
+    color: white;
+}
+
+.upload-panel-searchbar-btn.clear:hover {
+    background: #c82333;
 }
 
 /* Attribution at bottom */

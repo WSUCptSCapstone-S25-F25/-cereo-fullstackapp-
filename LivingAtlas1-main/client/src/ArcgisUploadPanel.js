@@ -953,7 +953,7 @@ function ArcgisUploadPanel({
                     <option value="layer">Layer</option>
                 </select>
                 <button
-                    className="search-btn upload-panel-searchbar-btn"
+                    className="search-btn upload-panel-searchbar-btn search"
                     title="Search"
                     onClick={() => {
                         if (!searchKeyword) {
@@ -977,7 +977,7 @@ function ArcgisUploadPanel({
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
                 <button
-                    className="clear-btn upload-panel-searchbar-btn"
+                    className="clear-btn upload-panel-searchbar-btn clear"
                     title="Clear Search"
                     onClick={() => {
                         setSearchKeyword('');
@@ -1311,7 +1311,7 @@ function ArcgisUploadPanel({
                                                     {/* Show remove button only for database services and admin users */}
                                                     {dataSource === 'database' && isAdmin && (
                                                         <button
-                                                            className="learn-more-btn"
+                                                            className="ban-service-btn"
                                                             title="Remove"
                                                             aria-label="Remove"
                                                             onClick={(e) => {
