@@ -1,14 +1,14 @@
 .form-modal {
     position: fixed;
-    top: 401px;
-    left: 270px;
+    top: 401px !important;
+    left: 18px !important;
     transform: translate(-50%, -50%);
     background-color: #fff;
     padding: 30px;
     border-radius: 5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     z-index: 9999;
-    width: 420px;
+    width: 420px !important;
     max-width: 500px;          /* limit width on large screens */
     max-height: 91.2vh;          /* fit inside the screen vertically */
     overflow-y: auto;          /* allow scrolling inside modal */
