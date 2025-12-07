@@ -18,7 +18,7 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
     setIsModalOpen(false); // Close the modal
   };
 
-  console.log("Username:", username);
+  console.log("Navbar.js: isAdmin:", isAdmin, "isLoggedIn:", isLoggedIn, "username:", username);
 
   return (
     <nav className="navbar">

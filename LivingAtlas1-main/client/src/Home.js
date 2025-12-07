@@ -255,6 +255,7 @@ function Home(props) {
                     mapInstance={getMapboxMap}
                     arcgisLayerAdded={arcgisLayerAdded}
                     setArcgisLayerAdded={setArcgisLayerAdded}
+                    isAdmin={props.isAdmin}
                 />
 
                 {/* Layers Button */}

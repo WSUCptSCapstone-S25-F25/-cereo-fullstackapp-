@@ -60,6 +60,7 @@ function App() {
     localStorage.setItem('isAdmin', JSON.stringify(isAdmin));
   }, [isLoggedIn, email, username, isAdmin]);
 
+  console.log('App.js: isAdmin value:', isAdmin, 'localStorage:', localStorage.getItem('isAdmin'));
   return (
     <Router>
       <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} username={username} />
