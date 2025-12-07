@@ -1,6 +1,6 @@
 # Sprint 8 Report (11/9/2025 - 12/6/2025)
-
- * [Sprint Demo Video](https://www.youtube.com/watch?v=rPPysoUJIcI&feature=youtu.be)
+ * [Sprint Demo Video (Created with a Video Editing Tool)](https://www.youtube.com/watch?v=tuPV26ekDX4)
+ * [Sprint Demo Video (Recorded Live Demo Version)](https://www.youtube.com/watch?v=rPPysoUJIcI&feature=youtu.be)
 
 ## What's New (User Facing)
  * Added the ability to restore or permanently delete removed GIS services.
@@ -97,3 +97,4 @@ Here are changes we plan to implement in the next sprint (No next sprint for our
    * An in-app tutorial should be added to guide new users on how to use the app.
 
    * Accessibility features should be added.
+
