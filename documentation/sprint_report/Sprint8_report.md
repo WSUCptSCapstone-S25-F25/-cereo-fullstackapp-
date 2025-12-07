@@ -40,15 +40,15 @@ Here are links to the issues that we completed in this sprint:
  
  ## Incomplete Issues/User Stories
  Here are links to issues we worked on but did not complete in this sprint:
- * [Improve performance and loading times](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/63) <<We prioritized other tasks and ran out of time.>>
- * [Improve App Security and Data Integrity](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/79) <<We prioritized other tasks and ran out of time.>>
- * [Refine Search Modal](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/85) <<We prioritized other tasks and ran out of time.>>
- * [Fix cards loading with mismatched fields](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/106) <<We spent a lot of development time looking into this bug, and could not find the cause.>>
- * [Move search button to the right sidebar and build new search button](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/113) <<We prioritized other tasks and ran out of time.>>
- * [Update Documentation for Editing local ArcGIS data](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/118) <<We wanted to focus on updates to the application over documentation.>>
- * [Handle more types of ArcGIS Services](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/119) <<This was not as important as other tasks and we ran out of time.>>
- * [Move Favorite Button on Profile page](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/149) <<This was a minor UI update added late in development, and we ran out of time prioritizing other issues.>>
- * [Fix Admin page Again](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/150) <<This was a minor bug fix added late in development, and we ran out of time.>>
+ * [Improve performance and loading times](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/63) << We prioritized other tasks and ran out of time. >>
+ * [Improve App Security and Data Integrity](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/79) << We prioritized other tasks and ran out of time. >>
+ * [Refine Search Modal](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/85) << We prioritized other tasks and ran out of time. >>
+ * [Fix cards loading with mismatched fields](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/106) << We spent a lot of development time looking into this bug, and could not find the cause. >>
+ * [Move search button to the right sidebar and build new search button](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/113) << We prioritized other tasks and ran out of time. >>
+ * [Update Documentation for Editing local ArcGIS data](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/118) << We wanted to focus on updates to the application over documentation. >>
+ * [Handle more types of ArcGIS Services](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/119) << This was not as important as other tasks and we ran out of time. >>
+ * [Move Favorite Button on Profile page](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/149) << This was a minor UI update added late in development, and we ran out of time prioritizing other issues. >>
+ * [Fix Admin page Again](https://github.com/WSUCptSCapstone-S25-F25/-cereo-fullstackapp-/issues/150) << This was a minor bug fix added late in development, and we ran out of time. >>
 
 ## Code Files for Review
 Please review the following code files, which were actively developed during this sprint, for quality:
@@ -95,4 +95,5 @@ Here are changes we plan to implement in the next sprint (No next sprint for our
    * Performance improvement, namely loading of cards, should be prioritized.
    * 2-factor authentication, user data encryption, and other security protections should be added.
    * An in-app tutorial should be added to guide new users on how to use the app.
+
    * Accessibility features should be added.
