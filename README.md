@@ -123,6 +123,7 @@ The Living Atlas supports the following features:
 Performance under high load: Scaling tests are in progress to address potential issues with large datasets. <br>
 UI responsiveness: Some pages may load slowly during heavy operations; optimizations are planned. <br>
 Map rendering bugs: Occasional glitches with rendering layers; debugging in progress.  <br>
+Card rendering bugs: Cards may load into the application missing some information. <br>
 App security and data integrity: There is a lack of protection of user account data.
 
 ## Contributing
