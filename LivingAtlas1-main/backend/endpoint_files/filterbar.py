@@ -20,6 +20,7 @@ def allCards():
             u.Username,
             u.Email,
             c.Title,
+            c.CardID,
             cat.CategoryLabel,
             c.DatePosted,
             c.Description,
@@ -53,7 +54,7 @@ def allCards():
     
     rows = cur.fetchall()
     columns = [
-        "username", "email", "title", "category", "date", "description", "org",
+        "username", "email", "title", "cardID", "category", "date", "description", "org",
         "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
     ]
     data = [dict(zip(columns, row)) for row in rows]
@@ -82,6 +83,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
             u.Username,
             u.Email,
             c.Title,
+            c.CardID,
             cat.CategoryLabel,
             c.DatePosted,
             c.Description,
@@ -154,7 +156,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
     cur.execute(finalQUERY)
     rows = cur.fetchall()
     columns = [
-        "username", "email", "title", "category", "date", "description", "org",
+        "username", "email", "title", "cardID", "category", "date", "description", "org",
         "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
     ]
     data = [dict(zip(columns, row)) for row in rows]
