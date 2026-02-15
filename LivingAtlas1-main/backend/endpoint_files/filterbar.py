@@ -6,7 +6,7 @@ filterbar
     search bar            
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from database import conn, cur
 
 filterbar_router = APIRouter()

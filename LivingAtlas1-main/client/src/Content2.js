@@ -87,8 +87,15 @@ function Content2(props) {
             api.get('/allCards')
                 .then(response => {
                     const cardData = response.data?.data || [];
-                    console.table(cardData);
-                    setCards(cardData);
+                    console.log('[Content2] /allCards response:', cardData.length, 'cards');
+                    
+                    // Deduplicate by cardID
+                    const uniqueCards = cardData.filter((card, index, self) => 
+                        index === self.findIndex(c => c.cardID === card.cardID)
+                    );
+                    console.log('[Content2] After deduplication:', uniqueCards.length, 'unique cards');
+                    console.table(uniqueCards);
+                    setCards(uniqueCards);
                 })
                 .catch(error => console.error(error));
             return;
@@ -99,8 +106,14 @@ function Content2(props) {
         api.get('/allCardsByTag', { params })
             .then(response => {
                 const cardData = response.data?.data || [];
-                console.table(cardData);
-                setCards(cardData);
+                
+                // Deduplicate by cardID
+                const uniqueCards = cardData.filter((card, index, self) => 
+                    index === self.findIndex(c => c.cardID === card.cardID)
+                );
+                console.log('[Content2] /allCardsByTag:', uniqueCards.length, 'unique cards from', cardData.length);
+                console.table(uniqueCards);
+                setCards(uniqueCards);
             })
             .catch(error => console.error('Error fetching cards by criteria:', error));
         /*
@@ -344,8 +357,14 @@ function Content2(props) {
             })
                 .then(response => {
                     if (Array.isArray(response.data.data)) {
-                        setCards(response.data.data);
-                        console.log("Search results:", response.data.data);
+                        const cardData = response.data.data;
+                        
+                        // Deduplicate by cardID
+                        const uniqueCards = cardData.filter((card, index, self) => 
+                            index === self.findIndex(c => c.cardID === card.cardID)
+                        );
+                        console.log('[Content2] Search results:', uniqueCards.length, 'unique cards from', cardData.length);
+                        setCards(uniqueCards);
                     } else {
                         console.warn("No card data returned from searchBar:", response.data);
                         setCards([]);
@@ -445,7 +464,12 @@ function Content2(props) {
     };
 
     // Viewport filter for cards based on current map bounds 
-    const cardsInView = cards.filter((card) => {
+    // First deduplicate the cards array to prevent any duplicates
+    const uniqueCards = cards.filter((card, index, self) => 
+        index === self.findIndex(c => c.cardID === card.cardID)
+    );
+    
+    const cardsInView = uniqueCards.filter((card) => {
         // If we don't have bounds yet, show everything
         if (!props.boundCondition || !props.boundCondition.NE || !props.boundCondition.SW) {
             return true;
@@ -469,6 +493,14 @@ function Content2(props) {
             lng >= props.boundCondition.SW.Lng
         );
     });
+
+    // Log for debugging
+    if (cards.length !== uniqueCards.length) {
+        console.warn('[Content2] Found duplicates in cards state!', cards.length, 'total,', uniqueCards.length, 'unique');
+        const duplicateCardIDs = cards.map(c => c.cardID).filter((id, index, self) => self.indexOf(id) !== index);
+        console.warn('[Content2] Duplicate CardIDs:', [...new Set(duplicateCardIDs)]);
+    }
+    console.log('[Content2] cardsInView:', cardsInView.length, 'cards from', uniqueCards.length, 'unique cards (', cards.length, 'total)');
 
     return (
         <>
@@ -541,25 +573,27 @@ function Content2(props) {
 
                 {(!props.isLoggedIn || bookmarksLoaded) ? (
                     <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
-                        {cardsInView
-                          .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
-                          .map((card, index) => (
-                            <div key={`card-${card.cardID}-${index}`} onClick={() => handleCardClick(card)}>
-                                <Card
-                                    formData={{
-                                        ...card,
-                                        files: card.files || [],
-                                        viewerUsername: resolvedUsername,
-                                        cardID: card.cardID
-                                    }}
-                                    isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                                    username={resolvedUsername}
-                                    fetchBookmarks={fetchBookmarks}
-                                    isLoggedIn={props.isLoggedIn}
-                                    onZoom={() => handleCardClick(card)}   // pass zoom handler down
-                                />
-                            </div>
-                          ))}
+                        {(() => {
+                            const filteredCards = cardsInView.filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID));
+                            console.log('[Content2] Rendering cards:', filteredCards.map(c => ({ cardID: c.cardID, title: c.title })));
+                            return filteredCards.map((card, index) => (
+                                <div key={`card-${card.cardID}-${index}`} onClick={() => handleCardClick(card)}>
+                                    <Card
+                                        formData={{
+                                            ...card,
+                                            files: card.files || [],
+                                            viewerUsername: resolvedUsername,
+                                            cardID: card.cardID
+                                        }}
+                                        isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                        username={resolvedUsername}
+                                        fetchBookmarks={fetchBookmarks}
+                                        isLoggedIn={props.isLoggedIn}
+                                        onZoom={() => handleCardClick(card)}   // pass zoom handler down
+                                    />
+                                </div>
+                            ));
+                        })()}
                     </div>
                 ) : (
                     <p style={{ padding: "20px", textAlign: "center" }}>Loading favorites...</p>
