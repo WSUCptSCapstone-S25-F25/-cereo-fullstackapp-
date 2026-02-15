@@ -149,6 +149,7 @@ async def deleteCard(username: str, title: str):
             except Exception as e:
                 print(f"[WARN] Failed to parse/delete file: {e}")
 
+        cur.execute("DELETE FROM Favorites WHERE CardID = %s", (cardID,))
         cur.execute("DELETE FROM Files WHERE CardID = %s", (cardID,))
         cur.execute("DELETE FROM CardTags WHERE CardID = %s", (cardID,))
         cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
