@@ -543,8 +543,8 @@ function Content2(props) {
                     <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
                         {cardsInView
                           .filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID))
-                          .map((card) => (
-                            <div key={card.cardID} onClick={() => handleCardClick(card)}>
+                          .map((card, index) => (
+                            <div key={`card-${card.cardID}-${index}`} onClick={() => handleCardClick(card)}>
                                 <Card
                                     formData={{
                                         ...card,
