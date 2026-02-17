@@ -193,6 +193,18 @@ function Card(props) {
         return;
     }
 
+    // Validate username exists if it was changed
+    if (formData.original_username && formData.username !== formData.original_username) {
+        try {
+            await api.get(`/profileAccount?username=${encodeURIComponent(formData.username)}`);
+        } catch (error) {
+            if (error.response?.status === 404) {
+                alert(`Card Creator "${formData.username}" does not exist. Please use a valid username.`);
+                return;
+            }
+        }
+    }
+
     const formDataToSend = new FormData();
     Object.keys(formData).forEach((key) => {
         if (
