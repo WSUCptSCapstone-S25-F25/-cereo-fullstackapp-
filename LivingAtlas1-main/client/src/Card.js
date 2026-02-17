@@ -24,12 +24,15 @@ function Card(props) {
     );
 
     useEffect(() => {
-        setFormData({
-            ...props.formData,
-            files: props.formData?.files || [],
-            filesToUpload: []
-        });
-    }, [props.formData]);
+        // Only sync with props when NOT editing to prevent wiping user changes
+        if (!isEditModalOpen) {
+            setFormData({
+                ...props.formData,
+                files: props.formData?.files || [],
+                filesToUpload: []
+            });
+        }
+    }, [props.formData, isEditModalOpen]);
 
     useEffect(() => {
         setIsFavorited(props.isFavorited);
@@ -367,8 +370,9 @@ function Card(props) {
             {/* Edit/Create Modal */}
             <Modal
                 isOpen={isEditModalOpen}
-                onRequestClose={() => setIsEditModalOpen(false)}
+                onRequestClose={() => {}}
                 shouldCloseOnOverlayClick={false}
+                shouldCloseOnEsc={false}
                 className="Modal"
             >
                 <h2>{formData.cardID ? "Edit Card" : "Create Card"}</h2>
