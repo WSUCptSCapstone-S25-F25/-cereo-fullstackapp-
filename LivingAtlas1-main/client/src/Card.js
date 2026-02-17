@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from 'react-modal';
 import api from './api.js';
 import './Card.css';
@@ -9,6 +9,7 @@ import { faBookmark as regularBookmark } from '@fortawesome/free-regular-svg-ico
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const isEditingRef = useRef(false); // Track editing state across renders
     const [formData, setFormData] = useState({
         ...props.formData,
         files: props.formData?.files || [],      // <-- ensure files array always exists
@@ -24,15 +25,15 @@ function Card(props) {
     );
 
     useEffect(() => {
-        // Only sync with props when NOT editing to prevent wiping user changes
-        if (!isEditModalOpen) {
+        // Completely ignore prop updates while editing
+        if (!isEditingRef.current) {
             setFormData({
                 ...props.formData,
                 files: props.formData?.files || [],
                 filesToUpload: []
             });
         }
-    }, [props.formData, isEditModalOpen]);
+    }, [props.formData]);
 
     useEffect(() => {
         setIsFavorited(props.isFavorited);
@@ -77,6 +78,7 @@ function Card(props) {
   
     const handleEdit = (e) => {
         e.stopPropagation();
+        isEditingRef.current = true; // Lock editing state
         setFormData({ 
             ...props.formData,
             original_username: props.formData.username, 
@@ -235,6 +237,7 @@ function Card(props) {
     try {
         await api.post("/uploadForm", formDataToSend);
         alert("Card Information Saved. Please reload the page.");
+        isEditingRef.current = false; // Unlock editing state
         setIsEditModalOpen(false);
 
         if (typeof props.onCardUpdate === "function") {
@@ -632,6 +635,7 @@ function Card(props) {
                         type="button"
                         onClick={(e) => {
                             e.stopPropagation();
+                            isEditingRef.current = false; // Unlock editing state
                             setIsEditModalOpen(false);
                         }}
                     >
