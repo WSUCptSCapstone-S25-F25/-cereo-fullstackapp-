@@ -241,7 +241,25 @@ function Card(props) {
         }
     } catch (error) {
         console.error("Failed to save the card:", error);
-        alert("Failed to save the card. Please try again.");
+        
+        // Extract detailed error message from backend response
+        let errorMessage = "Failed to save the card. Please try again.";
+        if (error.response?.data?.detail) {
+            errorMessage = `Error: ${error.response.data.detail}`;
+        } else if (error.response?.data?.message) {
+            errorMessage = `Error: ${error.response.data.message}`;
+        } else if (error.message) {
+            errorMessage = `Error: ${error.message}`;
+        }
+        
+        console.error("Error details:", {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message
+        });
+        
+        alert(errorMessage);
     } finally {
         setLoading(false);
     }
@@ -350,6 +368,7 @@ function Card(props) {
             <Modal
                 isOpen={isEditModalOpen}
                 onRequestClose={() => setIsEditModalOpen(false)}
+                shouldCloseOnOverlayClick={false}
                 className="Modal"
             >
                 <h2>{formData.cardID ? "Edit Card" : "Create Card"}</h2>
