@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import './Login.css';
 import api from './api.js';
@@ -7,31 +7,6 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
     const [submitemail, setsubmitEmail] = useState('');
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
     const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(false);
-
-    useEffect(() => {
-        // Check for stored login data on mount
-        const storedIsLoggedIn = sessionStorage.getItem('isLoggedIn');
-        const storedEmail = sessionStorage.getItem('email');
-        const storedUsername = sessionStorage.getItem('username');
-        const storedIsAdmin = sessionStorage.getItem('isAdmin');
-
-        if (storedIsLoggedIn) {
-            setIsLoggedIn(true);
-            setEmail(storedEmail);
-            setUsername(storedUsername);
-            setIsAdmin(storedIsAdmin === 'true');
-        }
-
-        // Add beforeunload listener to log out on tab close
-        const handleBeforeUnload = (event) => {
-            sessionStorage.clear(); // Clear sessionStorage on tab close
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, [setIsLoggedIn, setEmail, setUsername, setIsAdmin]);
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -52,11 +27,11 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
                 setEmail(email);
                 setIsAdmin(isAdmin);
 
-                // Store login data in sessionStorage
-                sessionStorage.setItem('isLoggedIn', true);
-                sessionStorage.setItem('email', email);
-                sessionStorage.setItem('username', name);
-                sessionStorage.setItem('isAdmin', isAdmin);
+                // Persist login data in localStorage for immediate consistency.
+                localStorage.setItem('isLoggedIn', JSON.stringify(true));
+                localStorage.setItem('email', email);
+                localStorage.setItem('username', name);
+                localStorage.setItem('isAdmin', JSON.stringify(Boolean(isAdmin)));
             } else {
                 setMessage('Invalid email or password.');
             }
@@ -75,8 +50,11 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
         setMessage('Successfully logged out.');
         setUsername("You're logged out.");
 
-        // Clear login data from sessionStorage
-        sessionStorage.clear();
+        // Clear auth data from localStorage
+        localStorage.setItem('isLoggedIn', JSON.stringify(false));
+        localStorage.setItem('email', '');
+        localStorage.setItem('username', '');
+        localStorage.setItem('isAdmin', JSON.stringify(false));
     };
 
     const handleForgotPasswordSubmit = (e) => {
