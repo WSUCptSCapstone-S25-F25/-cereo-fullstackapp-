@@ -93,8 +93,8 @@ function Content2(props) {
                     const uniqueCards = cardData.filter((card, index, self) => 
                         index === self.findIndex(c => c.cardID === card.cardID)
                     );
-                    console.log('[Content2] After deduplication:', uniqueCards.length, 'unique cards');
-                    console.table(uniqueCards);
+                    // console.log('[Content2] After deduplication:', uniqueCards.length, 'unique cards');
+                    // console.table(uniqueCards);
                     setCards(uniqueCards);
                 })
                 .catch(error => console.error(error));
@@ -111,8 +111,8 @@ function Content2(props) {
                 const uniqueCards = cardData.filter((card, index, self) => 
                     index === self.findIndex(c => c.cardID === card.cardID)
                 );
-                console.log('[Content2] /allCardsByTag:', uniqueCards.length, 'unique cards from', cardData.length);
-                console.table(uniqueCards);
+                // console.log('[Content2] /allCardsByTag:', uniqueCards.length, 'unique cards from', cardData.length);
+                // console.table(uniqueCards);
                 setCards(uniqueCards);
             })
             .catch(error => console.error('Error fetching cards by criteria:', error));
@@ -363,7 +363,7 @@ function Content2(props) {
                         const uniqueCards = cardData.filter((card, index, self) => 
                             index === self.findIndex(c => c.cardID === card.cardID)
                         );
-                        console.log('[Content2] Search results:', uniqueCards.length, 'unique cards from', cardData.length);
+                        // console.log('[Content2] Search results:', uniqueCards.length, 'unique cards from', cardData.length);
                         setCards(uniqueCards);
                     } else {
                         console.warn("No card data returned from searchBar:", response.data);
@@ -496,11 +496,11 @@ function Content2(props) {
 
     // Log for debugging
     if (cards.length !== uniqueCards.length) {
-        console.warn('[Content2] Found duplicates in cards state!', cards.length, 'total,', uniqueCards.length, 'unique');
-        const duplicateCardIDs = cards.map(c => c.cardID).filter((id, index, self) => self.indexOf(id) !== index);
-        console.warn('[Content2] Duplicate CardIDs:', [...new Set(duplicateCardIDs)]);
+        // console.warn('[Content2] Found duplicates in cards state!', cards.length, 'total,', uniqueCards.length, 'unique');
+        // const duplicateCardIDs = cards.map(c => c.cardID).filter((id, index, self) => self.indexOf(id) !== index);
+        // console.warn('[Content2] Duplicate CardIDs:', [...new Set(duplicateCardIDs)]);
     }
-    console.log('[Content2] cardsInView:', cardsInView.length, 'cards from', uniqueCards.length, 'unique cards (', cards.length, 'total)');
+    // console.log('[Content2] cardsInView:', cardsInView.length, 'cards from', uniqueCards.length, 'unique cards (', cards.length, 'total)');
 
     return (
         <>

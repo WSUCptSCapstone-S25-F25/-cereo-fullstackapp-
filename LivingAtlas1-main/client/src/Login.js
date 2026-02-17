@@ -21,6 +21,7 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
             const accountData = response.data['Account Information'];
             if (accountData && accountData.length > 0) {
                 const [name, email, isAdmin] = accountData[0];
+                console.log('[Login][Admin Debug] Account data isAdmin value/type:', isAdmin, typeof isAdmin);
                 setIsLoggedIn(true);
                 setMessage('Successfully logged in!');
                 setUsername(name);
@@ -32,6 +33,7 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
                 localStorage.setItem('email', email);
                 localStorage.setItem('username', name);
                 localStorage.setItem('isAdmin', JSON.stringify(Boolean(isAdmin)));
+                console.log('[Login][Admin Debug] Stored isAdmin in localStorage as:', JSON.stringify(Boolean(isAdmin)));
             } else {
                 setMessage('Invalid email or password.');
             }

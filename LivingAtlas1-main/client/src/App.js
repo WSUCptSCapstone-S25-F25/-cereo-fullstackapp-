@@ -59,6 +59,14 @@ function App() {
     const savedEmail = localStorage.getItem('email') || '';
     const savedUsername = localStorage.getItem('username') || '';
 
+    console.log('[App][Admin Debug] Loaded from localStorage:', {
+      savedIsLoggedIn,
+      savedIsAdmin,
+      savedIsAdminType: typeof savedIsAdmin,
+      savedEmail,
+      savedUsername
+    });
+
     if (savedIsLoggedIn) {
       setIsLoggedIn(savedIsLoggedIn);
       setEmail(savedEmail);
@@ -74,6 +82,13 @@ function App() {
     localStorage.setItem('email', email || '');
     localStorage.setItem('username', username || '');
     localStorage.setItem('isAdmin', JSON.stringify(isAdmin));
+
+    console.log('[App][Admin Debug] State persisted:', {
+      isLoggedIn,
+      isAdmin,
+      isAdminType: typeof isAdmin,
+      showAdminLinkCondition: Boolean(isLoggedIn && isAdmin)
+    });
   }, [isLoggedIn, email, username, isAdmin]);
 
   return (

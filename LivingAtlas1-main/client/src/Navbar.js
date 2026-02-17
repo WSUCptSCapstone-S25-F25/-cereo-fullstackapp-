@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserCircle } from '@fortawesome/free-solid-svg-icons';
@@ -7,6 +7,15 @@ import './Navbar.css';
 function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    console.log('[Navbar][Admin Debug] Render state:', {
+      isLoggedIn,
+      isAdmin,
+      isAdminType: typeof isAdmin,
+      shouldShowAdminLink: Boolean(isLoggedIn && isAdmin)
+    });
+  }, [isLoggedIn, isAdmin]);
 
   const toggleModal = () => {
     console.log("Toggling modal. Current state:", isModalOpen);
