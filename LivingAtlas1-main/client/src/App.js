@@ -13,6 +13,8 @@ import Reset from './Reset';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
+const AUTH_STORAGE_VERSION = '2';
+
 function safeParseBooleanFromStorage(key) {
   const raw = localStorage.getItem(key);
 
@@ -37,8 +39,21 @@ function App() {
   const [username, setUsername] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const resetAuthStorage = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('email');
+    localStorage.removeItem('username');
+    localStorage.removeItem('isAdmin');
+  };
+
   // Load login state from localStorage on component mount
   useEffect(() => {
+    const storedVersion = localStorage.getItem('authStorageVersion');
+    if (storedVersion !== AUTH_STORAGE_VERSION) {
+      resetAuthStorage();
+      localStorage.setItem('authStorageVersion', AUTH_STORAGE_VERSION);
+    }
+
     const savedIsLoggedIn = safeParseBooleanFromStorage('isLoggedIn');
     const savedIsAdmin = safeParseBooleanFromStorage('isAdmin');
     const savedEmail = localStorage.getItem('email') || '';
@@ -54,6 +69,7 @@ function App() {
 
   // Update localStorage when login state changes
   useEffect(() => {
+    localStorage.setItem('authStorageVersion', AUTH_STORAGE_VERSION);
     localStorage.setItem('isLoggedIn', JSON.stringify(isLoggedIn));
     localStorage.setItem('email', email || '');
     localStorage.setItem('username', username || '');
