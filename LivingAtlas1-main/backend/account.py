@@ -329,7 +329,7 @@ def profileAccount(email: str, password: str):
         #Hash all of that so that it matches the password stored in the db
         password = hashlib.sha256(bytes(password, 'utf-8') + rows[0][0] + bytes("xe5Dx93xefx16x9ax12wy", 'utf-8')).hexdigest()
         #Retrieve the information after the user has been authenticated
-        cur.execute(f"SELECT username, email FROM users WHERE email = '{email}' AND hashedpassword = '{password}'")
+        cur.execute(f"SELECT username, email, COALESCE(is_admin, false) FROM users WHERE email = '{email}' AND hashedpassword = '{password}'")
         rows = cur.fetchall()
         return {"Account Information": rows}
 
