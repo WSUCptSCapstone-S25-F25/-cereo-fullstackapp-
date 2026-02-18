@@ -15,6 +15,16 @@ import { useEffect, useState } from 'react';
 
 const AUTH_STORAGE_VERSION = '2';
 
+function normalizeAuthFlag(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return ['true', '1', 't', 'yes', 'y', 'admin'].includes(normalized);
+  }
+  return false;
+}
+
 function safeParseBooleanFromStorage(key) {
   const raw = localStorage.getItem(key);
 
@@ -24,10 +34,15 @@ function safeParseBooleanFromStorage(key) {
   }
 
   try {
-    return JSON.parse(raw);
+    return normalizeAuthFlag(JSON.parse(raw));
   } catch (e) {
-    console.warn(`Failed to parse boolean from localStorage for key "${key}":`, raw, e);
-    return false;
+    const fallback = normalizeAuthFlag(raw);
+    console.warn(`Failed to parse boolean from localStorage for key "${key}". Using normalized fallback:`, {
+      raw,
+      fallback,
+      error: e
+    });
+    return fallback;
   }
 }
 
@@ -59,14 +74,6 @@ function App() {
     const savedEmail = localStorage.getItem('email') || '';
     const savedUsername = localStorage.getItem('username') || '';
 
-    console.log('[App][Admin Debug] Loaded from localStorage:', {
-      savedIsLoggedIn,
-      savedIsAdmin,
-      savedIsAdminType: typeof savedIsAdmin,
-      savedEmail,
-      savedUsername
-    });
-
     if (savedIsLoggedIn) {
       setIsLoggedIn(savedIsLoggedIn);
       setEmail(savedEmail);
@@ -82,13 +89,6 @@ function App() {
     localStorage.setItem('email', email || '');
     localStorage.setItem('username', username || '');
     localStorage.setItem('isAdmin', JSON.stringify(isAdmin));
-
-    console.log('[App][Admin Debug] State persisted:', {
-      isLoggedIn,
-      isAdmin,
-      isAdminType: typeof isAdmin,
-      showAdminLinkCondition: Boolean(isLoggedIn && isAdmin)
-    });
   }, [isLoggedIn, email, username, isAdmin]);
 
   return (
