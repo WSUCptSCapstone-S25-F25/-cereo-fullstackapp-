@@ -371,6 +371,7 @@ async def upload_form(
     name: str = Form(...),
     original_username: Optional[str] = Form(None),
     original_email: Optional[str] = Form(None),
+    original_title: Optional[str] = Form(None),
     category: str = Form(...),
     latitude: str = Form(...),
     longitude: str = Form(...),
@@ -462,15 +463,22 @@ async def upload_form(
         # --------------------------------------------------
         enable_commits = False
         if update:
+            lookup_title = original_title or title
             cur.execute("""
                 SELECT Cards.CardID
                 FROM Users
                 JOIN Cards ON Users.UserID = Cards.UserID
                 WHERE Users.UserID = %s AND Cards.Title = %s
-            """, (userID, title))
+            """, (userID, lookup_title))
             card = cur.fetchone()
             if not card:
-                raise HTTPException(status_code=404, detail="Card not found for update")
+                raise HTTPException(
+                    status_code=404,
+                    detail=(
+                        "Card not found for update. If you changed the Title, "
+                        "the original card could not be located."
+                    )
+                )
 
             nextcardid = card[0]
 
@@ -478,7 +486,10 @@ async def upload_form(
                 cur.execute("SELECT UserID FROM Users WHERE username = %s AND email = %s", (username, email))
                 new_user = cur.fetchone()
                 if not new_user:
-                    raise HTTPException(status_code=404, detail="New username not found")
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Card Creator username does not exist. Please enter a valid existing username."
+                    )
                 userID = new_user[0]
 
             cur.execute("""
@@ -590,6 +601,9 @@ async def upload_form(
 
         return {"message": "Card uploaded successfully", "card_id": nextcardid}
 
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         print(f"[UPLOADFORM ERROR] {e}")

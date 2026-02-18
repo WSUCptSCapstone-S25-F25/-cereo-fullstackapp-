@@ -83,6 +83,7 @@ function Card(props) {
             ...props.formData,
             original_username: props.formData.username, 
             original_email: props.formData.email,
+            original_title: props.formData.title,
         });
         /*
         setFormData(prev => ({ 
@@ -227,6 +228,10 @@ function Card(props) {
         "original_email",
         formData.original_email || formData.email
     );
+    formDataToSend.append(
+        "original_title",
+        formData.original_title || formData.title
+    );
 
     // NEW: If no new thumbnail selected, keep the existing one
     if (formData.thumbnail_link && !thumbnail) {
@@ -262,10 +267,19 @@ function Card(props) {
         
         // Extract detailed error message from backend response
         let errorMessage = "Failed to save the card. Please try again.";
-        if (error.response?.data?.detail) {
-            errorMessage = `Error: ${error.response.data.detail}`;
+        const detail = error.response?.data?.detail;
+        const detailText = typeof detail === "string" ? detail : "";
+
+        if (detailText.includes("Card Creator username does not exist")) {
+            errorMessage = "Card Creator does not exist. Please enter an existing username.";
+        } else if (detailText.includes("Card not found for update")) {
+            errorMessage = "Could not save because the original card was not found. If you changed the Title, close and reopen Edit, then try again.";
+        } else if (detailText) {
+            errorMessage = `Error: ${detailText}`;
         } else if (error.response?.data?.message) {
             errorMessage = `Error: ${error.response.data.message}`;
+        } else if (error.response?.status === 404) {
+            errorMessage = "Unable to save: card or card creator was not found.";
         } else if (error.message) {
             errorMessage = `Error: ${error.message}`;
         }
