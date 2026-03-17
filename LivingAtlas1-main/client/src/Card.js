@@ -59,8 +59,7 @@ function Card(props) {
                 .then((res) => {
                     if (res.data.thumbnail_link) {
                         setFormData((prev) => ({ ...prev, thumbnail_link: res.data.thumbnail_link }));
-                        const previewThumbnail = formData.thumbnail_link || "/CEREO-logo.png";
-                        setPreview(previewThumbnail);
+                        setPreview(res.data.thumbnail_link);
                     }
                 })
                 .catch((err) => {
