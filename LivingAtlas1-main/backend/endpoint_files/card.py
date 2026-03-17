@@ -288,6 +288,25 @@ async def downloadFile(fileID: int):
     #     headers={"Content-Disposition": f"attachment; filename={filename}"}
     # )
 
+@card_router.get("/card/{card_id}")
+def get_card_by_id(card_id: int):
+    """
+    Fetch a single card's thumbnail_link by CardID.
+    Called by the frontend when a card is rendered without a thumbnail.
+    """
+    try:
+        cur.execute("SELECT Thumbnail_Link FROM Cards WHERE CardID = %s", (card_id,))
+        result = cur.fetchone()
+        if result is None:
+            raise HTTPException(status_code=404, detail="Card not found")
+        return {"thumbnail_link": result[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[GET CARD] Error fetching card {card_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @card_router.get("/allCards")
 def allCards():
     """
