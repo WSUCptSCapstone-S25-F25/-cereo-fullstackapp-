@@ -31,15 +31,15 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
 
   return (
     <nav className="navbar">
-      <a href="/">
+      <Link to="/">
         <h1>RWC Living Atlas</h1>
-      </a>
+      </Link>
       <a href="https://cereo.wsu.edu/">
         <img src="/CEREO-logo.png" alt="CEREO Logo" style={{ width: '140px', height: '50px', float: 'left' }}></img>
       </a>
       <ul>
         <li>
-          <a href="/" className={location.pathname === '/' ? 'active' : ''}>Home</a>
+          <Link to="/" className={location.pathname === '/' ? 'active' : ''}>Home</Link>
         </li>
         <li>
           <Link to="/about" className={location.pathname === '/about' ? 'active' : ''}>About</Link>
