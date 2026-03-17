@@ -100,6 +100,8 @@ const Content1 = (props) => {
 
   // MAIN MAP INITIALIZATION
   useEffect(() => {
+    let isActive = true;
+
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
@@ -203,12 +205,16 @@ const Content1 = (props) => {
     async function fetchData() {
       try {
         const response = await api.get('/getMarkers');
+        if (!isActive) return;
+
         const data = response.data;
 
         // if backend returns { data: [...] }
         const markersData = Array.isArray(data) ? data : data.data || [];
 
         for (let feature of markersData) {
+          if (!isActive) return;
+
           const el = document.createElement('div');
 
           if (feature.category === "River") {
@@ -333,10 +339,14 @@ const Content1 = (props) => {
     });
 
     return () => {
-      // clean up map instance on unmount / login change
+      isActive = false;
+
+      // Clean up map instance on unmount.
+      // Keep this lifecycle tied to mount/unmount rather than auth state to avoid
+      // auth-transition races that can leave markers missing until a hard refresh.
       map.remove();
     };
-  }, [props.isLoggedIn]); // re-init map when login state changes
+  }, []);
 
   return (
     <div className="AtlasMap">
