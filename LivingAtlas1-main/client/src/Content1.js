@@ -258,12 +258,20 @@ const Content1 = (props) => {
           marker.addTo(map);
           allMarkers.push(marker);
         }
+
+        // Ensure markers are visible after async mount-time fetch completes.
+        showAll();
       } catch (error) {
         console.error('Error fetching markers:', error);
       }
     }
 
-    fetchData();
+    // Wait for map style/container readiness before mounting marker DOM nodes.
+    if (map.loaded()) {
+      fetchData();
+    } else {
+      map.once('load', fetchData);
+    }
 
     // BOUNDS SYNC — zoomend
     map.on('zoomend', () => {
