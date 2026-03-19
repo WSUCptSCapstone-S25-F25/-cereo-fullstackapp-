@@ -63,32 +63,7 @@ const Content1 = (props) => {
     }
   }, [props.selectedCardCoords]);
 
-  // Handle resizing map when sidebars open or close
-  useEffect(() => {
-    if (!mapContainerRef.current || !atlasMapRef.current) return;
 
-    const leftOffset = (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)
-      ? 420
-      : (props.isLayerPanelOpen ? 350 : 0);
-
-    const rightOffset = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
-
-    // Update outer .AtlasMap container bounds (for correct overall map size)
-    atlasMapRef.current.style.left = `${leftOffset}px`;
-    atlasMapRef.current.style.right = `${rightOffset}px`;
-
-    // Keep inner container positioning consistent
-    mapContainerRef.current.style.left = '0px';
-    mapContainerRef.current.style.right = '0px';
-    mapContainerRef.current.style.width = 'auto';
-  }, [
-    props.isCollapsed,
-    props.cardPanelWidth,
-    props.isUploadPanelOpen,
-    props.isRemovedPanelOpen,
-    props.isLayerPanelOpen,
-    props.isModalOpen
-  ]);
 
   // Resize map when container changes
   useEffect(() => {
@@ -103,7 +78,7 @@ const Content1 = (props) => {
 
     const timeoutId = window.setTimeout(() => {
       if (mapRef.current) mapRef.current.resize();
-    }, 320);
+    }, 220);
 
     return () => {
       window.cancelAnimationFrame(rafId);
