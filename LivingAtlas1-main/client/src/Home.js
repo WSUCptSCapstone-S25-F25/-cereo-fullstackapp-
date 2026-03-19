@@ -7,7 +7,7 @@ import LayerPanel from './LayerPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
-import { faUpload, faEarthAmericas } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faEarthAmericas, faIdCard } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
 import './Sidebars.css';
 import './LayerPanel.css';
@@ -73,8 +73,8 @@ function Home(props) {
         setIsSearchModalOpen(!isSearchModalOpen);
     };
 
-    const toggleCollapse = () => {
-        setIsCollapsed(!isCollapsed);
+    const toggleCardContainer = () => {
+        setIsCollapsed(prev => !prev);
     };
 
     const getMapboxMap = () => window.atlasMapInstance;
@@ -222,6 +222,15 @@ function Home(props) {
                 {/* Left Sidebar Search Button */}
                 <button className="left-sidebar-search-button" onClick={toggleSearchModal}>
                     <FontAwesomeIcon icon={faSearch} />
+                </button>
+
+                {/* Card Container Toggle Button */}
+                <button
+                    className="left-sidebar-cards-button"
+                    onClick={toggleCardContainer}
+                    title={isCollapsed ? "Show Cards" : "Hide Cards"}
+                >
+                    <FontAwesomeIcon icon={faIdCard} />
                 </button>
 
                 {/* GIS Services Button */}
