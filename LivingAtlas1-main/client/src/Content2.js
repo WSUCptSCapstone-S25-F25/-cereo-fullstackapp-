@@ -11,8 +11,9 @@ import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-s
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
+    const { setCardPanelWidth } = props;
     const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
-    const [containerWidth, setContainerWidth] = useState(300); // Default width in px
+    const containerWidth = props.cardPanelWidth ?? 300;
     const containerRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const startX = useRef(0);
@@ -29,9 +30,6 @@ function Content2(props) {
 
     const didMount = useDidMount();
     const didMountRef = useRef(false);
-
-    // Collapse card container
-    const [isCollapsed, setIsCollapsed] = useState(true);
 
     const toggleCollapse = () => {
         props.setIsCollapsed?.(!props.isCollapsed);
@@ -53,7 +51,7 @@ function Content2(props) {
             const dx = startX.current - e.clientX;
             let newWidth = startWidth.current + dx;
             newWidth = Math.max(250, Math.min(newWidth, 900));
-            setContainerWidth(newWidth);
+            setCardPanelWidth?.(newWidth);
         };
         const onMouseUp = () => {
             setIsDragging(false);
@@ -66,7 +64,7 @@ function Content2(props) {
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', onMouseUp);
         };
-    }, [isDragging]);
+    }, [isDragging, setCardPanelWidth]);
 
     const location = useLocation();
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");

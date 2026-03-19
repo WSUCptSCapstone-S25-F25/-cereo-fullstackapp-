@@ -7,7 +7,7 @@ import LayerPanel from './LayerPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
-import { faUpload, faEarthAmericas, faIdCard } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faEarthAmericas, faClone } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
 import './Sidebars.css';
 import './LayerPanel.css';
@@ -32,6 +32,7 @@ function Home(props) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [cardPanelWidth, setCardPanelWidth] = useState(300);
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -230,7 +231,7 @@ function Home(props) {
                     onClick={toggleCardContainer}
                     title={isCollapsed ? "Show Cards" : "Hide Cards"}
                 >
-                    <FontAwesomeIcon icon={faIdCard} />
+                    <FontAwesomeIcon icon={faClone} />
                 </button>
 
                 {/* GIS Services Button */}
@@ -359,6 +360,7 @@ function Home(props) {
                 isLayerPanelOpen={isLayerPanelOpen}
                 isModalOpen={isModalOpen}
                 selectedCardCoords={selectedCardCoords}
+                cardPanelWidth={cardPanelWidth}
             />
 
             <Content2
@@ -376,6 +378,8 @@ function Home(props) {
                 isLoggedIn={props.isLoggedIn}             /* <-- added */
                 isCollapsed={isCollapsed}
                 setIsCollapsed={setIsCollapsed}
+                cardPanelWidth={cardPanelWidth}
+                setCardPanelWidth={setCardPanelWidth}
                 onCardClick={handleCardClick}
             />
 

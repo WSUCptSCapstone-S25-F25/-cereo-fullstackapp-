@@ -66,27 +66,18 @@ const Content1 = (props) => {
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    if (props.isCollapsed && !(props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen || props.isLayerPanelOpen)) {
-      mapContainerRef.current.style.width = '100%';
-      mapContainerRef.current.style.left = '0';
-    } else if (props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)) {
-      mapContainerRef.current.style.width = '71.1%';
-      mapContainerRef.current.style.left = '420px';
-    } else if (!props.isCollapsed && !(props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen || props.isLayerPanelOpen)) {
-      mapContainerRef.current.style.width = '79.4%';
-      mapContainerRef.current.style.left = '0';
-    } else if (!props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)) {
-      mapContainerRef.current.style.width = '50.5%';
-      mapContainerRef.current.style.left = '420px';
-    } else if (props.isCollapsed && props.isLayerPanelOpen) {
-      mapContainerRef.current.style.width = '75.9%';
-      mapContainerRef.current.style.left = '350px';
-    } else if (!props.isCollapsed && props.isLayerPanelOpen) {
-      mapContainerRef.current.style.width = '55.3%';
-      mapContainerRef.current.style.left = '350px';
-    }
+    const leftOffset = (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)
+      ? 420
+      : (props.isLayerPanelOpen ? 350 : 0);
+
+    const rightOffset = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
+
+    mapContainerRef.current.style.left = `${leftOffset}px`;
+    mapContainerRef.current.style.right = `${rightOffset}px`;
+    mapContainerRef.current.style.width = 'auto';
   }, [
     props.isCollapsed,
+    props.cardPanelWidth,
     props.isUploadPanelOpen,
     props.isRemovedPanelOpen,
     props.isLayerPanelOpen,
@@ -96,7 +87,14 @@ const Content1 = (props) => {
   // Resize map when container changes
   useEffect(() => {
     if (mapRef.current) mapRef.current.resize();
-  }, [props.isCollapsed]);
+  }, [
+    props.isCollapsed,
+    props.cardPanelWidth,
+    props.isUploadPanelOpen,
+    props.isRemovedPanelOpen,
+    props.isLayerPanelOpen,
+    props.isModalOpen
+  ]);
 
   // MAIN MAP INITIALIZATION
   useEffect(() => {
