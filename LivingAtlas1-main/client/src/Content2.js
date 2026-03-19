@@ -7,7 +7,7 @@ import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faStar, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
@@ -70,6 +70,28 @@ function Content2(props) {
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
 
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+    const [cardSearchKeyword, setCardSearchKeyword] = useState(props.searchCondition || '');
+    const [cardTypeFilter, setCardTypeFilter] = useState(props.CategoryCondition || '');
+
+    const handleFavoritesToggle = () => {
+        if (!props.isLoggedIn) {
+            alert("请先登录");
+            return;
+        }
+        setShowFavoritesOnly(prev => !prev);
+    };
+
+    const handleCardSearch = () => {
+        props.setSearchCondition?.(cardSearchKeyword.trim().toLowerCase());
+        props.setCategoryConditionCondition?.(cardTypeFilter);
+    };
+
+    const handleCardSearchClear = () => {
+        setCardSearchKeyword('');
+        setCardTypeFilter('');
+        props.setSearchCondition?.('');
+        props.setCategoryConditionCondition?.('');
+    };
 
     // Edited by Flavio: same code used to load the cards based on filter. Made it into a function in order to call it under searchConditions being reset to ''
     function loadCardsByCriteria() {
@@ -244,8 +266,17 @@ function Content2(props) {
             // 🔹 NOT LOGGED IN: treat bookmarks as "loaded" with an empty set
             setBookmarkedCardIDs(new Set());
             setBookmarksLoaded(true);
+            setShowFavoritesOnly(false);
         }
     }, [resolvedUsername]);
+
+    useEffect(() => {
+        setCardSearchKeyword(props.searchCondition || '');
+    }, [props.searchCondition]);
+
+    useEffect(() => {
+        setCardTypeFilter(props.CategoryCondition || '');
+    }, [props.CategoryCondition]);
 
     useEffect(() => {
         loadCardsByCriteria();
@@ -441,9 +472,10 @@ function Content2(props) {
     }
 
     useEffect(() => {
-        //fetchAllCards();
+        // Keep search results stable while dragging map viewport.
+        if (props.searchCondition) return;
         loadCardsByCriteria();
-    }, [props.boundCondition]);
+    }, [props.boundCondition, props.searchCondition]);
 
     const handleCardClick = (card) => {
         console.log('[Content2] Card clicked:', card);
@@ -468,6 +500,11 @@ function Content2(props) {
     );
     
     const cardsInView = uniqueCards.filter((card) => {
+        // During active search, do not clip results by current map viewport.
+        if (props.searchCondition) {
+            return true;
+        }
+
         // If we don't have bounds yet, show everything
         if (!props.boundCondition || !props.boundCondition.NE || !props.boundCondition.SW) {
             return true;
@@ -491,6 +528,15 @@ function Content2(props) {
             lng >= props.boundCondition.SW.Lng
         );
     });
+
+    const cardsInViewByType = cardsInView.filter((card) => {
+        if (!props.CategoryCondition) return true;
+        return card.category === props.CategoryCondition;
+    });
+
+    const displayedCards = cardsInViewByType.filter(
+        card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID)
+    );
 
     // Log for debugging
     if (cards.length !== uniqueCards.length) {
@@ -537,44 +583,83 @@ function Content2(props) {
                     onMouseDown={onMouseDown}
                 />
 
-                {/* Favorites toggle –  only show when LOGGED IN */}
-                {props.isLoggedIn && !props.isCollapsed && (
-                    <div 
-                        className="favorites-toggle-checkbox"
-                        style={{
-                            position: 'absolute',
-                            top: '18px',
-                            left: '18px',
-                            zIndex: 10,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            background: '#f5f5f5',
-                            borderRadius: '8px',
-                            padding: '6px 12px',
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
-                        }}
-                    >
-                        <input
-                            type="checkbox"
-                            checked={showFavoritesOnly}
-                            onChange={() => setShowFavoritesOnly(prev => !prev)}
-                            id="favoritesOnlyCheckbox"
-                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                        />
-                        <label htmlFor="favoritesOnlyCheckbox" style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', margin: 0 }}>
-                            Show Favorites Only
-                        </label>
+                <div className="card-panel-top">
+                    <div className="card-panel-toolbar">
+                        <div className="card-panel-toolbar-title">
+                            <span className="card-panel-title">Cards</span>
+                            <span className="card-panel-subtitle">{cardsInViewByType.length} in view</span>
+                        </div>
+
+                        <div className="card-panel-toolbar-actions">
+                            <button
+                                type="button"
+                                className={`card-toolbar-button ${showFavoritesOnly ? 'active' : ''}`}
+                                onClick={handleFavoritesToggle}
+                                title={props.isLoggedIn ? 'Show only favorited cards' : '请先登录后使用收藏筛选'}
+                            >
+                                <FontAwesomeIcon icon={faStar} />
+                                <span>{showFavoritesOnly ? 'Favorites On' : 'Show Favorites'}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                className="card-toolbar-button card-toolbar-button--placeholder"
+                                title="Reserved for future actions"
+                                disabled
+                            >
+                                More
+                            </button>
+                        </div>
                     </div>
-                )}
+
+                    <div className="card-panel-searchbar">
+                        <input
+                            type="text"
+                            value={cardSearchKeyword}
+                            onChange={(e) => setCardSearchKeyword(e.target.value)}
+                            placeholder="Search cards..."
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleCardSearch();
+                                }
+                            }}
+                        />
+
+                        <select
+                            value={cardTypeFilter}
+                            onChange={(e) => setCardTypeFilter(e.target.value)}
+                            className="card-panel-searchbar-dropdown"
+                        >
+                            <option value="">All</option>
+                            <option value="River">River</option>
+                            <option value="Watershed">Watershed</option>
+                            <option value="Places">Places</option>
+                        </select>
+
+                        <button
+                            className="card-panel-searchbar-btn search"
+                            title="Search"
+                            onClick={handleCardSearch}
+                        >
+                            <FontAwesomeIcon icon={faSearch} />
+                        </button>
+
+                        <button
+                            className="card-panel-searchbar-btn clear"
+                            title="Clear Search"
+                            onClick={handleCardSearchClear}
+                        >
+                            <FontAwesomeIcon icon={faTimes} />
+                        </button>
+                    </div>
+                </div>
 
 
                 {(!props.isLoggedIn || bookmarksLoaded) ? (
                     <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
                         {(() => {
-                            const filteredCards = cardsInView.filter(card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID));
-                            console.log('[Content2] Rendering cards:', filteredCards.map(c => ({ cardID: c.cardID, title: c.title })));
-                            return filteredCards.map((card, index) => (
+                            console.log('[Content2] Rendering cards:', displayedCards.map(c => ({ cardID: c.cardID, title: c.title })));
+                            return displayedCards.map((card, index) => (
                                 <div key={`card-${card.cardID}-${index}`} onClick={() => handleCardClick(card)}>
                                     <Card
                                         formData={{
@@ -594,7 +679,7 @@ function Content2(props) {
                         })()}
                     </div>
                 ) : (
-                    <p style={{ padding: "20px", textAlign: "center" }}>Loading favorites...</p>
+                    <p className="card-container-loading">Loading favorites...</p>
                 )}
             </section>
         </>

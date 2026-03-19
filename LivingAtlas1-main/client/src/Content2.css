@@ -1,33 +1,3 @@
-/* The card-container class uses CSS grid to organize the Card components in a grid format. 
-The grid-template-columns property sets the size and number of columns, while the grid-gap property sets the gap between the columns and rows. */
-
-.card-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  grid-gap: 20px;
-  margin-top: 50px;
-  padding: 20px;
-  justify-items: center;
-  z-index: 1;
-}
-
-/* The CSS code inside @media screen and (max-width: 767px) applies to screens with a maximum width of 767 pixels. 
-It adjusts the layout of the .card-container and .card elements for smaller screens. */
-
-@media screen and (max-width: 767px) {
-  .card-container {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    grid-gap: 10px;
-    z-index: 1;
-  }
-
-  .card {
-    max-width: 200px;
-    padding: 10px;
-    z-index: 10;
-  }
-}
-
 /* Prevent fixed positioning on profile page */
 .profile-content-2 {
   position: static !important;
@@ -40,101 +10,251 @@ It adjusts the layout of the .card-container and .card elements for smaller scre
 
 /* Card container styles */
 #content-2 {
-  position: fixed; /* Fixed to the left of the right sidebar */
-  top: 65px; /* Ensures it does not overlap with the navbar */
-  right: 0px; /* Adjacent to the right sidebar */
-  width: 500px; /* Width of the card container */
-  height: calc(100vh - 65px); /* Height adapts to the viewport minus the navbar height */
-  background-color: #ddd;
-  overflow-y: auto;
+  position: fixed;
+  top: 65px;
+  right: 0;
+  width: 500px;
+  height: calc(100vh - 65px);
+  background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
+  border-left: 1px solid #ccd6e0;
+  box-shadow: -10px 0 24px rgba(16, 33, 54, 0.18);
+  overflow: hidden;
   box-sizing: border-box;
-  transition: transform 0.3s ease; /* Smooth transition effect */
-  z-index: 999; /* Ensures it is above the map but below the right sidebar */
-}
-
-/* Collapsed state of the card container */
-#content-2.collapsed {
-  transform: translateX(100%); /* Hides the card container */
-}
-
-
-.collapse-toggle {
-  position: absolute; /* Absolute positioning */
-  top: 10px; /* 10px from the top */
-  right: 10px; /* 10px from the right inside the sidebar */
-  width: 40px;
-  height: 40px;
-  background-color: rgba(0, 0, 0, 0.2);
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-  border-radius: 4px;
+  transition: transform 0.3s ease;
+  z-index: 999;
   display: flex;
-  align-items: center; /* Vertically centered */
-  justify-content: center; /* Horizontally centered */
-  transition: background-color 0.3s ease;
-  z-index: 1001; /* Ensures the button is above all content */
+  flex-direction: column;
 }
 
+#content-2.collapsed {
+  transform: translateX(100%);
+}
 
-/* Collapse/expand button styles */
 .collapse-toggle {
   position: absolute;
-  top: 50%; /* Vertically centered */
-  left: -40px; /* Adjacent to the left side of the card container */
+  top: 50%;
+  left: -40px;
   transform: translateY(-50%);
   width: 40px;
   height: 40px;
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(33, 46, 63, 0.34);
   color: white;
   font-size: 20px;
   cursor: pointer;
   border-radius: 4px 0 0 4px;
   display: flex;
-  align-items: center; /* Vertically centered */
-  justify-content: center; /* Horizontally centered */
+  align-items: center;
+  justify-content: center;
   transition: background-color 0.3s ease;
-  z-index: 1001; /* Ensures the button is above all content */
+  z-index: 1001;
 }
 
 .collapse-toggle:hover {
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(33, 46, 63, 0.55);
 }
 
 .card-container {
+  flex: 1;
+  overflow-y: auto;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  grid-gap: 20px;
-  padding: 20px;
+  grid-gap: 16px;
+  padding: 16px;
   justify-items: center;
+  align-content: start;
+  z-index: 1;
 }
 
-/* Favorites toggle icon styles */
-.favorites-toggle-checkbox {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  z-index: 10;
-  padding: 6px 14px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
+.card-panel-top {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(248, 250, 252, 0.94);
+  border-bottom: 1px solid #d8e1ea;
+  backdrop-filter: blur(6px);
+}
+
+.card-panel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+}
+
+.card-panel-toolbar-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card-panel-title {
+  color: #223244;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.card-panel-subtitle {
+  color: #5c6f82;
+  font-size: 12px;
+}
+
+.card-panel-toolbar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.card-toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid #bfd0e2;
+  background: #ffffff;
+  color: #27425d;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
-.favorites-toggle-checkbox svg {
-  font-size: 18px;
+.card-toolbar-button:hover {
+  border-color: #8eabc8;
+  background: #f2f7fc;
 }
 
-.favorites-toggle-checkbox:hover {
-  background-color: rgba(255, 255, 255, 0.35); /* Subtle hover effect */
+.card-toolbar-button.active {
+  border-color: #b88b0a;
+  background: #fff4d0;
+  color: #6e5400;
 }
 
-.favorites-toggle-checkbox.active {
-  background-color: darkgray; /* Slightly darker when toggled */
-  border-radius: 0 0 8px 0;
+.card-toolbar-button--placeholder {
+  border-color: #d1dbe6;
+  background: #ecf1f6;
+  color: #6f7f91;
+  cursor: not-allowed;
+}
+
+.card-panel-searchbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-panel-searchbar input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #c6d2df;
+  height: 32px;
+  margin-top: 0;
+  background: #fff;
+}
+
+.card-panel-searchbar-dropdown {
+  padding: 4px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #c6d2df;
+  height: 32px;
+  margin-top: 0;
+  background: #fff;
+}
+
+.card-panel-searchbar-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: background 0.2s;
+  margin-top: 0;
+}
+
+.card-panel-searchbar-btn.search {
+  background: #007bff;
+  color: #fff;
+}
+
+.card-panel-searchbar-btn.search:hover {
+  background: #0056b3;
+}
+
+.card-panel-searchbar-btn.clear {
+  background: #dc3545;
+  color: #fff;
+}
+
+.card-panel-searchbar-btn.clear:hover {
+  background: #c82333;
+}
+
+.card-container-loading {
+  flex: 1;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5c6f82;
+  font-weight: 600;
+}
+
+@media screen and (max-width: 767px) {
+  #content-2 {
+    width: min(100vw - 60px, 420px);
+  }
+
+  .card-panel-top {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .card-panel-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .card-panel-toolbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .card-panel-searchbar {
+    flex-wrap: wrap;
+  }
+
+  .card-panel-searchbar input[type="text"] {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .card-panel-searchbar-dropdown {
+    flex: 1;
+    min-width: 110px;
+  }
+
+  .card-container {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-gap: 12px;
+    padding: 12px;
+  }
+
+  .card {
+    max-width: 200px;
+    padding: 10px;
+    z-index: 10;
+  }
 }
