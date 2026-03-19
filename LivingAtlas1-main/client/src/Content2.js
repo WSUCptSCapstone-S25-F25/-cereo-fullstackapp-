@@ -72,7 +72,7 @@ function Content2(props) {
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
     const [cardSearchKeyword, setCardSearchKeyword] = useState(props.searchCondition || '');
     const [cardTypeFilter, setCardTypeFilter] = useState(props.CategoryCondition || '');
-    const [showOnlyInView, setShowOnlyInView] = useState(true);
+    const [showOnlyInView, setShowOnlyInView] = useState(false);
 
     const handleFavoritesToggle = () => {
         if (!props.isLoggedIn) {

@@ -31,7 +31,7 @@ function Home(props) {
     const [boundCondition, setboundCondition] = useState(coordinates);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
     const [cardPanelWidth, setCardPanelWidth] = useState(300);
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);

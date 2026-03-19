@@ -39,6 +39,7 @@ const convertBounds = (b) => ({
 });
 
 const Content1 = (props) => {
+  const atlasMapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const [lng, setLng] = useState(-120);
@@ -64,7 +65,7 @@ const Content1 = (props) => {
 
   // Handle resizing map when sidebars open or close
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!mapContainerRef.current || !atlasMapRef.current) return;
 
     const leftOffset = (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)
       ? 420
@@ -72,8 +73,13 @@ const Content1 = (props) => {
 
     const rightOffset = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
 
-    mapContainerRef.current.style.left = `${leftOffset}px`;
-    mapContainerRef.current.style.right = `${rightOffset}px`;
+    // Update outer .AtlasMap container bounds (for correct overall map size)
+    atlasMapRef.current.style.left = `${leftOffset}px`;
+    atlasMapRef.current.style.right = `${rightOffset}px`;
+
+    // Keep inner container positioning consistent
+    mapContainerRef.current.style.left = '0px';
+    mapContainerRef.current.style.right = '0px';
     mapContainerRef.current.style.width = 'auto';
   }, [
     props.isCollapsed,
@@ -86,7 +92,23 @@ const Content1 = (props) => {
 
   // Resize map when container changes
   useEffect(() => {
-    if (mapRef.current) mapRef.current.resize();
+    if (!mapRef.current) return;
+
+    // Trigger resize immediately and once more after layout/transition settles.
+    mapRef.current.resize();
+
+    const rafId = window.requestAnimationFrame(() => {
+      if (mapRef.current) mapRef.current.resize();
+    });
+
+    const timeoutId = window.setTimeout(() => {
+      if (mapRef.current) mapRef.current.resize();
+    }, 320);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+    };
   }, [
     props.isCollapsed,
     props.cardPanelWidth,
@@ -95,6 +117,22 @@ const Content1 = (props) => {
     props.isLayerPanelOpen,
     props.isModalOpen
   ]);
+
+  // Keep map size in sync when the card panel finishes its open/close transition.
+  useEffect(() => {
+    const cardPanel = document.getElementById('content-2');
+    if (!cardPanel) return;
+
+    const handleTransitionEnd = (event) => {
+      if (event.propertyName !== 'transform') return;
+      if (mapRef.current) mapRef.current.resize();
+    };
+
+    cardPanel.addEventListener('transitionend', handleTransitionEnd);
+    return () => {
+      cardPanel.removeEventListener('transitionend', handleTransitionEnd);
+    };
+  }, []);
 
   // MAIN MAP INITIALIZATION
   useEffect(() => {
@@ -354,8 +392,21 @@ const Content1 = (props) => {
     };
   }, []);
 
+  // Compute styles for outer map container to respond to card panel state
+  const mapContainerWidth = (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)
+    ? 420
+    : (props.isLayerPanelOpen ? 350 : 0);
+  const mapContainerRight = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
+
   return (
-    <div className="AtlasMap">
+    <div 
+      className="AtlasMap" 
+      ref={atlasMapRef}
+      style={{
+        left: `${mapContainerWidth}px`,
+        right: `${mapContainerRight}px`
+      }}
+    >
       <div className="AtlasMap__container" ref={mapContainerRef}>
         <div className="AtlasMap__info-bottomleft">
           <div>
