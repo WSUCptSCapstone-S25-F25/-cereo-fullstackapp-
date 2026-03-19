@@ -72,13 +72,18 @@ function Content2(props) {
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
     const [cardSearchKeyword, setCardSearchKeyword] = useState(props.searchCondition || '');
     const [cardTypeFilter, setCardTypeFilter] = useState(props.CategoryCondition || '');
+    const [showOnlyInView, setShowOnlyInView] = useState(true);
 
     const handleFavoritesToggle = () => {
         if (!props.isLoggedIn) {
-            alert("请先登录");
+            alert("Please log in first.");
             return;
         }
         setShowFavoritesOnly(prev => !prev);
+    };
+
+    const toggleViewScope = () => {
+        setShowOnlyInView(prev => !prev);
     };
 
     const handleCardSearch = () => {
@@ -499,9 +504,11 @@ function Content2(props) {
         index === self.findIndex(c => c.cardID === card.cardID)
     );
     
+    const isViewportFilteringActive = showOnlyInView && !props.searchCondition;
+
     const cardsInView = uniqueCards.filter((card) => {
-        // During active search, do not clip results by current map viewport.
-        if (props.searchCondition) {
+        // During active search or all-cards mode, do not clip by viewport.
+        if (!isViewportFilteringActive) {
             return true;
         }
 
@@ -533,6 +540,12 @@ function Content2(props) {
         if (!props.CategoryCondition) return true;
         return card.category === props.CategoryCondition;
     });
+
+    const scopeSubtitle = isViewportFilteringActive ? 'in view' : 'all cards';
+    const scopeButtonLabel = isViewportFilteringActive ? 'View: In View' : 'View: All Cards';
+    const scopeButtonTitle = isViewportFilteringActive
+        ? 'Currently showing cards inside the map viewport. Click to show all cards.'
+        : 'Currently showing all cards. Click to show only cards in the map viewport.';
 
     const displayedCards = cardsInViewByType.filter(
         card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID)
@@ -587,7 +600,7 @@ function Content2(props) {
                     <div className="card-panel-toolbar">
                         <div className="card-panel-toolbar-title">
                             <span className="card-panel-title">Cards</span>
-                            <span className="card-panel-subtitle">{cardsInViewByType.length} in view</span>
+                            <span className="card-panel-subtitle">{cardsInViewByType.length} {scopeSubtitle}</span>
                         </div>
 
                         <div className="card-panel-toolbar-actions">
@@ -595,7 +608,7 @@ function Content2(props) {
                                 type="button"
                                 className={`card-toolbar-button ${showFavoritesOnly ? 'active' : ''}`}
                                 onClick={handleFavoritesToggle}
-                                title={props.isLoggedIn ? 'Show only favorited cards' : '请先登录后使用收藏筛选'}
+                                title={props.isLoggedIn ? 'Show only favorited cards' : 'Log in to use favorites filter'}
                             >
                                 <FontAwesomeIcon icon={faStar} />
                                 <span>{showFavoritesOnly ? 'Favorites On' : 'Show Favorites'}</span>
@@ -603,11 +616,11 @@ function Content2(props) {
 
                             <button
                                 type="button"
-                                className="card-toolbar-button card-toolbar-button--placeholder"
-                                title="Reserved for future actions"
-                                disabled
+                                className={`card-toolbar-button card-toolbar-button--scope ${isViewportFilteringActive ? 'in-view' : 'all-cards'}`}
+                                onClick={toggleViewScope}
+                                title={scopeButtonTitle}
                             >
-                                More
+                                {scopeButtonLabel}
                             </button>
                         </div>
                     </div>

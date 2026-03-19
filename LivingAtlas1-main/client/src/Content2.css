@@ -136,11 +136,22 @@
   color: #6e5400;
 }
 
-.card-toolbar-button--placeholder {
-  border-color: #d1dbe6;
-  background: #ecf1f6;
-  color: #6f7f91;
-  cursor: not-allowed;
+.card-toolbar-button--scope {
+  border-color: #a2b9cf;
+  background: #eef4fb;
+  color: #294463;
+}
+
+.card-toolbar-button--scope.in-view {
+  border-color: #4b83b9;
+  background: #e8f2fb;
+  color: #1f4f7e;
+}
+
+.card-toolbar-button--scope.all-cards {
+  border-color: #73a25f;
+  background: #ecf8e8;
+  color: #2a6a1f;
 }
 
 .card-panel-searchbar {
