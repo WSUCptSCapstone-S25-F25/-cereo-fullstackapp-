@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
-import mapboxgl, { Popup } from 'mapbox-gl';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import mapboxgl from 'mapbox-gl';
 import './Content1.css';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -46,6 +46,53 @@ const Content1 = (props) => {
   const [zoom, setZoom] = useState(5.5);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
+  const [selectedMarkerCard, setSelectedMarkerCard] = useState(null);
+  const [isMarkerModalOpen, setIsMarkerModalOpen] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  const descriptionPreviewLength = 320;
+  const markerDescription = selectedMarkerCard?.description || "";
+  const hasLongDescription = markerDescription.length > descriptionPreviewLength;
+  const visibleDescription = hasLongDescription && !isDescriptionExpanded
+    ? `${markerDescription.slice(0, descriptionPreviewLength)}...`
+    : markerDescription;
+
+  const markerFiles = (() => {
+    const files = selectedMarkerCard?.files;
+    if (Array.isArray(files)) return files;
+    if (typeof files === 'string') {
+      try {
+        const parsed = JSON.parse(files);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  })();
+
+  const closeMarkerModal = useCallback(() => {
+    setIsMarkerModalOpen(false);
+    setSelectedMarkerCard(null);
+    setIsDescriptionExpanded(false);
+    marker_clicked = false;
+    props.setSearchCondition("");
+  }, [props.setSearchCondition]);
+
+  useEffect(() => {
+    if (!isMarkerModalOpen) return;
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        closeMarkerModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [isMarkerModalOpen, closeMarkerModal]);
 
   // Move map when user clicks a card
   useEffect(() => {
@@ -242,23 +289,12 @@ const Content1 = (props) => {
           continue;
         }
 
-        marker.setPopup(
-          new mapboxgl.Popup({ offset: 25 })
-            .setHTML(`
-                <br><h3>${feature.title}</h3>
-                <p><b>Category:</b> ${feature.category}</p>
-                <p><b>Tags:</b> ${feature.tags}</p><br>
-            `)
-        );
-
         marker.getElement().addEventListener('click', () => {
           marker_clicked = true;
           props.setSearchCondition(feature.title);
-        });
-
-        marker.getPopup().on('close', () => {
-          marker_clicked = false;
-          props.setSearchCondition("");
+          setSelectedMarkerCard(feature);
+          setIsDescriptionExpanded(false);
+          setIsMarkerModalOpen(true);
         });
 
         marker.addTo(map);
@@ -434,6 +470,95 @@ const Content1 = (props) => {
           </div>
         </div>
       </div>
+
+      {isMarkerModalOpen && selectedMarkerCard && (
+        <div className="card-pin-modal-overlay" onClick={closeMarkerModal}>
+          <div className="card-pin-modal" onClick={(event) => event.stopPropagation()}>
+            <button
+              className="card-pin-modal-close"
+              onClick={closeMarkerModal}
+              aria-label="Close card details"
+            >
+              ×
+            </button>
+
+            <div className="card-pin-modal-header">
+              <img
+                src={
+                  selectedMarkerCard.thumbnail_link && selectedMarkerCard.thumbnail_link.trim() !== ""
+                    ? selectedMarkerCard.thumbnail_link
+                    : "/CEREO-logo.png"
+                }
+                alt="Card Thumbnail"
+                className="card-pin-modal-thumbnail"
+              />
+              <div className="card-pin-modal-title-block">
+                <h2>{selectedMarkerCard.title || "Untitled Card"}</h2>
+                <p className="card-pin-modal-subtitle">{selectedMarkerCard.category || "Uncategorized"}</p>
+              </div>
+            </div>
+
+            <div className="card-pin-modal-body">
+              <p><strong>Author:</strong> {selectedMarkerCard.name || "N/A"}</p>
+              <p><strong>Card Creator:</strong> {selectedMarkerCard.username || "N/A"}</p>
+              <p><strong>Email:</strong> {selectedMarkerCard.email || "N/A"}</p>
+              <p><strong>Funding:</strong> {selectedMarkerCard.funding || "N/A"}</p>
+              <p><strong>Organization:</strong> {selectedMarkerCard.org || "N/A"}</p>
+
+              {selectedMarkerCard.link ? (
+                <p>
+                  <strong>Link:</strong>{' '}
+                  <a href={selectedMarkerCard.link} target="_blank" rel="noopener noreferrer">
+                    {selectedMarkerCard.link}
+                  </a>
+                </p>
+              ) : (
+                <p><strong>Link:</strong> N/A</p>
+              )}
+
+              <div className="card-pin-modal-description-wrap">
+                <p className="card-pin-modal-description">
+                  <strong>Description:</strong>{' '}
+                  {visibleDescription || "No description provided."}
+                </p>
+                {hasLongDescription && (
+                  <button
+                    type="button"
+                    className="card-pin-description-toggle"
+                    onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+                  >
+                    {isDescriptionExpanded ? "Show less" : "Show more"}
+                  </button>
+                )}
+              </div>
+
+              <p><strong>Tags:</strong> {selectedMarkerCard.tags || "N/A"}</p>
+              <p><strong>Latitude:</strong> {selectedMarkerCard.latitude ?? "N/A"}</p>
+              <p><strong>Longitude:</strong> {selectedMarkerCard.longitude ?? "N/A"}</p>
+
+              {markerFiles.length > 0 && (
+                <div className="card-pin-file-list">
+                  <h3>Downloadable Files</h3>
+                  <ul>
+                    {markerFiles.map((file, index) => (
+                      <li key={file.fileid || `${file.filename}-${index}`}>
+                        {file.file_link ? (
+                          <a href={file.file_link} target="_blank" rel="noopener noreferrer">
+                            {file.filename || `Download ${file.fileextension || "file"}`}
+                          </a>
+                        ) : (
+                          <span>{file.filename || `File ${index + 1}`}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="AtlasMap__credit">
         <a>Map icons by </a>
         <a href="https://icons8.com/icon/" title="marker icons">icons8.</a>

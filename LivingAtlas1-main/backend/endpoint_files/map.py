@@ -20,17 +20,59 @@ def getMarkers():
     try:
         with conn.cursor() as local_cur:
             local_cur.execute("""
-                SELECT Cards.CardID, Cards.Title, Cards.Latitude, Cards.Longitude,
-                       Categories.CategoryLabel AS Category,
-                       STRING_AGG(Tags.TagLabel, ', ') AS Tags
-                FROM Cards
-                LEFT JOIN Categories ON Cards.CategoryID = Categories.CategoryID
-                LEFT JOIN CardTags ON Cards.CardID = CardTags.CardID
-                LEFT JOIN Tags ON CardTags.TagID = Tags.TagID
-                GROUP BY Cards.CardID, Cards.Title, Cards.Latitude, Cards.Longitude, Categories.CategoryLabel
+                SELECT
+                    c.CardID,
+                    c.Title,
+                    c.Latitude,
+                    c.Longitude,
+                    cat.CategoryLabel AS Category,
+                    COALESCE(c.Name, '') AS Name,
+                    u.Username,
+                    u.Email,
+                    c.Description,
+                    c.Organization,
+                    c.Funding,
+                    c.Link,
+                    c.Thumbnail_Link,
+                    STRING_AGG(DISTINCT t.TagLabel, ', ') AS Tags,
+                    COALESCE(
+                        json_agg(
+                            DISTINCT jsonb_build_object(
+                                'fileid', f.fileid,
+                                'filename', f.filename,
+                                'file_link', f.file_link,
+                                'fileextension', f.fileextension
+                            )
+                        ) FILTER (WHERE f.fileid IS NOT NULL),
+                        '[]'
+                    ) AS files
+                FROM Cards c
+                LEFT JOIN Categories cat ON c.CategoryID = cat.CategoryID
+                LEFT JOIN CardTags ct ON c.CardID = ct.CardID
+                LEFT JOIN Tags t ON ct.TagID = t.TagID
+                LEFT JOIN Users u ON c.UserID = u.UserID
+                LEFT JOIN Files f ON c.CardID = f.CardID
+                GROUP BY
+                    c.CardID,
+                    c.Title,
+                    c.Latitude,
+                    c.Longitude,
+                    cat.CategoryLabel,
+                    c.Name,
+                    u.Username,
+                    u.Email,
+                    c.Description,
+                    c.Organization,
+                    c.Funding,
+                    c.Link,
+                    c.Thumbnail_Link
+                ORDER BY c.CardID DESC
             """)
             rows = local_cur.fetchall() if local_cur.description else []
-        columns = ["cardID", "title", "latitude", "longitude", "category", "tags"]
+        columns = [
+            "cardID", "title", "latitude", "longitude", "category", "name", "username", "email",
+            "description", "org", "funding", "link", "thumbnail_link", "tags", "files"
+        ]
         data = [dict(zip(columns, row)) for row in rows]
         return {"data": data}
     except Exception as e:
