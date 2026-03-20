@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './Header';
 import Main from './Main';
 import Content2 from './Content2';
@@ -65,6 +65,26 @@ function Home(props) {
 
     const [selectedCardCoords, setSelectedCardCoords] = useState(null);
     const [selectedCardIdFromMap, setSelectedCardIdFromMap] = useState(null);
+
+    const [miniSearchTerm, setMiniSearchTerm] = useState('');
+    const miniSearchInputRef = useRef(null);
+
+    useEffect(() => {
+        if (isSearchModalOpen && miniSearchInputRef.current) {
+            miniSearchInputRef.current.focus();
+        }
+    }, [isSearchModalOpen]);
+
+    useEffect(() => {
+        setMiniSearchTerm(searchCondition || '');
+    }, [searchCondition]);
+
+    const handleMiniSearch = (e) => {
+        e.preventDefault();
+        const term = miniSearchTerm.trim().toLowerCase();
+        setSearchCondition(term);
+        setIsCollapsed(false);
+    };
 
     const handleCardClick = (coords) => {
         console.log('[Home] handleCardClick received coords:', coords);
@@ -313,30 +333,22 @@ function Home(props) {
                 )}
             </div>
 
-            {/* Search Modal */}
-            {isSearchModalOpen && (
-                <div className="search-modal">
-                    <div className="search-modal-content">
-                        <button className="close-modal" onClick={toggleSearchModal}>
-                            &times;
-                        </button>
-                        <Header
-                            isLoggedIn={props.isLoggedIn}
-                            filterCondition={filterCondition}
-                            setFilterCondition={setFilterCondition}
-                            searchCondition={searchCondition}
-                            setSearchCondition={setSearchCondition}
-                            sortCondition={sortCondition}
-                            setSortCondition={setSortCondition}
-                            CategoryCondition={CategoryCondition}
-                            setCategoryConditionCondition={setCategoryConditionCondition}
-                            email={props.email}
-                            username={props.username}
-                            isAdmin={props.isAdmin}
-                        />
-                    </div>
-                </div>
-            )}
+            {/* Mini Search Modal */}
+            <div className={`search-mini-modal${isSearchModalOpen ? ' search-mini-modal--open' : ''}`}>
+                <form className="search-mini-form" onSubmit={handleMiniSearch}>
+                    <input
+                        ref={miniSearchInputRef}
+                        type="text"
+                        className="search-mini-input"
+                        placeholder="Search cards..."
+                        value={miniSearchTerm}
+                        onChange={e => setMiniSearchTerm(e.target.value)}
+                    />
+                    <button type="submit" className="search-mini-button">
+                        <FontAwesomeIcon icon={faSearch} />
+                    </button>
+                </form>
+            </div>
 
             {/* Main Map + Right Sidebar */}
             <Main

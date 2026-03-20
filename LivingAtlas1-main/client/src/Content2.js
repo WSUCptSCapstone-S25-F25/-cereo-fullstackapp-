@@ -19,6 +19,7 @@ function Content2(props) {
     const startX = useRef(0);
     const startWidth = useRef(500);
     const cardContainerRef = useRef(null);
+    const lastAutoFocusedSearchRef = useRef('');
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
@@ -497,14 +498,17 @@ function Content2(props) {
 
     const handleCardClick = (card) => {
         console.log('[Content2] Card clicked:', card);
-        if (props.onCardClick && card.latitude && card.longitude) {
+        const latitude = Number(card.latitude);
+        const longitude = Number(card.longitude);
+
+        if (props.onCardClick && Number.isFinite(latitude) && Number.isFinite(longitude)) {
             console.log('[Content2] Calling onCardClick with:', {
-                latitude: Number(card.latitude),
-                longitude: Number(card.longitude)
+                latitude,
+                longitude
             });
             props.onCardClick({
-                latitude: Number(card.latitude),
-                longitude: Number(card.longitude)
+                latitude,
+                longitude
             });
         } else {
             console.warn('[Content2] Card missing lat/lng or onCardClick not provided:', card);
@@ -583,6 +587,33 @@ function Content2(props) {
             cardContainerRef.current.scrollTop = 0;
         }
     }, [props.isCollapsed, selectedCardIdFromMap]);
+
+    useEffect(() => {
+        if (cardContainerRef.current) {
+            cardContainerRef.current.scrollTop = 0;
+        }
+    }, [props.searchCondition]);
+
+    useEffect(() => {
+        if (!props.searchCondition) {
+            lastAutoFocusedSearchRef.current = '';
+            return;
+        }
+
+        if (displayedCards.length === 0) {
+            return;
+        }
+
+        const firstSearchResult = displayedCards[0];
+        const autoFocusKey = `${props.searchCondition}:${firstSearchResult.cardID}`;
+
+        if (lastAutoFocusedSearchRef.current === autoFocusKey) {
+            return;
+        }
+
+        lastAutoFocusedSearchRef.current = autoFocusKey;
+        handleCardClick(firstSearchResult);
+    }, [displayedCards, props.searchCondition]);
 
     // Log for debugging
     if (cards.length !== uniqueCards.length) {

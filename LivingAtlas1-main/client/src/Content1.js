@@ -79,6 +79,21 @@ const Content1 = (props) => {
     const root = document.createElement('div');
     root.className = 'card-pin-popup-panel';
 
+    let imageOverlay = null;
+    let removeOverlayKeyHandler = null;
+
+    const cleanupImageOverlay = () => {
+      if (removeOverlayKeyHandler) {
+        document.removeEventListener('keydown', removeOverlayKeyHandler);
+        removeOverlayKeyHandler = null;
+      }
+
+      if (imageOverlay) {
+        imageOverlay.remove();
+        imageOverlay = null;
+      }
+    };
+
     const header = document.createElement('div');
     header.className = 'card-pin-popup-header';
 
@@ -88,6 +103,57 @@ const Content1 = (props) => {
     thumbnail.src = feature.thumbnail_link && String(feature.thumbnail_link).trim() !== ''
       ? feature.thumbnail_link
       : '/CEREO-logo.png';
+
+    const thumbnailButton = document.createElement('button');
+    thumbnailButton.type = 'button';
+    thumbnailButton.className = 'card-pin-popup-thumbnail-button';
+    thumbnailButton.setAttribute('aria-label', 'Open larger image preview');
+    thumbnailButton.appendChild(thumbnail);
+
+    const openLargeImagePreview = () => {
+      cleanupImageOverlay();
+
+      imageOverlay = document.createElement('div');
+      imageOverlay.className = 'card-pin-popup-image-overlay';
+
+      const imageDialog = document.createElement('div');
+      imageDialog.className = 'card-pin-popup-image-dialog';
+
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'card-pin-popup-image-close';
+      closeButton.setAttribute('aria-label', 'Close image preview');
+      closeButton.textContent = '×';
+
+      const largeImage = document.createElement('img');
+      largeImage.className = 'card-pin-popup-image-large';
+      largeImage.src = thumbnail.src;
+      largeImage.alt = thumbnail.alt;
+
+      closeButton.addEventListener('click', cleanupImageOverlay);
+      imageOverlay.addEventListener('click', (event) => {
+        if (event.target === imageOverlay) {
+          cleanupImageOverlay();
+        }
+      });
+      imageDialog.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+
+      removeOverlayKeyHandler = (event) => {
+        if (event.key === 'Escape') {
+          cleanupImageOverlay();
+        }
+      };
+      document.addEventListener('keydown', removeOverlayKeyHandler);
+
+      imageDialog.appendChild(closeButton);
+      imageDialog.appendChild(largeImage);
+      imageOverlay.appendChild(imageDialog);
+      document.body.appendChild(imageOverlay);
+    };
+
+    thumbnailButton.addEventListener('click', openLargeImagePreview);
 
     const titleBlock = document.createElement('div');
     titleBlock.className = 'card-pin-popup-title-block';
@@ -102,7 +168,7 @@ const Content1 = (props) => {
     titleBlock.appendChild(title);
     titleBlock.appendChild(subtitle);
 
-    header.appendChild(thumbnail);
+    header.appendChild(thumbnailButton);
     header.appendChild(titleBlock);
 
     const body = document.createElement('div');
@@ -222,11 +288,14 @@ const Content1 = (props) => {
 
     root.appendChild(header);
     root.appendChild(body);
+    root.cleanupImageOverlay = cleanupImageOverlay;
     return root;
   }, [parseMarkerFiles]);
 
   const openMarkerPopup = useCallback((feature, markerInstance, mapInstance) => {
     closeMarkerPopup();
+
+    const popupContent = buildMarkerPopupContent(feature);
 
     const popup = new mapboxgl.Popup({
       closeButton: true,
@@ -236,10 +305,11 @@ const Content1 = (props) => {
       className: 'card-pin-rich-popup'
     })
       .setLngLat(markerInstance.getLngLat())
-      .setDOMContent(buildMarkerPopupContent(feature))
+      .setDOMContent(popupContent)
       .addTo(mapInstance);
 
     popup.on('close', () => {
+      popupContent.cleanupImageOverlay?.();
       if (markerPopupRef.current === popup) {
         markerPopupRef.current = null;
       }
