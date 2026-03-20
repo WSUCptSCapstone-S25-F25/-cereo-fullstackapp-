@@ -19,6 +19,7 @@ function Content2(props) {
     const startX = useRef(0);
     const startWidth = useRef(500);
     const cardContainerRef = useRef(null);
+    const lastHandledSidebarSearchRequestRef = useRef(0);
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
@@ -415,8 +416,22 @@ function Content2(props) {
                         setCards(uniqueCards);
                         notifyCardsLoaded(uniqueCards.length);
 
-                        if (props.searchTriggerSource === 'sidebar-mini' && uniqueCards.length > 0) {
-                            handleCardClick(uniqueCards[0]);
+                        const isNewSidebarSearchRequest =
+                            props.searchTriggerSource === 'sidebar-mini' &&
+                            props.sidebarSearchRequestId > lastHandledSidebarSearchRequestRef.current;
+
+                        if (isNewSidebarSearchRequest) {
+                            const firstCardWithCoords = uniqueCards.find(card => {
+                                const latitude = Number(card.latitude);
+                                const longitude = Number(card.longitude);
+                                return Number.isFinite(latitude) && Number.isFinite(longitude);
+                            });
+
+                            if (firstCardWithCoords) {
+                                handleCardClick(firstCardWithCoords);
+                            }
+
+                            lastHandledSidebarSearchRequestRef.current = props.sidebarSearchRequestId;
                         }
                     } else {
                         console.warn("No card data returned from searchBar:", response.data);
@@ -435,7 +450,7 @@ function Content2(props) {
             loadCardsByCriteria();
             props.setSearchTriggerSource?.('');
         }
-    }, [props.searchCondition]);
+    }, [props.searchCondition, props.sidebarSearchRequestId]);
 
     const fetchBookmarks = async () => {
         console.log("Fetching bookmarks for:", resolvedUsername);

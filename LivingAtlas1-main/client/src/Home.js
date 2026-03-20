@@ -79,6 +79,7 @@ function Home(props) {
     const [selectedCardCoords, setSelectedCardCoords] = useState(null);
     const [selectedCardIdFromMap, setSelectedCardIdFromMap] = useState(null);
     const [searchTriggerSource, setSearchTriggerSource] = useState('');
+    const [sidebarSearchRequestId, setSidebarSearchRequestId] = useState(0);
 
     const [miniSearchTerm, setMiniSearchTerm] = useState('');
     const miniSearchInputRef = useRef(null);
@@ -97,6 +98,7 @@ function Home(props) {
         e.preventDefault();
         const term = miniSearchTerm.trim().toLowerCase();
         setSearchTriggerSource('sidebar-mini');
+        setSidebarSearchRequestId(prev => prev + 1);
         setSearchCondition(term);
         setIsCollapsed(false);
     };
@@ -399,6 +401,7 @@ function Home(props) {
                 setSearchCondition={setSearchCondition}
                 searchTriggerSource={searchTriggerSource}
                 setSearchTriggerSource={setSearchTriggerSource}
+                sidebarSearchRequestId={sidebarSearchRequestId}
                 sortCondition={sortCondition}
                 setSortCondition={setSortCondition}
                 boundCondition={boundCondition}
