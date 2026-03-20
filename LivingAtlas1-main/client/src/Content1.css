@@ -250,51 +250,47 @@
   width: 60%;
 }
 
-.card-pin-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 2300;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
+.mapboxgl-popup.card-pin-rich-popup {
+  z-index: 2200;
 }
 
-.card-pin-modal {
-  position: relative;
-  width: min(760px, 96vw);
-  max-height: 88vh;
-  overflow-y: auto;
-  background: #ffffff;
+.mapboxgl-popup.card-pin-rich-popup .mapboxgl-popup-content {
+  min-width: 420px !important;
+  max-width: min(560px, 88vw) !important;
+  max-height: 78vh;
+  padding: 0 !important;
   border-radius: 12px;
+  border-bottom-left-radius: 0;
+  overflow: hidden;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
-  padding: 18px 18px 16px;
 }
 
-.card-pin-modal-close {
-  position: absolute;
+.mapboxgl-popup.card-pin-rich-popup .mapboxgl-popup-close-button {
   top: 8px;
-  right: 12px;
-  border: none;
-  background: transparent;
+  right: 10px;
   color: #d32f2f;
-  font-size: 28px;
+  font-size: 26px;
   line-height: 1;
-  cursor: pointer;
+  z-index: 2;
 }
 
-.card-pin-modal-header {
+.card-pin-popup-panel {
+  background: #ffffff;
+  padding: 16px 16px 14px;
+  border-bottom-left-radius: 0;
+}
+
+.card-pin-popup-header {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   align-items: flex-start;
-  margin-right: 24px;
-  margin-bottom: 12px;
+  margin-right: 26px;
+  margin-bottom: 10px;
 }
 
-.card-pin-modal-thumbnail {
-  width: 132px;
-  height: 94px;
+.card-pin-popup-thumbnail {
+  width: 176px;
+  height: 126px;
   border-radius: 8px;
   object-fit: cover;
   border: 1px solid #d9d9d9;
@@ -302,76 +298,91 @@
   flex: 0 0 auto;
 }
 
-.card-pin-modal-title-block h2 {
+.card-pin-popup-title-block h3 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.08rem;
   color: #1f2937;
 }
 
-.card-pin-modal-subtitle {
+.card-pin-popup-subtitle {
   margin: 4px 0 0;
   color: #475569;
   font-weight: 600;
 }
 
-.card-pin-modal-body p {
-  margin: 6px 0;
-  color: #1f2937;
+.card-pin-popup-body {
+  max-height: 54vh;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
-.card-pin-modal-description-wrap {
+.card-pin-popup-body p {
+  margin: 5px 0;
+  color: #1f2937;
+  font-size: 0.91rem;
+}
+
+.card-pin-popup-description-wrap {
   margin-top: 8px;
 }
 
-.card-pin-modal-description {
+.card-pin-popup-description {
   font-size: 0.88rem;
   line-height: 1.45;
   color: #334155;
   white-space: pre-wrap;
   word-break: break-word;
+  margin-bottom: 0;
 }
 
-.card-pin-description-toggle {
+.card-pin-popup-description-toggle-inline {
   border: none;
   background: transparent;
   color: #1565c0;
   cursor: pointer;
   font-weight: 600;
-  padding: 2px 0;
-  margin-top: 2px;
+  padding: 0;
+  margin: 0 0 0 6px;
+  font-size: 0.84rem;
+  vertical-align: baseline;
 }
 
-.card-pin-file-list {
+.card-pin-popup-file-list {
   margin-top: 10px;
 }
 
-.card-pin-file-list h3 {
+.card-pin-popup-file-list h4 {
   margin: 0 0 6px;
   font-size: 0.95rem;
   color: #1f2937;
 }
 
-.card-pin-file-list ul {
+.card-pin-popup-file-list ul {
   margin: 0;
   padding-left: 18px;
 }
 
-.card-pin-file-list li {
+.card-pin-popup-file-list li {
   margin-bottom: 4px;
   word-break: break-word;
 }
 
 @media (max-width: 640px) {
-  .card-pin-modal {
-    padding: 14px 12px 12px;
+  .mapboxgl-popup.card-pin-rich-popup .mapboxgl-popup-content {
+    min-width: 300px !important;
+    max-width: 92vw !important;
   }
 
-  .card-pin-modal-header {
+  .card-pin-popup-panel {
+    padding: 12px;
+  }
+
+  .card-pin-popup-header {
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
 
-  .card-pin-modal-thumbnail {
+  .card-pin-popup-thumbnail {
     width: 100%;
     height: 170px;
   }

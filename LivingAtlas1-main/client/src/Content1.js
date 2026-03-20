@@ -41,58 +41,216 @@ const Content1 = (props) => {
   const atlasMapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const markerPopupRef = useRef(null);
+  const { setSearchCondition, onMarkerCardSelect } = props;
   const [lng, setLng] = useState(-120);
   const [lat, setLat] = useState(46);
   const [zoom, setZoom] = useState(5.5);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
-  const [selectedMarkerCard, setSelectedMarkerCard] = useState(null);
-  const [isMarkerModalOpen, setIsMarkerModalOpen] = useState(false);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
   const descriptionPreviewLength = 320;
-  const markerDescription = selectedMarkerCard?.description || "";
-  const hasLongDescription = markerDescription.length > descriptionPreviewLength;
-  const visibleDescription = hasLongDescription && !isDescriptionExpanded
-    ? `${markerDescription.slice(0, descriptionPreviewLength)}...`
-    : markerDescription;
 
-  const markerFiles = (() => {
-    const files = selectedMarkerCard?.files;
-    if (Array.isArray(files)) return files;
-    if (typeof files === 'string') {
+  const closeMarkerPopup = useCallback(() => {
+    if (markerPopupRef.current) {
+      markerPopupRef.current.remove();
+      markerPopupRef.current = null;
+    }
+    marker_clicked = false;
+    setSearchCondition("");
+    onMarkerCardSelect?.(null);
+  }, [setSearchCondition, onMarkerCardSelect]);
+
+  const parseMarkerFiles = useCallback((filesValue) => {
+    if (Array.isArray(filesValue)) {
+      return filesValue;
+    }
+    if (typeof filesValue === 'string') {
       try {
-        const parsed = JSON.parse(files);
+        const parsed = JSON.parse(filesValue);
         return Array.isArray(parsed) ? parsed : [];
       } catch {
         return [];
       }
     }
     return [];
-  })();
+  }, []);
 
-  const closeMarkerModal = useCallback(() => {
-    setIsMarkerModalOpen(false);
-    setSelectedMarkerCard(null);
-    setIsDescriptionExpanded(false);
-    marker_clicked = false;
-    props.setSearchCondition("");
-  }, [props.setSearchCondition]);
+  const buildMarkerPopupContent = useCallback((feature) => {
+    const root = document.createElement('div');
+    root.className = 'card-pin-popup-panel';
 
-  useEffect(() => {
-    if (!isMarkerModalOpen) return;
+    const header = document.createElement('div');
+    header.className = 'card-pin-popup-header';
 
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        closeMarkerModal();
+    const thumbnail = document.createElement('img');
+    thumbnail.className = 'card-pin-popup-thumbnail';
+    thumbnail.alt = 'Card Thumbnail';
+    thumbnail.src = feature.thumbnail_link && String(feature.thumbnail_link).trim() !== ''
+      ? feature.thumbnail_link
+      : '/CEREO-logo.png';
+
+    const titleBlock = document.createElement('div');
+    titleBlock.className = 'card-pin-popup-title-block';
+
+    const title = document.createElement('h3');
+    title.textContent = feature.title || 'Untitled Card';
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'card-pin-popup-subtitle';
+    subtitle.textContent = feature.category || 'Uncategorized';
+
+    titleBlock.appendChild(title);
+    titleBlock.appendChild(subtitle);
+
+    header.appendChild(thumbnail);
+    header.appendChild(titleBlock);
+
+    const body = document.createElement('div');
+    body.className = 'card-pin-popup-body';
+
+    const appendInfoLine = (label, value) => {
+      const p = document.createElement('p');
+      const strong = document.createElement('strong');
+      strong.textContent = `${label}: `;
+      p.appendChild(strong);
+      p.appendChild(document.createTextNode(value || 'N/A'));
+      body.appendChild(p);
+    };
+
+    appendInfoLine('Author', feature.name);
+    appendInfoLine('Card Creator', feature.username);
+    appendInfoLine('Email', feature.email);
+    appendInfoLine('Funding', feature.funding);
+    appendInfoLine('Organization', feature.org);
+
+    const linkWrap = document.createElement('p');
+    const linkLabel = document.createElement('strong');
+    linkLabel.textContent = 'Link: ';
+    linkWrap.appendChild(linkLabel);
+    if (feature.link) {
+      const link = document.createElement('a');
+      link.href = feature.link;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = feature.link;
+      linkWrap.appendChild(link);
+    } else {
+      linkWrap.appendChild(document.createTextNode('N/A'));
+    }
+    body.appendChild(linkWrap);
+
+    const descriptionWrap = document.createElement('div');
+    descriptionWrap.className = 'card-pin-popup-description-wrap';
+
+    const description = String(feature.description || '');
+    const hasLongDescription = description.length > descriptionPreviewLength;
+    let expanded = false;
+    let toggleButton = null;
+
+    const descriptionText = document.createElement('p');
+    descriptionText.className = 'card-pin-popup-description';
+
+    const descriptionLabel = document.createElement('strong');
+    descriptionLabel.textContent = 'Description: ';
+    descriptionText.appendChild(descriptionLabel);
+
+    const descriptionValueNode = document.createTextNode('');
+    descriptionText.appendChild(descriptionValueNode);
+
+    const updateDescription = () => {
+      if (!description) {
+        descriptionValueNode.textContent = 'No description provided.';
+      } else if (!hasLongDescription || expanded) {
+        descriptionValueNode.textContent = description;
+      } else {
+        descriptionValueNode.textContent = `${description.slice(0, descriptionPreviewLength)}...`;
+      }
+
+      if (toggleButton) {
+        toggleButton.textContent = expanded ? 'Show less' : 'Show more';
       }
     };
 
-    window.addEventListener('keydown', handleEscape);
-    return () => {
-      window.removeEventListener('keydown', handleEscape);
-    };
-  }, [isMarkerModalOpen, closeMarkerModal]);
+    if (hasLongDescription) {
+      descriptionText.appendChild(document.createTextNode(' '));
+      toggleButton = document.createElement('button');
+      toggleButton.type = 'button';
+      toggleButton.className = 'card-pin-popup-description-toggle-inline';
+      toggleButton.addEventListener('click', () => {
+        expanded = !expanded;
+        updateDescription();
+      });
+      descriptionText.appendChild(toggleButton);
+    }
+
+    updateDescription();
+    descriptionWrap.appendChild(descriptionText);
+
+    body.appendChild(descriptionWrap);
+
+    appendInfoLine('Tags', feature.tags);
+    appendInfoLine('Latitude', feature.latitude != null ? String(feature.latitude) : 'N/A');
+    appendInfoLine('Longitude', feature.longitude != null ? String(feature.longitude) : 'N/A');
+
+    const markerFiles = parseMarkerFiles(feature.files);
+    if (markerFiles.length > 0) {
+      const fileList = document.createElement('div');
+      fileList.className = 'card-pin-popup-file-list';
+
+      const heading = document.createElement('h4');
+      heading.textContent = 'Downloadable Files';
+      fileList.appendChild(heading);
+
+      const ul = document.createElement('ul');
+      markerFiles.forEach((file, index) => {
+        const li = document.createElement('li');
+        if (file.file_link) {
+          const anchor = document.createElement('a');
+          anchor.href = file.file_link;
+          anchor.target = '_blank';
+          anchor.rel = 'noopener noreferrer';
+          anchor.textContent = file.filename || `Download ${file.fileextension || 'file'}`;
+          li.appendChild(anchor);
+        } else {
+          li.textContent = file.filename || `File ${index + 1}`;
+        }
+        ul.appendChild(li);
+      });
+      fileList.appendChild(ul);
+      body.appendChild(fileList);
+    }
+
+    root.appendChild(header);
+    root.appendChild(body);
+    return root;
+  }, [parseMarkerFiles]);
+
+  const openMarkerPopup = useCallback((feature, markerInstance, mapInstance) => {
+    closeMarkerPopup();
+
+    const popup = new mapboxgl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      anchor: 'bottom-left',
+      offset: [12, -8],
+      className: 'card-pin-rich-popup'
+    })
+      .setLngLat(markerInstance.getLngLat())
+      .setDOMContent(buildMarkerPopupContent(feature))
+      .addTo(mapInstance);
+
+    popup.on('close', () => {
+      if (markerPopupRef.current === popup) {
+        markerPopupRef.current = null;
+      }
+      marker_clicked = false;
+      setSearchCondition("");
+      onMarkerCardSelect?.(null);
+    });
+
+    markerPopupRef.current = popup;
+    onMarkerCardSelect?.(feature.cardID);
+  }, [buildMarkerPopupContent, closeMarkerPopup, setSearchCondition, onMarkerCardSelect]);
 
   // Move map when user clicks a card
   useEffect(() => {
@@ -291,10 +449,8 @@ const Content1 = (props) => {
 
         marker.getElement().addEventListener('click', () => {
           marker_clicked = true;
-          props.setSearchCondition(feature.title);
-          setSelectedMarkerCard(feature);
-          setIsDescriptionExpanded(false);
-          setIsMarkerModalOpen(true);
+          setSearchCondition(feature.title);
+          openMarkerPopup(feature, marker, map);
         });
 
         marker.addTo(map);
@@ -437,6 +593,7 @@ const Content1 = (props) => {
     return () => {
       isActive = false;
       window.removeEventListener('atlas:cards-loaded', handleCardsLoaded);
+      closeMarkerPopup();
 
       // Clean up map instance on unmount.
       // Keep this lifecycle tied to mount/unmount rather than auth state to avoid
@@ -470,94 +627,6 @@ const Content1 = (props) => {
           </div>
         </div>
       </div>
-
-      {isMarkerModalOpen && selectedMarkerCard && (
-        <div className="card-pin-modal-overlay" onClick={closeMarkerModal}>
-          <div className="card-pin-modal" onClick={(event) => event.stopPropagation()}>
-            <button
-              className="card-pin-modal-close"
-              onClick={closeMarkerModal}
-              aria-label="Close card details"
-            >
-              ×
-            </button>
-
-            <div className="card-pin-modal-header">
-              <img
-                src={
-                  selectedMarkerCard.thumbnail_link && selectedMarkerCard.thumbnail_link.trim() !== ""
-                    ? selectedMarkerCard.thumbnail_link
-                    : "/CEREO-logo.png"
-                }
-                alt="Card Thumbnail"
-                className="card-pin-modal-thumbnail"
-              />
-              <div className="card-pin-modal-title-block">
-                <h2>{selectedMarkerCard.title || "Untitled Card"}</h2>
-                <p className="card-pin-modal-subtitle">{selectedMarkerCard.category || "Uncategorized"}</p>
-              </div>
-            </div>
-
-            <div className="card-pin-modal-body">
-              <p><strong>Author:</strong> {selectedMarkerCard.name || "N/A"}</p>
-              <p><strong>Card Creator:</strong> {selectedMarkerCard.username || "N/A"}</p>
-              <p><strong>Email:</strong> {selectedMarkerCard.email || "N/A"}</p>
-              <p><strong>Funding:</strong> {selectedMarkerCard.funding || "N/A"}</p>
-              <p><strong>Organization:</strong> {selectedMarkerCard.org || "N/A"}</p>
-
-              {selectedMarkerCard.link ? (
-                <p>
-                  <strong>Link:</strong>{' '}
-                  <a href={selectedMarkerCard.link} target="_blank" rel="noopener noreferrer">
-                    {selectedMarkerCard.link}
-                  </a>
-                </p>
-              ) : (
-                <p><strong>Link:</strong> N/A</p>
-              )}
-
-              <div className="card-pin-modal-description-wrap">
-                <p className="card-pin-modal-description">
-                  <strong>Description:</strong>{' '}
-                  {visibleDescription || "No description provided."}
-                </p>
-                {hasLongDescription && (
-                  <button
-                    type="button"
-                    className="card-pin-description-toggle"
-                    onClick={() => setIsDescriptionExpanded((prev) => !prev)}
-                  >
-                    {isDescriptionExpanded ? "Show less" : "Show more"}
-                  </button>
-                )}
-              </div>
-
-              <p><strong>Tags:</strong> {selectedMarkerCard.tags || "N/A"}</p>
-              <p><strong>Latitude:</strong> {selectedMarkerCard.latitude ?? "N/A"}</p>
-              <p><strong>Longitude:</strong> {selectedMarkerCard.longitude ?? "N/A"}</p>
-
-              {markerFiles.length > 0 && (
-                <div className="card-pin-file-list">
-                  <h3>Downloadable Files</h3>
-                  <ul>
-                    {markerFiles.map((file, index) => (
-                      <li key={file.fileid || `${file.filename}-${index}`}>
-                        {file.file_link ? (
-                          <a href={file.file_link} target="_blank" rel="noopener noreferrer">
-                            {file.filename || `Download ${file.fileextension || "file"}`}
-                          </a>
-                        ) : (
-                          <span>{file.filename || `File ${index + 1}`}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="AtlasMap__credit">
         <a>Map icons by </a>

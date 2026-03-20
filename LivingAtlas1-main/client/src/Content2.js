@@ -18,6 +18,7 @@ function Content2(props) {
     const [isDragging, setIsDragging] = useState(false);
     const startX = useRef(0);
     const startWidth = useRef(500);
+    const cardContainerRef = useRef(null);
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
@@ -73,6 +74,9 @@ function Content2(props) {
     const [cardSearchKeyword, setCardSearchKeyword] = useState(props.searchCondition || '');
     const [cardTypeFilter, setCardTypeFilter] = useState(props.CategoryCondition || '');
     const [showOnlyInView, setShowOnlyInView] = useState(false);
+    const selectedCardIdFromMap = props.selectedCardIdFromMap != null
+        ? String(props.selectedCardIdFromMap)
+        : null;
 
     const handleFavoritesToggle = () => {
         if (!props.isLoggedIn) {
@@ -560,6 +564,26 @@ function Content2(props) {
         card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID)
     );
 
+    const prioritizedDisplayedCards = (() => {
+        if (!selectedCardIdFromMap || props.isCollapsed) {
+            return displayedCards;
+        }
+
+        const selectedCards = displayedCards.filter(card => String(card.cardID) === selectedCardIdFromMap);
+        if (selectedCards.length === 0) {
+            return displayedCards;
+        }
+
+        const nonSelectedCards = displayedCards.filter(card => String(card.cardID) !== selectedCardIdFromMap);
+        return [...selectedCards, ...nonSelectedCards];
+    })();
+
+    useEffect(() => {
+        if (!props.isCollapsed && selectedCardIdFromMap && cardContainerRef.current) {
+            cardContainerRef.current.scrollTop = 0;
+        }
+    }, [props.isCollapsed, selectedCardIdFromMap]);
+
     // Log for debugging
     if (cards.length !== uniqueCards.length) {
         // console.warn('[Content2] Found duplicates in cards state!', cards.length, 'total,', uniqueCards.length, 'unique');
@@ -678,10 +702,14 @@ function Content2(props) {
 
 
                 {(!props.isLoggedIn || bookmarksLoaded) ? (
-                    <div className="card-container" style={{ display: props.isCollapsed ? 'none' : 'grid' }}>
+                    <div
+                        className="card-container"
+                        ref={cardContainerRef}
+                        style={{ display: props.isCollapsed ? 'none' : 'grid' }}
+                    >
                         {(() => {
-                            console.log('[Content2] Rendering cards:', displayedCards.map(c => ({ cardID: c.cardID, title: c.title })));
-                            return displayedCards.map((card, index) => (
+                            console.log('[Content2] Rendering cards:', prioritizedDisplayedCards.map(c => ({ cardID: c.cardID, title: c.title })));
+                            return prioritizedDisplayedCards.map((card, index) => (
                                 <div key={`card-${card.cardID}-${index}`} onClick={() => handleCardClick(card)}>
                                     <Card
                                         formData={{
@@ -690,6 +718,7 @@ function Content2(props) {
                                             viewerUsername: resolvedUsername,
                                             cardID: card.cardID
                                         }}
+                                        isSelectedFromMap={!!selectedCardIdFromMap && String(card.cardID) === selectedCardIdFromMap}
                                         isFavorited={bookmarkedCardIDs.has(card.cardID)}
                                         username={resolvedUsername}
                                         fetchBookmarks={fetchBookmarks}

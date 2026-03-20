@@ -304,7 +304,7 @@ function Card(props) {
     };
 
     return (
-        <div className="card">
+        <div className={`card ${props.isSelectedFromMap ? 'card--map-selected' : ''}`}>
             {/* Favorite Bookmark Icon */}
             <span
                 className={`favorite-icon ${isFavorited ? 'filled' : ''}`}
@@ -334,48 +334,83 @@ function Card(props) {
             </div>
 
             {/* Learn More Modal */}
-            <Modal isOpen={isModalOpen} onRequestClose={() => setIsModalOpen(false)} className="Modal">
-                <h2>{formData.title}</h2>
-                <p><strong>Author:</strong> {formData.name}</p>
-                <p><strong>Card Creator:</strong> {formData.username}</p>
-                <p><strong>Email:</strong> {formData.email}</p>
-                <p><strong>Funding:</strong> {formData.funding}</p>
-                <p><strong>Organization:</strong> {formData.org}</p>
-                <p><strong>Title:</strong> {formData.title}</p>
-                <p>
-                    <strong>Link:</strong>{' '}
-                    <a href={formData.link} target="_blank" rel="noopener noreferrer">
-                        {formData.link}
-                    </a>
-                </p>
-                <p><strong>Description:</strong> {formData.description}</p>
-                <p><strong>Category:</strong> {formData.category}</p>
-                <p><strong>Tags:</strong> {formData.tags}</p>
-                <p><strong>Latitude:</strong> {formData.latitude}</p>
-                <p><strong>Longitude:</strong> {formData.longitude}</p>
+            <Modal
+                isOpen={isModalOpen}
+                onRequestClose={() => setIsModalOpen(false)}
+                className="Modal Modal--learn-more"
+                overlayClassName="ModalOverlay ModalOverlay--learn-more"
+            >
+                <button
+                    className="learn-more-modal-close"
+                    onClick={e => {
+                        e.stopPropagation();
+                        setIsModalOpen(false);
+                    }}
+                    aria-label="Close learn more modal"
+                >
+                    ×
+                </button>
 
-                {/* Downloadable Files */}
-                {formData.files && formData.files.length > 0 && (
-                    <div className="file-list">
-                        <h3>Downloadable Files:</h3>
-                        <ul>
-                            {formData.files.map((file, idx) => (
-                                <li key={file.fileid || idx}>
-                                    <a
-                                        href={file.file_link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        {file.filename || `Download ${file.fileextension}`}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
+                <div className="learn-more-modal-header">
+                    <img
+                        src={
+                            formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
+                                ? formData.thumbnail_link
+                                : "/CEREO-logo.png"
+                        }
+                        alt="Card Thumbnail"
+                        className="learn-more-modal-thumbnail"
+                    />
+                    <div className="learn-more-modal-title-block">
+                        <h2>{formData.title}</h2>
+                        <p className="learn-more-modal-subtitle">{formData.category || "Uncategorized"}</p>
                     </div>
-                )}
+                </div>
+
+                <div className="learn-more-modal-body">
+                    <p><strong>Author:</strong> {formData.name}</p>
+                    <p><strong>Card Creator:</strong> {formData.username}</p>
+                    <p><strong>Email:</strong> {formData.email}</p>
+                    <p><strong>Funding:</strong> {formData.funding}</p>
+                    <p><strong>Organization:</strong> {formData.org}</p>
+                    <p>
+                        <strong>Link:</strong>{' '}
+                        {formData.link ? (
+                            <a href={formData.link} target="_blank" rel="noopener noreferrer">
+                                {formData.link}
+                            </a>
+                        ) : (
+                            <span>N/A</span>
+                        )}
+                    </p>
+                    <p className="learn-more-modal-description"><strong>Description:</strong> {formData.description}</p>
+                    <p><strong>Tags:</strong> {formData.tags}</p>
+                    <p><strong>Latitude:</strong> {formData.latitude}</p>
+                    <p><strong>Longitude:</strong> {formData.longitude}</p>
+
+                    {/* Downloadable Files */}
+                    {formData.files && formData.files.length > 0 && (
+                        <div className="file-list learn-more-file-list">
+                            <h3>Downloadable Files:</h3>
+                            <ul>
+                                {formData.files.map((file, idx) => (
+                                    <li key={file.fileid || idx}>
+                                        <a
+                                            href={file.file_link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            {file.filename || `Download ${file.fileextension}`}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
 
                 <button
-                    className="close-button"
+                    className="close-button learn-more-modal-footer-close"
                     onClick={e => {
                         e.stopPropagation();
                         setIsModalOpen(false);

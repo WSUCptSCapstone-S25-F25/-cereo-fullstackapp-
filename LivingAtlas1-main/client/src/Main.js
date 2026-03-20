@@ -40,6 +40,7 @@ function Main(props) {
                 cardPanelWidth={props.cardPanelWidth}
 
                 selectedCardCoords={props.selectedCardCoords}
+                onMarkerCardSelect={props.onMarkerCardSelect}
 
                 isAdmin={props.isAdmin}
                 username={props.username}

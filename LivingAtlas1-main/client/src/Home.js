@@ -64,6 +64,7 @@ function Home(props) {
     }, [isUploadPanelOpen]);
 
     const [selectedCardCoords, setSelectedCardCoords] = useState(null);
+    const [selectedCardIdFromMap, setSelectedCardIdFromMap] = useState(null);
 
     const handleCardClick = (coords) => {
         console.log('[Home] handleCardClick received coords:', coords);
@@ -360,6 +361,7 @@ function Home(props) {
                 isLayerPanelOpen={isLayerPanelOpen}
                 isModalOpen={isModalOpen}
                 selectedCardCoords={selectedCardCoords}
+                onMarkerCardSelect={setSelectedCardIdFromMap}
                 cardPanelWidth={cardPanelWidth}
             />
 
@@ -378,6 +380,7 @@ function Home(props) {
                 isLoggedIn={props.isLoggedIn}             /* <-- added */
                 isCollapsed={isCollapsed}
                 setIsCollapsed={setIsCollapsed}
+                selectedCardIdFromMap={selectedCardIdFromMap}
                 cardPanelWidth={cardPanelWidth}
                 setCardPanelWidth={setCardPanelWidth}
                 onCardClick={handleCardClick}
