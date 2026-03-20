@@ -32,6 +32,11 @@ function Card(props) {
                 files: props.formData?.files || [],
                 filesToUpload: []
             });
+            setPreview(
+                props.formData?.thumbnail_link && props.formData.thumbnail_link.trim() !== ""
+                    ? props.formData.thumbnail_link
+                    : "/CEREO-logo.png"
+            );
         }
     }, [props.formData]);
 
@@ -52,21 +57,6 @@ function Card(props) {
             });
         }
     }, [props.formData]); */
-
-    useEffect(() => {
-        if ((!formData.thumbnail_link || formData.thumbnail_link === "") && formData.cardID) {
-            api.get(`/card/${formData.cardID}`)
-                .then((res) => {
-                    if (res.data.thumbnail_link) {
-                        setFormData((prev) => ({ ...prev, thumbnail_link: res.data.thumbnail_link }));
-                        setPreview(res.data.thumbnail_link);
-                    }
-                })
-                .catch((err) => {
-                    console.error("Error fetching thumbnail from card ID:", err);
-                });
-        }
-    }, [formData.thumbnail_link, formData.cardID]);
 
     const handleLearnMore = (e) => {
         e.stopPropagation();

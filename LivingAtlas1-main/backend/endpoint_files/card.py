@@ -295,8 +295,10 @@ def get_card_by_id(card_id: int):
     Called by the frontend when a card is rendered without a thumbnail.
     """
     try:
-        cur.execute("SELECT Thumbnail_Link FROM Cards WHERE CardID = %s", (card_id,))
-        result = cur.fetchone()
+        # Use a request-local cursor to avoid cross-request result corruption.
+        with conn.cursor() as local_cur:
+            local_cur.execute("SELECT Thumbnail_Link FROM Cards WHERE CardID = %s", (card_id,))
+            result = local_cur.fetchone()
         if result is None:
             raise HTTPException(status_code=404, detail="Card not found")
         return {"thumbnail_link": result[0]}
