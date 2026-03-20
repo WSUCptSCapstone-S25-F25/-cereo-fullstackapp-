@@ -37,6 +37,7 @@ function Main(props) {
                 isRemovedPanelOpen={props.isRemovedPanelOpen}
                 isLayerPanelOpen={props.isLayerPanelOpen}
                 isModalOpen={props.isModalOpen}
+                isSidebarOpen={props.isSidebarOpen}
                 cardPanelWidth={props.cardPanelWidth}
 
                 selectedCardCoords={props.selectedCardCoords}

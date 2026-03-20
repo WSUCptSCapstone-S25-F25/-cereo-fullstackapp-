@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import mapboxgl from 'mapbox-gl';
 import './Content1.css';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
@@ -42,6 +43,7 @@ const Content1 = (props) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerPopupRef = useRef(null);
+  const [creditPortalHost, setCreditPortalHost] = useState(null);
   const { setSearchCondition, onMarkerCardSelect } = props;
   const [lng, setLng] = useState(-120);
   const [lat, setLat] = useState(46);
@@ -364,7 +366,8 @@ const Content1 = (props) => {
     props.isUploadPanelOpen,
     props.isRemovedPanelOpen,
     props.isLayerPanelOpen,
-    props.isModalOpen
+    props.isModalOpen,
+    props.isSidebarOpen
   ]);
 
   // Keep map size in sync when the card panel finishes its open/close transition.
@@ -475,6 +478,37 @@ const Content1 = (props) => {
     });
 
     map.addControl(currentLocation, 'top-left');
+
+    const syncBottomRightMeta = () => {
+      if (!atlasMapRef.current) return;
+
+      const bottomRightControls = atlasMapRef.current.querySelector('.mapboxgl-ctrl-bottom-right');
+      if (!bottomRightControls) return;
+      const attributionCtrl = bottomRightControls.querySelector('.mapboxgl-ctrl-attrib');
+
+      let metaHost = atlasMapRef.current.querySelector('.AtlasMap__bottom-right-meta');
+      if (!metaHost) {
+        metaHost = document.createElement('div');
+        metaHost.className = 'AtlasMap__bottom-right-meta mapboxgl-ctrl';
+      }
+
+      if (attributionCtrl) {
+        bottomRightControls.insertBefore(metaHost, attributionCtrl);
+      } else if (metaHost.parentElement !== bottomRightControls) {
+        bottomRightControls.appendChild(metaHost);
+      }
+
+      const mapboxLogo = atlasMapRef.current.querySelector('.mapboxgl-ctrl-bottom-left .mapboxgl-ctrl-logo');
+      if (mapboxLogo && mapboxLogo.parentElement !== metaHost) {
+        metaHost.insertBefore(mapboxLogo, metaHost.firstChild);
+      }
+
+      setCreditPortalHost(metaHost);
+    };
+
+    syncBottomRightMeta();
+    const creditSyncRafId = window.requestAnimationFrame(syncBottomRightMeta);
+    map.on('load', syncBottomRightMeta);
 
     currentLocation.on('geolocate', (e) => {
       curLocationCoordinates = { lat: e.coords.latitude, lng: e.coords.longitude };
@@ -663,6 +697,8 @@ const Content1 = (props) => {
     return () => {
       isActive = false;
       window.removeEventListener('atlas:cards-loaded', handleCardsLoaded);
+      window.cancelAnimationFrame(creditSyncRafId);
+      map.off('load', syncBottomRightMeta);
       closeMarkerPopup();
 
       // Clean up map instance on unmount.
@@ -673,9 +709,11 @@ const Content1 = (props) => {
   }, []);
 
   // Compute styles for outer map container to respond to card panel state
-  const mapContainerWidth = (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)
+  const leftSidebarWidth = props.isSidebarOpen ? 300 : 60;
+  const leftPanelWidth = (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)
     ? 420
     : (props.isLayerPanelOpen ? 350 : 0);
+  const mapContainerLeft = leftSidebarWidth + leftPanelWidth;
   const mapContainerRight = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
 
   return (
@@ -683,7 +721,7 @@ const Content1 = (props) => {
       className="AtlasMap" 
       ref={atlasMapRef}
       style={{
-        left: `${mapContainerWidth}px`,
+        left: `${mapContainerLeft}px`,
         right: `${mapContainerRight}px`
       }}
     >
@@ -698,10 +736,13 @@ const Content1 = (props) => {
         </div>
       </div>
 
-      <div className="AtlasMap__credit">
-        <a>Map icons by </a>
-        <a href="https://icons8.com/icon/" title="marker icons">icons8.</a>
-      </div>
+      {creditPortalHost && createPortal(
+        <div className="AtlasMap__credit">
+          <span>Map icons by </span>
+          <a href="https://icons8.com/icon/" title="marker icons" target="_blank" rel="noopener noreferrer">icons8.</a>
+        </div>,
+        creditPortalHost
+      )}
     </div>
   );
 };

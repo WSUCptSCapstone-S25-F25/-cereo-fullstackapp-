@@ -19,7 +19,6 @@ function Content2(props) {
     const startX = useRef(0);
     const startWidth = useRef(500);
     const cardContainerRef = useRef(null);
-    const lastAutoFocusedSearchRef = useRef('');
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
@@ -98,11 +97,13 @@ function Content2(props) {
     };
 
     const handleCardSearch = () => {
+        props.setSearchTriggerSource?.('container-panel');
         props.setSearchCondition?.(cardSearchKeyword.trim().toLowerCase());
         props.setCategoryConditionCondition?.(cardTypeFilter);
     };
 
     const handleCardSearchClear = () => {
+        props.setSearchTriggerSource?.('container-panel');
         setCardSearchKeyword('');
         setCardTypeFilter('');
         props.setSearchCondition?.('');
@@ -413,18 +414,26 @@ function Content2(props) {
                         // console.log('[Content2] Search results:', uniqueCards.length, 'unique cards from', cardData.length);
                         setCards(uniqueCards);
                         notifyCardsLoaded(uniqueCards.length);
+
+                        if (props.searchTriggerSource === 'sidebar-mini' && uniqueCards.length > 0) {
+                            handleCardClick(uniqueCards[0]);
+                        }
                     } else {
                         console.warn("No card data returned from searchBar:", response.data);
                         setCards([]);
                     }
+
+                    props.setSearchTriggerSource?.('');
                 })
                 .catch(error => {
                     console.error(error);
+                    props.setSearchTriggerSource?.('');
                 });
         }
         else {
             console.log("Not running search" + props.searchCondition);
             loadCardsByCriteria();
+            props.setSearchTriggerSource?.('');
         }
     }, [props.searchCondition]);
 
@@ -593,27 +602,6 @@ function Content2(props) {
             cardContainerRef.current.scrollTop = 0;
         }
     }, [props.searchCondition]);
-
-    useEffect(() => {
-        if (!props.searchCondition) {
-            lastAutoFocusedSearchRef.current = '';
-            return;
-        }
-
-        if (displayedCards.length === 0) {
-            return;
-        }
-
-        const firstSearchResult = displayedCards[0];
-        const autoFocusKey = `${props.searchCondition}:${firstSearchResult.cardID}`;
-
-        if (lastAutoFocusedSearchRef.current === autoFocusKey) {
-            return;
-        }
-
-        lastAutoFocusedSearchRef.current = autoFocusKey;
-        handleCardClick(firstSearchResult);
-    }, [displayedCards, props.searchCondition]);
 
     // Log for debugging
     if (cards.length !== uniqueCards.length) {

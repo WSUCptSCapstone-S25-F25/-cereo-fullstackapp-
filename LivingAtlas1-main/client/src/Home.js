@@ -43,6 +43,19 @@ function Home(props) {
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
 
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        const previousOverscrollBehaviorY = document.body.style.overscrollBehaviorY;
+
+        document.body.style.overflow = 'hidden';
+        document.body.style.overscrollBehaviorY = 'none';
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.body.style.overscrollBehaviorY = previousOverscrollBehaviorY;
+        };
+    }, []);
+
     // Fetch layers and legend for demo folder/item
     useEffect(() => {
         if (isUploadPanelOpen) {
@@ -65,6 +78,7 @@ function Home(props) {
 
     const [selectedCardCoords, setSelectedCardCoords] = useState(null);
     const [selectedCardIdFromMap, setSelectedCardIdFromMap] = useState(null);
+    const [searchTriggerSource, setSearchTriggerSource] = useState('');
 
     const [miniSearchTerm, setMiniSearchTerm] = useState('');
     const miniSearchInputRef = useRef(null);
@@ -82,6 +96,7 @@ function Home(props) {
     const handleMiniSearch = (e) => {
         e.preventDefault();
         const term = miniSearchTerm.trim().toLowerCase();
+        setSearchTriggerSource('sidebar-mini');
         setSearchCondition(term);
         setIsCollapsed(false);
     };
@@ -382,6 +397,8 @@ function Home(props) {
                 setFilterCondition={setFilterCondition}
                 searchCondition={searchCondition}
                 setSearchCondition={setSearchCondition}
+                searchTriggerSource={searchTriggerSource}
+                setSearchTriggerSource={setSearchTriggerSource}
                 sortCondition={sortCondition}
                 setSortCondition={setSortCondition}
                 boundCondition={boundCondition}

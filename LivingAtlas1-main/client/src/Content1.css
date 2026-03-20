@@ -28,28 +28,53 @@
 
 .AtlasMap__info-bottomleft {
   position: absolute;
-  left: 18px;
-  bottom: 18px;
+  left: 0;
+  bottom: 0;
   background: rgba(255,255,255,0.92);
   color: #222;
-  border-radius: 6px;
+  border-radius: 0 6px 0 0;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   padding: 8px 14px;
   font-size: 13px;
   z-index: 10;
   min-width: 200px;
+  max-width: min(430px, calc(100% - 12px));
   pointer-events: none;
   user-select: none;
 }
 
+.AtlasMap__bottom-right-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 !important;
+  margin: 0 10px 10px 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.AtlasMap__bottom-right-meta .mapboxgl-ctrl-logo {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 .AtlasMap__credit {
-  position: absolute;
-  left: 18px;
-  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   color: #888;
-  z-index: 11;
   background: none;
+  white-space: nowrap;
+}
+
+.AtlasMap__credit a {
+  color: inherit;
+}
+
+.AtlasMap .mapboxgl-ctrl-bottom-left:empty {
+  display: none;
 }
 #content-1 {
   background-color: #eee;
