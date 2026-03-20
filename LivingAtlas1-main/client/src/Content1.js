@@ -7,7 +7,6 @@ import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import updateMarkers from './PolygonFiltering.js';
-import axios from 'axios';
 import { showAll } from './Filter';
 import api from './api.js';
 
@@ -112,6 +111,7 @@ const Content1 = (props) => {
   // MAIN MAP INITIALIZATION
   useEffect(() => {
     let isActive = true;
+    let markersFetchInFlight = false;
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
@@ -205,83 +205,124 @@ const Content1 = (props) => {
       curLocationCoordinates = { lat: e.coords.latitude, lng: e.coords.longitude };
     });
 
-    // Clear any existing markers from previous instances
-    allMarkers.forEach(m => m.remove());
-    allMarkers = [];
-    blueMarkers = [];
-    greenMarkers = [];
-    yellowMarkers = [];
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // FETCH MARKERS
-    async function fetchData() {
-      try {
-        const response = await api.get('/getMarkers');
+    const clearMarkers = () => {
+      allMarkers.forEach(m => m.remove());
+      allMarkers = [];
+      blueMarkers = [];
+      greenMarkers = [];
+      yellowMarkers = [];
+    };
+
+    const renderMarkers = (markersData) => {
+      clearMarkers();
+
+      for (let feature of markersData) {
         if (!isActive) return;
 
-        const data = response.data;
+        const el = document.createElement('div');
 
-        // if backend returns { data: [...] }
-        const markersData = Array.isArray(data) ? data : data.data || [];
-
-        for (let feature of markersData) {
-          if (!isActive) return;
-
-          const el = document.createElement('div');
-
-          if (feature.category === "River") {
-            el.className = 'blue-marker';
-            blueMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-          } else if (feature.category === "Watershed") {
-            el.className = 'green-marker';
-            greenMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-          } else {
-            el.className = 'yellow-marker';
-            yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-          }
-
-          const marker = new mapboxgl.Marker(el);
-
-          if (!isNaN(feature.longitude) && !isNaN(feature.latitude)) {
-            marker.setLngLat([feature.longitude, feature.latitude]);
-          } else {
-            continue;
-          }
-
-          marker.setPopup(
-            new mapboxgl.Popup({ offset: 25 })
-              .setHTML(`
-                  <br><h3>${feature.title}</h3>
-                  <p><b>Category:</b> ${feature.category}</p>
-                  <p><b>Tags:</b> ${feature.tags}</p><br>
-              `)
-          );
-
-          marker.getElement().addEventListener('click', () => {
-            marker_clicked = true;
-            props.setSearchCondition(feature.title);
-          });
-
-          marker.getPopup().on('close', () => {
-            marker_clicked = false;
-            props.setSearchCondition("");
-          });
-
-          marker.addTo(map);
-          allMarkers.push(marker);
+        if (feature.category === "River") {
+          el.className = 'blue-marker';
+          blueMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+        } else if (feature.category === "Watershed") {
+          el.className = 'green-marker';
+          greenMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+        } else {
+          el.className = 'yellow-marker';
+          yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
         }
 
-        // Ensure markers are visible after async mount-time fetch completes.
-        showAll();
-      } catch (error) {
-        console.error('Error fetching markers:', error);
+        const marker = new mapboxgl.Marker(el);
+
+        if (!isNaN(feature.longitude) && !isNaN(feature.latitude)) {
+          marker.setLngLat([feature.longitude, feature.latitude]);
+        } else {
+          continue;
+        }
+
+        marker.setPopup(
+          new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+                <br><h3>${feature.title}</h3>
+                <p><b>Category:</b> ${feature.category}</p>
+                <p><b>Tags:</b> ${feature.tags}</p><br>
+            `)
+        );
+
+        marker.getElement().addEventListener('click', () => {
+          marker_clicked = true;
+          props.setSearchCondition(feature.title);
+        });
+
+        marker.getPopup().on('close', () => {
+          marker_clicked = false;
+          props.setSearchCondition("");
+        });
+
+        marker.addTo(map);
+        allMarkers.push(marker);
       }
-    }
+
+      showAll();
+    };
+
+    const fetchMarkersWithRetry = async (reason = 'initial-load') => {
+      if (markersFetchInFlight) return;
+      markersFetchInFlight = true;
+
+      const maxAttempts = 4;
+      const baseDelayMs = 1200;
+      const timeoutMs = 90000;
+
+      try {
+        for (let attempt = 1; attempt <= maxAttempts && isActive; attempt++) {
+          try {
+            const response = await api.get('/getMarkers', { timeout: timeoutMs });
+            if (!isActive) return;
+
+            const data = response.data;
+            const markersData = Array.isArray(data) ? data : data.data || [];
+            renderMarkers(markersData);
+
+            if (attempt > 1) {
+              console.log(`[Content1] Marker fetch recovered after retry ${attempt}/${maxAttempts} (${reason}).`);
+            }
+            return;
+          } catch (error) {
+            const status = error?.response?.status || 'NO_RESPONSE';
+            console.warn(`[Content1] /getMarkers failed on attempt ${attempt}/${maxAttempts} (${reason}), status=${status}`);
+
+            if (attempt < maxAttempts) {
+              const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
+              await wait(delayMs);
+            } else {
+              console.error('Error fetching markers after retries:', error);
+            }
+          }
+        }
+      } finally {
+        markersFetchInFlight = false;
+      }
+    };
+
+    const handleCardsLoaded = () => {
+      if (!isActive) return;
+      if (allMarkers.length > 0) return;
+      fetchMarkersWithRetry('cards-loaded-event');
+    };
+
+    clearMarkers();
+    window.addEventListener('atlas:cards-loaded', handleCardsLoaded);
 
     // Wait for map style/container readiness before mounting marker DOM nodes.
     if (map.loaded()) {
-      fetchData();
+      fetchMarkersWithRetry('map-ready');
     } else {
-      map.once('load', fetchData);
+      map.once('load', () => {
+        fetchMarkersWithRetry('map-load');
+      });
     }
 
     // BOUNDS SYNC — zoomend
@@ -359,6 +400,7 @@ const Content1 = (props) => {
 
     return () => {
       isActive = false;
+      window.removeEventListener('atlas:cards-loaded', handleCardsLoaded);
 
       // Clean up map instance on unmount.
       // Keep this lifecycle tied to mount/unmount rather than auth state to avoid

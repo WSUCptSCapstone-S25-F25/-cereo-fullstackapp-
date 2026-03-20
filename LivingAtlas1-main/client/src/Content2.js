@@ -86,6 +86,12 @@ function Content2(props) {
         setShowOnlyInView(prev => !prev);
     };
 
+    const notifyCardsLoaded = (cardCount) => {
+        window.dispatchEvent(new CustomEvent('atlas:cards-loaded', {
+            detail: { cardCount }
+        }));
+    };
+
     const handleCardSearch = () => {
         props.setSearchCondition?.(cardSearchKeyword.trim().toLowerCase());
         props.setCategoryConditionCondition?.(cardTypeFilter);
@@ -121,6 +127,7 @@ function Content2(props) {
                     // console.log('[Content2] After deduplication:', uniqueCards.length, 'unique cards');
                     // console.table(uniqueCards);
                     setCards(uniqueCards);
+                    notifyCardsLoaded(uniqueCards.length);
                 })
                 .catch(error => console.error(error));
             return;
@@ -139,6 +146,7 @@ function Content2(props) {
                 // console.log('[Content2] /allCardsByTag:', uniqueCards.length, 'unique cards from', cardData.length);
                 // console.table(uniqueCards);
                 setCards(uniqueCards);
+                notifyCardsLoaded(uniqueCards.length);
             })
             .catch(error => console.error('Error fetching cards by criteria:', error));
         /*
@@ -399,6 +407,7 @@ function Content2(props) {
                         );
                         // console.log('[Content2] Search results:', uniqueCards.length, 'unique cards from', cardData.length);
                         setCards(uniqueCards);
+                        notifyCardsLoaded(uniqueCards.length);
                     } else {
                         console.warn("No card data returned from searchBar:", response.data);
                         setCards([]);
