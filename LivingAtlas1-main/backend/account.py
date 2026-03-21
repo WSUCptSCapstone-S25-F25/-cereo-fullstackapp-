@@ -12,7 +12,9 @@ from pydantic import BaseModel
 
 import urllib.parse
 import requests
-import resend
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import os
 import hashlib
@@ -34,13 +36,19 @@ SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "wsu.cereoatlas26@gmail.com")
 RESEND_API_KEY = (os.environ.get("RESEND_API_KEY") or os.environ.get("CEREO_API_KEY") or "").strip()
 RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
+SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
+SMTP_EMAIL = os.environ.get("SMTP_EMAIL", "wsu.cereoatlas26@gmail.com")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+
 # SMTP_SERVER = "smtp.gmail.com"
 # SMTP_PORT = 465
-# SENDER_EMAIL = "cereofullstack@gmail.com"
-# SENDER_PASSWORD = "ljun kiiz ngod ypjv"
+# SENDER_EMAIL = "wsu.cereoatlas26@gmail.com"
+# SENDER_PASSWORD = "vuzc jnhd uxmg nniu"
 
 # SMTP_EMAIL: wsu.cereoatlas26@gmail.com
-# BACKUP_CODE: 
+
+# GMAIL ACCOUNT BACKUP_CODE for wsu.cereoatlas26@gmail.com: 
 # 1575 4464
 # 6862 8813
 # 4897 2931
@@ -116,10 +124,11 @@ def send_recovery_email(recipient_email):
         </html>
         """
 
-        # Send via Resend
-        print(f"DEBUG: Attempting to send via Resend...")
-        send_via_resend(recipient_email, subject, body)
-        print(f"DEBUG: Resend email sent successfully to {recipient_email}!")
+        # Send via Gmail SMTP
+        print(f"DEBUG: Attempting to send via Gmail SMTP...")
+        # send_via_resend(recipient_email, subject, body)
+        send_via_gmail_smtp(recipient_email, subject, body)
+        print(f"DEBUG: Gmail SMTP email sent successfully to {recipient_email}!")
 
     except Exception as e:
         print(f"DEBUG: Failed to send email: {e}")
@@ -166,35 +175,32 @@ def send_via_sendgrid(recipient_email, subject, body):
         raise Exception(f"SendGrid returned {response.status_code}: {error_detail}")
 
 
-def send_via_resend(recipient_email, subject, body):
-    """Send email using Resend Python SDK"""
-    print("DEBUG: Sending via Resend API...")
+def send_via_gmail_smtp(recipient_email, subject, body):
+    """Send email using Gmail SMTP over SSL."""
+    print("DEBUG: Sending via Gmail SMTP...")
 
-    # Read at send-time to avoid stale module-level values after config changes.
-    resend_api_key = (os.environ.get("RESEND_API_KEY") or os.environ.get("CEREO_API_KEY") or "").strip()
-
-    if not resend_api_key:
+    if not SMTP_PASSWORD:
         raise Exception(
-            "Missing RESEND_API_KEY environment variable on backend service. "
-            "Please set RESEND_API_KEY in Render (backend service), save, and redeploy."
+            "Missing SMTP_PASSWORD environment variable on backend service. "
+            "Please set SMTP_PASSWORD in Render and redeploy."
         )
 
-    resend.api_key = resend_api_key
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = SMTP_EMAIL
+    message["To"] = recipient_email
+    message.attach(MIMEText(body, "html"))
 
-    response = resend.Emails.send(
-        {
-            "from": RESEND_FROM_EMAIL,
-            "to": [recipient_email],
-            "subject": subject,
-            "html": body,
-        }
-    )
+    with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.sendmail(SMTP_EMAIL, recipient_email, message.as_string())
 
-    if response:
-        print("DEBUG: Resend email sent successfully!")
-        return True
+    return True
 
-    raise Exception("Resend API returned empty response")
+
+def send_via_resend(recipient_email, subject, body):
+    """Send email using Resend Python SDK"""
+    raise Exception("Resend sending is temporarily disabled. Gmail SMTP is active.")
 
 
 # Helper function to hash the password (same as current setup)
