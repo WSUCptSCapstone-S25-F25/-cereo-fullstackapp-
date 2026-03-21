@@ -26,10 +26,10 @@ import os
 # SendGrid Email: wsu.cereoatlas26@gmail.com
 # SendGrid Password: LivingAtlas25$
 # SendGrid Recovery Code: 8W6JXAUWQZWSNVJXA4VH2CXV
-# SendGrid API Key: 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
+# SendGrid API Key: 
 
 # SendGrid configuration
-SENDGRID_API_KEY = os.environ.get("CEREO_API_KEY", "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")
+SENDGRID_API_KEY = os.environ.get("CEREO_API_KEY", "")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "wsu.cereoatlas26@gmail.com")
 
 # Resend configuration
