@@ -68,13 +68,12 @@ function Administration() {
         }
     };
 
-    const handleApproveRequest = async (request, isAdmin) => {
+    const handleApproveRequest = async (request) => {
         try {
             const formData = new FormData();
-            formData.append('username', request.name);
+            formData.append('name', request.name);
             formData.append('email', request.email);
             formData.append('password', request.password);
-            formData.append('role', isAdmin);
     
             // Call the uploadAccount endpoint to add the user
             const response = await api.post('/uploadAccount', formData, {
@@ -83,6 +82,16 @@ function Administration() {
                 }
             });
             console.log(response.data); // Log the response from the server
+
+            if (!response.data?.success) {
+                setError(response.data?.message || 'Failed to approve sign-up request.');
+                return;
+            }
+
+            // Respect requested access level chosen in register page.
+            if (request.desired_access_level) {
+                await api.post('/edit_user_role', { email: request.email, is_admin: true });
+            }
     
             // Remove the approved request from the sign-up requests list
             const updatedRequests = signUpRequests.filter(req => req.email !== request.email);
@@ -176,8 +185,7 @@ function Administration() {
                                     <td>{request.sponsor_message}</td>
                                     <td>{request.desired_access_level ? 'Admin' : 'Regular User'}</td>
                                     <td>
-                                        <button onClick={() => handleApproveRequest(request, true)}>Approve as Admin</button>
-                                        <button onClick={() => handleApproveRequest(request, false)}>Approve as Regular User</button>
+                                        <button onClick={() => handleApproveRequest(request)}>Approve</button>
                                         <button onClick={() => handleDenyRequest(request)}>Deny</button>
                                     </td>
                                 </tr>
