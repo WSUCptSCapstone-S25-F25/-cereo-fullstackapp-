@@ -3,7 +3,7 @@ import axios from "axios";
 const api = axios.create({
   baseURL: 'https://cereo-backend.onrender.com', // New backend URL UNCOMENT IF DEPLOYING TO WEBAPP!!!!!!
   //baseURL: 'http://localhost:8000', //Local Backend (Uncommit if running locally)
-  timeout: 30000, // 30 second timeout
+  timeout: 90000, // 90 second timeout — accounts for Render free-tier cold start (~30-90s)
   //https://verdant-smakager-ef450d.netlify.app    //Netlify Frontend Link
 });
 
@@ -24,7 +24,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for debugging
+// Add response interceptor for debugging + cold-start retry
 api.interceptors.response.use(
   (response) => {
     console.log('DEBUG: API Response:', {
@@ -47,6 +47,19 @@ api.interceptors.response.use(
         baseURL: error.config?.baseURL
       }
     });
+
+    const config = error.config;
+    // Retry once on timeout or network error (handles Render cold start)
+    if (
+      config &&
+      !config._retried &&
+      (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK' || !error.response)
+    ) {
+      config._retried = true;
+      console.warn('DEBUG: Retrying request after cold-start timeout...', config.url);
+      return new Promise((resolve) => setTimeout(resolve, 2000)).then(() => api(config));
+    }
+
     return Promise.reject(error);
   }
 );
