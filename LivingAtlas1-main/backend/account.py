@@ -12,9 +12,9 @@ from pydantic import BaseModel
 
 import urllib.parse
 import requests
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+# import smtplib
+# from email.mime.multipart import MIMEMultipart
+# from email.mime.text import MIMEText
 
 import os
 import hashlib
@@ -36,10 +36,10 @@ SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "wsu.cereoatlas26@gmail.com")
 RESEND_API_KEY = (os.environ.get("RESEND_API_KEY") or os.environ.get("CEREO_API_KEY") or "").strip()
 RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
-SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
-SMTP_EMAIL = os.environ.get("SMTP_EMAIL", "wsu.cereoatlas26@gmail.com")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+# SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+# SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
+# SMTP_EMAIL = os.environ.get("SMTP_EMAIL", "wsu.cereoatlas26@gmail.com")
+# SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 
 # SMTP_SERVER = "smtp.gmail.com"
 # SMTP_PORT = 465
@@ -124,11 +124,11 @@ def send_recovery_email(recipient_email):
         </html>
         """
 
-        # Send via Gmail SMTP
-        print(f"DEBUG: Attempting to send via Gmail SMTP...")
-        # send_via_resend(recipient_email, subject, body)
-        send_via_gmail_smtp(recipient_email, subject, body)
-        print(f"DEBUG: Gmail SMTP email sent successfully to {recipient_email}!")
+        # Send via Resend
+        print(f"DEBUG: Attempting to send via Resend...")
+        send_via_resend(recipient_email, subject, body)
+        # send_via_gmail_smtp(recipient_email, subject, body)
+        print(f"DEBUG: Resend email sent successfully to {recipient_email}!")
 
     except Exception as e:
         print(f"DEBUG: Failed to send email: {e}")
@@ -176,31 +176,38 @@ def send_via_sendgrid(recipient_email, subject, body):
 
 
 def send_via_gmail_smtp(recipient_email, subject, body):
-    """Send email using Gmail SMTP over SSL."""
-    print("DEBUG: Sending via Gmail SMTP...")
-
-    if not SMTP_PASSWORD:
-        raise Exception(
-            "Missing SMTP_PASSWORD environment variable on backend service. "
-            "Please set SMTP_PASSWORD in Render and redeploy."
-        )
-
-    message = MIMEMultipart("alternative")
-    message["Subject"] = subject
-    message["From"] = SMTP_EMAIL
-    message["To"] = recipient_email
-    message.attach(MIMEText(body, "html"))
-
-    with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=30) as server:
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        server.sendmail(SMTP_EMAIL, recipient_email, message.as_string())
-
-    return True
+    """Gmail SMTP is temporarily disabled."""
+    raise Exception("Gmail SMTP is disabled. Resend is active.")
 
 
 def send_via_resend(recipient_email, subject, body):
-    """Send email using Resend Python SDK"""
-    raise Exception("Resend sending is temporarily disabled. Gmail SMTP is active.")
+    """Send email using Resend API over HTTPS."""
+    resend_api_key = (os.environ.get("RESEND_API_KEY") or "").strip()
+    resend_from_email = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev").strip()
+
+    if not resend_api_key:
+        raise Exception("Missing RESEND_API_KEY environment variable")
+
+    if not resend_from_email:
+        raise Exception("Missing RESEND_FROM_EMAIL environment variable")
+
+    payload = {
+        "from": resend_from_email,
+        "to": [recipient_email],
+        "subject": subject,
+        "html": body,
+    }
+
+    headers = {
+        "Authorization": f"Bearer {resend_api_key}",
+        "Content-Type": "application/json",
+    }
+
+    response = requests.post("https://api.resend.com/emails", json=payload, headers=headers, timeout=30)
+    if response.status_code not in (200, 201):
+        raise Exception(f"Resend returned {response.status_code}: {response.text}")
+
+    return True
 
 
 # Helper function to hash the password (same as current setup)
