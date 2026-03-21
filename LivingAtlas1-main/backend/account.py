@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 import urllib.parse
 import requests
+import resend
 
 import os
 import hashlib
@@ -30,7 +31,7 @@ SENDGRID_API_KEY = os.environ.get("CEREO_API_KEY", "SG.0Z9p8YdeRXqvVmyvl9O4og.74
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "wsu.cereoatlas26@gmail.com")
 
 # Resend configuration
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "re_JjpvxVHy_BDJWp97YLfPieUwEiWFiSta1")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
 # SMTP_SERVER = "smtp.gmail.com"
@@ -166,38 +167,28 @@ def send_via_sendgrid(recipient_email, subject, body):
 
 
 def send_via_resend(recipient_email, subject, body):
-    """Send email using Resend API"""
+    """Send email using Resend Python SDK"""
     print("DEBUG: Sending via Resend API...")
 
     if not RESEND_API_KEY:
         raise Exception("Missing RESEND_API_KEY environment variable")
 
-    payload = {
-        "from": RESEND_FROM_EMAIL,
-        "to": [recipient_email],
-        "subject": subject,
-        "html": body,
-    }
+    resend.api_key = RESEND_API_KEY
 
-    headers = {
-        "Authorization": f"Bearer {RESEND_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    response = requests.post(
-        "https://api.resend.com/emails",
-        json=payload,
-        headers=headers,
-        timeout=30,
+    response = resend.Emails.send(
+        {
+            "from": RESEND_FROM_EMAIL,
+            "to": [recipient_email],
+            "subject": subject,
+            "html": body,
+        }
     )
 
-    if response.status_code in (200, 201):
+    if response:
         print("DEBUG: Resend email sent successfully!")
         return True
 
-    error_detail = response.text
-    print(f"DEBUG: Resend failed with status {response.status_code}: {error_detail}")
-    raise Exception(f"Resend returned {response.status_code}: {error_detail}")
+    raise Exception("Resend API returned empty response")
 
 
 # Helper function to hash the password (same as current setup)
