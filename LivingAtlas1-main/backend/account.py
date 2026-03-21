@@ -26,7 +26,7 @@ import os
 # SendGrid API Key: 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
 
 # SendGrid configuration
-SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "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")
+SENDGRID_API_KEY = os.environ.get("CEREO_API_KEY", "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")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "wsu.cereoatlas26@gmail.com")
 
 # SMTP_SERVER = "smtp.gmail.com"
@@ -100,11 +100,8 @@ def send_recovery_email(recipient_email):
 
         # Send via SendGrid
         print(f"DEBUG: Attempting to send via SendGrid...")
-        if send_via_sendgrid(recipient_email, subject, body):
-            print(f"DEBUG: SendGrid email sent successfully to {recipient_email}!")
-            return
-        else:
-            raise Exception("SendGrid email sending failed")
+        send_via_sendgrid(recipient_email, subject, body)
+        print(f"DEBUG: SendGrid email sent successfully to {recipient_email}!")
 
     except Exception as e:
         print(f"DEBUG: Failed to send email: {e}")
@@ -112,47 +109,43 @@ def send_recovery_email(recipient_email):
 
 def send_via_sendgrid(recipient_email, subject, body):
     """Send email using SendGrid API"""
-    try:
-        print("DEBUG: Sending via SendGrid API...")
-        
-        payload = {
-            "personalizations": [
-                {
-                    "to": [{"email": recipient_email}],
-                    "subject": subject
-                }
-            ],
-            "from": {"email": SENDER_EMAIL, "name": "Living Atlas"},
-            "content": [
-                {
-                    "type": "text/html",
-                    "value": body
-                }
-            ]
-        }
-        
-        headers = {
-            "Authorization": f"Bearer {SENDGRID_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        response = requests.post(
-            "https://api.sendgrid.com/v3/mail/send",
-            json=payload,
-            headers=headers,
-            timeout=30
-        )
-        
-        if response.status_code == 202:
-            print(f"DEBUG: SendGrid email sent successfully!")
-            return True
-        else:
-            print(f"DEBUG: SendGrid failed with status {response.status_code}: {response.text}")
-            return False
-            
-    except Exception as e:
-        print(f"DEBUG: SendGrid error: {e}")
-        return False
+    print("DEBUG: Sending via SendGrid API...")
+    
+    payload = {
+        "personalizations": [
+            {
+                "to": [{"email": recipient_email}],
+                "subject": subject
+            }
+        ],
+        "from": {"email": SENDER_EMAIL, "name": "Living Atlas"},
+        "content": [
+            {
+                "type": "text/html",
+                "value": body
+            }
+        ]
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {SENDGRID_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    response = requests.post(
+        "https://api.sendgrid.com/v3/mail/send",
+        json=payload,
+        headers=headers,
+        timeout=30
+    )
+    
+    if response.status_code == 202:
+        print(f"DEBUG: SendGrid email sent successfully!")
+        return True
+    else:
+        error_detail = response.text
+        print(f"DEBUG: SendGrid failed with status {response.status_code}: {error_detail}")
+        raise Exception(f"SendGrid returned {response.status_code}: {error_detail}")
 
 
 # Helper function to hash the password (same as current setup)
