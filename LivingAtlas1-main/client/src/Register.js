@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import './Register.css';
 import api from './api.js';
 function Register({ closeRegister }) {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState('');
 
     const handleRegister = async (e) => {
         e.preventDefault();
+
+        if (password !== confirmPassword) {
+            setMessage('Passwords do not match.');
+            return;
+        }
+
         try {
 
 
             const formData = new FormData();
-            formData.append('username', name);
+            formData.append('name', name);
             formData.append('email', email);
             formData.append('password', password);
             formData.append('role', false)
@@ -61,6 +67,17 @@ function Register({ closeRegister }) {
                     <div className="form-group">
                         <label htmlFor="password">Password:</label>
                         <input type="password" id="password" name="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="confirmPassword">Confirm Password:</label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                        />
                     </div>
                     <div className="form-actions">
                         <button type="submit" className="action-button">Register</button>
