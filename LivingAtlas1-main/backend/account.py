@@ -29,10 +29,27 @@ import os
 SENDGRID_API_KEY = os.environ.get("CEREO_API_KEY", "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")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "wsu.cereoatlas26@gmail.com")
 
+# Resend configuration
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "re_JjpvxVHy_BDJWp97YLfPieUwEiWFiSta1")
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+
 # SMTP_SERVER = "smtp.gmail.com"
 # SMTP_PORT = 465
 # SENDER_EMAIL = "cereofullstack@gmail.com"
 # SENDER_PASSWORD = "ljun kiiz ngod ypjv"
+
+# SMTP_EMAIL: wsu.cereoatlas26@gmail.com
+# BACKUP_CODE: 
+# 1575 4464
+# 6862 8813
+# 4897 2931
+# 4080 8589
+# 1988 2224
+# 4569 6993
+# 2572 6247
+# 0363 5759
+# 3330 7800
+# 9848 9106
 
 account_router = APIRouter()
 
@@ -98,10 +115,10 @@ def send_recovery_email(recipient_email):
         </html>
         """
 
-        # Send via SendGrid
-        print(f"DEBUG: Attempting to send via SendGrid...")
-        send_via_sendgrid(recipient_email, subject, body)
-        print(f"DEBUG: SendGrid email sent successfully to {recipient_email}!")
+        # Send via Resend
+        print(f"DEBUG: Attempting to send via Resend...")
+        send_via_resend(recipient_email, subject, body)
+        print(f"DEBUG: Resend email sent successfully to {recipient_email}!")
 
     except Exception as e:
         print(f"DEBUG: Failed to send email: {e}")
@@ -146,6 +163,41 @@ def send_via_sendgrid(recipient_email, subject, body):
         error_detail = response.text
         print(f"DEBUG: SendGrid failed with status {response.status_code}: {error_detail}")
         raise Exception(f"SendGrid returned {response.status_code}: {error_detail}")
+
+
+def send_via_resend(recipient_email, subject, body):
+    """Send email using Resend API"""
+    print("DEBUG: Sending via Resend API...")
+
+    if not RESEND_API_KEY:
+        raise Exception("Missing RESEND_API_KEY environment variable")
+
+    payload = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [recipient_email],
+        "subject": subject,
+        "html": body,
+    }
+
+    headers = {
+        "Authorization": f"Bearer {RESEND_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    response = requests.post(
+        "https://api.resend.com/emails",
+        json=payload,
+        headers=headers,
+        timeout=30,
+    )
+
+    if response.status_code in (200, 201):
+        print("DEBUG: Resend email sent successfully!")
+        return True
+
+    error_detail = response.text
+    print(f"DEBUG: Resend failed with status {response.status_code}: {error_detail}")
+    raise Exception(f"Resend returned {response.status_code}: {error_detail}")
 
 
 # Helper function to hash the password (same as current setup)
