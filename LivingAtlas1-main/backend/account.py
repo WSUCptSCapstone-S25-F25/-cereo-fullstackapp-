@@ -71,6 +71,12 @@ class ResetPasswordRequest(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     email: str
 
+# Model for signup notification request
+class SignupNotificationRequest(BaseModel):
+    username: str
+    email: str
+    desired_access_level: str
+
 #Retrieve names and emails of all users for the administration page
 class User(BaseModel):
     name: str
@@ -210,6 +216,41 @@ def send_via_resend(recipient_email, subject, body):
     return True
 
 
+def send_signup_notification(username, email, desired_access_level):
+        """Send signup notification email to admin via active email provider."""
+        admin_email = os.environ.get("ADMIN_NOTIFICATION_EMAIL", "wsu.cereoatlas26@gmail.com").strip()
+        if not admin_email:
+                return
+
+        subject = "New User Signup Request"
+        body = f"""
+        <html>
+            <body>
+                <p>A new user has requested access:</p>
+                <ul>
+                    <li><strong>Username:</strong> {username}</li>
+                    <li><strong>Email:</strong> {email}</li>
+                    <li><strong>Desired Access Level:</strong> {desired_access_level}</li>
+                </ul>
+            </body>
+        </html>
+        """
+        send_via_resend(admin_email, subject, body)
+
+
+@account_router.post("/sendSignupNotification")
+async def send_signup_notification_endpoint(request: SignupNotificationRequest):
+        if not request.username or not request.email or not request.desired_access_level:
+                raise HTTPException(status_code=400, detail="Missing required fields")
+
+        try:
+                send_signup_notification(request.username, request.email, request.desired_access_level)
+                return {"success": True, "message": "Signup notification sent to admin."}
+        except Exception as e:
+                # Preserve signup flow even when notification email fails.
+                return {"success": False, "message": f"Signup saved but email notification failed: {str(e)}"}
+
+
 # Helper function to hash the password (same as current setup)
 def hash_password(password: str, salt: bytes) -> str:
     pepper = bytes("xe5Dx93xefx16x9ax12wy", 'utf-8')
@@ -227,6 +268,28 @@ async def list_database():
         
 
         return {"users": users}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@account_router.post("/fetch_signup_requests")
+async def fetch_signup_requests():
+    try:
+        cur.execute("SELECT username, email, pass, sponsormessage, desiresadmin FROM signupdata")
+        rows = cur.fetchall()
+
+        sign_up_requests = [
+            {
+                "name": row[0],
+                "email": row[1],
+                "password": row[2],
+                "sponsor_message": row[3],
+                "desired_access_level": row[4],
+            }
+            for row in rows
+        ]
+
+        return {"signUpRequests": sign_up_requests}
     except Exception as e:
         return {"error": str(e)}
 
@@ -290,6 +353,16 @@ async def delete_user(email: str):
         return {"message": f"User with email '{email}' has been deleted successfully."}
     except Exception as e:
         return {"error": str(e)}
+
+
+@account_router.post("/deny_request/{email}")
+async def deny_request(email: str):
+    try:
+        cur.execute("DELETE FROM signupdata WHERE email = %s", (email,))
+        conn.commit()
+        return {"success": True, "message": f"Request with email '{email}' has been denied and deleted successfully."}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 # Forgot password endpoint
 @account_router.post("/forgot-password")
@@ -416,6 +489,38 @@ async def make_account(
             return {"success": True, "message": "New account added successfully"}
         else:
             return {"success": False, "message": "All fields must be filled in"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@account_router.post("/uploadSignup")
+async def signup_data(
+    username: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    sponsor_message: str = Form(None),
+    desired_access_level: str = Form("regular")
+):
+    try:
+        if username and email and password:
+            cur.execute("SELECT MAX(SignupID) FROM SignupData")
+            max_signup_id = cur.fetchone()[0] or 0
+            signup_id = max_signup_id + 1
+
+            cur.execute("SELECT COUNT(*) FROM SignupData WHERE Email = %s", (email,))
+            if cur.fetchone()[0] > 0:
+                return {"success": False, "message": "Email must be unique"}
+
+            desires_admin = str(desired_access_level).lower() == "admin"
+            cur.execute(
+                "INSERT INTO SignupData (SignupID, Username, Email, Pass, SponsorMessage, DesiresAdmin) VALUES (%s, %s, %s, %s, %s, %s)",
+                (signup_id, username, email, password, sponsor_message, desires_admin),
+            )
+            conn.commit()
+
+            return {"success": True, "message": "New signup data added successfully"}
+
+        return {"success": False, "message": "All fields must be filled in"}
     except Exception as e:
         return {"success": False, "message": str(e)}
 
