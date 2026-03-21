@@ -31,7 +31,7 @@ SENDGRID_API_KEY = os.environ.get("CEREO_API_KEY", "SG.0Z9p8YdeRXqvVmyvl9O4og.74
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "wsu.cereoatlas26@gmail.com")
 
 # Resend configuration
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+RESEND_API_KEY = (os.environ.get("RESEND_API_KEY") or os.environ.get("CEREO_API_KEY") or "").strip()
 RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
 # SMTP_SERVER = "smtp.gmail.com"
@@ -170,10 +170,16 @@ def send_via_resend(recipient_email, subject, body):
     """Send email using Resend Python SDK"""
     print("DEBUG: Sending via Resend API...")
 
-    if not RESEND_API_KEY:
-        raise Exception("Missing RESEND_API_KEY environment variable")
+    # Read at send-time to avoid stale module-level values after config changes.
+    resend_api_key = (os.environ.get("RESEND_API_KEY") or os.environ.get("CEREO_API_KEY") or "").strip()
 
-    resend.api_key = RESEND_API_KEY
+    if not resend_api_key:
+        raise Exception(
+            "Missing RESEND_API_KEY environment variable on backend service. "
+            "Please set RESEND_API_KEY in Render (backend service), save, and redeploy."
+        )
+
+    resend.api_key = resend_api_key
 
     response = resend.Emails.send(
         {
