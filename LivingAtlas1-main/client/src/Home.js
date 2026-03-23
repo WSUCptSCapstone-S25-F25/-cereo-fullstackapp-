@@ -17,6 +17,8 @@ import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faBell } from '@fortawesome/free-solid-svg-icons';
+import Modal from 'react-modal';
 import FormModal from './FormModal';
 
 function Home(props) {
@@ -42,6 +44,14 @@ function Home(props) {
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
+    const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
+        return !localStorage.getItem('changelog_seen_v1');
+    });
+
+    const closeChangelog = () => {
+        localStorage.setItem('changelog_seen_v1', 'true');
+        setIsChangelogOpen(false);
+    };
 
     useEffect(() => {
         const previousOverflow = document.body.style.overflow;
@@ -329,6 +339,18 @@ function Home(props) {
                     onClose={() => setIsRemovedPanelOpen(false)}
                 />
 
+                {/* Spacer pushes bell to bottom */}
+                <div className="left-sidebar-spacer" />
+
+                {/* Changelog Bell Button */}
+                <button
+                    className="left-sidebar-changelog-button"
+                    onClick={() => setIsChangelogOpen(true)}
+                    title="What's new"
+                >
+                    <FontAwesomeIcon icon={faBell} />
+                </button>
+
                 {/* Expanded Left Sidebar Content */}
                 {isSidebarOpen && (
                     <div className="left-sidebar-content">
@@ -417,6 +439,50 @@ function Home(props) {
                 setCardPanelWidth={setCardPanelWidth}
                 onCardClick={handleCardClick}
             />
+
+            {/* Changelog Modal */}
+            <Modal
+                isOpen={isChangelogOpen}
+                onRequestClose={closeChangelog}
+                className="changelog-modal"
+                overlayClassName="changelog-modal-overlay"
+            >
+                <div className="changelog-modal-header">
+                    <h2>What's New</h2>
+                    <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
+                </div>
+                <div className="changelog-modal-body">
+
+                    <h3>Card Interaction</h3>
+                    <p>Clicking anywhere on a card now opens the Learn More modal.</p>
+                    <p>The Learn More button has been removed from each card.</p>
+                    <p>To zoom the map to a card's location, use the small magnifying glass button next to the card title.</p>
+
+                    <h3>Learn More Modal</h3>
+                    <p>The modal is now wider and uses more of the screen height.</p>
+                    <p>The card image is displayed prominently at the top of the modal.</p>
+
+                    <h3>Card Layout</h3>
+                    <p>All cards now have a consistent fixed size. Resizing the card panel no longer changes individual card dimensions.</p>
+                    <p>Cards now have a hover effect: a subtle lift, shadow, and border highlight when the cursor moves over them.</p>
+
+                    <h3>Card Visuals</h3>
+                    <p>The image area on each card is larger.</p>
+                    <p>The title is more compact, and the category is shown beneath it.</p>
+                    <p>Clicking a card image opens a full-size preview.</p>
+
+                    <h3>Multi-Image Carousel</h3>
+                    <p>Each card now supports multiple images.</p>
+                    <p>Left and right arrow buttons (visible on hover) let you navigate between images.</p>
+                    <p>Dot indicators at the bottom of the image let you jump to a specific image directly.</p>
+                    <p>The same carousel navigation is available in the Learn More modal and the full-size image preview.</p>
+                    <p>A database migration was completed to support this: a dedicated CardImages table was created and all 16 existing thumbnail images were migrated with no data loss.</p>
+
+                </div>
+                <div className="changelog-modal-footer">
+                    <button className="changelog-modal-dismiss" onClick={closeChangelog}>Got it</button>
+                </div>
+            </Modal>
 
             {/* FormModal for Upload */}
             <FormModal

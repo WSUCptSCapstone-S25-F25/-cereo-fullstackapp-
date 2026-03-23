@@ -280,10 +280,11 @@
 .left-sidebar-gis-button,
 .left-sidebar-upload-button,
 .left-sidebar-cards-button,
-.left-sidebar-layers-button, 
+.left-sidebar-layers-button,
 .left-sidebar-trash-button,
 .left-sidebar-ai-button,
-.left-sidebar-tutorial-button {
+.left-sidebar-tutorial-button,
+.left-sidebar-changelog-button {
     background: none;
     border: none;
     color: white;
@@ -295,9 +296,13 @@
     position: static;
 }
 
-/* Spacer to push tutorial button to bottom */
+/* Spacer to push changelog bell button to bottom */
 .left-sidebar-spacer {
     flex-grow: 1;
+}
+
+.left-sidebar-changelog-button {
+    margin-bottom: 12px;
 }
 
 /* Hover effects for all sidebar buttons */
@@ -308,7 +313,8 @@
 .left-sidebar-layers-button:hover,
 .left-sidebar-trash-button:hover,
 .left-sidebar-ai-button:hover,
-.left-sidebar-tutorial-button:hover {
+.left-sidebar-tutorial-button:hover,
+.left-sidebar-changelog-button:hover {
     background-color: #444;
     color: #e0e0e0;
     border-radius: 4px;
