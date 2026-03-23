@@ -573,8 +573,8 @@
   transform: translate(-50%, -50%);
   width: min(1000px, 96vw);
   max-width: none !important;
-  max-height: 95vh;
-  overflow-y: auto;
+  height: 90vh;
+  overflow: hidden;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
@@ -599,8 +599,7 @@
 
 .learn-more-modal-main-image {
   width: 100%;
-  height: auto;
-  max-height: 250px;
+  height: 220px;
   object-fit: cover;
   cursor: zoom-in;
   transition: opacity 0.15s ease;
@@ -633,6 +632,7 @@
 .learn-more-modal-body {
   padding: 20px 24px;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 

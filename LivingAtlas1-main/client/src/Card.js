@@ -438,8 +438,9 @@ function Card(props) {
                 </button>
 
                 <img
-                        src={currentImage.url}
-                        alt={currentImage.alt || "Card Thumbnail"}
+                    className="learn-more-modal-main-image"
+                    src={currentImage.url}
+                    alt={currentImage.alt || "Card Thumbnail"}
                     onClick={handleOpenImagePreview}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
                     role="button"
