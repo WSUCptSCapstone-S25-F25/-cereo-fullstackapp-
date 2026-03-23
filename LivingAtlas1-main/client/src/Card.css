@@ -258,29 +258,45 @@
 
 .favorite-icon {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 24px;
+    top: 8px;
+    right: 8px;
+    font-size: 16px;
     cursor: pointer;
-    transition: color 0.2s;
+    z-index: 2;                          /* always above the thumbnail */
+    background: rgba(255, 255, 255, 0.82);
+    border: 1.5px solid rgba(0, 0, 0, 0.18);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: background 0.2s, transform 0.15s, border-color 0.2s;
 }
 .favorite-icon:hover {
-    color: gold;
+    background: rgba(255, 255, 255, 0.97);
+    border-color: rgba(0, 0, 0, 0.35);
+    transform: scale(1.12);
+}
+.favorite-icon.filled {
+    border-color: #e53935;
 }
 
-/* Differentiate styles for empty and filled FontAwesome stars */
+/* Unfavorited heart — black */
 .favorite-icon svg {
-    stroke-width: 20;
-    stroke: #999;
-    color: white;
-    fill: white;
+    color: #111;
+    fill: #111;
+    width: 1em;
+    height: 1em;
+    display: block;
+    overflow: visible;
 }
 
+/* Favorited heart — red */
 .favorite-icon.filled svg {
-    stroke-width: 20;
-    stroke: darkgoldenrod;
-    color: gold;
-    fill: gold;
+    color: #e53935;
+    fill: #e53935;
 }
 
 /* ---------- Edit Modal Enhancements ---------- */

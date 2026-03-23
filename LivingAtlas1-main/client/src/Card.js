@@ -3,8 +3,8 @@ import Modal from 'react-modal';
 import api from './api.js';
 import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBookmark as solidBookmark } from '@fortawesome/free-solid-svg-icons';
-import { faBookmark as regularBookmark } from '@fortawesome/free-regular-svg-icons';
+import { faHeart as solidHeart } from '@fortawesome/free-solid-svg-icons';
+import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
 
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -316,13 +316,13 @@ function Card(props) {
 
     return (
         <div className={`card ${props.isSelectedFromMap ? 'card--map-selected' : ''}`}>
-            {/* Favorite Bookmark Icon */}
+            {/* Favorite Heart Icon */}
             <span
                 className={`favorite-icon ${isFavorited ? 'filled' : ''}`}
                 onClick={handleFavoriteClick}
                 title={isFavorited ? "Remove from favorites" : "Add to favorites"}
             >
-                <FontAwesomeIcon icon={isFavorited ? solidBookmark : regularBookmark} />
+                <FontAwesomeIcon icon={isFavorited ? solidHeart : regularHeart} />
             </span>
 
             <img
