@@ -3,12 +3,14 @@ import Modal from 'react-modal';
 import api from './api.js';
 import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBookmark as solidBookmark } from '@fortawesome/free-solid-svg-icons';
-import { faBookmark as regularBookmark } from '@fortawesome/free-regular-svg-icons';
+import { faHeart as solidHeart, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
 
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const isEditingRef = useRef(false); // Track editing state across renders
     const [formData, setFormData] = useState({
         ...props.formData,
@@ -60,9 +62,18 @@ function Card(props) {
 
     const handleLearnMore = (e) => {
         e.stopPropagation();
-        props.onZoom?.();
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
+    };
+
+    const handleZoom = (e) => {
+        e.stopPropagation();
+        props.onZoom?.();
+    };
+
+    const handleOpenImagePreview = (e) => {
+        e.stopPropagation();
+        setIsImagePreviewOpen(true);
     };
   
     const handleEdit = (e) => {
@@ -303,31 +314,106 @@ function Card(props) {
         }
     };
 
+    const cardThumbnailSrc =
+        formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
+            ? formData.thumbnail_link
+            : "/CEREO-logo.png";
+
+    // Multi-image support: use images array if available, otherwise fall back to single thumbnail
+    const imageList = formData.images && Array.isArray(formData.images) && formData.images.length > 0
+        ? formData.images.map((img, idx) => typeof img === 'string' ? { url: img, id: idx } : img)
+        : [{ url: cardThumbnailSrc, id: 0 }];
+
+    const currentImage = imageList[currentImageIndex] || imageList[0];
+    const hasMultipleImages = imageList.length > 1;
+
+    const goToPrevImage = (e) => {
+        e.stopPropagation();
+        setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
+    };
+
+    const goToNextImage = (e) => {
+        e.stopPropagation();
+        setCurrentImageIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
+    };
+
+    const goToImageByIndex = (e, index) => {
+        e.stopPropagation();
+        setCurrentImageIndex(index);
+    };
+
     return (
-        <div className={`card ${props.isSelectedFromMap ? 'card--map-selected' : ''}`}>
-            {/* Favorite Bookmark Icon */}
+        <div
+            className={`card ${props.isSelectedFromMap ? 'card--map-selected' : ''}`}
+            onClick={handleLearnMore}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleLearnMore(e); }}
+        >
+            {/* Favorite Heart Icon */}
             <span
                 className={`favorite-icon ${isFavorited ? 'filled' : ''}`}
                 onClick={handleFavoriteClick}
                 title={isFavorited ? "Remove from favorites" : "Add to favorites"}
             >
-                <FontAwesomeIcon icon={isFavorited ? solidBookmark : regularBookmark} />
+                <FontAwesomeIcon icon={isFavorited ? solidHeart : regularHeart} />
             </span>
 
-            <img
-                src={
-                    formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
-                        ? formData.thumbnail_link
-                        : "/CEREO-logo.png"
-                }
-                alt="Card Thumbnail"
-                className="card-thumbnail"
-            />
-            <h2 className="card-title" style={{ marginBottom: '18px' }}>{formData.title}</h2>
+            <div className="card-thumbnail-container">
+                <img
+                    src={currentImage.url}
+                    alt={currentImage.alt || "Card Thumbnail"}
+                    className="card-thumbnail"
+                    onClick={handleOpenImagePreview}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
+                    role="button"
+                    tabIndex={0}
+                />
+                
+                {/* Navigation arrows (only show if multiple images) */}
+                {hasMultipleImages && (
+                    <>
+                        <button
+                            className="card-image-nav card-image-nav-prev"
+                            onClick={goToPrevImage}
+                            title="Previous image"
+                            aria-label="Previous image"
+                        >
+                            ❮
+                        </button>
+                        <button
+                            className="card-image-nav card-image-nav-next"
+                            onClick={goToNextImage}
+                            title="Next image"
+                            aria-label="Next image"
+                        >
+                            ❯
+                        </button>
+                    </>
+                )}
+                
+                {/* Image indicator dots (only show if multiple images) */}
+                {hasMultipleImages && (
+                    <div className="card-image-indicators">
+                        {imageList.map((_, index) => (
+                            <button
+                                key={index}
+                                className={`card-image-dot ${index === currentImageIndex ? 'active' : ''}`}
+                                onClick={(e) => goToImageByIndex(e, index)}
+                                title={`Go to image ${index + 1}`}
+                                aria-label={`Go to image ${index + 1}`}
+                                aria-current={index === currentImageIndex ? 'true' : 'false'}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+            <h2 className="card-title">{formData.title}</h2>
+            <p className="card-meta">{formData.category || "Uncategorized"}</p>
 
             <div className="card-button-row">
-                <button className="card-button card-learn-more" onClick={handleLearnMore}>
-                    <span className="learn-more-text">Learn More</span>
+                <button className="card-button card-zoom" onClick={handleZoom} title="Locate on map">
+                    <FontAwesomeIcon icon={faMagnifyingGlass} />
                 </button>
                 <button className="card-button card-edit" onClick={handleEdit}>Edit</button>
                 <button className="card-button card-delete" onClick={handleDelete}>Delete</button>
@@ -351,20 +437,19 @@ function Card(props) {
                     ×
                 </button>
 
-                <div className="learn-more-modal-header">
-                    <img
-                        src={
-                            formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
-                                ? formData.thumbnail_link
-                                : "/CEREO-logo.png"
-                        }
-                        alt="Card Thumbnail"
-                        className="learn-more-modal-thumbnail"
-                    />
-                    <div className="learn-more-modal-title-block">
-                        <h2>{formData.title}</h2>
-                        <p className="learn-more-modal-subtitle">{formData.category || "Uncategorized"}</p>
-                    </div>
+                <img
+                        src={currentImage.url}
+                        alt={currentImage.alt || "Card Thumbnail"}
+                    onClick={handleOpenImagePreview}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
+                    role="button"
+                    tabIndex={0}
+                    title="Click to enlarge"
+                />
+
+                <div className="learn-more-modal-title-section">
+                    <h2>{formData.title}</h2>
+                    <p className="learn-more-modal-subtitle">{formData.category || "Uncategorized"}</p>
                 </div>
 
                 <div className="learn-more-modal-body">
@@ -418,6 +503,25 @@ function Card(props) {
                 >
                     Close
                 </button>
+            </Modal>
+
+            <Modal
+                isOpen={isImagePreviewOpen}
+                onRequestClose={() => setIsImagePreviewOpen(false)}
+                className="Modal Modal--image-preview"
+                overlayClassName="ModalOverlay ModalOverlay--image-preview"
+            >
+                <button
+                    className="image-preview-close"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsImagePreviewOpen(false);
+                    }}
+                    aria-label="Close image preview"
+                >
+                    ×
+                </button>
+                <img src={currentImage.url} alt="Card enlarged preview" className="image-preview-content" />
             </Modal>
 
             {/* Edit/Create Modal */}
