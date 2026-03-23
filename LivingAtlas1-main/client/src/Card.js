@@ -369,21 +369,20 @@ function Card(props) {
                     ×
                 </button>
 
-                <div className="learn-more-modal-header">
-                    <img
-                        src={cardThumbnailSrc}
-                        alt="Card Thumbnail"
-                        className="learn-more-modal-thumbnail"
-                        onClick={handleOpenImagePreview}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
-                        role="button"
-                        tabIndex={0}
-                        title="Click to enlarge"
-                    />
-                    <div className="learn-more-modal-title-block">
-                        <h2>{formData.title}</h2>
-                        <p className="learn-more-modal-subtitle">{formData.category || "Uncategorized"}</p>
-                    </div>
+                <img
+                    src={cardThumbnailSrc}
+                    alt="Card Thumbnail"
+                    className="learn-more-modal-main-image"
+                    onClick={handleOpenImagePreview}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
+                    role="button"
+                    tabIndex={0}
+                    title="Click to enlarge"
+                />
+
+                <div className="learn-more-modal-title-section">
+                    <h2>{formData.title}</h2>
+                    <p className="learn-more-modal-subtitle">{formData.category || "Uncategorized"}</p>
                 </div>
 
                 <div className="learn-more-modal-body">
