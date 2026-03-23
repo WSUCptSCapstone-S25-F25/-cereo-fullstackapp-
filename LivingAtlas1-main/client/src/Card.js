@@ -9,6 +9,7 @@ import { faBookmark as regularBookmark } from '@fortawesome/free-regular-svg-ico
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
     const isEditingRef = useRef(false); // Track editing state across renders
     const [formData, setFormData] = useState({
         ...props.formData,
@@ -303,6 +304,16 @@ function Card(props) {
         }
     };
 
+    const cardThumbnailSrc =
+        formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
+            ? formData.thumbnail_link
+            : "/CEREO-logo.png";
+
+    const handleOpenImagePreview = (e) => {
+        e.stopPropagation();
+        setIsImagePreviewOpen(true);
+    };
+
     return (
         <div className={`card ${props.isSelectedFromMap ? 'card--map-selected' : ''}`}>
             {/* Favorite Bookmark Icon */}
@@ -315,15 +326,20 @@ function Card(props) {
             </span>
 
             <img
-                src={
-                    formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
-                        ? formData.thumbnail_link
-                        : "/CEREO-logo.png"
-                }
+                src={cardThumbnailSrc}
                 alt="Card Thumbnail"
                 className="card-thumbnail"
+                onClick={handleOpenImagePreview}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        handleOpenImagePreview(e);
+                    }
+                }}
+                role="button"
+                tabIndex={0}
             />
-            <h2 className="card-title" style={{ marginBottom: '18px' }}>{formData.title}</h2>
+            <h2 className="card-title">{formData.title}</h2>
+            <p className="card-meta">{formData.category || "Uncategorized"}</p>
 
             <div className="card-button-row">
                 <button className="card-button card-learn-more" onClick={handleLearnMore}>
@@ -353,11 +369,7 @@ function Card(props) {
 
                 <div className="learn-more-modal-header">
                     <img
-                        src={
-                            formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
-                                ? formData.thumbnail_link
-                                : "/CEREO-logo.png"
-                        }
+                        src={cardThumbnailSrc}
                         alt="Card Thumbnail"
                         className="learn-more-modal-thumbnail"
                     />
@@ -418,6 +430,25 @@ function Card(props) {
                 >
                     Close
                 </button>
+            </Modal>
+
+            <Modal
+                isOpen={isImagePreviewOpen}
+                onRequestClose={() => setIsImagePreviewOpen(false)}
+                className="Modal Modal--image-preview"
+                overlayClassName="ModalOverlay ModalOverlay--image-preview"
+            >
+                <button
+                    className="image-preview-close"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsImagePreviewOpen(false);
+                    }}
+                    aria-label="Close image preview"
+                >
+                    ×
+                </button>
+                <img src={cardThumbnailSrc} alt="Card enlarged preview" className="image-preview-content" />
             </Modal>
 
             {/* Edit/Create Modal */}
