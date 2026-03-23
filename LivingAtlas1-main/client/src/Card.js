@@ -3,7 +3,7 @@ import Modal from 'react-modal';
 import api from './api.js';
 import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart as solidHeart } from '@fortawesome/free-solid-svg-icons';
+import { faHeart as solidHeart, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
 
 function Card(props) {
@@ -61,9 +61,13 @@ function Card(props) {
 
     const handleLearnMore = (e) => {
         e.stopPropagation();
-        props.onZoom?.();
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
+    };
+
+    const handleZoom = (e) => {
+        e.stopPropagation();
+        props.onZoom?.();
     };
   
     const handleEdit = (e) => {
@@ -315,7 +319,13 @@ function Card(props) {
     };
 
     return (
-        <div className={`card ${props.isSelectedFromMap ? 'card--map-selected' : ''}`}>
+        <div
+            className={`card ${props.isSelectedFromMap ? 'card--map-selected' : ''}`}
+            onClick={handleLearnMore}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleLearnMore(e); }}
+        >
             {/* Favorite Heart Icon */}
             <span
                 className={`favorite-icon ${isFavorited ? 'filled' : ''}`}
@@ -329,21 +339,13 @@ function Card(props) {
                 src={cardThumbnailSrc}
                 alt="Card Thumbnail"
                 className="card-thumbnail"
-                onClick={handleOpenImagePreview}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                        handleOpenImagePreview(e);
-                    }
-                }}
-                role="button"
-                tabIndex={0}
             />
             <h2 className="card-title">{formData.title}</h2>
             <p className="card-meta">{formData.category || "Uncategorized"}</p>
 
             <div className="card-button-row">
-                <button className="card-button card-learn-more" onClick={handleLearnMore}>
-                    <span className="learn-more-text">Learn More</span>
+                <button className="card-button card-zoom" onClick={handleZoom} title="Locate on map">
+                    <FontAwesomeIcon icon={faMagnifyingGlass} />
                 </button>
                 <button className="card-button card-edit" onClick={handleEdit}>Edit</button>
                 <button className="card-button card-delete" onClick={handleDelete}>Delete</button>
@@ -372,6 +374,11 @@ function Card(props) {
                         src={cardThumbnailSrc}
                         alt="Card Thumbnail"
                         className="learn-more-modal-thumbnail"
+                        onClick={handleOpenImagePreview}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
+                        role="button"
+                        tabIndex={0}
+                        title="Click to enlarge"
                     />
                     <div className="learn-more-modal-title-block">
                         <h2>{formData.title}</h2>
