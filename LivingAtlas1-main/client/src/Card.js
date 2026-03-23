@@ -10,6 +10,7 @@ function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const isEditingRef = useRef(false); // Track editing state across renders
     const [formData, setFormData] = useState({
         ...props.formData,
@@ -68,6 +69,11 @@ function Card(props) {
     const handleZoom = (e) => {
         e.stopPropagation();
         props.onZoom?.();
+    };
+
+    const handleOpenImagePreview = (e) => {
+        e.stopPropagation();
+        setIsImagePreviewOpen(true);
     };
   
     const handleEdit = (e) => {
@@ -313,9 +319,27 @@ function Card(props) {
             ? formData.thumbnail_link
             : "/CEREO-logo.png";
 
-    const handleOpenImagePreview = (e) => {
+    // Multi-image support: use images array if available, otherwise fall back to single thumbnail
+    const imageList = formData.images && Array.isArray(formData.images) && formData.images.length > 0
+        ? formData.images.map((img, idx) => typeof img === 'string' ? { url: img, id: idx } : img)
+        : [{ url: cardThumbnailSrc, id: 0 }];
+
+    const currentImage = imageList[currentImageIndex] || imageList[0];
+    const hasMultipleImages = imageList.length > 1;
+
+    const goToPrevImage = (e) => {
         e.stopPropagation();
-        setIsImagePreviewOpen(true);
+        setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
+    };
+
+    const goToNextImage = (e) => {
+        e.stopPropagation();
+        setCurrentImageIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
+    };
+
+    const goToImageByIndex = (e, index) => {
+        e.stopPropagation();
+        setCurrentImageIndex(index);
     };
 
     return (
@@ -335,11 +359,55 @@ function Card(props) {
                 <FontAwesomeIcon icon={isFavorited ? solidHeart : regularHeart} />
             </span>
 
-            <img
-                src={cardThumbnailSrc}
-                alt="Card Thumbnail"
-                className="card-thumbnail"
-            />
+            <div className="card-thumbnail-container">
+                <img
+                    src={currentImage.url}
+                    alt={currentImage.alt || "Card Thumbnail"}
+                    className="card-thumbnail"
+                    onClick={handleOpenImagePreview}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
+                    role="button"
+                    tabIndex={0}
+                />
+                
+                {/* Navigation arrows (only show if multiple images) */}
+                {hasMultipleImages && (
+                    <>
+                        <button
+                            className="card-image-nav card-image-nav-prev"
+                            onClick={goToPrevImage}
+                            title="Previous image"
+                            aria-label="Previous image"
+                        >
+                            ❮
+                        </button>
+                        <button
+                            className="card-image-nav card-image-nav-next"
+                            onClick={goToNextImage}
+                            title="Next image"
+                            aria-label="Next image"
+                        >
+                            ❯
+                        </button>
+                    </>
+                )}
+                
+                {/* Image indicator dots (only show if multiple images) */}
+                {hasMultipleImages && (
+                    <div className="card-image-indicators">
+                        {imageList.map((_, index) => (
+                            <button
+                                key={index}
+                                className={`card-image-dot ${index === currentImageIndex ? 'active' : ''}`}
+                                onClick={(e) => goToImageByIndex(e, index)}
+                                title={`Go to image ${index + 1}`}
+                                aria-label={`Go to image ${index + 1}`}
+                                aria-current={index === currentImageIndex ? 'true' : 'false'}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
             <h2 className="card-title">{formData.title}</h2>
             <p className="card-meta">{formData.category || "Uncategorized"}</p>
 
@@ -370,9 +438,8 @@ function Card(props) {
                 </button>
 
                 <img
-                    src={cardThumbnailSrc}
-                    alt="Card Thumbnail"
-                    className="learn-more-modal-main-image"
+                        src={currentImage.url}
+                        alt={currentImage.alt || "Card Thumbnail"}
                     onClick={handleOpenImagePreview}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
                     role="button"
@@ -454,7 +521,7 @@ function Card(props) {
                 >
                     ×
                 </button>
-                <img src={cardThumbnailSrc} alt="Card enlarged preview" className="image-preview-content" />
+                <img src={currentImage.url} alt="Card enlarged preview" className="image-preview-content" />
             </Modal>
 
             {/* Edit/Create Modal */}
