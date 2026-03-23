@@ -544,6 +544,18 @@ def profileCards(username: str):
             c.Latitude,
             c.Longitude,
             c.Thumbnail_Link,
+            -- Multi-image support: aggregate images from CardImages table
+            COALESCE(
+                json_agg(
+                    DISTINCT jsonb_build_object(
+                        'url', ci.ImageURL,
+                        'alt', ci.AltText,
+                        'order', ci.DisplayOrder
+                    )
+                    ORDER BY ci.DisplayOrder ASC
+                ) FILTER (WHERE ci.ImageID IS NOT NULL),
+                '[]'
+            ) AS images,
             COALESCE(
                 json_agg(
                     DISTINCT jsonb_build_object(
@@ -557,6 +569,7 @@ def profileCards(username: str):
             ) AS files
         FROM Cards c
         INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+        LEFT JOIN CardImages ci ON c.CardID = ci.CardID
         LEFT JOIN Files f ON c.CardID = f.CardID
         LEFT JOIN CardTags ct ON c.CardID = ct.CardID
         LEFT JOIN Tags t ON ct.TagID = t.TagID
@@ -569,7 +582,7 @@ def profileCards(username: str):
     rows = cur.fetchall()
     columns = [
         "username", "email", "title", "category", "date", "description", "org",
-        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
+        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "images", "files"
     ]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
