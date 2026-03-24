@@ -311,7 +311,7 @@
     background-color: #005fa3;
 }
 
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn) {
+.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-modal-add-images-btn) {
     margin-top: 20px;
     padding: 10px 20px;
     border: none;
@@ -322,7 +322,7 @@
     cursor: pointer;
 }
 
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):hover {
+.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-modal-add-images-btn):hover {
     background-color: #0062cc;
 }
 
@@ -708,6 +708,16 @@
   background: #f1f5f9;
 }
 
+.learn-more-modal-add-images-btn {
+  background: #ffffff;
+  color: #0f766e;
+  border-color: #99f6e4;
+}
+
+.learn-more-modal-add-images-btn:hover {
+  background: #f0fdfa;
+}
+
 .learn-more-gallery {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -770,6 +780,30 @@
   color: #6b7280;
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.learn-more-gallery-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  background: rgba(17, 24, 39, 0.75);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.learn-more-gallery-delete-btn:hover {
+  background: rgba(185, 28, 28, 0.9);
 }
 
 .learn-more-modal-title-section {

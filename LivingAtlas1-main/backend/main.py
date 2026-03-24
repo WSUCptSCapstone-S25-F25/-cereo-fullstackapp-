@@ -29,6 +29,7 @@ import json
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 
 
@@ -40,6 +41,7 @@ from endpoint_files.card import card_router
 from endpoint_files import filterbar_router
 from endpoint_files import map_router
 from endpoint_files import arcgis_router
+from endpoint_files import images_router
 
 
 
@@ -100,6 +102,10 @@ app.include_router(card_router)
 app.include_router(filterbar_router)
 app.include_router(map_router)
 app.include_router(arcgis_router)
+app.include_router(images_router)
+
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 

@@ -14,8 +14,10 @@ function Card(props) {
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
     const [isLearnMoreEditMode, setIsLearnMoreEditMode] = useState(false);
     const [learnMoreBackup, setLearnMoreBackup] = useState(null);
+    const [isImageMutationLoading, setIsImageMutationLoading] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const isEditingRef = useRef(false); // Track editing state across renders
+    const learnMoreImageInputRef = useRef(null);
     const [formData, setFormData] = useState({
         ...props.formData,
         files: props.formData?.files || [],      // <-- ensure files array always exists
@@ -324,6 +326,12 @@ function Card(props) {
         }));
         isEditingRef.current = true;
         setIsLearnMoreEditMode(true);
+
+        if (formData.cardID || props.cardID) {
+            refreshCardImages().catch((error) => {
+                console.error('Failed to refresh card images:', error);
+            });
+        }
     };
 
     const handleLearnMoreEditCancel = (e) => {
@@ -361,14 +369,133 @@ function Card(props) {
         }
     };
 
+    const resolveImageUrl = (url) => {
+        if (!url) return "/CEREO-logo.png";
+        if (/^https?:\/\//i.test(url)) return url;
+
+        const baseURL = (api.defaults.baseURL || "").replace(/\/$/, "");
+        if (!baseURL) return url;
+
+        return url.startsWith('/') ? `${baseURL}${url}` : `${baseURL}/${url}`;
+    };
+
+    const normalizeImageRecord = (image, fallbackId = 0) => {
+        if (typeof image === 'string') {
+            return {
+                id: fallbackId,
+                imageID: null,
+                url: resolveImageUrl(image),
+                alt: ''
+            };
+        }
+
+        if (!image || typeof image !== 'object') {
+            return {
+                id: fallbackId,
+                imageID: null,
+                url: '/CEREO-logo.png',
+                alt: ''
+            };
+        }
+
+        return {
+            ...image,
+            id: image.id ?? image.imageID ?? image.imageId ?? fallbackId,
+            imageID: image.imageID ?? image.imageId ?? image.id ?? null,
+            url: resolveImageUrl(image.url || image.imageURL || image.thumbnail_link || ''),
+            alt: image.alt || image.altText || ''
+        };
+    };
+
+    const refreshCardImages = async () => {
+        const cardID = formData.cardID || props.cardID;
+        if (!cardID) return;
+
+        const response = await api.get(`/cardImages/${cardID}`);
+        const freshImages = (response.data?.images || []).map((img, idx) => normalizeImageRecord(img, idx));
+
+        setFormData((prev) => ({
+            ...prev,
+            images: freshImages
+        }));
+
+        setCurrentImageIndex((prev) => {
+            if (freshImages.length === 0) return 0;
+            return Math.min(prev, freshImages.length - 1);
+        });
+    };
+
+    const handleLearnMoreImageUploadClick = (e) => {
+        e.stopPropagation();
+        if (learnMoreImageInputRef.current) {
+            learnMoreImageInputRef.current.click();
+        }
+    };
+
+    const handleLearnMoreImageUpload = async (e) => {
+        e.stopPropagation();
+        const files = Array.from(e.target.files || []);
+        e.target.value = '';
+
+        if (files.length === 0) return;
+
+        const cardID = formData.cardID || props.cardID;
+        if (!cardID) {
+            alert('Unable to add images because card ID is missing.');
+            return;
+        }
+
+        setIsImageMutationLoading(true);
+        try {
+            for (const file of files) {
+                const uploadFormData = new FormData();
+                uploadFormData.append('cardID', cardID);
+                uploadFormData.append('altText', file.name || '');
+                uploadFormData.append('image', file);
+                await api.post('/uploadCardImage', uploadFormData);
+            }
+
+            await refreshCardImages();
+        } catch (error) {
+            console.error('Failed to upload card images:', error);
+            alert('Failed to upload one or more images.');
+        } finally {
+            setIsImageMutationLoading(false);
+        }
+    };
+
+    const handleLearnMoreImageDelete = async (e, image) => {
+        e.stopPropagation();
+
+        if (isImageMutationLoading) return;
+
+        if (!image?.imageID) {
+            alert('This image cannot be deleted because no image ID was found.');
+            return;
+        }
+
+        if (!window.confirm('Delete this image?')) return;
+
+        setIsImageMutationLoading(true);
+        try {
+            await api.delete(`/deleteCardImage/${image.imageID}`);
+            await refreshCardImages();
+        } catch (error) {
+            console.error('Failed to delete card image:', error);
+            alert('Failed to delete image.');
+        } finally {
+            setIsImageMutationLoading(false);
+        }
+    };
+
     const cardThumbnailSrc =
         formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
-            ? formData.thumbnail_link
+            ? resolveImageUrl(formData.thumbnail_link)
             : "/CEREO-logo.png";
 
     // Multi-image support: use images array if available, otherwise fall back to single thumbnail
     const imageList = formData.images && Array.isArray(formData.images) && formData.images.length > 0
-        ? formData.images.map((img, idx) => typeof img === 'string' ? { url: img, id: idx } : img)
+        ? formData.images.map((img, idx) => normalizeImageRecord(img, idx))
         : [{ url: cardThumbnailSrc, id: 0 }];
 
     const currentImage = imageList[currentImageIndex] || imageList[0];
@@ -497,16 +624,24 @@ function Card(props) {
                     {isLearnMoreEditMode ? (
                         <div className="learn-more-modal-toolbar-actions">
                             <button
+                                type="button"
+                                className="learn-more-modal-toolbar-btn learn-more-modal-add-images-btn"
+                                onClick={handleLearnMoreImageUploadClick}
+                                disabled={loading || isImageMutationLoading}
+                            >
+                                {isImageMutationLoading ? 'Working...' : 'Add Images'}
+                            </button>
+                            <button
                                 className="learn-more-modal-toolbar-btn save"
                                 onClick={handleLearnMoreEditSave}
-                                disabled={loading}
+                                disabled={loading || isImageMutationLoading}
                             >
                                 {loading ? 'Saving...' : 'Save'}
                             </button>
                             <button
                                 className="learn-more-modal-toolbar-btn cancel"
                                 onClick={handleLearnMoreEditCancel}
-                                disabled={loading}
+                                disabled={loading || isImageMutationLoading}
                             >
                                 Cancel
                             </button>
@@ -547,6 +682,15 @@ function Card(props) {
                 </div>
 
                 <div className="learn-more-modal-body">
+                    <input
+                        ref={learnMoreImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleLearnMoreImageUpload}
+                        style={{ display: 'none' }}
+                    />
+
                     <div className="learn-more-gallery">
                         <button
                             type="button"
@@ -562,6 +706,23 @@ function Card(props) {
                                 />
                             ) : (
                                 <span className="learn-more-gallery-placeholder">No Image</span>
+                            )}
+                            {isLearnMoreEditMode && learnMoreGallerySlots[0]?.imageID && (
+                                <span
+                                    className="learn-more-gallery-delete-btn"
+                                    onClick={(e) => handleLearnMoreImageDelete(e, learnMoreGallerySlots[0])}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            handleLearnMoreImageDelete(e, learnMoreGallerySlots[0]);
+                                        }
+                                    }}
+                                    title="Delete image"
+                                    aria-label="Delete image"
+                                    role="button"
+                                    tabIndex={0}
+                                >
+                                    ×
+                                </span>
                             )}
                         </button>
 
@@ -582,6 +743,23 @@ function Card(props) {
                                         />
                                     ) : (
                                         <span className="learn-more-gallery-placeholder">No Image</span>
+                                    )}
+                                    {isLearnMoreEditMode && image?.imageID && (
+                                        <span
+                                            className="learn-more-gallery-delete-btn"
+                                            onClick={(e) => handleLearnMoreImageDelete(e, image)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    handleLearnMoreImageDelete(e, image);
+                                                }
+                                            }}
+                                            title="Delete image"
+                                            aria-label="Delete image"
+                                            role="button"
+                                            tabIndex={0}
+                                        >
+                                            ×
+                                        </span>
                                     )}
                                 </button>
                             ))}
