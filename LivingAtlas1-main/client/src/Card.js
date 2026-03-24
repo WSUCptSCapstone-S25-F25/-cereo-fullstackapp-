@@ -373,6 +373,8 @@ function Card(props) {
 
     const currentImage = imageList[currentImageIndex] || imageList[0];
     const hasMultipleImages = imageList.length > 1;
+    const learnMoreGalleryImages = imageList.slice(0, 5);
+    const learnMoreGallerySlots = Array.from({ length: 5 }, (_, index) => learnMoreGalleryImages[index] || null);
 
     const goToPrevImage = (e) => {
         e.stopPropagation();
@@ -387,6 +389,12 @@ function Card(props) {
     const goToImageByIndex = (e, index) => {
         e.stopPropagation();
         setCurrentImageIndex(index);
+    };
+
+    const openImagePreviewAtIndex = (e, index) => {
+        e.stopPropagation();
+        setCurrentImageIndex(index);
+        setIsImagePreviewOpen(true);
     };
 
     return (
@@ -458,8 +466,11 @@ function Card(props) {
 
             <div className="card-title-row">
                 <h2 className="card-title">{formData.title}</h2>
+            </div>
+            <div className="card-meta-row">
+                <p className="card-meta">{formData.category || "Uncategorized"}</p>
                 <button
-                    className="card-title-zoom-btn"
+                    className="card-meta-zoom-btn"
                     onClick={handleZoom}
                     title="Locate on map"
                     aria-label="Locate on map"
@@ -467,7 +478,6 @@ function Card(props) {
                     <FontAwesomeIcon icon={faMagnifyingGlass} />
                 </button>
             </div>
-            <p className="card-meta">{formData.category || "Uncategorized"}</p>
 
             {/* Learn More Modal */}
             <Modal
@@ -537,16 +547,46 @@ function Card(props) {
                 </div>
 
                 <div className="learn-more-modal-body">
-                    <img
-                        className="learn-more-modal-main-image"
-                        src={currentImage.url}
-                        alt={currentImage.alt || "Card Thumbnail"}
-                        onClick={handleOpenImagePreview}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
-                        role="button"
-                        tabIndex={0}
-                        title="Click to enlarge"
-                    />
+                    <div className="learn-more-gallery">
+                        <button
+                            type="button"
+                            className="learn-more-gallery-tile learn-more-gallery-tile--primary"
+                            onClick={(e) => learnMoreGallerySlots[0] && openImagePreviewAtIndex(e, 0)}
+                            title={learnMoreGallerySlots[0] ? 'Open image preview' : 'No image available'}
+                        >
+                            {learnMoreGallerySlots[0] ? (
+                                <img
+                                    className="learn-more-gallery-image"
+                                    src={learnMoreGallerySlots[0].url}
+                                    alt={learnMoreGallerySlots[0].alt || 'Card image 1'}
+                                />
+                            ) : (
+                                <span className="learn-more-gallery-placeholder">No Image</span>
+                            )}
+                        </button>
+
+                        <div className="learn-more-gallery-side-grid">
+                            {learnMoreGallerySlots.slice(1).map((image, index) => (
+                                <button
+                                    key={`learn-more-gallery-slot-${index + 1}`}
+                                    type="button"
+                                    className={`learn-more-gallery-tile ${image ? '' : 'learn-more-gallery-tile--placeholder'}`}
+                                    onClick={(e) => image && openImagePreviewAtIndex(e, index + 1)}
+                                    title={image ? `Open image ${index + 2}` : 'No image available'}
+                                >
+                                    {image ? (
+                                        <img
+                                            className="learn-more-gallery-image"
+                                            src={image.url}
+                                            alt={image.alt || `Card image ${index + 2}`}
+                                        />
+                                    ) : (
+                                        <span className="learn-more-gallery-placeholder">No Image</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
                     <div className="learn-more-modal-title-section">
                         {isLearnMoreEditMode ? (
