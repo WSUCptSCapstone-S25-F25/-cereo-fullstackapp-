@@ -15,6 +15,8 @@ function Card(props) {
     const [isLearnMoreEditMode, setIsLearnMoreEditMode] = useState(false);
     const [learnMoreBackup, setLearnMoreBackup] = useState(null);
     const [isImageMutationLoading, setIsImageMutationLoading] = useState(false);
+    const [pendingImageSlotIndex, setPendingImageSlotIndex] = useState(null);
+    const [sessionUploadedImageIDs, setSessionUploadedImageIDs] = useState([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const isEditingRef = useRef(false); // Track editing state across renders
     const learnMoreImageInputRef = useRef(null);
@@ -318,6 +320,7 @@ function Card(props) {
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
         setLearnMoreBackup({ ...formData });
+        setSessionUploadedImageIDs([]);
         setFormData((prev) => ({
             ...prev,
             original_username: prev.original_username || prev.username,
@@ -334,13 +337,35 @@ function Card(props) {
         }
     };
 
-    const handleLearnMoreEditCancel = (e) => {
-        e.stopPropagation();
+    const rollbackSessionUploads = async () => {
+        if (sessionUploadedImageIDs.length === 0) return;
+
+        for (const imageID of sessionUploadedImageIDs) {
+            try {
+                await api.delete(`/deleteCardImage/${imageID}`);
+            } catch (error) {
+                console.error('Failed to rollback uploaded image:', imageID, error);
+            }
+        }
+
+        setSessionUploadedImageIDs([]);
+    };
+
+    const handleLearnMoreEditCancel = async (e) => {
+        if (e?.stopPropagation) e.stopPropagation();
+        if (isImageMutationLoading) return;
+
+        setIsImageMutationLoading(true);
+        await rollbackSessionUploads();
+
         if (learnMoreBackup) {
             setFormData(learnMoreBackup);
         }
+
         isEditingRef.current = false;
         setIsLearnMoreEditMode(false);
+        setPendingImageSlotIndex(null);
+        setIsImageMutationLoading(false);
     };
 
     const handleLearnMoreEditSave = async (e) => {
@@ -349,7 +374,18 @@ function Card(props) {
         if (success) {
             setIsLearnMoreEditMode(false);
             setLearnMoreBackup(null);
+            setSessionUploadedImageIDs([]);
         }
+    };
+
+    const handleLearnMoreClose = async (e) => {
+        if (e?.stopPropagation) e.stopPropagation();
+
+        if (isLearnMoreEditMode) {
+            await handleLearnMoreEditCancel(e);
+        }
+
+        setIsModalOpen(false);
     };
 
 
@@ -407,7 +443,7 @@ function Card(props) {
         };
     };
 
-    const refreshCardImages = async () => {
+    const refreshCardImages = async (preferredIndex = null) => {
         const cardID = formData.cardID || props.cardID;
         if (!cardID) return;
 
@@ -421,12 +457,24 @@ function Card(props) {
 
         setCurrentImageIndex((prev) => {
             if (freshImages.length === 0) return 0;
+            if (typeof preferredIndex === 'number') {
+                return Math.max(0, Math.min(preferredIndex, freshImages.length - 1));
+            }
             return Math.min(prev, freshImages.length - 1);
         });
     };
 
-    const handleLearnMoreImageUploadClick = (e) => {
+    const handleLearnMoreGalleryTileClick = (e, image, slotIndex) => {
         e.stopPropagation();
+
+        if (image) {
+            openImagePreviewAtIndex(e, slotIndex);
+            return;
+        }
+
+        if (!isLearnMoreEditMode || isImageMutationLoading) return;
+
+        setPendingImageSlotIndex(slotIndex);
         if (learnMoreImageInputRef.current) {
             learnMoreImageInputRef.current.click();
         }
@@ -434,10 +482,10 @@ function Card(props) {
 
     const handleLearnMoreImageUpload = async (e) => {
         e.stopPropagation();
-        const files = Array.from(e.target.files || []);
+        const file = e.target.files?.[0];
         e.target.value = '';
 
-        if (files.length === 0) return;
+        if (!file) return;
 
         const cardID = formData.cardID || props.cardID;
         if (!cardID) {
@@ -447,20 +495,24 @@ function Card(props) {
 
         setIsImageMutationLoading(true);
         try {
-            for (const file of files) {
-                const uploadFormData = new FormData();
-                uploadFormData.append('cardID', cardID);
-                uploadFormData.append('altText', file.name || '');
-                uploadFormData.append('image', file);
-                await api.post('/uploadCardImage', uploadFormData);
+            const uploadFormData = new FormData();
+            uploadFormData.append('cardID', cardID);
+            uploadFormData.append('altText', file.name || `Card image ${(pendingImageSlotIndex ?? 0) + 1}`);
+            uploadFormData.append('image', file);
+            const uploadResponse = await api.post('/uploadCardImage', uploadFormData);
+            const uploadedImageID = uploadResponse?.data?.imageID;
+
+            if (uploadedImageID) {
+                setSessionUploadedImageIDs((prev) => [...prev, uploadedImageID]);
             }
 
-            await refreshCardImages();
+            await refreshCardImages(pendingImageSlotIndex);
         } catch (error) {
             console.error('Failed to upload card images:', error);
-            alert('Failed to upload one or more images.');
+            alert('Failed to upload image.');
         } finally {
             setIsImageMutationLoading(false);
+            setPendingImageSlotIndex(null);
         }
     };
 
@@ -479,6 +531,7 @@ function Card(props) {
         setIsImageMutationLoading(true);
         try {
             await api.delete(`/deleteCardImage/${image.imageID}`);
+            setSessionUploadedImageIDs((prev) => prev.filter((id) => id !== image.imageID));
             await refreshCardImages();
         } catch (error) {
             console.error('Failed to delete card image:', error);
@@ -488,10 +541,16 @@ function Card(props) {
         }
     };
 
+    const displayCardData = isLearnMoreEditMode && learnMoreBackup ? learnMoreBackup : formData;
+
     const cardThumbnailSrc =
-        formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
-            ? resolveImageUrl(formData.thumbnail_link)
+        displayCardData.thumbnail_link && displayCardData.thumbnail_link.trim() !== ""
+            ? resolveImageUrl(displayCardData.thumbnail_link)
             : "/CEREO-logo.png";
+
+    const cardImageList = displayCardData.images && Array.isArray(displayCardData.images) && displayCardData.images.length > 0
+        ? displayCardData.images.map((img, idx) => normalizeImageRecord(img, idx))
+        : [{ url: cardThumbnailSrc, id: 0 }];
 
     // Multi-image support: use images array if available, otherwise fall back to single thumbnail
     const imageList = formData.images && Array.isArray(formData.images) && formData.images.length > 0
@@ -499,18 +558,19 @@ function Card(props) {
         : [{ url: cardThumbnailSrc, id: 0 }];
 
     const currentImage = imageList[currentImageIndex] || imageList[0];
-    const hasMultipleImages = imageList.length > 1;
+    const cardCurrentImage = cardImageList[currentImageIndex] || cardImageList[0];
+    const hasMultipleImages = cardImageList.length > 1;
     const learnMoreGalleryImages = imageList.slice(0, 5);
     const learnMoreGallerySlots = Array.from({ length: 5 }, (_, index) => learnMoreGalleryImages[index] || null);
 
     const goToPrevImage = (e) => {
         e.stopPropagation();
-        setCurrentImageIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
+        setCurrentImageIndex((prev) => (prev === 0 ? cardImageList.length - 1 : prev - 1));
     };
 
     const goToNextImage = (e) => {
         e.stopPropagation();
-        setCurrentImageIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
+        setCurrentImageIndex((prev) => (prev === cardImageList.length - 1 ? 0 : prev + 1));
     };
 
     const goToImageByIndex = (e, index) => {
@@ -543,8 +603,8 @@ function Card(props) {
 
             <div className="card-thumbnail-container">
                 <img
-                    src={currentImage.url}
-                    alt={currentImage.alt || "Card Thumbnail"}
+                    src={cardCurrentImage.url}
+                    alt={cardCurrentImage.alt || "Card Thumbnail"}
                     className="card-thumbnail"
                     onClick={handleOpenImagePreview}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
@@ -577,7 +637,7 @@ function Card(props) {
                 {/* Image indicator dots (only show if multiple images) */}
                 {hasMultipleImages && (
                     <div className="card-image-indicators">
-                        {imageList.map((_, index) => (
+                        {cardImageList.map((_, index) => (
                             <button
                                 key={index}
                                 className={`card-image-dot ${index === currentImageIndex ? 'active' : ''}`}
@@ -592,10 +652,10 @@ function Card(props) {
             </div>
 
             <div className="card-title-row">
-                <h2 className="card-title">{formData.title}</h2>
+                <h2 className="card-title">{displayCardData.title}</h2>
             </div>
             <div className="card-meta-row">
-                <p className="card-meta">{formData.category || "Uncategorized"}</p>
+                <p className="card-meta">{displayCardData.category || "Uncategorized"}</p>
                 <button
                     className="card-meta-zoom-btn"
                     onClick={handleZoom}
@@ -609,7 +669,7 @@ function Card(props) {
             {/* Learn More Modal */}
             <Modal
                 isOpen={isModalOpen}
-                onRequestClose={() => setIsModalOpen(false)}
+                onRequestClose={handleLearnMoreClose}
                 className="Modal Modal--learn-more"
                 overlayClassName="ModalOverlay ModalOverlay--learn-more"
             >
@@ -623,14 +683,6 @@ function Card(props) {
                 <div className="learn-more-modal-toolbar">
                     {isLearnMoreEditMode ? (
                         <div className="learn-more-modal-toolbar-actions">
-                            <button
-                                type="button"
-                                className="learn-more-modal-toolbar-btn learn-more-modal-add-images-btn"
-                                onClick={handleLearnMoreImageUploadClick}
-                                disabled={loading || isImageMutationLoading}
-                            >
-                                {isImageMutationLoading ? 'Working...' : 'Add Images'}
-                            </button>
                             <button
                                 className="learn-more-modal-toolbar-btn save"
                                 onClick={handleLearnMoreEditSave}
@@ -669,11 +721,7 @@ function Card(props) {
 
                         <button
                             className="learn-more-modal-close"
-                            onClick={e => {
-                                e.stopPropagation();
-                                setIsLearnMoreEditMode(false);
-                                setIsModalOpen(false);
-                            }}
+                            onClick={handleLearnMoreClose}
                             aria-label="Close learn more modal"
                         >
                             ×
@@ -686,7 +734,6 @@ function Card(props) {
                         ref={learnMoreImageInputRef}
                         type="file"
                         accept="image/*"
-                        multiple
                         onChange={handleLearnMoreImageUpload}
                         style={{ display: 'none' }}
                     />
@@ -695,8 +742,8 @@ function Card(props) {
                         <button
                             type="button"
                             className="learn-more-gallery-tile learn-more-gallery-tile--primary"
-                            onClick={(e) => learnMoreGallerySlots[0] && openImagePreviewAtIndex(e, 0)}
-                            title={learnMoreGallerySlots[0] ? 'Open image preview' : 'No image available'}
+                            onClick={(e) => handleLearnMoreGalleryTileClick(e, learnMoreGallerySlots[0], 0)}
+                            title={learnMoreGallerySlots[0] ? 'Open image preview' : (isLearnMoreEditMode ? 'Click to add image' : 'No image available')}
                         >
                             {learnMoreGallerySlots[0] ? (
                                 <img
@@ -731,9 +778,9 @@ function Card(props) {
                                 <button
                                     key={`learn-more-gallery-slot-${index + 1}`}
                                     type="button"
-                                    className={`learn-more-gallery-tile ${image ? '' : 'learn-more-gallery-tile--placeholder'}`}
-                                    onClick={(e) => image && openImagePreviewAtIndex(e, index + 1)}
-                                    title={image ? `Open image ${index + 2}` : 'No image available'}
+                                    className={`learn-more-gallery-tile ${image ? '' : `learn-more-gallery-tile--placeholder${isLearnMoreEditMode ? ' learn-more-gallery-tile--placeholder-editable' : ''}`}`}
+                                    onClick={(e) => handleLearnMoreGalleryTileClick(e, image, index + 1)}
+                                    title={image ? `Open image ${index + 2}` : (isLearnMoreEditMode ? `Click to add image ${index + 2}` : 'No image available')}
                                 >
                                     {image ? (
                                         <img

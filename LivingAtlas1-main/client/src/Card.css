@@ -311,7 +311,7 @@
     background-color: #005fa3;
 }
 
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-modal-add-images-btn) {
+.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn) {
     margin-top: 20px;
     padding: 10px 20px;
     border: none;
@@ -322,7 +322,7 @@
     cursor: pointer;
 }
 
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-modal-add-images-btn):hover {
+.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):hover {
     background-color: #0062cc;
 }
 
@@ -708,16 +708,6 @@
   background: #f1f5f9;
 }
 
-.learn-more-modal-add-images-btn {
-  background: #ffffff;
-  color: #0f766e;
-  border-color: #99f6e4;
-}
-
-.learn-more-modal-add-images-btn:hover {
-  background: #f0fdfa;
-}
-
 .learn-more-gallery {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -756,6 +746,16 @@
     #e5e7eb 12px,
     #e5e7eb 24px
   );
+}
+
+.learn-more-gallery-tile--placeholder-editable {
+  cursor: pointer;
+  outline: 2px dashed #9ca3af;
+  outline-offset: -2px;
+}
+
+.learn-more-gallery-tile--placeholder-editable:hover {
+  outline-color: #2563eb;
 }
 
 .learn-more-gallery-image {
