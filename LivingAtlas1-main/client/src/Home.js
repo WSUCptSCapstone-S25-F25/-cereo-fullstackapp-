@@ -35,7 +35,7 @@ function Home(props) {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [cardPanelWidth, setCardPanelWidth] = useState(() => 
-        Math.max(300, Math.min(900, Math.floor(window.innerWidth * 0.5)))
+        Math.max(300, Math.min(900, Math.floor(window.innerWidth * 0.41)))
     );
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);

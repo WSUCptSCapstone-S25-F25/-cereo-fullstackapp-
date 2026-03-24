@@ -50,7 +50,6 @@ const Content1 = (props) => {
   const [zoom, setZoom] = useState(5.5);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
-  const descriptionPreviewLength = 320;
 
   const closeMarkerPopup = useCallback(() => {
     if (markerPopupRef.current) {
@@ -61,21 +60,6 @@ const Content1 = (props) => {
     setSearchCondition("");
     onMarkerCardSelect?.(null);
   }, [setSearchCondition, onMarkerCardSelect]);
-
-  const parseMarkerFiles = useCallback((filesValue) => {
-    if (Array.isArray(filesValue)) {
-      return filesValue;
-    }
-    if (typeof filesValue === 'string') {
-      try {
-        const parsed = JSON.parse(filesValue);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  }, []);
 
   const buildMarkerPopupContent = useCallback((feature) => {
     const root = document.createElement('div');
@@ -95,9 +79,6 @@ const Content1 = (props) => {
         imageOverlay = null;
       }
     };
-
-    const header = document.createElement('div');
-    header.className = 'card-pin-popup-header';
 
     const thumbnail = document.createElement('img');
     thumbnail.className = 'card-pin-popup-thumbnail';
@@ -157,142 +138,52 @@ const Content1 = (props) => {
 
     thumbnailButton.addEventListener('click', openLargeImagePreview);
 
-    const titleBlock = document.createElement('div');
-    titleBlock.className = 'card-pin-popup-title-block';
+    const infoPanel = document.createElement('div');
+    infoPanel.className = 'card-pin-popup-info-panel';
+    infoPanel.setAttribute('role', 'button');
+    infoPanel.setAttribute('tabindex', '0');
+    infoPanel.setAttribute('aria-label', 'Open full card details');
 
     const title = document.createElement('h3');
+    title.className = 'card-pin-popup-title';
     title.textContent = feature.title || 'Untitled Card';
 
-    const subtitle = document.createElement('p');
-    subtitle.className = 'card-pin-popup-subtitle';
-    subtitle.textContent = feature.category || 'Uncategorized';
+    const category = document.createElement('p');
+    category.className = 'card-pin-popup-category';
+    category.textContent = feature.category || 'Uncategorized';
 
-    titleBlock.appendChild(title);
-    titleBlock.appendChild(subtitle);
+    const tags = document.createElement('p');
+    tags.className = 'card-pin-popup-tags';
+    tags.textContent = `Tags: ${feature.tags ? String(feature.tags) : 'N/A'}`;
 
-    header.appendChild(thumbnailButton);
-    header.appendChild(titleBlock);
-
-    const body = document.createElement('div');
-    body.className = 'card-pin-popup-body';
-
-    const appendInfoLine = (label, value) => {
-      const p = document.createElement('p');
-      const strong = document.createElement('strong');
-      strong.textContent = `${label}: `;
-      p.appendChild(strong);
-      p.appendChild(document.createTextNode(value || 'N/A'));
-      body.appendChild(p);
+    const openLearnMore = () => {
+      window.dispatchEvent(new CustomEvent('atlas:open-card-learn-more', {
+        detail: { cardID: feature.cardID }
+      }));
     };
 
-    appendInfoLine('Author', feature.name);
-    appendInfoLine('Card Creator', feature.username);
-    appendInfoLine('Email', feature.email);
-    appendInfoLine('Funding', feature.funding);
-    appendInfoLine('Organization', feature.org);
+    infoPanel.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openLearnMore();
+    });
 
-    const linkWrap = document.createElement('p');
-    const linkLabel = document.createElement('strong');
-    linkLabel.textContent = 'Link: ';
-    linkWrap.appendChild(linkLabel);
-    if (feature.link) {
-      const link = document.createElement('a');
-      link.href = feature.link;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = feature.link;
-      linkWrap.appendChild(link);
-    } else {
-      linkWrap.appendChild(document.createTextNode('N/A'));
-    }
-    body.appendChild(linkWrap);
-
-    const descriptionWrap = document.createElement('div');
-    descriptionWrap.className = 'card-pin-popup-description-wrap';
-
-    const description = String(feature.description || '');
-    const hasLongDescription = description.length > descriptionPreviewLength;
-    let expanded = false;
-    let toggleButton = null;
-
-    const descriptionText = document.createElement('p');
-    descriptionText.className = 'card-pin-popup-description';
-
-    const descriptionLabel = document.createElement('strong');
-    descriptionLabel.textContent = 'Description: ';
-    descriptionText.appendChild(descriptionLabel);
-
-    const descriptionValueNode = document.createTextNode('');
-    descriptionText.appendChild(descriptionValueNode);
-
-    const updateDescription = () => {
-      if (!description) {
-        descriptionValueNode.textContent = 'No description provided.';
-      } else if (!hasLongDescription || expanded) {
-        descriptionValueNode.textContent = description;
-      } else {
-        descriptionValueNode.textContent = `${description.slice(0, descriptionPreviewLength)}...`;
+    infoPanel.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openLearnMore();
       }
+    });
 
-      if (toggleButton) {
-        toggleButton.textContent = expanded ? 'Show less' : 'Show more';
-      }
-    };
+    infoPanel.appendChild(title);
+    infoPanel.appendChild(category);
+    infoPanel.appendChild(tags);
 
-    if (hasLongDescription) {
-      descriptionText.appendChild(document.createTextNode(' '));
-      toggleButton = document.createElement('button');
-      toggleButton.type = 'button';
-      toggleButton.className = 'card-pin-popup-description-toggle-inline';
-      toggleButton.addEventListener('click', () => {
-        expanded = !expanded;
-        updateDescription();
-      });
-      descriptionText.appendChild(toggleButton);
-    }
-
-    updateDescription();
-    descriptionWrap.appendChild(descriptionText);
-
-    body.appendChild(descriptionWrap);
-
-    appendInfoLine('Tags', feature.tags);
-    appendInfoLine('Latitude', feature.latitude != null ? String(feature.latitude) : 'N/A');
-    appendInfoLine('Longitude', feature.longitude != null ? String(feature.longitude) : 'N/A');
-
-    const markerFiles = parseMarkerFiles(feature.files);
-    if (markerFiles.length > 0) {
-      const fileList = document.createElement('div');
-      fileList.className = 'card-pin-popup-file-list';
-
-      const heading = document.createElement('h4');
-      heading.textContent = 'Downloadable Files';
-      fileList.appendChild(heading);
-
-      const ul = document.createElement('ul');
-      markerFiles.forEach((file, index) => {
-        const li = document.createElement('li');
-        if (file.file_link) {
-          const anchor = document.createElement('a');
-          anchor.href = file.file_link;
-          anchor.target = '_blank';
-          anchor.rel = 'noopener noreferrer';
-          anchor.textContent = file.filename || `Download ${file.fileextension || 'file'}`;
-          li.appendChild(anchor);
-        } else {
-          li.textContent = file.filename || `File ${index + 1}`;
-        }
-        ul.appendChild(li);
-      });
-      fileList.appendChild(ul);
-      body.appendChild(fileList);
-    }
-
-    root.appendChild(header);
-    root.appendChild(body);
+    root.appendChild(thumbnailButton);
+    root.appendChild(infoPanel);
     root.cleanupImageOverlay = cleanupImageOverlay;
     return root;
-  }, [parseMarkerFiles]);
+  }, []);
 
   const openMarkerPopup = useCallback((feature, markerInstance, mapInstance) => {
     closeMarkerPopup();
@@ -551,7 +442,9 @@ const Content1 = (props) => {
           continue;
         }
 
-        marker.getElement().addEventListener('click', () => {
+        marker.getElement().addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
           marker_clicked = true;
           setSearchCondition(feature.title);
           openMarkerPopup(feature, marker, map);

@@ -79,6 +79,7 @@ function Content2(props) {
     const [cardTypeFilter, setCardTypeFilter] = useState(props.CategoryCondition || '');
     const [sortMode, setSortMode] = useState((props.sortCondition || '').split(',')[0] || '');
     const [showOnlyInView, setShowOnlyInView] = useState(false);
+    const [learnMoreRequest, setLearnMoreRequest] = useState(null);
     const selectedCardIdFromMap = props.selectedCardIdFromMap != null
         ? String(props.selectedCardIdFromMap)
         : null;
@@ -660,6 +661,45 @@ function Content2(props) {
         }
     }, [props.searchCondition]);
 
+    useEffect(() => {
+        const handleOpenLearnMoreFromMapPin = (event) => {
+            const cardID = event?.detail?.cardID;
+            if (cardID == null) return;
+
+            props.setIsCollapsed?.(false);
+            if (cardContainerRef.current) {
+                cardContainerRef.current.scrollTop = 0;
+            }
+            setLearnMoreRequest({
+                cardID: String(cardID),
+                token: Date.now()
+            });
+        };
+
+        window.addEventListener('atlas:open-card-learn-more', handleOpenLearnMoreFromMapPin);
+        return () => {
+            window.removeEventListener('atlas:open-card-learn-more', handleOpenLearnMoreFromMapPin);
+        };
+    }, [props.setIsCollapsed]);
+
+    useEffect(() => {
+        if (!learnMoreRequest) return;
+
+        // Keep force-open signal short-lived so it cannot be replayed on later rerenders.
+        const timeoutId = window.setTimeout(() => {
+            setLearnMoreRequest(null);
+        }, 600);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [learnMoreRequest]);
+
+    useEffect(() => {
+        // Clicking/selecting a different map pin should never reuse an older learn-more signal.
+        setLearnMoreRequest(null);
+    }, [selectedCardIdFromMap]);
+
     // Log for debugging
     if (cards.length !== uniqueCards.length) {
         // console.warn('[Content2] Found duplicates in cards state!', cards.length, 'total,', uniqueCards.length, 'unique');
@@ -797,6 +837,11 @@ function Content2(props) {
                                             viewerUsername: resolvedUsername,
                                             cardID: card.cardID
                                         }}
+                                        forceOpenLearnMoreSignal={
+                                            learnMoreRequest && String(card.cardID) === learnMoreRequest.cardID
+                                                ? learnMoreRequest.token
+                                                : null
+                                        }
                                         isSelectedFromMap={!!selectedCardIdFromMap && String(card.cardID) === selectedCardIdFromMap}
                                         isFavorited={bookmarkedCardIDs.has(card.cardID)}
                                         username={resolvedUsername}

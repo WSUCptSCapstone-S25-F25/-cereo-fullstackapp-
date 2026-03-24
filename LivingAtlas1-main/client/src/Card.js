@@ -46,6 +46,12 @@ function Card(props) {
         setIsFavorited(props.isFavorited);
     }, [props.isFavorited]);
 
+    useEffect(() => {
+        if (props.forceOpenLearnMoreSignal) {
+            setIsModalOpen(true);
+        }
+    }, [props.forceOpenLearnMoreSignal]);
+
     // Ensure username and name always have safe defaults
     // Now handled by handleEdit
     /* useEffect(() => {
