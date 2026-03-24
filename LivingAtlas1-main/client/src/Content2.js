@@ -3,6 +3,7 @@ import './Content2.css';
 import './Sidebars.css';
 import Card from './Card.js';
 import FormModal from './FormModal';
+import CategoryDropdown from './CategoryDropdown';
 import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
 import api from './api.js';
@@ -705,16 +706,14 @@ function Content2(props) {
                             }}
                         />
 
-                        <select
+                        <CategoryDropdown
                             value={cardTypeFilter}
-                            onChange={(e) => setCardTypeFilter(e.target.value)}
-                            className="card-panel-searchbar-dropdown"
-                        >
-                            <option value="">All</option>
-                            <option value="River">River</option>
-                            <option value="Watershed">Watershed</option>
-                            <option value="Places">Places</option>
-                        </select>
+                            onChange={(newValue) => {
+                                setCardTypeFilter(newValue);
+                                // Automatically apply filter when selection changes
+                                props.setCategoryConditionCondition?.(newValue);
+                            }}
+                        />
 
                         <button
                             className="card-panel-searchbar-btn search"

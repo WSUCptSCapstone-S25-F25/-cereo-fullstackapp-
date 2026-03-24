@@ -34,7 +34,9 @@ function Home(props) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(true);
-    const [cardPanelWidth, setCardPanelWidth] = useState(300);
+    const [cardPanelWidth, setCardPanelWidth] = useState(() => 
+        Math.max(300, Math.min(900, Math.floor(window.innerWidth * 0.5)))
+    );
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
