@@ -110,6 +110,18 @@
   gap: 8px;
 }
 
+.card-panel-toolbar-actions .sort-dropdown {
+  width: 140px;
+  min-width: 140px;
+}
+
+.card-panel-toolbar-actions .sort-dropdown-trigger {
+  height: 34px;
+  padding: 6px 8px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
 .card-toolbar-button {
   display: inline-flex;
   align-items: center;
@@ -256,6 +268,10 @@
   .card-panel-toolbar-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .card-panel-toolbar-actions .sort-dropdown {
+    min-width: 120px;
   }
 
   .card-panel-searchbar {

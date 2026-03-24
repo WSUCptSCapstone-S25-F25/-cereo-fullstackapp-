@@ -4,8 +4,10 @@ import './Sidebars.css';
 import Card from './Card.js';
 import FormModal from './FormModal';
 import CategoryDropdown from './CategoryDropdown';
+import SortDropdown from './SortDropdown';
 import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
+import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleDoubleLeft, faAngleDoubleRight, faStar, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -75,6 +77,7 @@ function Content2(props) {
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
     const [cardSearchKeyword, setCardSearchKeyword] = useState(props.searchCondition || '');
     const [cardTypeFilter, setCardTypeFilter] = useState(props.CategoryCondition || '');
+    const [sortMode, setSortMode] = useState((props.sortCondition || '').split(',')[0] || '');
     const [showOnlyInView, setShowOnlyInView] = useState(false);
     const selectedCardIdFromMap = props.selectedCardIdFromMap != null
         ? String(props.selectedCardIdFromMap)
@@ -110,6 +113,40 @@ function Content2(props) {
         setCardTypeFilter('');
         props.setSearchCondition?.('');
         props.setCategoryConditionCondition?.('');
+    };
+
+    const handleSortModeChange = (nextSortMode) => {
+
+        if (!nextSortMode) {
+            setSortMode('');
+            props.setSortCondition?.('');
+            return;
+        }
+
+        if (nextSortMode === 'ClosestToMe') {
+            const { lat, lng } = curLocationCoordinates;
+            if (!lat && !lng) {
+                alert('Please turn on your current location to use this sorting method.');
+                return;
+            }
+            setSortMode(nextSortMode);
+            props.setSortCondition?.(`${nextSortMode},${lat},${lng}`);
+            return;
+        }
+
+        if (nextSortMode === 'ClosestToPin') {
+            const { lat, lng } = searchLocationCoordinates;
+            if (!lat && !lng) {
+                alert('Please search a location on the map first to use this sorting method.');
+                return;
+            }
+            setSortMode(nextSortMode);
+            props.setSortCondition?.(`${nextSortMode},${lat},${lng}`);
+            return;
+        }
+
+        setSortMode(nextSortMode);
+        props.setSortCondition?.(nextSortMode);
     };
 
     // Edited by Flavio: same code used to load the cards based on filter. Made it into a function in order to call it under searchConditions being reset to ''
@@ -298,6 +335,10 @@ function Content2(props) {
     useEffect(() => {
         setCardTypeFilter(props.CategoryCondition || '');
     }, [props.CategoryCondition]);
+
+    useEffect(() => {
+        setSortMode((props.sortCondition || '').split(',')[0] || '');
+    }, [props.sortCondition]);
 
     useEffect(() => {
         loadCardsByCriteria();
@@ -672,6 +713,11 @@ function Content2(props) {
                         </div>
 
                         <div className="card-panel-toolbar-actions">
+                            <SortDropdown
+                                value={sortMode}
+                                onChange={handleSortModeChange}
+                            />
+
                             <button
                                 type="button"
                                 className={`card-toolbar-button ${showFavoritesOnly ? 'active' : ''}`}
