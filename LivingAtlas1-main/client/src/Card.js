@@ -3,13 +3,17 @@ import Modal from 'react-modal';
 import api from './api.js';
 import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart as solidHeart, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
+
+const CARD_CATEGORIES = ['River', 'Watershed', 'Places'];
 
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+    const [isLearnMoreEditMode, setIsLearnMoreEditMode] = useState(false);
+    const [learnMoreBackup, setLearnMoreBackup] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const isEditingRef = useRef(false); // Track editing state across renders
     const [formData, setFormData] = useState({
@@ -68,6 +72,7 @@ function Card(props) {
 
     const handleLearnMore = (e) => {
         e.stopPropagation();
+        setIsLearnMoreEditMode(false);
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
     };
@@ -191,7 +196,8 @@ function Card(props) {
         return true;
     };
 
-   const saveEdits = async () => {
+    const saveEdits = async (options = {}) => {
+     const { skipReload = false, closeEditModal = true } = options;
     if (!validateForm()) return;
 
     // Extra guard for username and name
@@ -259,15 +265,18 @@ function Card(props) {
     setLoading(true);
     try {
         await api.post("/uploadForm", formDataToSend);
-        alert("Card Information Saved. Please reload the page.");
+        alert("Card Information Saved.");
         isEditingRef.current = false; // Unlock editing state
-        setIsEditModalOpen(false);
+        if (closeEditModal) {
+            setIsEditModalOpen(false);
+        }
 
         if (typeof props.onCardUpdate === "function") {
             props.onCardUpdate();
-        } else {
+        } else if (!skipReload) {
             window.location.reload();
         }
+        return true;
     } catch (error) {
         console.error("Failed to save the card:", error);
         
@@ -298,10 +307,42 @@ function Card(props) {
         });
         
         alert(errorMessage);
+        return false;
     } finally {
         setLoading(false);
     }
 };
+
+    const handleLearnMoreEditStart = (e) => {
+        e.stopPropagation();
+        setLearnMoreBackup({ ...formData });
+        setFormData((prev) => ({
+            ...prev,
+            original_username: prev.original_username || prev.username,
+            original_email: prev.original_email || prev.email,
+            original_title: prev.original_title || prev.title,
+        }));
+        isEditingRef.current = true;
+        setIsLearnMoreEditMode(true);
+    };
+
+    const handleLearnMoreEditCancel = (e) => {
+        e.stopPropagation();
+        if (learnMoreBackup) {
+            setFormData(learnMoreBackup);
+        }
+        isEditingRef.current = false;
+        setIsLearnMoreEditMode(false);
+    };
+
+    const handleLearnMoreEditSave = async (e) => {
+        e.stopPropagation();
+        const success = await saveEdits({ skipReload: true, closeEditModal: false });
+        if (success) {
+            setIsLearnMoreEditMode(false);
+            setLearnMoreBackup(null);
+        }
+    };
 
 
     const handleInputChange = (e) => {
@@ -414,16 +455,19 @@ function Card(props) {
                     </div>
                 )}
             </div>
-            <h2 className="card-title">{formData.title}</h2>
-            <p className="card-meta">{formData.category || "Uncategorized"}</p>
 
-            <div className="card-button-row">
-                <button className="card-button card-zoom" onClick={handleZoom} title="Locate on map">
+            <div className="card-title-row">
+                <h2 className="card-title">{formData.title}</h2>
+                <button
+                    className="card-title-zoom-btn"
+                    onClick={handleZoom}
+                    title="Locate on map"
+                    aria-label="Locate on map"
+                >
                     <FontAwesomeIcon icon={faMagnifyingGlass} />
                 </button>
-                <button className="card-button card-edit" onClick={handleEdit}>Edit</button>
-                <button className="card-button card-delete" onClick={handleDelete}>Delete</button>
             </div>
+            <p className="card-meta">{formData.category || "Uncategorized"}</p>
 
             {/* Learn More Modal */}
             <Modal
@@ -432,53 +476,164 @@ function Card(props) {
                 className="Modal Modal--learn-more"
                 overlayClassName="ModalOverlay ModalOverlay--learn-more"
             >
-                <button
-                    className="learn-more-modal-close"
-                    onClick={e => {
-                        e.stopPropagation();
-                        setIsModalOpen(false);
-                    }}
-                    aria-label="Close learn more modal"
+                <div
+                    className="learn-more-modal-shell"
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onKeyUp={(e) => e.stopPropagation()}
                 >
-                    ×
-                </button>
+                <div className="learn-more-modal-toolbar">
+                    {isLearnMoreEditMode ? (
+                        <div className="learn-more-modal-toolbar-actions">
+                            <button
+                                className="learn-more-modal-toolbar-btn save"
+                                onClick={handleLearnMoreEditSave}
+                                disabled={loading}
+                            >
+                                {loading ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                                className="learn-more-modal-toolbar-btn cancel"
+                                onClick={handleLearnMoreEditCancel}
+                                disabled={loading}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            className="learn-more-modal-edit-btn"
+                            onClick={handleLearnMoreEditStart}
+                            aria-label="Edit card in Learn More modal"
+                            title="Edit"
+                        >
+                            <FontAwesomeIcon icon={faPenToSquare} />
+                        </button>
+                    )}
 
-                <img
-                    className="learn-more-modal-main-image"
-                    src={currentImage.url}
-                    alt={currentImage.alt || "Card Thumbnail"}
-                    onClick={handleOpenImagePreview}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
-                    role="button"
-                    tabIndex={0}
-                    title="Click to enlarge"
-                />
+                    <div className="learn-more-modal-toolbar-right">
+                        <button
+                            className="learn-more-modal-delete-btn"
+                            onClick={handleDelete}
+                            aria-label="Delete card"
+                            title="Delete card"
+                        >
+                            <FontAwesomeIcon icon={faTrashCan} />
+                        </button>
 
-                <div className="learn-more-modal-title-section">
-                    <h2>{formData.title}</h2>
-                    <p className="learn-more-modal-subtitle">{formData.category || "Uncategorized"}</p>
+                        <button
+                            className="learn-more-modal-close"
+                            onClick={e => {
+                                e.stopPropagation();
+                                setIsLearnMoreEditMode(false);
+                                setIsModalOpen(false);
+                            }}
+                            aria-label="Close learn more modal"
+                        >
+                            ×
+                        </button>
+                    </div>
                 </div>
 
                 <div className="learn-more-modal-body">
-                    <p><strong>Author:</strong> {formData.name}</p>
-                    <p><strong>Card Creator:</strong> {formData.username}</p>
-                    <p><strong>Email:</strong> {formData.email}</p>
-                    <p><strong>Funding:</strong> {formData.funding}</p>
-                    <p><strong>Organization:</strong> {formData.org}</p>
-                    <p>
-                        <strong>Link:</strong>{' '}
-                        {formData.link ? (
-                            <a href={formData.link} target="_blank" rel="noopener noreferrer">
-                                {formData.link}
-                            </a>
+                    <img
+                        className="learn-more-modal-main-image"
+                        src={currentImage.url}
+                        alt={currentImage.alt || "Card Thumbnail"}
+                        onClick={handleOpenImagePreview}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
+                        role="button"
+                        tabIndex={0}
+                        title="Click to enlarge"
+                    />
+
+                    <div className="learn-more-modal-title-section">
+                        {isLearnMoreEditMode ? (
+                            <>
+                                <input
+                                    className="learn-more-inline-input learn-more-inline-title"
+                                    type="text"
+                                    name="title"
+                                    value={formData.title || ''}
+                                    onChange={handleInputChange}
+                                />
+                                <select
+                                    className="learn-more-inline-input"
+                                    name="category"
+                                    value={formData.category || ''}
+                                    onChange={handleInputChange}
+                                >
+                                    {CARD_CATEGORIES.map((categoryOption) => (
+                                        <option key={categoryOption} value={categoryOption}>
+                                            {categoryOption}
+                                        </option>
+                                    ))}
+                                </select>
+                            </>
                         ) : (
-                            <span>N/A</span>
+                            <>
+                                <h2>{formData.title}</h2>
+                                <p className="learn-more-modal-subtitle">{formData.category || "Uncategorized"}</p>
+                            </>
                         )}
-                    </p>
-                    <p className="learn-more-modal-description"><strong>Description:</strong> {formData.description}</p>
-                    <p><strong>Tags:</strong> {formData.tags}</p>
-                    <p><strong>Latitude:</strong> {formData.latitude}</p>
-                    <p><strong>Longitude:</strong> {formData.longitude}</p>
+                    </div>
+
+                    {isLearnMoreEditMode ? (
+                        <>
+                            <p><strong>Author:</strong></p>
+                            <input className="learn-more-inline-input" type="text" name="name" value={formData.name || ''} onChange={handleInputChange} />
+
+                            <p><strong>Card Creator:</strong></p>
+                            <input className="learn-more-inline-input learn-more-inline-readonly" type="text" name="username" value={formData.username || ''} readOnly disabled title="Card Creator cannot be edited" />
+
+                            <p><strong>Email:</strong></p>
+                            <input className="learn-more-inline-input" type="email" name="email" value={formData.email || ''} onChange={handleInputChange} />
+
+                            <p><strong>Funding:</strong></p>
+                            <input className="learn-more-inline-input" type="text" name="funding" value={formData.funding || ''} onChange={handleInputChange} />
+
+                            <p><strong>Organization:</strong></p>
+                            <input className="learn-more-inline-input" type="text" name="org" value={formData.org || ''} onChange={handleInputChange} />
+
+                            <p><strong>Link:</strong></p>
+                            <input className="learn-more-inline-input" type="text" name="link" value={formData.link || ''} onChange={handleInputChange} />
+
+                            <p><strong>Description:</strong></p>
+                            <textarea className="learn-more-inline-textarea" name="description" value={formData.description || ''} onChange={handleInputChange} />
+
+                            <p><strong>Tags:</strong></p>
+                            <input className="learn-more-inline-input" type="text" name="tags" value={formData.tags || ''} onChange={handleInputChange} />
+
+                            <p><strong>Latitude:</strong></p>
+                            <input className="learn-more-inline-input" type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} />
+
+                            <p><strong>Longitude:</strong></p>
+                            <input className="learn-more-inline-input" type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
+                        </>
+                    ) : (
+                        <>
+                            <p><strong>Author:</strong> {formData.name}</p>
+                            <p><strong>Card Creator:</strong> {formData.username}</p>
+                            <p><strong>Email:</strong> {formData.email}</p>
+                            <p><strong>Funding:</strong> {formData.funding}</p>
+                            <p><strong>Organization:</strong> {formData.org}</p>
+                            <p>
+                                <strong>Link:</strong>{' '}
+                                {formData.link ? (
+                                    <a href={formData.link} target="_blank" rel="noopener noreferrer">
+                                        {formData.link}
+                                    </a>
+                                ) : (
+                                    <span>N/A</span>
+                                )}
+                            </p>
+                            <p className="learn-more-modal-description"><strong>Description:</strong> {formData.description}</p>
+                            <p><strong>Tags:</strong> {formData.tags}</p>
+                            <p><strong>Latitude:</strong> {formData.latitude}</p>
+                            <p><strong>Longitude:</strong> {formData.longitude}</p>
+                        </>
+                    )}
 
                     {/* Downloadable Files */}
                     {formData.files && formData.files.length > 0 && (
@@ -501,15 +656,7 @@ function Card(props) {
                     )}
                 </div>
 
-                <button
-                    className="close-button learn-more-modal-footer-close"
-                    onClick={e => {
-                        e.stopPropagation();
-                        setIsModalOpen(false);
-                    }}
-                >
-                    Close
-                </button>
+                </div>
             </Modal>
 
             <Modal
@@ -546,7 +693,7 @@ function Card(props) {
                     saveEdits(); 
                 }}>
                     <label>Card Creator:
-                        <input type="text" name="username" value={formData.username || ''} onChange={handleInputChange} required />
+                        <input type="text" name="username" value={formData.username || ''} readOnly required title="Card Creator cannot be edited" />
                     </label>
                     <label>Author:
                         <input type="text" name="name" value={formData.name || ''} onChange={handleInputChange} required />
@@ -618,12 +765,17 @@ function Card(props) {
                     </label>
                     <label>
                         Category:
-                        <input
-                            type="text"
+                        <select
                             name="category"
                             value={formData.category || ""}
                             onChange={handleInputChange}
-                        />
+                        >
+                            {CARD_CATEGORIES.map((categoryOption) => (
+                                <option key={categoryOption} value={categoryOption}>
+                                    {categoryOption}
+                                </option>
+                            ))}
+                        </select>
                     </label>
                     <label>
                         Tags:

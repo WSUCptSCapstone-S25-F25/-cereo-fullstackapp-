@@ -504,6 +504,7 @@
 .Modal input[type="text"],
 .Modal input[type="number"],
 .Modal input[type="email"],
+.Modal select,
 .Modal textarea {
   border: 1px solid #ccc;
   border-radius: 5px;
@@ -563,20 +564,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px;
+  padding: 0;
 }
 
 .Modal--learn-more {
   position: fixed;
-  top: 50%;
+  top: 0;
+  bottom: 0;
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(1000px, 96vw);
+  transform: translateX(-50%);
+  width: min(1000px, 100vw);
   max-width: none !important;
-  height: 90vh;
+  max-height: none !important;
+  height: 100vh;
   overflow: hidden;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
   padding: 0;
   margin: 0;
@@ -584,10 +587,14 @@
   flex-direction: column;
 }
 
+.learn-more-modal-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .learn-more-modal-close {
-  position: absolute;
-  top: 8px;
-  right: 12px;
+  position: static;
   border: none;
   background: transparent;
   color: #d32f2f;
@@ -595,10 +602,78 @@
   line-height: 1;
   cursor: pointer;
   z-index: 2;
+  margin: 0;
+  padding: 0 4px;
+}
+
+.learn-more-modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.learn-more-modal-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.learn-more-modal-edit-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #c9d6e4;
+  background: #ffffff;
+  color: #1f4f7e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+.learn-more-modal-edit-btn:hover {
+  background: #eef5fd;
+  border-color: #8fb0d1;
+}
+
+.learn-more-modal-toolbar-btn {
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.learn-more-modal-toolbar-btn.save {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.learn-more-modal-toolbar-btn.save:hover {
+  background: #1e40af;
+}
+
+.learn-more-modal-toolbar-btn.cancel {
+  background: #ffffff;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.learn-more-modal-toolbar-btn.cancel:hover {
+  background: #f1f5f9;
 }
 
 .learn-more-modal-main-image {
-  width: 100%;
+  width: calc(100% + 48px);
+  margin: -20px -24px 16px;
   height: 220px;
   object-fit: cover;
   cursor: zoom-in;
@@ -612,7 +687,8 @@
 }
 
 .learn-more-modal-title-section {
-  padding: 24px 24px 0;
+  padding: 0;
+  margin: 0 0 16px;
 }
 
 .learn-more-modal-title-section h2 {
@@ -634,6 +710,37 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.learn-more-inline-input,
+.learn-more-inline-textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.95rem;
+  color: #1f2937;
+  background: #fff;
+  box-sizing: border-box;
+  margin: 0 0 12px;
+}
+
+.learn-more-inline-readonly,
+.Modal input[readonly] {
+  background: #f3f4f6;
+  color: #4b5563;
+  cursor: not-allowed;
+}
+
+.learn-more-inline-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.learn-more-inline-textarea {
+  min-height: 110px;
+  resize: vertical;
 }
 
 .learn-more-modal-body p {
@@ -701,20 +808,19 @@
 }
 
 @media (max-width: 640px) {
-  .ModalOverlay--learn-more {
-    padding: 10px;
-  }
-
   .Modal--learn-more {
-    width: 95vw;
+    width: 100vw;
+    height: 100vh;
   }
 
   .learn-more-modal-main-image {
+    width: calc(100% + 32px);
+    margin: -16px -16px 14px;
     max-height: 280px;
   }
 
   .learn-more-modal-title-section {
-    padding: 16px 16px 0;
+    padding: 0;
   }
 
   .learn-more-modal-title-section h2 {
