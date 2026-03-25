@@ -234,10 +234,25 @@ function Card(props) {
         }
     }
 
+    let effectiveThumbnailLink = formData.thumbnail_link || '';
+    if (!thumbnail && Array.isArray(formData.images) && formData.images.length > 0) {
+        const firstImage = formData.images[0];
+        const firstImageUrl = typeof firstImage === 'string'
+            ? firstImage
+            : (firstImage?.url || firstImage?.imageURL || '');
+
+        if (firstImageUrl) {
+            effectiveThumbnailLink = firstImageUrl;
+        }
+    }
+
     const formDataToSend = new FormData();
     Object.keys(formData).forEach((key) => {
         if (
-            key !== "files" && key !== "filesToUpload" && // don’t accidentally append arrays
+            key !== "files" &&
+            key !== "filesToUpload" &&
+            key !== "images" &&
+            key !== "thumbnail_link" &&
             formData[key] !== undefined && formData[key] !== null
         ) {
             formDataToSend.append(key, formData[key]);
@@ -262,8 +277,8 @@ function Card(props) {
     );
 
     // NEW: If no new thumbnail selected, keep the existing one
-    if (formData.thumbnail_link && !thumbnail) {
-        formDataToSend.append("thumbnail_link", formData.thumbnail_link);
+    if (effectiveThumbnailLink && !thumbnail) {
+        formDataToSend.append("thumbnail_link", effectiveThumbnailLink);
     }
 
     // If user uploaded a new thumbnail, append it as usual
