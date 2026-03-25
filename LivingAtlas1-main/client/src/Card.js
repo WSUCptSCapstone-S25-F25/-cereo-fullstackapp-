@@ -38,10 +38,26 @@ function Card(props) {
     useEffect(() => {
         // Completely ignore prop updates while editing
         if (!isEditingRef.current) {
-            setFormData({
-                ...props.formData,
-                files: props.formData?.files || [],
-                filesToUpload: []
+            setFormData((prev) => {
+                const incomingCardID = props.formData?.cardID;
+                const isSameCard = prev?.cardID === incomingCardID;
+                const incomingHasImages = Array.isArray(props.formData?.images) && props.formData.images.length > 0;
+                const prevHasImages = Array.isArray(prev?.images) && prev.images.length > 0;
+
+                const mergedImages = (isSameCard && !incomingHasImages && prevHasImages)
+                    ? prev.images
+                    : (props.formData?.images || []);
+
+                if (incomingCardID && mergedImages.length > 0) {
+                    hydratedCardImagesRef.current.add(incomingCardID);
+                }
+
+                return {
+                    ...props.formData,
+                    images: mergedImages,
+                    files: props.formData?.files || [],
+                    filesToUpload: []
+                };
             });
             setPreview(
                 props.formData?.thumbnail_link && props.formData.thumbnail_link.trim() !== ""
