@@ -201,6 +201,12 @@
     opacity: 0;
     transition: opacity 0.2s ease, background 0.2s ease;
     z-index: 5;
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+    box-sizing: border-box;
+    min-width: 36px;
+    min-height: 36px;
 }
 
 .card-thumbnail-container:hover .card-image-nav {
@@ -212,11 +218,11 @@
 }
 
 .card-image-nav-prev {
-    left: 8px;
+  left: 2px;
 }
 
 .card-image-nav-next {
-    right: 8px;
+  right: 2px;
 }
 
 /* Image indicator dots */
@@ -228,12 +234,11 @@
     display: flex;
     gap: 6px;
     z-index: 5;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.card-thumbnail-container:hover .card-image-indicators {
-    opacity: 1;
+  opacity: 1;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(75, 85, 99, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
 .card-image-dot {
@@ -245,6 +250,14 @@
     cursor: pointer;
     transition: background 0.2s ease, transform 0.2s ease;
     padding: 0;
+    margin: 0;
+    min-width: 8px;
+    min-height: 8px;
+    line-height: 1;
+    box-sizing: border-box;
+    appearance: none;
+    pointer-events: none;
+    cursor: default;
 }
 
 .card-image-dot:hover {
@@ -296,7 +309,7 @@
     margin: 5px 0;
 }
 
-.card button:not(.card-meta-zoom-btn):not(.favorite-icon) {
+.card button:not(.card-meta-zoom-btn):not(.favorite-icon):not(.card-image-nav):not(.card-image-dot) {
     padding: 10px 20px;
     background-color: #0077cc;
     color: #fff;
@@ -307,7 +320,7 @@
     cursor: pointer;
 }
 
-.card button:not(.card-meta-zoom-btn):not(.favorite-icon):hover {
+.card button:not(.card-meta-zoom-btn):not(.favorite-icon):not(.card-image-nav):not(.card-image-dot):hover {
     background-color: #005fa3;
 }
 

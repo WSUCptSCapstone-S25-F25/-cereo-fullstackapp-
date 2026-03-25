@@ -614,6 +614,8 @@ function Card(props) {
     const currentImage = imageList[currentImageIndex] || imageList[0];
     const cardCurrentImage = cardImageList[currentImageIndex] || cardImageList[0];
     const hasMultipleImages = cardImageList.length > 1;
+    const indicatorImages = cardImageList.slice(0, 5);
+    const activeIndicatorIndex = Math.min(currentImageIndex, Math.max(indicatorImages.length - 1, 0));
     const learnMoreGalleryImages = imageList.slice(0, 5);
     const learnMoreGallerySlots = Array.from({ length: 5 }, (_, index) => learnMoreGalleryImages[index] || null);
 
@@ -691,14 +693,11 @@ function Card(props) {
                 {/* Image indicator dots (only show if multiple images) */}
                 {hasMultipleImages && (
                     <div className="card-image-indicators">
-                        {cardImageList.map((_, index) => (
-                            <button
+                        {indicatorImages.map((_, index) => (
+                            <span
                                 key={index}
-                                className={`card-image-dot ${index === currentImageIndex ? 'active' : ''}`}
-                                onClick={(e) => goToImageByIndex(e, index)}
-                                title={`Go to image ${index + 1}`}
-                                aria-label={`Go to image ${index + 1}`}
-                                aria-current={index === currentImageIndex ? 'true' : 'false'}
+                                className={`card-image-dot ${index === activeIndicatorIndex ? 'active' : ''}`}
+                                aria-hidden="true"
                             />
                         ))}
                     </div>

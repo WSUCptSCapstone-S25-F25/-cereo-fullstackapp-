@@ -89,18 +89,92 @@ const Content1 = (props) => {
       }
     };
 
+    const mediaContainer = document.createElement('div');
+    mediaContainer.className = 'card-pin-popup-media';
+
     const thumbnail = document.createElement('img');
     thumbnail.className = 'card-pin-popup-thumbnail';
     thumbnail.alt = 'Card Thumbnail';
-    thumbnail.src = feature.thumbnail_link && String(feature.thumbnail_link).trim() !== ''
-      ? resolveImageUrl(feature.thumbnail_link)
-      : '/CEREO-logo.png';
 
     const thumbnailButton = document.createElement('button');
     thumbnailButton.type = 'button';
     thumbnailButton.className = 'card-pin-popup-thumbnail-button';
     thumbnailButton.setAttribute('aria-label', 'Open larger image preview');
     thumbnailButton.appendChild(thumbnail);
+
+    const prevButton = document.createElement('button');
+    prevButton.type = 'button';
+    prevButton.className = 'card-pin-popup-image-nav card-pin-popup-image-nav-prev';
+    prevButton.setAttribute('aria-label', 'Previous image');
+    prevButton.textContent = '❮';
+
+    const nextButton = document.createElement('button');
+    nextButton.type = 'button';
+    nextButton.className = 'card-pin-popup-image-nav card-pin-popup-image-nav-next';
+    nextButton.setAttribute('aria-label', 'Next image');
+    nextButton.textContent = '❯';
+
+    const indicators = document.createElement('div');
+    indicators.className = 'card-pin-popup-image-indicators';
+
+    mediaContainer.appendChild(thumbnailButton);
+    mediaContainer.appendChild(prevButton);
+    mediaContainer.appendChild(nextButton);
+    mediaContainer.appendChild(indicators);
+
+    const initialImage = feature.thumbnail_link && String(feature.thumbnail_link).trim() !== ''
+      ? resolveImageUrl(feature.thumbnail_link)
+      : '/CEREO-logo.png';
+
+    let popupImages = [{
+      imageID: null,
+      url: initialImage,
+      alt: 'Card Thumbnail'
+    }];
+    let currentImageIndex = 0;
+
+    const renderPopupImage = () => {
+      const currentImage = popupImages[currentImageIndex] || popupImages[0];
+      thumbnail.src = currentImage?.url || '/CEREO-logo.png';
+      thumbnail.alt = currentImage?.alt || 'Card Thumbnail';
+
+      const hasMultipleImages = popupImages.length > 1;
+      prevButton.style.display = hasMultipleImages ? 'inline-flex' : 'none';
+      nextButton.style.display = hasMultipleImages ? 'inline-flex' : 'none';
+
+      indicators.replaceChildren();
+      if (!hasMultipleImages) {
+        indicators.style.display = 'none';
+        return;
+      }
+
+      indicators.style.display = 'flex';
+      const indicatorImages = popupImages.slice(0, 5);
+      const activeIndicatorIndex = Math.min(
+        currentImageIndex,
+        Math.max(indicatorImages.length - 1, 0)
+      );
+
+      indicatorImages.forEach((_, index) => {
+        const dot = document.createElement('span');
+        dot.className = `card-pin-popup-image-dot ${index === activeIndicatorIndex ? 'active' : ''}`;
+        dot.setAttribute('aria-hidden', 'true');
+        indicators.appendChild(dot);
+      });
+    };
+
+    const setPopupImages = (images) => {
+      if (!Array.isArray(images) || images.length === 0) return;
+
+      popupImages = images.map((img, idx) => ({
+        imageID: img?.imageID ?? img?.imageId ?? img?.id ?? null,
+        url: resolveImageUrl(img?.url || img?.imageURL || img?.thumbnail_link || initialImage),
+        alt: img?.alt || img?.altText || `Card image ${idx + 1}`
+      }));
+
+      currentImageIndex = Math.min(currentImageIndex, popupImages.length - 1);
+      renderPopupImage();
+    };
 
     const openLargeImagePreview = () => {
       cleanupImageOverlay();
@@ -119,8 +193,9 @@ const Content1 = (props) => {
 
       const largeImage = document.createElement('img');
       largeImage.className = 'card-pin-popup-image-large';
-      largeImage.src = thumbnail.src;
-      largeImage.alt = thumbnail.alt;
+      const currentImage = popupImages[currentImageIndex] || popupImages[0];
+      largeImage.src = currentImage?.url || thumbnail.src;
+      largeImage.alt = currentImage?.alt || thumbnail.alt;
 
       closeButton.addEventListener('click', cleanupImageOverlay);
       imageOverlay.addEventListener('click', (event) => {
@@ -145,7 +220,43 @@ const Content1 = (props) => {
       document.body.appendChild(imageOverlay);
     };
 
+    const moveToPrevImage = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (popupImages.length <= 1) return;
+      currentImageIndex = currentImageIndex === 0 ? popupImages.length - 1 : currentImageIndex - 1;
+      renderPopupImage();
+    };
+
+    const moveToNextImage = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (popupImages.length <= 1) return;
+      currentImageIndex = currentImageIndex === popupImages.length - 1 ? 0 : currentImageIndex + 1;
+      renderPopupImage();
+    };
+
+    prevButton.addEventListener('click', moveToPrevImage);
+    nextButton.addEventListener('click', moveToNextImage);
     thumbnailButton.addEventListener('click', openLargeImagePreview);
+    renderPopupImage();
+
+    const fetchPopupImages = async () => {
+      const cardID = Number(feature.cardID);
+      if (!Number.isInteger(cardID) || cardID <= 0) return;
+
+      try {
+        const response = await api.get(`/cardImages/${cardID}`);
+        const images = response?.data?.images || [];
+        if (images.length > 0) {
+          setPopupImages(images);
+        }
+      } catch (error) {
+        console.error('Failed to fetch popup card images:', error);
+      }
+    };
+
+    fetchPopupImages();
 
     const infoPanel = document.createElement('div');
     infoPanel.className = 'card-pin-popup-info-panel';
@@ -188,7 +299,7 @@ const Content1 = (props) => {
     infoPanel.appendChild(category);
     infoPanel.appendChild(tags);
 
-    root.appendChild(thumbnailButton);
+    root.appendChild(mediaContainer);
     root.appendChild(infoPanel);
     root.cleanupImageOverlay = cleanupImageOverlay;
     return root;
