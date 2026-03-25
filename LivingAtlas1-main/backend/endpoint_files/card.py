@@ -336,6 +336,18 @@ def allCards():
                 COALESCE(
                     json_agg(
                         DISTINCT jsonb_build_object(
+                            'imageID', ci.ImageID,
+                            'url', ci.ImageURL,
+                            'displayOrder', ci.DisplayOrder,
+                            'alt', ci.AltText
+                        )
+                        ORDER BY ci.DisplayOrder ASC
+                    ) FILTER (WHERE ci.ImageID IS NOT NULL),
+                    '[]'
+                ) AS images,
+                COALESCE(
+                    json_agg(
+                        DISTINCT jsonb_build_object(
                             'fileid', f.fileid,
                             'filename', f.filename,
                             'file_link', f.file_link,
@@ -346,6 +358,7 @@ def allCards():
                 ) AS files
             FROM Cards c
             INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+            LEFT JOIN CardImages ci ON c.CardID = ci.CardID
             LEFT JOIN Files f ON c.CardID = f.CardID
             LEFT JOIN CardTags ct ON c.CardID = ct.CardID
             LEFT JOIN Tags t ON ct.TagID = t.TagID
@@ -361,7 +374,7 @@ def allCards():
 
         columns = [
             "username", "email", "name", "title", "cardID", "category", "date", "description",
-            "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
+            "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "images", "files"
         ]
 
         rows = cur.fetchall()
