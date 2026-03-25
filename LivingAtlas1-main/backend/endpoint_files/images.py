@@ -5,6 +5,7 @@ Provides APIs to manage images in the CardImages table
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from database import conn, cur
+from typing import Optional
 import os
 import uuid
 import datetime
@@ -25,9 +26,10 @@ GCS_IMAGE_FOLDER = "card_images"
 def _get_gcs_client():
     """
     Return a GCS storage client if credentials are available, else None.
-    Supports two credential modes:
-      1. GOOGLE_CREDENTIALS_BASE64 env var (Render/production)
-      2. ServiceKey_GoogleCloud.json file (local development)
+    Supports:
+      1. GOOGLE_CREDENTIALS_BASE64 env var
+      2. Existing GOOGLE_APPLICATION_CREDENTIALS path
+      3. Local ServiceKey_GoogleCloud.json in common backend paths
     """
     try:
         from google.cloud import storage as gcs
@@ -35,7 +37,6 @@ def _get_gcs_client():
         gcs_b64 = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
         if gcs_b64:
             key_bytes = base64.b64decode(gcs_b64)
-            # Write to a temp file so the GCS library can read it
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
             tmp.write(key_bytes)
             tmp.flush()
@@ -43,13 +44,24 @@ def _get_gcs_client():
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = tmp.name
             return gcs.Client()
 
-        local_key = os.path.join(os.path.dirname(__file__), "ServiceKey_GoogleCloud.json")
-        if os.path.exists(local_key):
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = local_key
+        existing_credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        if existing_credentials_path and os.path.exists(existing_credentials_path):
             return gcs.Client()
 
-    except Exception:
-        pass
+        backend_root = os.path.dirname(os.path.dirname(__file__))
+        candidate_keys = [
+            os.path.join(os.path.dirname(__file__), "ServiceKey_GoogleCloud.json"),
+            os.path.join(backend_root, "ServiceKey_GoogleCloud.json"),
+            os.path.join(os.getcwd(), "ServiceKey_GoogleCloud.json"),
+        ]
+
+        for candidate in candidate_keys:
+            if os.path.exists(candidate):
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = candidate
+                return gcs.Client()
+
+    except Exception as e:
+        print(f"[images] Unable to initialize GCS client: {e}")
 
     return None
 
@@ -64,10 +76,10 @@ def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def save_uploaded_file(file: UploadFile) -> str:
+def save_uploaded_file(file: UploadFile, require_gcs: bool = True) -> str:
     """
-    Save uploaded file and return a publicly accessible URL.
-    Tries GCS first (persistent storage); falls back to local disk.
+    Save uploaded file and return a URL.
+    For card gallery images, require_gcs should be True so uploads are persistent.
     """
     if not allowed_file(file.filename):
         raise HTTPException(status_code=400, detail="File type not allowed")
@@ -80,7 +92,6 @@ def save_uploaded_file(file: UploadFile) -> str:
     file_ext = file.filename.rsplit('.', 1)[1].lower()
     unique_filename = f"{uuid.uuid4().hex}_{timestamp}.{file_ext}"
 
-    # --- Try GCS (persistent) ---
     gcs_client = _get_gcs_client()
     if gcs_client is not None:
         try:
@@ -91,9 +102,13 @@ def save_uploaded_file(file: UploadFile) -> str:
             blob.upload_from_string(content, content_type=content_type)
             return blob.public_url
         except Exception as gcs_err:
+            if require_gcs:
+                raise HTTPException(status_code=500, detail=f"GCS upload failed: {gcs_err}")
             print(f"[images] GCS upload failed, falling back to local storage: {gcs_err}")
 
-    # --- Fallback: local disk (will not survive Render restarts) ---
+    if require_gcs:
+        raise HTTPException(status_code=500, detail="Image upload requires GCS credentials.")
+
     ensure_upload_dir()
     filepath = os.path.join(IMAGE_UPLOAD_DIR, unique_filename)
     with open(filepath, 'wb') as f:
@@ -123,8 +138,8 @@ async def upload_card_image(
         if not cur.fetchone():
             raise HTTPException(status_code=404, detail="Card not found")
         
-        # Save file
-        image_url = save_uploaded_file(image)
+        # Save file (persistent GCS storage required)
+        image_url = save_uploaded_file(image, require_gcs=True)
         
         # Get next display order
         cur.execute(
@@ -162,6 +177,83 @@ async def upload_card_image(
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+@images_router.post("/uploadCardImages")
+async def upload_card_images(
+    cardID: int = Form(...),
+    altTexts: Optional[str] = Form(None),
+    images: list[UploadFile] = File(...)
+):
+    """
+    Upload multiple images for a card in one request.
+
+    Args:
+        cardID: Card ID
+        altTexts: Optional delimiter-separated alt text values ("||" delimiter)
+        images: List of image files
+
+    Returns:
+        Created image records with ImageID and ImageURL
+    """
+    try:
+        if not images:
+            raise HTTPException(status_code=400, detail="No images provided")
+
+        cur.execute("SELECT CardID FROM Cards WHERE CardID = %s", (cardID,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Card not found")
+
+        alt_text_values = []
+        if altTexts:
+            alt_text_values = [text.strip() for text in altTexts.split("||")]
+
+        cur.execute(
+            "SELECT COALESCE(MAX(DisplayOrder), -1) FROM CardImages WHERE CardID = %s",
+            (cardID,)
+        )
+        next_order = cur.fetchone()[0] + 1
+
+        created_images = []
+        for index, image in enumerate(images):
+            image_url = save_uploaded_file(image, require_gcs=True)
+            alt_text = alt_text_values[index] if index < len(alt_text_values) else ""
+
+            cur.execute(
+                """
+                INSERT INTO CardImages (CardID, ImageURL, DisplayOrder, AltText)
+                VALUES (%s, %s, %s, %s)
+                RETURNING ImageID
+                """,
+                (cardID, image_url, next_order + index, alt_text)
+            )
+            image_id = cur.fetchone()[0]
+
+            created_images.append({
+                "imageID": image_id,
+                "imageURL": image_url,
+                "displayOrder": next_order + index,
+                "altText": alt_text
+            })
+
+        # Keep legacy thumbnail in sync to first newly uploaded image
+        cur.execute(
+            "UPDATE Cards SET Thumbnail_Link = %s WHERE CardID = %s",
+            (created_images[0]["imageURL"], cardID)
+        )
+        conn.commit()
+
+        return {
+            "success": True,
+            "cardID": cardID,
+            "images": created_images
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Batch upload failed: {str(e)}")
+
 
 @images_router.delete("/deleteCardImage/{imageID}")
 async def delete_card_image(imageID: int):
@@ -207,8 +299,7 @@ async def delete_card_image(imageID: int):
             SELECT ImageID FROM CardImages 
             WHERE CardID = %s 
             ORDER BY DisplayOrder, ImageID
-        """, (card_id,))
-        
+        """, (card_id,))        
         remaining_images = cur.fetchall()
         for idx, (img_id,) in enumerate(remaining_images):
             cur.execute(
