@@ -20,6 +20,7 @@ function Card(props) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const isEditingRef = useRef(false); // Track editing state across renders
     const learnMoreImageInputRef = useRef(null);
+    const hydratedCardImagesRef = useRef(new Set());
     const [formData, setFormData] = useState({
         ...props.formData,
         files: props.formData?.files || [],      // <-- ensure files array always exists
@@ -462,7 +463,53 @@ function Card(props) {
             }
             return Math.min(prev, freshImages.length - 1);
         });
+
+        hydratedCardImagesRef.current.add(cardID);
     };
+
+    useEffect(() => {
+        if (isEditingRef.current) return;
+
+        const cardID = props.formData?.cardID || props.cardID;
+        if (!cardID) return;
+
+        const incomingImages = props.formData?.images;
+        const hasIncomingImages = Array.isArray(incomingImages) && incomingImages.length > 0;
+        if (hasIncomingImages || hydratedCardImagesRef.current.has(cardID)) return;
+
+        let isCancelled = false;
+
+        const hydrateCardImages = async () => {
+            try {
+                const response = await api.get(`/cardImages/${cardID}`);
+                const freshImages = (response.data?.images || []).map((img, idx) => normalizeImageRecord(img, idx));
+
+                if (isCancelled || freshImages.length === 0) return;
+
+                hydratedCardImagesRef.current.add(cardID);
+                setFormData((prev) => {
+                    const prevCardID = prev.cardID || props.cardID;
+                    if (prevCardID !== cardID) return prev;
+
+                    const prevHasImages = Array.isArray(prev.images) && prev.images.length > 0;
+                    if (prevHasImages) return prev;
+
+                    return {
+                        ...prev,
+                        images: freshImages
+                    };
+                });
+            } catch (error) {
+                console.error('Failed to hydrate card images for list display:', error);
+            }
+        };
+
+        hydrateCardImages();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [props.formData, props.cardID]);
 
     const handleLearnMoreGalleryTileClick = (e, image, slotIndex) => {
         e.stopPropagation();
