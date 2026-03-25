@@ -747,8 +747,27 @@ function Card(props) {
     const currentImage = imageList[currentImageIndex] || imageList[0];
     const cardCurrentImage = cardImageList[currentImageIndex] || cardImageList[0];
     const hasMultipleImages = cardImageList.length > 1;
-    const indicatorImages = cardImageList.slice(0, 5);
-    const activeIndicatorIndex = Math.min(currentImageIndex, Math.max(indicatorImages.length - 1, 0));
+    const totalIndicatorCount = cardImageList.length;
+    const visibleIndicatorCount = Math.min(5, totalIndicatorCount);
+    const indicatorWindowStart = Math.max(
+        0,
+        Math.min(currentImageIndex - 2, totalIndicatorCount - visibleIndicatorCount)
+    );
+    const visibleIndicatorIndexes = Array.from(
+        { length: visibleIndicatorCount },
+        (_, idx) => indicatorWindowStart + idx
+    );
+    const nonActiveVisibleIndexes = visibleIndicatorIndexes.filter((idx) => idx !== currentImageIndex);
+    const normalNeighborIndexes = new Set(
+        nonActiveVisibleIndexes
+            .slice()
+            .sort((a, b) => {
+                const distanceDiff = Math.abs(a - currentImageIndex) - Math.abs(b - currentImageIndex);
+                if (distanceDiff !== 0) return distanceDiff;
+                return a - b;
+            })
+            .slice(0, 2)
+    );
     const learnMoreGalleryImages = imageList.slice(0, 5);
     const learnMoreGallerySlots = Array.from({ length: 5 }, (_, index) => learnMoreGalleryImages[index] || null);
 
@@ -826,10 +845,10 @@ function Card(props) {
                 {/* Image indicator dots (only show if multiple images) */}
                 {hasMultipleImages && (
                     <div className="card-image-indicators">
-                        {indicatorImages.map((_, index) => (
+                        {visibleIndicatorIndexes.map((imageIndex) => (
                             <span
-                                key={index}
-                                className={`card-image-dot ${index === activeIndicatorIndex ? 'active' : ''}`}
+                                key={`dot-${imageIndex}`}
+                                className={`card-image-dot ${imageIndex === currentImageIndex ? 'active' : ''} ${imageIndex !== currentImageIndex && !normalNeighborIndexes.has(imageIndex) ? 'small' : ''}`}
                                 aria-hidden="true"
                             />
                         ))}
