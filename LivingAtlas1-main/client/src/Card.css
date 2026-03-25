@@ -922,6 +922,91 @@
   text-decoration: underline;
 }
 
+/* Edit mode file management in Learn More modal */
+.learn-more-files-edit-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.learn-more-files-edit-section > p {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.learn-more-files-edit-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.learn-more-file-edit-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.learn-more-file-edit-name {
+  font-size: 0.875rem;
+  color: #374151;
+  word-break: break-word;
+  flex: 1;
+  margin-right: 8px;
+}
+
+.learn-more-file-edit-delete-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.learn-more-file-edit-delete-btn:hover {
+  background: #fee2e2;
+}
+
+.learn-more-no-files {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0 0 12px;
+  font-style: italic;
+}
+
+.learn-more-add-files-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.learn-more-add-files-label input[type="file"] {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+
+.learn-more-staged-files {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 4px 0 0;
+  font-style: italic;
+}
+
 .learn-more-modal-footer-close {
   padding: 12px 24px 24px;
   margin: 0;

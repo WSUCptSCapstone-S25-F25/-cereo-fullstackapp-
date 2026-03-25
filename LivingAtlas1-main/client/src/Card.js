@@ -399,6 +399,8 @@ function Card(props) {
         e.stopPropagation();
         const success = await saveEdits({ skipReload: true, closeEditModal: false });
         if (success) {
+            await refreshCardRecord();
+            await refreshCardImages();
             setIsLearnMoreEditMode(false);
             setLearnMoreBackup(null);
             setSessionUploadedImageIDs([]);
@@ -490,6 +492,30 @@ function Card(props) {
             }
             return Math.min(prev, freshImages.length - 1);
         });
+    };
+
+    const refreshCardRecord = async () => {
+        const rawCardID = formData.cardID || props.cardID;
+        const cardID = Number(rawCardID);
+        if (!Number.isInteger(cardID) || cardID <= 0) return;
+
+        try {
+            const response = await api.get('/allCards');
+            const cards = response?.data?.data || [];
+            const latestCard = cards.find((card) => Number(card.cardID) === cardID);
+
+            if (!latestCard) return;
+
+            setFormData((prev) => ({
+                ...prev,
+                ...latestCard,
+                files: latestCard.files || [],
+                images: latestCard.images || prev.images || [],
+                filesToUpload: []
+            }));
+        } catch (error) {
+            console.error('Failed to refresh card data:', error);
+        }
     };
 
     const handleLearnMoreGalleryTileClick = (e, image, slotIndex) => {
@@ -928,24 +954,77 @@ function Card(props) {
                         </>
                     )}
 
-                    {/* Downloadable Files */}
-                    {formData.files && formData.files.length > 0 && (
-                        <div className="file-list learn-more-file-list">
-                            <h3>Downloadable Files:</h3>
-                            <ul>
-                                {formData.files.map((file, idx) => (
-                                    <li key={file.fileid || idx}>
-                                        <a
-                                            href={file.file_link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                        >
-                                            {file.filename || `Download ${file.fileextension}`}
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
+                    {/* Files Section */}
+                    {isLearnMoreEditMode ? (
+                        <div className="learn-more-files-edit-section">
+                            <p><strong>Attached Files:</strong></p>
+                            {formData.files && formData.files.length > 0 ? (
+                                <ul className="learn-more-files-edit-list">
+                                    {formData.files.map((file, idx) => (
+                                        <li key={file.fileid || idx} className="learn-more-file-edit-item">
+                                            <span className="learn-more-file-edit-name">
+                                                {file.filename || `File ${idx + 1}`}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className="learn-more-file-edit-delete-btn"
+                                                onClick={async () => {
+                                                    if (!window.confirm(`Delete file "${file.filename}"?`)) return;
+                                                    try {
+                                                        await api.delete(`/deleteFile?fileID=${file.fileid}`);
+                                                        const filterOut = (f) => f.fileid !== file.fileid;
+                                                        setFormData((prev) => ({ ...prev, files: prev.files.filter(filterOut) }));
+                                                        setLearnMoreBackup((prev) => prev ? { ...prev, files: (prev.files || []).filter(filterOut) } : prev);
+                                                    } catch (err) {
+                                                        console.error('Error deleting file:', err);
+                                                        alert('Failed to delete file.');
+                                                    }
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="learn-more-no-files">No files attached.</p>
+                            )}
+                            <label className="learn-more-add-files-label">
+                                Add Files:
+                                <input
+                                    type="file"
+                                    multiple
+                                    onChange={(e) => {
+                                        const selectedFiles = Array.from(e.target.files);
+                                        setFormData((prev) => ({ ...prev, filesToUpload: selectedFiles }));
+                                    }}
+                                />
+                            </label>
+                            {formData.filesToUpload && formData.filesToUpload.length > 0 && (
+                                <p className="learn-more-staged-files">
+                                    {formData.filesToUpload.length} file(s) staged for upload
+                                </p>
+                            )}
                         </div>
+                    ) : (
+                        formData.files && formData.files.length > 0 && (
+                            <div className="file-list learn-more-file-list">
+                                <h3>Downloadable Files:</h3>
+                                <ul>
+                                    {formData.files.map((file, idx) => (
+                                        <li key={file.fileid || idx}>
+                                            <a
+                                                href={file.file_link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                {file.filename || `Download ${file.fileextension}`}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )
                     )}
                 </div>
 
