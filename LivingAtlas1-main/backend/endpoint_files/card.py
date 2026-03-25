@@ -334,15 +334,19 @@ def allCards():
                 c.Longitude,
                 c.Thumbnail_Link,
                 COALESCE(
-                    json_agg(
-                        DISTINCT jsonb_build_object(
-                            'imageID', ci.ImageID,
-                            'url', ci.ImageURL,
-                            'displayOrder', ci.DisplayOrder,
-                            'alt', ci.AltText
+                    (
+                        SELECT json_agg(
+                            jsonb_build_object(
+                                'imageID', ci.ImageID,
+                                'url', ci.ImageURL,
+                                'displayOrder', ci.DisplayOrder,
+                                'alt', ci.AltText
+                            )
+                            ORDER BY ci.DisplayOrder ASC, ci.ImageID ASC
                         )
-                        ORDER BY ci.DisplayOrder ASC
-                    ) FILTER (WHERE ci.ImageID IS NOT NULL),
+                        FROM CardImages ci
+                        WHERE ci.CardID = c.CardID
+                    ),
                     '[]'
                 ) AS images,
                 COALESCE(
@@ -358,7 +362,6 @@ def allCards():
                 ) AS files
             FROM Cards c
             INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
-            LEFT JOIN CardImages ci ON c.CardID = ci.CardID
             LEFT JOIN Files f ON c.CardID = f.CardID
             LEFT JOIN CardTags ct ON c.CardID = ct.CardID
             LEFT JOIN Tags t ON ct.TagID = t.TagID
