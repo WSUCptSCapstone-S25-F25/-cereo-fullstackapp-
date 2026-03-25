@@ -33,7 +33,16 @@ def getMarkers():
                     c.Organization,
                     c.Funding,
                     c.Link,
-                    c.Thumbnail_Link,
+                    COALESCE(
+                        (
+                            SELECT ci2.ImageURL
+                            FROM CardImages ci2
+                            WHERE ci2.CardID = c.CardID
+                            ORDER BY ci2.DisplayOrder ASC, ci2.ImageID ASC
+                            LIMIT 1
+                        ),
+                        c.Thumbnail_Link
+                    ) AS Thumbnail_Link,
                     STRING_AGG(DISTINCT t.TagLabel, ', ') AS Tags,
                     COALESCE(
                         json_agg(
@@ -99,7 +108,16 @@ def updateBoundry(NEpoint: Point, SWpoint: Point):
                     STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
                     c.Latitude,
                     c.Longitude,
-                    c.Thumbnail_Link,
+                    COALESCE(
+                        (
+                            SELECT ci2.ImageURL
+                            FROM CardImages ci2
+                            WHERE ci2.CardID = c.CardID
+                            ORDER BY ci2.DisplayOrder ASC, ci2.ImageID ASC
+                            LIMIT 1
+                        ),
+                        c.Thumbnail_Link
+                    ) AS Thumbnail_Link,
                     COALESCE(
                         json_agg(
                             DISTINCT jsonb_build_object(
@@ -119,7 +137,7 @@ def updateBoundry(NEpoint: Point, SWpoint: Point):
                 INNER JOIN Users u ON c.UserID = u.UserID
                 WHERE c.Latitude BETWEEN %s AND %s
                   AND c.Longitude BETWEEN %s AND %s
-                GROUP BY c.CardID, cat.CategoryLabel, u.Username, u.Email, c.Thumbnail_link
+                                GROUP BY c.CardID, cat.CategoryLabel, u.Username, u.Email, c.Thumbnail_Link
                 ORDER BY c.CardID DESC;
             """, (SWpoint.lat, NEpoint.lat, SWpoint.long, NEpoint.long))
 

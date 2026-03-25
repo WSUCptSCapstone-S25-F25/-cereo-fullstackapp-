@@ -30,7 +30,16 @@ def allCards():
             STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
             c.Latitude,
             c.Longitude,
-            c.Thumbnail_Link,
+            COALESCE(
+                (
+                    SELECT ci2.ImageURL
+                    FROM CardImages ci2
+                    WHERE ci2.CardID = c.CardID
+                    ORDER BY ci2.DisplayOrder ASC, ci2.ImageID ASC
+                    LIMIT 1
+                ),
+                c.Thumbnail_Link
+            ) AS Thumbnail_Link,
             COALESCE(
                 json_agg(
                     DISTINCT jsonb_build_object(
@@ -106,7 +115,16 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
             STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
             c.Latitude,
             c.Longitude,
-            c.Thumbnail_Link,
+            COALESCE(
+                (
+                    SELECT ci2.ImageURL
+                    FROM CardImages ci2
+                    WHERE ci2.CardID = c.CardID
+                    ORDER BY ci2.DisplayOrder ASC, ci2.ImageID ASC
+                    LIMIT 1
+                ),
+                c.Thumbnail_Link
+            ) AS Thumbnail_Link,
             COALESCE(
                 json_agg(
                     DISTINCT jsonb_build_object(
@@ -215,7 +233,16 @@ def searchBar(titleSearch: str):
                 STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
                 c.Latitude,
                 c.Longitude,
-                c.Thumbnail_Link,
+                COALESCE(
+                    (
+                        SELECT ci2.ImageURL
+                        FROM CardImages ci2
+                        WHERE ci2.CardID = c.CardID
+                        ORDER BY ci2.DisplayOrder ASC, ci2.ImageID ASC
+                        LIMIT 1
+                    ),
+                    c.Thumbnail_Link
+                ) AS Thumbnail_Link,
                 COALESCE(
                     json_agg(
                         DISTINCT jsonb_build_object(

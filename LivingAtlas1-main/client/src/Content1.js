@@ -61,6 +61,15 @@ const Content1 = (props) => {
     onMarkerCardSelect?.(null);
   }, [setSearchCondition, onMarkerCardSelect]);
 
+  const resolveImageUrl = useCallback((url) => {
+    if (!url) return '/CEREO-logo.png';
+    if (/^https?:\/\//i.test(url)) return url;
+
+    const baseURL = (api.defaults.baseURL || '').replace(/\/$/, '');
+    if (!baseURL) return url;
+    return url.startsWith('/') ? `${baseURL}${url}` : `${baseURL}/${url}`;
+  }, []);
+
   const buildMarkerPopupContent = useCallback((feature) => {
     const root = document.createElement('div');
     root.className = 'card-pin-popup-panel';
@@ -84,7 +93,7 @@ const Content1 = (props) => {
     thumbnail.className = 'card-pin-popup-thumbnail';
     thumbnail.alt = 'Card Thumbnail';
     thumbnail.src = feature.thumbnail_link && String(feature.thumbnail_link).trim() !== ''
-      ? feature.thumbnail_link
+      ? resolveImageUrl(feature.thumbnail_link)
       : '/CEREO-logo.png';
 
     const thumbnailButton = document.createElement('button');
@@ -183,7 +192,7 @@ const Content1 = (props) => {
     root.appendChild(infoPanel);
     root.cleanupImageOverlay = cleanupImageOverlay;
     return root;
-  }, []);
+  }, [resolveImageUrl]);
 
   const openMarkerPopup = useCallback((feature, markerInstance, mapInstance) => {
     closeMarkerPopup();
