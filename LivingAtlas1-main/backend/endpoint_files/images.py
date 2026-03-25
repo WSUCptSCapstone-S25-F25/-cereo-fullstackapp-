@@ -3,7 +3,7 @@ Endpoint for multi-image support
 Provides APIs to manage images in the CardImages table
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Body
 from database import conn, cur
 from typing import Optional
 import os
@@ -340,13 +340,13 @@ async def delete_card_image(imageID: int):
         raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
 
 @images_router.put("/reorderCardImages")
-async def reorder_card_images(cardID: int, imageOrder: list):
+async def reorder_card_images(cardID: int, imageOrder: list = Body(...)):
     """
     Reorder images for a card
     
     Args:
-        cardID: Card ID
-        imageOrder: List of ImageIDs in desired order
+        cardID: Card ID (query parameter)
+        imageOrder: List of ImageIDs in desired order (request body)
     
     Returns:
         Updated order confirmation

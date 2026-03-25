@@ -418,6 +418,29 @@ function Card(props) {
         setSelectedAllImageIDs([]);
     };
 
+    const applyImageReordering = async () => {
+        const cardID = formData.cardID || props.cardID;
+        const images = formData.images || [];
+        
+        if (!images.length || !cardID) return;
+
+        // Extract imageIDs in current order, filtering out temporary records
+        const imageOrder = images
+            .map((img) => resolveImageServerID(img))
+            .filter((id) => id !== null);
+
+        if (!imageOrder.length) return;
+
+        try {
+            const response = await api.put(`/reorderCardImages?cardID=${cardID}`, imageOrder);
+            console.log('Image reordering successful:', response.data);
+        } catch (error) {
+            const errorMsg = error.response?.data?.detail || error.message || 'Unknown error';
+            console.error('Failed to reorder images:', errorMsg);
+            alert(`Failed to save image order: ${errorMsg}`);
+        }
+    };
+
     const handleLearnMoreEditSave = async (e) => {
         e.stopPropagation();
         const success = await saveEdits({ skipReload: true, closeEditModal: false });
@@ -427,6 +450,12 @@ function Card(props) {
             } catch (error) {
                 console.error('Failed to apply pending image deletions:', error);
                 alert('Some selected images could not be deleted. Please try saving again.');
+            }
+            try {
+                await applyImageReordering();
+            } catch (error) {
+                console.error('Failed to apply image reordering:', error);
+                alert('Warning: Image reordering may not have been saved.');
             }
             await refreshCardRecord();
             await refreshCardImages();
@@ -660,6 +689,35 @@ function Card(props) {
         );
     };
 
+    const handleMoveImageUp = (e, index) => {
+        e.stopPropagation();
+        if (index <= 0) return;
+
+        setFormData((prev) => {
+            const newImages = [...(prev.images || [])];
+            [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
+            return {
+                ...prev,
+                images: newImages
+            };
+        });
+    };
+
+    const handleMoveImageDown = (e, index) => {
+        e.stopPropagation();
+        const images = formData.images || [];
+        if (index >= images.length - 1) return;
+
+        setFormData((prev) => {
+            const newImages = [...(prev.images || [])];
+            [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
+            return {
+                ...prev,
+                images: newImages
+            };
+        });
+    };
+
     const handleDeleteSelectedAllImages = (e) => {
         e.stopPropagation();
 
@@ -887,6 +945,31 @@ function Card(props) {
                             <div className="learn-more-all-images-list">
                                 {allImagesList.map((image, index) => (
                                     <div className="learn-more-all-image-item" key={`all-image-${image.imageID || image.id || index}`}>
+                                        {isLearnMoreEditMode && (
+                                            <div className="learn-more-all-image-sort-controls">
+                                                <button
+                                                    type="button"
+                                                    className="learn-more-all-image-sort-btn learn-more-all-image-sort-up"
+                                                    onClick={(e) => handleMoveImageUp(e, index)}
+                                                    disabled={index === 0}
+                                                    title="Move image up"
+                                                    aria-label="Move image up"
+                                                >
+                                                    ▲
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="learn-more-all-image-sort-btn learn-more-all-image-sort-down"
+                                                    onClick={(e) => handleMoveImageDown(e, index)}
+                                                    disabled={index === allImagesList.length - 1}
+                                                    title="Move image down"
+                                                    aria-label="Move image down"
+                                                >
+                                                    ▼
+                                                </button>
+                                            </div>
+                                        )}
+
                                         <button
                                             type="button"
                                             className="learn-more-all-image-btn"
