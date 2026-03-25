@@ -34,6 +34,18 @@ def allCards():
             COALESCE(
                 json_agg(
                     DISTINCT jsonb_build_object(
+                        'imageID', ci.ImageID,
+                        'url', ci.ImageURL,
+                        'displayOrder', ci.DisplayOrder,
+                        'alt', ci.AltText
+                    )
+                    ORDER BY ci.DisplayOrder ASC
+                ) FILTER (WHERE ci.ImageID IS NOT NULL),
+                '[]'
+            ) AS images,
+            COALESCE(
+                json_agg(
+                    DISTINCT jsonb_build_object(
                         'fileid', f.fileid,
                         'filename', f.filename,
                         'file_link', f.file_link,
@@ -44,6 +56,7 @@ def allCards():
             ) AS files
         FROM Cards c
         INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+        LEFT JOIN CardImages ci ON c.CardID = ci.CardID
         LEFT JOIN Files f ON c.CardID = f.CardID
         LEFT JOIN CardTags ct ON c.CardID = ct.CardID
         LEFT JOIN Tags t ON ct.TagID = t.TagID
@@ -55,7 +68,7 @@ def allCards():
     rows = cur.fetchall()
     columns = [
         "username", "email", "title", "cardID", "category", "date", "description", "org",
-        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
+        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "images", "files"
     ]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
@@ -97,6 +110,18 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
             COALESCE(
                 json_agg(
                     DISTINCT jsonb_build_object(
+                        'imageID', ci.ImageID,
+                        'url', ci.ImageURL,
+                        'displayOrder', ci.DisplayOrder,
+                        'alt', ci.AltText
+                    )
+                    ORDER BY ci.DisplayOrder ASC
+                ) FILTER (WHERE ci.ImageID IS NOT NULL),
+                '[]'
+            ) AS images,
+            COALESCE(
+                json_agg(
+                    DISTINCT jsonb_build_object(
                         'fileid', f.fileid,
                         'filename', f.filename,
                         'file_link', f.file_link,
@@ -120,6 +145,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
         LEFT JOIN CardTags ct ON c.CardID = ct.CardID
         LEFT JOIN Tags t ON ct.TagID = t.TagID
         JOIN Categories cat ON c.CategoryID = cat.CategoryID
+        LEFT JOIN CardImages ci ON c.CardID = ci.CardID
         LEFT JOIN Files f ON c.CardID = f.CardID
     """
 
@@ -157,7 +183,7 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
     rows = cur.fetchall()
     columns = [
         "username", "email", "title", "cardID", "category", "date", "description", "org",
-        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "files"
+        "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "images", "files"
     ]
     data = [dict(zip(columns, row)) for row in rows]
     return {"data": data}
@@ -179,6 +205,7 @@ def searchBar(titleSearch: str):
                 c.Name,
                 u.Email,
                 c.Title,
+                c.CardID,
                 cat.CategoryLabel,
                 c.DatePosted,
                 c.Description,
@@ -192,6 +219,18 @@ def searchBar(titleSearch: str):
                 COALESCE(
                     json_agg(
                         DISTINCT jsonb_build_object(
+                            'imageID', ci.ImageID,
+                            'url', ci.ImageURL,
+                            'displayOrder', ci.DisplayOrder,
+                            'alt', ci.AltText
+                        )
+                        ORDER BY ci.DisplayOrder ASC
+                    ) FILTER (WHERE ci.ImageID IS NOT NULL),
+                    '[]'
+                ) AS images,
+                COALESCE(
+                    json_agg(
+                        DISTINCT jsonb_build_object(
                             'fileid', f.fileid,
                             'filename', f.filename,
                             'file_link', f.file_link,
@@ -202,6 +241,7 @@ def searchBar(titleSearch: str):
                 ) AS files
             FROM Cards c
             INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
+            LEFT JOIN CardImages ci ON c.CardID = ci.CardID
             LEFT JOIN Files f ON c.CardID = f.CardID
             LEFT JOIN CardTags ct ON c.CardID = ct.CardID
             LEFT JOIN Tags t ON ct.TagID = t.TagID
@@ -213,9 +253,9 @@ def searchBar(titleSearch: str):
 
         rows = cur.fetchall()
         columns = [
-            "username", "name", "email", "title", "category", "date",
+            "username", "name", "email", "title", "cardID", "category", "date",
             "description", "org", "funding", "link", "tags",
-            "latitude", "longitude", "thumbnail_link", "files"
+            "latitude", "longitude", "thumbnail_link", "images", "files"
         ]
         data = [dict(zip(columns, row)) for row in rows]
         return {"data": data}
