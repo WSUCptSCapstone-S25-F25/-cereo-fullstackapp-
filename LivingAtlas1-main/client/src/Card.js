@@ -13,6 +13,9 @@ function Card(props) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
     const [isLearnMoreEditMode, setIsLearnMoreEditMode] = useState(false);
+    const [isAllImagesView, setIsAllImagesView] = useState(false);
+    const [selectedAllImageIDs, setSelectedAllImageIDs] = useState([]);
+    const [pendingDeletedImageIDs, setPendingDeletedImageIDs] = useState([]);
     const [learnMoreBackup, setLearnMoreBackup] = useState(null);
     const [isImageMutationLoading, setIsImageMutationLoading] = useState(false);
     const [pendingImageSlotIndex, setPendingImageSlotIndex] = useState(null);
@@ -89,6 +92,7 @@ function Card(props) {
     const handleLearnMore = (e) => {
         e.stopPropagation();
         setIsLearnMoreEditMode(false);
+        setIsAllImagesView(false);
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
     };
@@ -348,6 +352,8 @@ function Card(props) {
         e.stopPropagation();
         setLearnMoreBackup({ ...formData });
         setSessionUploadedImageIDs([]);
+        setSelectedAllImageIDs([]);
+        setPendingDeletedImageIDs([]);
         setFormData((prev) => ({
             ...prev,
             original_username: prev.original_username || prev.username,
@@ -392,18 +398,43 @@ function Card(props) {
         isEditingRef.current = false;
         setIsLearnMoreEditMode(false);
         setPendingImageSlotIndex(null);
+        setSelectedAllImageIDs([]);
+        setPendingDeletedImageIDs([]);
         setIsImageMutationLoading(false);
+    };
+
+    const applyPendingImageDeletes = async () => {
+        if (!pendingDeletedImageIDs.length) return;
+
+        const uniqueIDs = [...new Set(pendingDeletedImageIDs)].filter((id) => Number.isInteger(id) && id > 0);
+        if (!uniqueIDs.length) return;
+
+        for (const imageID of uniqueIDs) {
+            await api.delete(`/deleteCardImage/${imageID}`);
+        }
+
+        setSessionUploadedImageIDs((prev) => prev.filter((id) => !uniqueIDs.includes(id)));
+        setPendingDeletedImageIDs([]);
+        setSelectedAllImageIDs([]);
     };
 
     const handleLearnMoreEditSave = async (e) => {
         e.stopPropagation();
         const success = await saveEdits({ skipReload: true, closeEditModal: false });
         if (success) {
+            try {
+                await applyPendingImageDeletes();
+            } catch (error) {
+                console.error('Failed to apply pending image deletions:', error);
+                alert('Some selected images could not be deleted. Please try saving again.');
+            }
             await refreshCardRecord();
             await refreshCardImages();
             setIsLearnMoreEditMode(false);
             setLearnMoreBackup(null);
             setSessionUploadedImageIDs([]);
+            setSelectedAllImageIDs([]);
+            setPendingDeletedImageIDs([]);
         }
     };
 
@@ -414,6 +445,7 @@ function Card(props) {
             await handleLearnMoreEditCancel(e);
         }
 
+        setIsAllImagesView(false);
         setIsModalOpen(false);
     };
 
@@ -611,6 +643,49 @@ function Card(props) {
         ? formData.images.map((img, idx) => normalizeImageRecord(img, idx))
         : [{ url: cardThumbnailSrc, id: 0 }];
 
+    const allImagesList = imageList;
+
+    const resolveImageServerID = (image) => {
+        const imageID = Number(image?.imageID ?? image?.imageId ?? null);
+        return Number.isInteger(imageID) && imageID > 0 ? imageID : null;
+    };
+
+    const toggleAllImageSelection = (e, image) => {
+        e.stopPropagation();
+        const imageID = resolveImageServerID(image);
+        if (!imageID) return;
+
+        setSelectedAllImageIDs((prev) =>
+            prev.includes(imageID) ? prev.filter((id) => id !== imageID) : [...prev, imageID]
+        );
+    };
+
+    const handleDeleteSelectedAllImages = (e) => {
+        e.stopPropagation();
+
+        if (!selectedAllImageIDs.length) {
+            alert('Please select image(s) first.');
+            return;
+        }
+
+        if (!window.confirm(`Delete ${selectedAllImageIDs.length} selected image(s)?`)) return;
+
+        const selectedSet = new Set(selectedAllImageIDs);
+        const isSelectedImage = (img) => {
+            const imageID = resolveImageServerID(img);
+            return imageID ? selectedSet.has(imageID) : false;
+        };
+
+        setPendingDeletedImageIDs((prev) => [...new Set([...prev, ...selectedAllImageIDs])]);
+
+        setFormData((prev) => ({
+            ...prev,
+            images: (prev.images || []).filter((img) => !isSelectedImage(normalizeImageRecord(img)))
+        }));
+
+        setSelectedAllImageIDs([]);
+    };
+
     const currentImage = imageList[currentImageIndex] || imageList[0];
     const cardCurrentImage = cardImageList[currentImageIndex] || cardImageList[0];
     const hasMultipleImages = cardImageList.length > 1;
@@ -791,6 +866,84 @@ function Card(props) {
                         style={{ display: 'none' }}
                     />
 
+                    {isAllImagesView ? (
+                        <div className="learn-more-all-images-view">
+                            <div className="learn-more-all-images-header">
+                                <button
+                                    type="button"
+                                    className="learn-more-all-images-back-link"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsAllImagesView(false);
+                                    }}
+                                >
+                                    ← Back to Learn More
+                                </button>
+                                <p className="learn-more-all-images-count">
+                                    {`Showing ${allImagesList.length} image${allImagesList.length === 1 ? '' : 's'}`}
+                                </p>
+                            </div>
+
+                            <div className="learn-more-all-images-list">
+                                {allImagesList.map((image, index) => (
+                                    <div className="learn-more-all-image-item" key={`all-image-${image.imageID || image.id || index}`}>
+                                        <button
+                                            type="button"
+                                            className="learn-more-all-image-btn"
+                                            onClick={(e) => openImagePreviewAtIndex(e, index)}
+                                            title={`Open image ${index + 1}`}
+                                        >
+                                            <img
+                                                className="learn-more-all-image"
+                                                src={image.url}
+                                                alt={image.alt || `Card image ${index + 1}`}
+                                            />
+                                        </button>
+
+                                        {isLearnMoreEditMode && resolveImageServerID(image) && (
+                                            <button
+                                                type="button"
+                                                className={`learn-more-all-image-select ${selectedAllImageIDs.includes(resolveImageServerID(image)) ? 'is-selected' : ''}`}
+                                                onClick={(e) => toggleAllImageSelection(e, image)}
+                                                title={selectedAllImageIDs.includes(resolveImageServerID(image)) ? 'Unselect image' : 'Select image'}
+                                                aria-label={selectedAllImageIDs.includes(resolveImageServerID(image)) ? 'Unselect image' : 'Select image'}
+                                                aria-pressed={selectedAllImageIDs.includes(resolveImageServerID(image)) ? 'true' : 'false'}
+                                            >
+                                                <span className="learn-more-all-image-select-mark" aria-hidden="true" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {isLearnMoreEditMode && (
+                                <div className="learn-more-all-images-actions">
+                                    <button
+                                        type="button"
+                                        className="learn-more-all-images-delete-selected-btn"
+                                        onClick={handleDeleteSelectedAllImages}
+                                        disabled={isImageMutationLoading || selectedAllImageIDs.length === 0}
+                                    >
+                                        {`Delete Selected (${selectedAllImageIDs.length})`}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="learn-more-modal-toolbar-btn save"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setPendingImageSlotIndex(null);
+                                            learnMoreImageInputRef.current?.click();
+                                        }}
+                                        disabled={isImageMutationLoading}
+                                    >
+                                        {isImageMutationLoading ? 'Uploading...' : 'Add New Image'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <>
+
                     <div className="learn-more-gallery">
                         <button
                             type="button"
@@ -865,6 +1018,17 @@ function Card(props) {
                             ))}
                         </div>
                     </div>
+
+                    <button
+                        type="button"
+                        className="learn-more-see-all-images-btn"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsAllImagesView(true);
+                        }}
+                    >
+                        {`See all ${allImagesList.length} image${allImagesList.length === 1 ? '' : 's'}`}
+                    </button>
 
                     <div className="learn-more-modal-title-section">
                         {isLearnMoreEditMode ? (
@@ -1024,6 +1188,8 @@ function Card(props) {
                                 </ul>
                             </div>
                         )
+                    )}
+                        </>
                     )}
                 </div>
 
