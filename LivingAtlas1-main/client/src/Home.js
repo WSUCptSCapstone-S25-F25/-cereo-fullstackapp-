@@ -454,31 +454,21 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 3/24/2026</h3>
+                    <p>Learn More modal was upgraded into the primary card management surface: integrated edit/delete/close toolbar, full-height layout, and inline editable fields while preserving legacy edit compatibility.</p>
+                    <p>Multi-image workflows were expanded and stabilized: 5-slot gallery, edit-mode image add/delete interactions, cancel rollback for newly uploaded images, and save-flow fixes to prevent thumbnail reset behavior.</p>
+                    <p>Map-to-card interaction is now tighter: simplified pin popup UX, larger popup image preview, and direct popup-to-Learn-More opening for the corresponding card.</p>
+                    <p>Card panel controls were modernized with custom Category and Sort dropdowns, with sort integrated into the card container toolbar.</p>
+                    <p>Data consistency hardening was added for image rendering across card container, Learn More, and map popup, including backend list/search/map payload alignment and thumbnail fallback logic tied to card images.</p>
 
-                    <h3>Card Interaction</h3>
-                    <p>Clicking anywhere on a card now opens the Learn More modal.</p>
-                    <p>The Learn More button has been removed from each card.</p>
-                    <p>To zoom the map to a card's location, use the small magnifying glass button next to the card title.</p>
+                    <hr />
 
-                    <h3>Learn More Modal</h3>
-                    <p>The modal is now wider and uses more of the screen height.</p>
-                    <p>The card image is displayed prominently at the top of the modal.</p>
-
-                    <h3>Card Layout</h3>
-                    <p>All cards now have a consistent fixed size. Resizing the card panel no longer changes individual card dimensions.</p>
-                    <p>Cards now have a hover effect: a subtle lift, shadow, and border highlight when the cursor moves over them.</p>
-
-                    <h3>Card Visuals</h3>
-                    <p>The image area on each card is larger.</p>
-                    <p>The title is more compact, and the category is shown beneath it.</p>
-                    <p>Clicking a card image opens a full-size preview.</p>
-
-                    <h3>Multi-Image Carousel</h3>
-                    <p>Each card now supports multiple images.</p>
-                    <p>Left and right arrow buttons (visible on hover) let you navigate between images.</p>
-                    <p>Dot indicators at the bottom of the image let you jump to a specific image directly.</p>
-                    <p>The same carousel navigation is available in the Learn More modal and the full-size image preview.</p>
-                    <p>A database migration was completed to support this: a dedicated CardImages table was created and all 16 existing thumbnail images were migrated with no data loss.</p>
+                    <h3>Update Date: 3/23/2026</h3>
+                    <p>Card interaction was streamlined: clicking a card now opens Learn More directly, and map locate remains accessible through the compact zoom icon.</p>
+                    <p>Learn More layout was improved with a wider, taller presentation and stronger image prominence.</p>
+                    <p>Card visuals and sizing were standardized for a more consistent browsing experience across the panel.</p>
+                    <p>Multi-image carousel support was introduced across card tiles, Learn More, and full-size preview flows.</p>
+                    <p>The underlying image data model was migrated to CardImages to support multiple images per card.</p>
 
                 </div>
                 <div className="changelog-modal-footer">
