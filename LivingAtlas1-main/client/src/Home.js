@@ -454,6 +454,14 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 3/25/2026</h3>
+                    <p>See all images now supports reorder controls in edit mode. You can move images up/down, and the saved order is shared across card tiles, Learn More, and map pin popup.</p>
+                    <p>Learn More image management was improved with checkbox-based multi-select delete. Delete actions are staged in edit mode and only applied on Save, while Cancel restores the previous state.</p>
+                    <p>Card carousel indicators were upgraded for larger image sets: up to 5 dots are shown at once with dynamic sliding, and farther non-neighbor dots use a smaller size for clearer focus.</p>
+                    <p>Image display behavior was updated to keep full images visible in fixed-size frames across card thumbnails, Learn More image areas, and map pin popup thumbnails.</p>
+
+                    <hr />
+
                     <h3>Update Date: 3/24/2026</h3>
                     <p>Learn More is now the main place to manage a card. You can edit, delete, and close from the top bar, and edit fields directly in the modal.</p>
                     <p>Image handling is better: there is a 5-slot gallery, easier add/delete in edit mode, and cancel now rolls back new uploads.</p>
