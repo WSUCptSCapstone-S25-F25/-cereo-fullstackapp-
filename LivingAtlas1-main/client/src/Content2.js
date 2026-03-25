@@ -854,7 +854,7 @@ function Content2(props) {
                         })()}
                     </div>
                 ) : (
-                    <p className="card-container-loading">Loading favorites...</p>
+                    <p className="card-container-loading">Loading Cards...</p>
                 )}
             </section>
         </>

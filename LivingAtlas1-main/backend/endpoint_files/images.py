@@ -6,45 +6,98 @@ Provides APIs to manage images in the CardImages table
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from database import conn, cur
 import os
+import uuid
+import datetime
+import base64
+import tempfile
 from pathlib import Path
 
 images_router = APIRouter()
 
-# Configure image storage directory
+# Configure image storage directory (used as local fallback only)
 IMAGE_UPLOAD_DIR = "uploads/card_images"
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+GCS_BUCKET_NAME = "cereo_atlas_storage"
+GCS_IMAGE_FOLDER = "card_images"
+
+
+def _get_gcs_client():
+    """
+    Return a GCS storage client if credentials are available, else None.
+    Supports two credential modes:
+      1. GOOGLE_CREDENTIALS_BASE64 env var (Render/production)
+      2. ServiceKey_GoogleCloud.json file (local development)
+    """
+    try:
+        from google.cloud import storage as gcs
+
+        gcs_b64 = os.environ.get("GOOGLE_CREDENTIALS_BASE64")
+        if gcs_b64:
+            key_bytes = base64.b64decode(gcs_b64)
+            # Write to a temp file so the GCS library can read it
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+            tmp.write(key_bytes)
+            tmp.flush()
+            tmp.close()
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = tmp.name
+            return gcs.Client()
+
+        local_key = os.path.join(os.path.dirname(__file__), "ServiceKey_GoogleCloud.json")
+        if os.path.exists(local_key):
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = local_key
+            return gcs.Client()
+
+    except Exception:
+        pass
+
+    return None
+
 
 def ensure_upload_dir():
-    """Ensure upload directory exists"""
+    """Ensure local upload directory exists"""
     Path(IMAGE_UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+
 
 def allowed_file(filename: str) -> bool:
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 def save_uploaded_file(file: UploadFile) -> str:
-    """Save uploaded file and return URL"""
-    ensure_upload_dir()
-    
+    """
+    Save uploaded file and return a publicly accessible URL.
+    Tries GCS first (persistent storage); falls back to local disk.
+    """
     if not allowed_file(file.filename):
         raise HTTPException(status_code=400, detail="File type not allowed")
-    
-    # Generate unique filename
-    import uuid
-    timestamp = __import__('datetime').datetime.now().strftime('%Y%m%d_%H%M%S')
+
+    content = file.file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large")
+
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     file_ext = file.filename.rsplit('.', 1)[1].lower()
     unique_filename = f"{uuid.uuid4().hex}_{timestamp}.{file_ext}"
-    
+
+    # --- Try GCS (persistent) ---
+    gcs_client = _get_gcs_client()
+    if gcs_client is not None:
+        try:
+            bucket = gcs_client.bucket(GCS_BUCKET_NAME)
+            blob_name = f"{GCS_IMAGE_FOLDER}/{unique_filename}"
+            blob = bucket.blob(blob_name)
+            content_type = f"image/{file_ext}" if file_ext != 'jpg' else "image/jpeg"
+            blob.upload_from_string(content, content_type=content_type)
+            return blob.public_url
+        except Exception as gcs_err:
+            print(f"[images] GCS upload failed, falling back to local storage: {gcs_err}")
+
+    # --- Fallback: local disk (will not survive Render restarts) ---
+    ensure_upload_dir()
     filepath = os.path.join(IMAGE_UPLOAD_DIR, unique_filename)
-    
-    # Save file
     with open(filepath, 'wb') as f:
-        content = file.file.read()
-        if len(content) > MAX_FILE_SIZE:
-            raise HTTPException(status_code=413, detail="File too large")
         f.write(content)
-    
     return f"/uploads/card_images/{unique_filename}"
 
 @images_router.post("/uploadCardImage")
@@ -134,8 +187,17 @@ async def delete_card_image(imageID: int):
         # Delete from database
         cur.execute("DELETE FROM CardImages WHERE ImageID = %s", (imageID,))
         
-        # Delete file if it exists
-        if image_url.startswith('/uploads/card_images/'):
+        # Delete the backing file (GCS or local)
+        if image_url.startswith('https://storage.googleapis.com/'):
+            try:
+                gcs_client = _get_gcs_client()
+                if gcs_client is not None:
+                    # Extract blob name from URL: .../bucket_name/blob_name
+                    blob_name = '/'.join(image_url.split(f"/{GCS_BUCKET_NAME}/")[1:])
+                    gcs_client.bucket(GCS_BUCKET_NAME).blob(blob_name).delete()
+            except Exception as gcs_err:
+                print(f"[images] GCS delete failed (non-fatal): {gcs_err}")
+        elif image_url.startswith('/uploads/card_images/'):
             filepath = image_url.lstrip('/')
             if os.path.exists(filepath):
                 os.remove(filepath)
