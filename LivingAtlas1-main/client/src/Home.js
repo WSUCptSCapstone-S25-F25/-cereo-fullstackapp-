@@ -455,20 +455,20 @@ function Home(props) {
                 </div>
                 <div className="changelog-modal-body">
                     <h3>Update Date: 3/24/2026</h3>
-                    <p>Learn More modal was upgraded into the primary card management surface: integrated edit/delete/close toolbar, full-height layout, and inline editable fields while preserving legacy edit compatibility.</p>
-                    <p>Multi-image workflows were expanded and stabilized: 5-slot gallery, edit-mode image add/delete interactions, cancel rollback for newly uploaded images, and save-flow fixes to prevent thumbnail reset behavior.</p>
-                    <p>Map-to-card interaction is now tighter: simplified pin popup UX, larger popup image preview, and direct popup-to-Learn-More opening for the corresponding card.</p>
-                    <p>Card panel controls were modernized with custom Category and Sort dropdowns, with sort integrated into the card container toolbar.</p>
-                    <p>Data consistency hardening was added for image rendering across card container, Learn More, and map popup, including backend list/search/map payload alignment and thumbnail fallback logic tied to card images.</p>
+                    <p>Learn More is now the main place to manage a card. You can edit, delete, and close from the top bar, and edit fields directly in the modal.</p>
+                    <p>Image handling is better: there is a 5-slot gallery, easier add/delete in edit mode, and cancel now rolls back new uploads.</p>
+                    <p>Map pin popups are cleaner, show a larger image preview, and can open the matching Learn More card directly.</p>
+                    <p>The card panel now uses custom Category and Sort menus, and sort is built into the top toolbar.</p>
+                    <p>Image data is now more consistent between card list, Learn More, and map popup, so the same image is shown in more places.</p>
 
                     <hr />
 
                     <h3>Update Date: 3/23/2026</h3>
-                    <p>Card interaction was streamlined: clicking a card now opens Learn More directly, and map locate remains accessible through the compact zoom icon.</p>
-                    <p>Learn More layout was improved with a wider, taller presentation and stronger image prominence.</p>
-                    <p>Card visuals and sizing were standardized for a more consistent browsing experience across the panel.</p>
-                    <p>Multi-image carousel support was introduced across card tiles, Learn More, and full-size preview flows.</p>
-                    <p>The underlying image data model was migrated to CardImages to support multiple images per card.</p>
+                    <p>Card behavior was simplified: click a card to open Learn More, and use the small zoom icon to locate it on the map.</p>
+                    <p>Learn More became larger and easier to read, with more focus on the image area.</p>
+                    <p>Card size and styling were unified so the panel looks more consistent.</p>
+                    <p>Cards now support multiple images, with carousel browsing in cards, Learn More, and full-size preview.</p>
+                    <p>The backend image model was moved to CardImages to support multiple images per card.</p>
 
                 </div>
                 <div className="changelog-modal-footer">
