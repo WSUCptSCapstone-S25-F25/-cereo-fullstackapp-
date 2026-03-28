@@ -10,7 +10,7 @@
     box-shadow: 2px 0 8px rgba(0,0,0,0.07);
     z-index: 1200;
     padding: 18px 18px 18px 18px;
-    font-size: 15px;
+    font-size: 13px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -60,6 +60,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+    font-size: 12.5px;
 }
 
 .upload-folder-actions {
@@ -218,14 +219,14 @@
 
 /* Make upload items and add/remove buttons compact */
 .upload-item {
-    min-height: 24px;
-    font-size: 13px;
+    min-height: 22px;
+    font-size: 11.5px;
     padding: 2px 0 2px 4px;
 }
 
 .upload-layer-row {
-    min-height: 20px;
-    font-size: 12.5px;
+    min-height: 18px;
+    font-size: 11px;
     margin-bottom: 1px;
     gap: 3px;
 }
@@ -592,4 +593,165 @@
     background: #f8f9fa;
     border-radius: 3px;
     border: 1px solid #e9ecef;
+}
+
+/* ===== Tree structure lines ===== */
+.tree-children {
+    position: relative;
+    padding-left: 16px;
+    margin-left: 6px;
+}
+
+/* Vertical line from top to last child's branch */
+.tree-children::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 1px solid #bbb;
+}
+
+/* Each tree node gets a horizontal branch line */
+.tree-node {
+    position: relative;
+}
+
+.tree-node::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 13px;
+    width: 10px;
+    height: 0;
+    border-top: 1px solid #bbb;
+}
+
+/* Vertical line for non-last siblings (extends full height) */
+.tree-node::after {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 1px solid #bbb;
+}
+
+/* First node: vertical starts from branch point */
+.tree-children > .tree-node:first-child::after {
+    top: 13px;
+}
+
+/* Last node: vertical only goes to its branch point (L-shape) */
+.tree-children > .tree-node:last-child::after {
+    bottom: auto;
+    height: 13px;
+}
+
+/* Only child: just the horizontal, no vertical  */
+.tree-children > .tree-node:only-child::after {
+    display: none;
+}
+
+/* Hide the container's continuous vertical line;
+   tree-node::after already provides per-segment lines */
+.tree-children::before {
+    display: none;
+}
+
+/* Adjust branch point for sublayer rows (shorter height) */
+.upload-layer-sublayer.tree-node::before {
+    top: 10px;
+}
+.upload-layer-sublayer.tree-node::after {
+    top: 0;
+}
+.tree-children > .upload-layer-sublayer.tree-node:first-child::after {
+    top: 10px;
+}
+.tree-children > .upload-layer-sublayer.tree-node:last-child::after {
+    height: 10px;
+}
+
+/* ===== Custom square checkboxes (Google Earth style) ===== */
+.upload-panel input[type="checkbox"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 14px !important;
+    height: 14px !important;
+    border: 1.5px solid #888;
+    border-radius: 1px;
+    background: #fff;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    vertical-align: middle;
+}
+
+.upload-panel input[type="checkbox"]:checked {
+    background: #fff;
+    border-color: #666;
+}
+
+.upload-panel input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    background: #888;
+}
+
+.upload-panel input[type="checkbox"]:hover {
+    border-color: #555;
+}
+
+/* Indeterminate state: dash/line inside (partial selection) */
+.upload-panel input[type="checkbox"]:indeterminate {
+    border-color: #666;
+}
+
+.upload-panel input[type="checkbox"]:indeterminate::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 2px;
+    right: 2px;
+    height: 2px;
+    transform: translateY(-50%);
+    background: #888;
+}
+
+/* Sublayer checkboxes slightly smaller */
+.upload-layer-sublayer input[type="checkbox"] {
+    width: 12px !important;
+    height: 12px !important;
+}
+
+.upload-layer-sublayer input[type="checkbox"]:checked::after {
+    top: 1.5px;
+    left: 1.5px;
+    right: 1.5px;
+    bottom: 1.5px;
+}
+
+/* Reduce sublayer font size */
+.upload-layer-sublayer {
+    font-size: 10.5px !important;
+}
+
+/* Select-all label smaller */
+.upload-panel .select-all-label {
+    font-size: 11px;
+}
+
+/* Legend layer title smaller */
+.upload-panel .legend-layer-title {
+    font-size: 13px;
 }

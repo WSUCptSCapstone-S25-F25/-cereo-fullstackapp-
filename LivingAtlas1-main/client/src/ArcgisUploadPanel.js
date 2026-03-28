@@ -24,7 +24,7 @@ import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faPlus, faEllipsisH, faBan, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faEllipsisH, faBan, faDownload } from '@fortawesome/free-solid-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
@@ -1332,11 +1332,10 @@ function ArcgisUploadPanel({
                             {/* Removed folder-level remove button */}
                         </div>
                         {expandedFolders.has(folder) && (
-                            <div style={{ marginLeft: 18 }}>
+                            <div className="tree-children">
                                 {servicesByFolderToShow[folder].map(service => {
                                     const layers = serviceLayers[service.key] || [];
                                     const checkedIds = checkedLayerIds[service.key] || [];
-                                    const isAnyChecked = checkedIds.length > 0;
                                     // Filter out placeholder layers (case-insensitive name check)
                                     const rawLayers = service.layers || layers;
                                     const layersToShow = Array.isArray(rawLayers)
@@ -1344,12 +1343,25 @@ function ArcgisUploadPanel({
                                         : rawLayers;
 
                                     return (
-                                        <div key={service.key} style={{ marginBottom: 12 }}>
+                                        <div key={service.key} className="tree-node">
                                             <div
                                                 className="upload-item"
                                                 onClick={() => handleServiceClick(service.key)}
                                             >
-                                                <span>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checkedIds.length > 0 && checkedIds.length === layersToShow.length}
+                                                        ref={el => {
+                                                            if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < layersToShow.length;
+                                                        }}
+                                                        onChange={(e) => {
+                                                            e.stopPropagation();
+                                                            handleSelectAll(service, layersToShow);
+                                                        }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        style={{ marginRight: 4 }}
+                                                    />
                                                     {expandedServices.has(service.key) ? "▼" : "►"} 
                                                     <ArcgisRenameItem
                                                         value={service.label}
@@ -1360,17 +1372,6 @@ function ArcgisUploadPanel({
                                                     />
                                                 </span>
                                                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                                    <button
-                                                        className={isAnyChecked ? "remove-btn" : "add-btn"}
-                                                        onClick={e => {
-                                                            e.stopPropagation();
-                                                            handleAddRemove(service, layersToShow);
-                                                        }}
-                                                        title={isAnyChecked ? "Remove" : "Load"}
-                                                        aria-label={isAnyChecked ? "Remove service" : "Load service"}
-                                                    >
-                                                        <FontAwesomeIcon icon={isAnyChecked ? faTimes : faPlus} />
-                                                    </button>
                                                     <button
                                                         className="learn-more-btn"
                                                         title="Learn more about this service"
@@ -1399,18 +1400,9 @@ function ArcgisUploadPanel({
                                                 </div>
                                             </div>
                                             {expandedServices.has(service.key) && (
-                                                <div style={{ marginLeft: 18 }}>
-                                                    <div style={{ marginBottom: 8 }}>
-                                                        <label className="select-all-label">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={checkedIds.length === layersToShow.length}
-                                                                onChange={() => handleSelectAll(service, layersToShow)}
-                                                                style={{ marginRight: 8 }}
-                                                            />
-                                                            Select All
-                                                        </label>
-                                                        <ul style={{ paddingLeft: 0, listStyle: "none" }}>
+                                                <div className="tree-children">
+                                                    <div>
+                                                        <ul className="tree-children" style={{ listStyle: "none" }}>
                                                             {layersToShow.map(layer => {
                                                                 let legendItems = [];
                                                                 const legend = serviceLegends[service.key];
@@ -1424,7 +1416,7 @@ function ArcgisUploadPanel({
                                                                 const checkedSublayers = checkedSublayerIds[service.key]?.[layer.id] || [];
 
                                                                 return (
-                                                                    <li key={layer.id} className="upload-layer-row" style={{ 
+                                                                    <li key={layer.id} className="upload-layer-row tree-node" style={{ 
                                                                         flexDirection: 'column', 
                                                                         alignItems: 'flex-start',
                                                                         marginBottom: hasMultipleLegends ? 8 : 2
@@ -1499,15 +1491,13 @@ function ArcgisUploadPanel({
 
                                                                         {/* Show sublayers/legends if there are multiple AND layer is expanded */}
                                                                         {hasMultipleLegends && expandedLayers.has(`${service.key}-${layer.id}`) && (
-                                                                            <div style={{ 
-                                                                                marginLeft: 24, 
-                                                                                marginTop: 4,
-                                                                                width: 'calc(100% - 24px)'
+                                                                            <div className="tree-children" style={{ 
+                                                                                marginTop: 4
                                                                             }}>
                                                                                 {legendItems.map((legendItem, index) => (
                                                                                     <div 
                                                                                         key={index} 
-                                                                                        className="upload-layer-sublayer"
+                                                                                        className="upload-layer-sublayer tree-node"
                                                                                         style={{ 
                                                                                             display: 'flex', 
                                                                                             alignItems: 'center', 
