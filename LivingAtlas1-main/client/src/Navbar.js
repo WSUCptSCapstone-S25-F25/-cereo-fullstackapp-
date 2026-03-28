@@ -52,16 +52,11 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
             <Link to="/signup" className={location.pathname === '/signup' ? 'active' : ''}>Register</Link>
           </li>
         )}
-        {isLoggedIn && isAdmin && (
+        {!isLoggedIn && (
           <li>
-            <Link to="/administration" className={location.pathname === '/administration' ? 'active' : ''}>Administration</Link>
+            <Link to="/login" className={location.pathname === '/login' ? 'active' : ''}>Login</Link>
           </li>
         )}
-        <li>
-          <Link to="/login" className={location.pathname === '/login' ? 'active' : ''}>
-            {isLoggedIn ? 'Logout' : 'Login'}
-          </Link>
-        </li>
         {isLoggedIn && (
           <li
               className={`profile-button ${isModalOpen ? 'active' : ''}`}
@@ -69,37 +64,31 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
           >
             <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
             <span className="username">{username}</span>
-            
+            {isModalOpen && (
+              <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+                <ul>
+                  <li>
+                    <Link to="/profile" onClick={() => setIsModalOpen(false)}>Profile</Link>
+                  </li>
+                  {isAdmin && (
+                    <li>
+                      <Link to="/administration" onClick={() => setIsModalOpen(false)}>Administration</Link>
+                    </li>
+                  )}
+                  <li>
+                    <Link to="/login" onClick={() => setIsModalOpen(false)}>Switch Account</Link>
+                  </li>
+                  <li>
+                    <Link to="/login" onClick={() => setIsModalOpen(false)} className="logout-button">
+                      Logout
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            )}
           </li>
         )}
       </ul>
-      {isModalOpen && (
-        // console.log("Profile modal is opened."),
-        <div className="profile-modal">
-          <ul>
-            {/* New: Profile Page Button */}
-            <li>
-              <Link to="/profile" onClick={() => setIsModalOpen(false)}>Profile</Link>
-            </li>
-            {isAdmin && (
-              <li>
-                <Link to="/administration" onClick={() => setIsModalOpen(false)}>Administration</Link>
-              </li>
-            )}
-            <li>
-              <Link to="/login" onClick={() => setIsModalOpen(false)}>Switch Account</Link>
-            </li>
-            {/* <li>
-              <button onClick={handleLogout}>Logout</button>
-            </li> */}
-            <li>
-              <Link to="/login" onClick={() => setIsModalOpen(false)} className="logout-button">
-                Logout
-              </Link>
-            </li>
-          </ul>
-        </div>
-      )}
     </nav>
   );
 }
