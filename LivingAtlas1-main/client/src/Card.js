@@ -1314,7 +1314,25 @@ function Card(props) {
                 >
                     ×
                 </button>
+                {hasMultipleImages && (
+                    <button className="image-preview-nav image-preview-nav-prev" onClick={goToPrevImage} aria-label="Previous image">&#8249;</button>
+                )}
                 <img src={currentImage.url} alt="Card enlarged preview" className="image-preview-content" />
+                {hasMultipleImages && (
+                    <button className="image-preview-nav image-preview-nav-next" onClick={goToNextImage} aria-label="Next image">&#8250;</button>
+                )}
+                {hasMultipleImages && (
+                    <div className="image-preview-indicators">
+                        {cardImageList.map((img, idx) => (
+                            <button
+                                key={img.id ?? idx}
+                                className={`image-preview-bar${idx === currentImageIndex ? ' active' : ''}`}
+                                onClick={(e) => goToImageByIndex(e, idx)}
+                                aria-label={`Go to image ${idx + 1}`}
+                            />
+                        ))}
+                    </div>
+                )}
             </Modal>
 
             {/* Edit/Create Modal */}
