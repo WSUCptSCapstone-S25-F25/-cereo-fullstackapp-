@@ -227,6 +227,23 @@ function ArcgisUploadPanel({
         return () => { active = false; };
     }, [isOpen, selectedState, dataSource]);
 
+    // Show data source status as bottom notification
+    useEffect(() => {
+        const msgId = 'data-source-status';
+        if (isLoadingServices && dataSource === 'database') {
+            addLoadingMessage(msgId, `🔄 Loading ArcGIS services from database for ${selectedState}...`);
+        } else {
+            removeLoadingMessage(msgId);
+            if (dataSource === 'local' && !usingFallback) {
+                showFinishedMessage(msgId, `📂 Using local JSON data for ${selectedState} (${ARCGIS_SERVICES.length} services)`);
+            } else if (dataSource === 'database' && usingFallback) {
+                showFinishedMessage(msgId, `📂 Database unavailable, using local data for ${selectedState}`);
+            } else if (dataSource === 'database' && !isLoadingServices && servicesFromDb.length > 0) {
+                showFinishedMessage(msgId, `🌐 Loaded from database: ${servicesFromDb.length} services for ${selectedState}`);
+            }
+        }
+    }, [isLoadingServices, dataSource, usingFallback, servicesFromDb.length, selectedState]);
+
     // Reset state when state or data source changes (but not when panel just opens/closes)
     useEffect(() => {
         // Reset per-state/datasource caches/UI
@@ -1313,68 +1330,12 @@ function ArcgisUploadPanel({
         <>
             {/* Upload Panel */}
             <div className="upload-panel" onContextMenu={e => e.preventDefault()}>
-                {/* Loading and status messages */}
-                {isLoadingServices && dataSource === 'database' && (
-                    <div style={{ 
-                        background: '#d4edda', 
-                        border: '1px solid #c3e6cb', 
-                        borderRadius: '4px', 
-                        padding: '8px', 
-                        marginBottom: '12px', 
-                        fontSize: '12px',
-                        color: '#155724'
-                    }}>
-                        🔄 Loading ArcGIS services from database for {selectedState}...
-                    </div>
-                )}
-                
-                {dataSource === 'local' && (
-                    <div style={{ 
-                        background: '#e2e3e5', 
-                        border: '1px solid #d6d8db', 
-                        borderRadius: '4px', 
-                        padding: '8px', 
-                        marginBottom: '12px', 
-                        fontSize: '12px',
-                        color: '#383d41'
-                    }}>
-                        📂 Using local JSON data for {selectedState} ({ARCGIS_SERVICES.length} services)
-                    </div>
-                )}
-
-                {dataSource === 'database' && usingFallback && (
-                    <div style={{ 
-                        background: '#fff3cd', 
-                        border: '1px solid #ffecb5', 
-                        borderRadius: '4px', 
-                        padding: '8px', 
-                        marginBottom: '12px', 
-                        fontSize: '12px',
-                        color: '#856404'
-                    }}>
-                        📂 Database unavailable, using local data for {selectedState} ({ARCGIS_SERVICES.length} services)
-                        {servicesError && <div style={{ marginTop: '4px', fontSize: '11px' }}>{servicesError}</div>}
-                    </div>
-                )}
-
-                {dataSource === 'database' && !isLoadingServices && !usingFallback && servicesFromDb.length > 0 && (
-                    <div style={{ 
-                        background: '#d1ecf1', 
-                        border: '1px solid #bee5eb', 
-                        borderRadius: '4px', 
-                        padding: '8px', 
-                        marginBottom: '12px', 
-                        fontSize: '12px',
-                        color: '#0c5460'
-                    }}>
-                        🌐 Loaded from database: {servicesFromDb.length} services for {selectedState}
-                    </div>
-                )}
-                
                 {/* Only show search bar and services when not loading database data */}
                 {!(isLoadingServices && dataSource === 'database') && (
                     <>
-                        {renderSearchBar()}
+                        <div className="upload-panel-sticky-toolbar">
+                            {renderSearchBar()}
+                        </div>
                         {foldersToShow.map(folder => (
                     <div key={folder}>
                         <div

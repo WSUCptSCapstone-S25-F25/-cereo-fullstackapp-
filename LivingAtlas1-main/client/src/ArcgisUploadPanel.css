@@ -8,7 +8,7 @@
     border-left: 1px solid #ddd;
     box-shadow: 2px 0 8px rgba(0,0,0,0.07);
     z-index: 1200;
-    padding: 18px 18px 18px 18px;
+    padding: 0 18px 18px 18px;
     font-size: 13px;
     overflow-y: auto;
     display: flex;
@@ -320,7 +320,7 @@
     display: flex;
     align-items: center;
     margin-bottom: 8px;
-    margin-top: 10px;
+    margin-top: 0;
 }
 
 .upload-panel-searchbar input[type="text"] {
@@ -414,8 +414,20 @@
     background: #f0fff4;
 }
 
+.upload-panel-sticky-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f7f7f7;
+    padding-top: 6px;
+    padding-bottom: 4px;
+    margin: 0 -18px;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+
 .upload-panel-added-checkbox-row {
-    margin: 8px 0 12px 0;
+    margin: 4px 0 8px 0;
     padding-left: 2px;
     font-size: 14px;
     color: #1976d2;
