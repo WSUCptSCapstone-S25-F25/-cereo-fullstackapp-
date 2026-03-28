@@ -7,12 +7,15 @@ import './ArcgisRenameItem.css';
  */
 function ArcgisRenameItem({
     value,
+    displayValue,
     onSave,
     onCancel,
     placeholder = 'Enter name...',
     className = '',
     isFolder = false,
-    disabled = false
+    disabled = false,
+    startEditing = false,
+    onEditingDone,
 }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(value);
@@ -22,6 +25,14 @@ function ArcgisRenameItem({
     useEffect(() => {
         setEditValue(value);
     }, [value]);
+
+    // Trigger edit mode from outside via startEditing prop
+    useEffect(() => {
+        if (startEditing && !disabled) {
+            setIsEditing(true);
+            setEditValue(value);
+        }
+    }, [startEditing]);
 
     // Focus input when entering edit mode
     useEffect(() => {
@@ -52,11 +63,13 @@ function ArcgisRenameItem({
             onSave(trimmed);
         }
         setIsEditing(false);
+        if (onEditingDone) onEditingDone();
     };
 
     const handleCancel = () => {
         setEditValue(value);
         setIsEditing(false);
+        if (onEditingDone) onEditingDone();
         if (onCancel) onCancel();
     };
 
@@ -95,7 +108,7 @@ function ArcgisRenameItem({
             onDoubleClick={handleDoubleClick}
             title={disabled ? '' : 'Double-click to rename'}
         >
-            {value}
+            {displayValue !== undefined ? displayValue : value}
         </span>
     );
 }

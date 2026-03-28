@@ -1,4 +1,3 @@
-/* Upload Panel: attaches to right of left sidebar */
 .upload-panel {
     position: fixed;
     top: 65px;
@@ -82,7 +81,7 @@
     transition: background 0.2s;
     color: #222 !important;
     min-height: 24px;
-    font-size: 13px;
+    font-size: 11px !important;
     padding: 2px 0 2px 4px;
     flex-wrap: wrap;
 }
@@ -138,10 +137,10 @@
 .upload-layer-row {
     display: flex;
     align-items: center;
-    margin-bottom: 2px;
-    font-size: 13px;
-    gap: 4px;
-    min-height: 20px;
+    margin-bottom: 0;
+    font-size: 11px !important;
+    gap: 3px;
+    min-height: 18px;
 }
 
 .upload-layer-row input[type="checkbox"] {
@@ -151,7 +150,6 @@
     flex-shrink: 0;
 }
 
-/* Sublayer/legend item styles */
 .upload-layer-sublayer {
     display: flex;
     align-items: center;
@@ -190,7 +188,6 @@
     cursor: default;
 }
 
-/* Parent layer counter styling */
 .upload-layer-row .layer-counter {
     font-size: 11px;
     color: #888;
@@ -198,7 +195,6 @@
     font-weight: normal;
 }
 
-/* Legend image base styles */
 .upload-panel .legend-img {
     width: 16px;
     height: 16px;
@@ -217,17 +213,16 @@
     margin-bottom: 6px;
 }
 
-/* Make upload items and add/remove buttons compact */
 .upload-item {
     min-height: 22px;
-    font-size: 11.5px;
+    font-size: 11px !important;
     padding: 2px 0 2px 4px;
 }
 
 .upload-layer-row {
     min-height: 18px;
-    font-size: 11px;
-    margin-bottom: 1px;
+    font-size: 11px !important;
+    margin-bottom: 0;
     gap: 3px;
 }
 
@@ -253,7 +248,6 @@
     font-weight: 500;
 }
 
-/* Add/Load button - Green */
 .upload-panel .add-btn {
     background: #28a745;
     color: white;
@@ -265,7 +259,6 @@
     box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
 }
 
-/* Remove button - Red */
 .upload-panel .remove-btn {
     background: #dc3545;
     color: white;
@@ -300,7 +293,6 @@
     box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
 }
 
-/* Remove/Ban service button - Red */
 .upload-panel .ban-service-btn {
     min-height: 22px;
     height: 26px;
@@ -324,7 +316,6 @@
     box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
 }
 
-/* Search bar container */
 .upload-panel-searchbar {
     display: flex;
     align-items: center;
@@ -332,7 +323,6 @@
     margin-top: 10px;
 }
 
-/* Search input */
 .upload-panel-searchbar input[type="text"] {
     flex: 1;
     padding: 4px 8px;
@@ -343,7 +333,6 @@
     margin-top: 0;
 }
 
-/* Search dropdown */
 .upload-panel-searchbar-dropdown {
     margin-left: 8px;
     padding: 4px;
@@ -353,7 +342,6 @@
     margin-top: 0;
 }
 
-/* Search and clear buttons */
 .upload-panel-searchbar-btn {
     margin-left: 8px;
     width: 32px;
@@ -369,7 +357,6 @@
     margin-top: 0;
 }
 
-/* Search button - Blue */
 .upload-panel-searchbar-btn.search {
     background: #007bff;
     color: white;
@@ -379,7 +366,6 @@
     background: #0056b3;
 }
 
-/* Clear search button - Red */
 .upload-panel-searchbar-btn.clear {
     background: #dc3545;
     color: white;
@@ -389,7 +375,6 @@
     background: #c82333;
 }
 
-/* Attribution at bottom */
 .upload-panel-attribution {
     font-size: 12px;
     color: #555;
@@ -439,7 +424,6 @@
     user-select: none;
 }
 
-/* Service Info Modal */
 .arcgis-service-info-modal {
     margin-top: 200px;
     position: fixed;
@@ -457,14 +441,12 @@
     color: #222;
 }
 
-/* Modal header */
 .arcgis-service-info-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-/* Close button */
 .arcgis-service-info-modal-close {
     background: none;
     border: none;
@@ -473,14 +455,12 @@
     color: #222;
 }
 
-/* Modal content */
 .arcgis-service-info-modal-content {
     margin-top: 8px;
     font-size: 13px;
     color: #333;
 }
 
-/* Rows and description */
 .arcgis-service-info-row {
     margin-bottom: 6px;
 }
@@ -489,12 +469,10 @@
     white-space: pre-wrap;
 }
 
-/* Empty state */
 .arcgis-service-info-empty {
     color: #666;
 }
 
-/* Raw JSON section */
 .arcgis-service-info-raw summary {
     cursor: pointer;
 }
@@ -507,7 +485,6 @@
     margin: 6px 0 0 0;
 }
 
-/* Update button section */
 .upload-panel-update-section {
     margin-top: 16px;
     padding-top: 12px;
@@ -560,7 +537,6 @@
     box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
 }
 
-/* Update progress display */
 .upload-panel-update-progress {
     margin-top: 12px;
     text-align: center;
@@ -595,14 +571,12 @@
     border: 1px solid #e9ecef;
 }
 
-/* ===== Tree structure lines ===== */
 .tree-children {
     position: relative;
     padding-left: 16px;
     margin-left: 6px;
 }
 
-/* Vertical line from top to last child's branch */
 .tree-children::before {
     content: '';
     position: absolute;
@@ -613,7 +587,6 @@
     border-left: 1px solid #bbb;
 }
 
-/* Each tree node gets a horizontal branch line */
 .tree-node {
     position: relative;
 }
@@ -628,7 +601,6 @@
     border-top: 1px solid #bbb;
 }
 
-/* Vertical line for non-last siblings (extends full height) */
 .tree-node::after {
     content: '';
     position: absolute;
@@ -639,29 +611,23 @@
     border-left: 1px solid #bbb;
 }
 
-/* First node: vertical starts from branch point */
 .tree-children > .tree-node:first-child::after {
     top: 13px;
 }
 
-/* Last node: vertical only goes to its branch point (L-shape) */
 .tree-children > .tree-node:last-child::after {
     bottom: auto;
     height: 13px;
 }
 
-/* Only child: just the horizontal, no vertical  */
 .tree-children > .tree-node:only-child::after {
     display: none;
 }
 
-/* Hide the container's continuous vertical line;
-   tree-node::after already provides per-segment lines */
 .tree-children::before {
     display: none;
 }
 
-/* Adjust branch point for sublayer rows (shorter height) */
 .upload-layer-sublayer.tree-node::before {
     top: 10px;
 }
@@ -675,7 +641,6 @@
     height: 10px;
 }
 
-/* ===== Custom square checkboxes (Google Earth style) ===== */
 .upload-panel input[type="checkbox"] {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -712,7 +677,6 @@
     border-color: #555;
 }
 
-/* Indeterminate state: dash/line inside (partial selection) */
 .upload-panel input[type="checkbox"]:indeterminate {
     border-color: #666;
 }
@@ -728,7 +692,6 @@
     background: #888;
 }
 
-/* Sublayer checkboxes slightly smaller */
 .upload-layer-sublayer input[type="checkbox"] {
     width: 12px !important;
     height: 12px !important;
@@ -741,17 +704,42 @@
     bottom: 1.5px;
 }
 
-/* Reduce sublayer font size */
 .upload-layer-sublayer {
-    font-size: 10.5px !important;
+    font-size: 11px !important;
 }
 
-/* Select-all label smaller */
 .upload-panel .select-all-label {
     font-size: 11px;
 }
 
-/* Legend layer title smaller */
 .upload-panel .legend-layer-title {
     font-size: 13px;
+}
+
+.upload-context-menu {
+    position: fixed;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 4px 0;
+    min-width: 120px;
+}
+
+.upload-context-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 14px;
+    border: none;
+    background: none;
+    font-size: 12px;
+    color: #222 !important;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.upload-context-menu button:hover {
+    background: #f0f0f0;
 }

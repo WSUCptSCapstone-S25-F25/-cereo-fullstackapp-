@@ -24,7 +24,7 @@ import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faEllipsisH, faBan, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faDownload } from '@fortawesome/free-solid-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
@@ -145,7 +145,11 @@ function ArcgisUploadPanel({
     const [layerInfoLoading, setLayerInfoLoading] = useState(false);
 
     // Add new state for sublayer checkboxes (add this near other state declarations)
-    const [checkedSublayerIds, setCheckedSublayerIds] = useState({}); // { serviceKey: { layerId: [sublayerIndexes] } }
+    const [checkedSublayerIds, setCheckedSublayerIds] = useState({});
+
+    // Context menu state
+    const [contextMenu, setContextMenu] = useState(null); // { x, y, type, data }
+    const [renamingItem, setRenamingItem] = useState(null); // { type, key } to trigger rename externally
 
     // Update functionality state
     const [isUpdating, setIsUpdating] = useState(false);
@@ -1193,6 +1197,64 @@ function ArcgisUploadPanel({
         </div>
     );
 
+    // Context menu handlers
+    const handleContextMenu = (e, type, data) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY, type, data });
+    };
+
+    const closeContextMenu = () => setContextMenu(null);
+
+    const handleContextRename = () => {
+        if (!contextMenu) return;
+        if (!isAdmin) {
+            alert('Please log in to rename items.');
+            closeContextMenu();
+            return;
+        }
+        const { type, data } = contextMenu;
+        if (type === 'folder') {
+            setRenamingItem({ type: 'folder', key: data.folder });
+        } else if (type === 'service') {
+            setRenamingItem({ type: 'service', key: data.service.key });
+        }
+        closeContextMenu();
+    };
+
+    const handleContextLearnMore = () => {
+        if (!contextMenu) return;
+        const { type, data } = contextMenu;
+        if (type === 'service') {
+            openServiceInfo(data.service);
+        } else if (type === 'layer') {
+            openLayerInfo(data.service, data.layer);
+        }
+        closeContextMenu();
+    };
+
+    const handleContextDelete = () => {
+        if (!contextMenu) return;
+        if (!isAdmin) {
+            alert('Please log in to delete items.');
+            closeContextMenu();
+            return;
+        }
+        const { type, data } = contextMenu;
+        if (type === 'service') {
+            handleRemoveService(data.service);
+        }
+        closeContextMenu();
+    };
+
+    // Close context menu on outside click
+    useEffect(() => {
+        if (!contextMenu) return;
+        const handler = () => closeContextMenu();
+        window.addEventListener('click', handler);
+        return () => window.removeEventListener('click', handler);
+    }, [contextMenu]);
+
     // Open service info modal (fetch & cache)
     const openServiceInfo = async (service) => {
         setServiceInfoOpenKey(service.key);
@@ -1250,7 +1312,7 @@ function ArcgisUploadPanel({
     return (
         <>
             {/* Upload Panel */}
-            <div className="upload-panel">
+            <div className="upload-panel" onContextMenu={e => e.preventDefault()}>
                 {/* Loading and status messages */}
                 {isLoadingServices && dataSource === 'database' && (
                     <div style={{ 
@@ -1318,6 +1380,7 @@ function ArcgisUploadPanel({
                         <div
                             className="upload-folder"
                             onClick={() => handleFolderClick(folder)}
+                            onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
                         >
                             <span>
                                 {expandedFolders.has(folder) ? "▼" : "►"} 
@@ -1327,9 +1390,10 @@ function ArcgisUploadPanel({
                                     placeholder="Enter folder name..."
                                     isFolder={true}
                                     disabled={!isAdmin}
+                                    startEditing={renamingItem?.type === 'folder' && renamingItem?.key === folder}
+                                    onEditingDone={() => setRenamingItem(null)}
                                 />
                             </span>
-                            {/* Removed folder-level remove button */}
                         </div>
                         {expandedFolders.has(folder) && (
                             <div className="tree-children">
@@ -1347,6 +1411,7 @@ function ArcgisUploadPanel({
                                             <div
                                                 className="upload-item"
                                                 onClick={() => handleServiceClick(service.key)}
+                                                onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow })}
                                             >
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                                     <input
@@ -1365,39 +1430,15 @@ function ArcgisUploadPanel({
                                                     {expandedServices.has(service.key) ? "▼" : "►"} 
                                                     <ArcgisRenameItem
                                                         value={service.label}
+                                                        displayValue={service.label.replace(/\s*\(MapServer\)$/i, '')}
                                                         onSave={(newLabel) => handleServiceRename(service.key, newLabel)}
                                                         placeholder="Enter service name..."
                                                         isFolder={false}
                                                         disabled={!isAdmin}
+                                                        startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key}
+                                                        onEditingDone={() => setRenamingItem(null)}
                                                     />
                                                 </span>
-                                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                                    <button
-                                                        className="learn-more-btn"
-                                                        title="Learn more about this service"
-                                                        aria-label="Learn more about this service"
-                                                        onClick={e => {
-                                                            e.stopPropagation();
-                                                            openServiceInfo(service);
-                                                        }}
-                                                    >
-                                                        <FontAwesomeIcon icon={faEllipsisH} />
-                                                    </button>
-                                                    {/* Show remove button only for database services and admin users */}
-                                                    {dataSource === 'database' && isAdmin && (
-                                                        <button
-                                                            className="ban-service-btn"
-                                                            title="Remove"
-                                                            aria-label="Remove"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleRemoveService(service);
-                                                            }}
-                                                        >
-                                                            <FontAwesomeIcon icon={faBan} />
-                                                        </button>
-                                                    )}
-                                                </div>
                                             </div>
                                             {expandedServices.has(service.key) && (
                                                 <div className="tree-children">
@@ -1432,18 +1473,17 @@ function ArcgisUploadPanel({
                                                                                 cursor: hasMultipleLegends ? 'pointer' : 'default'
                                                                             }}
                                                                             onClick={hasMultipleLegends ? () => handleLayerClick(service.key, layer.id) : undefined}
+                                                                            onContextMenu={(e) => handleContextMenu(e, 'layer', { service, layer })}
                                                                         >
                                                                             <input
                                                                                 type="checkbox"
                                                                                 checked={checkedIds.includes(layer.id)}
                                                                                 onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
                                                                                 style={{ marginRight: 8 }}
-                                                                                onClick={(e) => e.stopPropagation()} // Prevent layer click when clicking checkbox
+                                                                                onClick={(e) => e.stopPropagation()}
                                                                             />
-                                                                            {/* Show expand/collapse arrow for layers with multiple legend items */}
                                                                             {hasMultipleLegends && (
                                                                                 <span style={{ 
-                                                                                    fontSize: '12px', 
                                                                                     color: '#666', 
                                                                                     marginRight: 4,
                                                                                     userSelect: 'none'
@@ -1451,7 +1491,6 @@ function ArcgisUploadPanel({
                                                                                     {expandedLayers.has(`${service.key}-${layer.id}`) ? "▼" : "►"}
                                                                                 </span>
                                                                             )}
-                                                                            {/* Show legend icon only if there's exactly one legend item */}
                                                                             {legendItems.length === 1 && (
                                                                                 <img
                                                                                     src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
@@ -1462,31 +1501,12 @@ function ArcgisUploadPanel({
                                                                             <span style={{ flex: 1 }}>{layer.name}</span>
                                                                             {hasMultipleLegends && (
                                                                                 <span style={{ 
-                                                                                    fontSize: '11px', 
                                                                                     color: '#888', 
                                                                                     marginLeft: 8 
                                                                                 }}>
                                                                                     ({checkedSublayers.length}/{legendItems.length})
                                                                                 </span>
                                                                             )}
-                                                                            {/* Layer Learn More button */}
-                                                                            <button
-                                                                                className="learn-more-btn"
-                                                                                title="Learn More about this layer"
-                                                                                aria-label="Learn More"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    openLayerInfo(service, layer);
-                                                                                }}
-                                                                                style={{ 
-                                                                                    fontSize: '10px', 
-                                                                                    padding: '2px 6px', 
-                                                                                    height: '18px',
-                                                                                    minWidth: '50px'
-                                                                                }}
-                                                                            >
-                                                                                <FontAwesomeIcon icon={faEllipsisH} />
-                                                                            </button>
                                                                         </div>
 
                                                                         {/* Show sublayers/legends if there are multiple AND layer is expanded */}
@@ -1503,7 +1523,6 @@ function ArcgisUploadPanel({
                                                                                             alignItems: 'center', 
                                                                                             gap: 4, 
                                                                                             marginBottom: 3,
-                                                                                            fontSize: '12px',
                                                                                             color: '#666',
                                                                                             minHeight: '18px'
                                                                                         }}
@@ -1551,6 +1570,31 @@ function ArcgisUploadPanel({
                     </div>
                 ))}
                 
+                {/* Context Menu */}
+                {contextMenu && (
+                    <div
+                        className="upload-context-menu"
+                        style={{ top: contextMenu.y, left: contextMenu.x }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {contextMenu.type === 'folder' && (
+                            <button onClick={handleContextRename}>Rename</button>
+                        )}
+                        {contextMenu.type === 'service' && (
+                            <>
+                                <button onClick={handleContextRename}>Rename</button>
+                                <button onClick={handleContextLearnMore}>Learn More</button>
+                                {dataSource === 'database' && (
+                                    <button onClick={handleContextDelete}>Delete</button>
+                                )}
+                            </>
+                        )}
+                        {contextMenu.type === 'layer' && (
+                            <button onClick={handleContextLearnMore}>Learn More</button>
+                        )}
+                    </div>
+                )}
+
                 {/* Attribution */}
                 <div className="upload-panel-attribution">
                     Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[selectedState]?.url || STATE_ATTRIBUTION.WA.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[selectedState]?.name || 'Washington State'} ArcGIS Services</a>
