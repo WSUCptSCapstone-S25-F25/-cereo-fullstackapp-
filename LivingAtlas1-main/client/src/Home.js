@@ -47,11 +47,11 @@ function Home(props) {
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v1');
+        return !localStorage.getItem('changelog_seen_v2');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v1', 'true');
+        localStorage.setItem('changelog_seen_v2', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -454,6 +454,15 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 3/28/2026</h3>
+                    <p>The ArcGIS Upload Panel now uses a tree-style layout with connector lines and custom square checkboxes, similar to Google Earth's layer panel.</p>
+                    <p>Right-click context menus were added on folders, services, and layers — supporting Rename, Learn More, and Delete actions. Rename and Delete require admin login.</p>
+                    <p>The service-level checkbox replaces the old Add/Remove buttons, and the "(MapServer)" suffix is now hidden from display names.</p>
+                    <p>Top status banners (loading, data source info) were moved to bottom-of-screen notifications that auto-dismiss after a few seconds.</p>
+                    <p>The search toolbar now stays pinned at the top of the upload panel while scrolling, and the browser's default right-click menu is blocked inside the panel.</p>
+
+                    <hr />
+
                     <h3>Update Date: 3/25/2026</h3>
                     <p>See all images now supports reorder controls in edit mode. You can move images up/down, and the saved order is shared across card tiles, Learn More, and map pin popup.</p>
                     <p>Learn More image management was improved with checkbox-based multi-select delete. Delete actions are staged in edit mode and only applied on Save, while Cancel restores the previous state.</p>
