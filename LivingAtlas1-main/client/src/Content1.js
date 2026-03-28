@@ -149,15 +149,9 @@ const Content1 = (props) => {
       }
 
       indicators.style.display = 'flex';
-      const indicatorImages = popupImages.slice(0, 5);
-      const activeIndicatorIndex = Math.min(
-        currentImageIndex,
-        Math.max(indicatorImages.length - 1, 0)
-      );
-
-      indicatorImages.forEach((_, index) => {
+      popupImages.forEach((_, index) => {
         const dot = document.createElement('span');
-        dot.className = `card-pin-popup-image-dot ${index === activeIndicatorIndex ? 'active' : ''}`;
+        dot.className = `card-pin-popup-image-dot ${index === currentImageIndex ? 'active' : ''}`;
         dot.setAttribute('aria-hidden', 'true');
         indicators.appendChild(dot);
       });
@@ -179,11 +173,10 @@ const Content1 = (props) => {
     const openLargeImagePreview = () => {
       cleanupImageOverlay();
 
+      let overlayImageIndex = currentImageIndex;
+
       imageOverlay = document.createElement('div');
       imageOverlay.className = 'card-pin-popup-image-overlay';
-
-      const imageDialog = document.createElement('div');
-      imageDialog.className = 'card-pin-popup-image-dialog';
 
       const closeButton = document.createElement('button');
       closeButton.type = 'button';
@@ -193,18 +186,68 @@ const Content1 = (props) => {
 
       const largeImage = document.createElement('img');
       largeImage.className = 'card-pin-popup-image-large';
-      const currentImage = popupImages[currentImageIndex] || popupImages[0];
-      largeImage.src = currentImage?.url || thumbnail.src;
-      largeImage.alt = currentImage?.alt || thumbnail.alt;
+
+      const prevNav = document.createElement('button');
+      prevNav.type = 'button';
+      prevNav.className = 'card-pin-popup-overlay-nav card-pin-popup-overlay-nav-prev';
+      prevNav.setAttribute('aria-label', 'Previous image');
+      prevNav.innerHTML = '&#8249;';
+
+      const nextNav = document.createElement('button');
+      nextNav.type = 'button';
+      nextNav.className = 'card-pin-popup-overlay-nav card-pin-popup-overlay-nav-next';
+      nextNav.setAttribute('aria-label', 'Next image');
+      nextNav.innerHTML = '&#8250;';
+
+      const barContainer = document.createElement('div');
+      barContainer.className = 'card-pin-popup-overlay-bars';
+
+      const renderOverlay = () => {
+        const img = popupImages[overlayImageIndex] || popupImages[0];
+        largeImage.src = img?.url || '/CEREO-logo.png';
+        largeImage.alt = img?.alt || 'Card image';
+
+        const hasMultiple = popupImages.length > 1;
+        prevNav.style.display = hasMultiple ? 'flex' : 'none';
+        nextNav.style.display = hasMultiple ? 'flex' : 'none';
+        barContainer.style.display = hasMultiple ? 'flex' : 'none';
+
+        barContainer.replaceChildren();
+        if (hasMultiple) {
+          popupImages.forEach((_, idx) => {
+            const bar = document.createElement('button');
+            bar.type = 'button';
+            bar.className = `card-pin-popup-overlay-bar${idx === overlayImageIndex ? ' active' : ''}`;
+            bar.setAttribute('aria-label', `Go to image ${idx + 1}`);
+            bar.addEventListener('click', (e) => {
+              e.stopPropagation();
+              overlayImageIndex = idx;
+              renderOverlay();
+            });
+            barContainer.appendChild(bar);
+          });
+        }
+      };
+
+      prevNav.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (popupImages.length <= 1) return;
+        overlayImageIndex = overlayImageIndex === 0 ? popupImages.length - 1 : overlayImageIndex - 1;
+        renderOverlay();
+      });
+
+      nextNav.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (popupImages.length <= 1) return;
+        overlayImageIndex = overlayImageIndex === popupImages.length - 1 ? 0 : overlayImageIndex + 1;
+        renderOverlay();
+      });
 
       closeButton.addEventListener('click', cleanupImageOverlay);
       imageOverlay.addEventListener('click', (event) => {
         if (event.target === imageOverlay) {
           cleanupImageOverlay();
         }
-      });
-      imageDialog.addEventListener('click', (event) => {
-        event.stopPropagation();
       });
 
       removeOverlayKeyHandler = (event) => {
@@ -214,9 +257,12 @@ const Content1 = (props) => {
       };
       document.addEventListener('keydown', removeOverlayKeyHandler);
 
-      imageDialog.appendChild(closeButton);
-      imageDialog.appendChild(largeImage);
-      imageOverlay.appendChild(imageDialog);
+      imageOverlay.appendChild(closeButton);
+      imageOverlay.appendChild(prevNav);
+      imageOverlay.appendChild(largeImage);
+      imageOverlay.appendChild(nextNav);
+      imageOverlay.appendChild(barContainer);
+      renderOverlay();
       document.body.appendChild(imageOverlay);
     };
 
