@@ -54,6 +54,17 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
                 localStorage.setItem('email', email);
                 localStorage.setItem('username', name);
                 localStorage.setItem('isAdmin', JSON.stringify(resolvedIsAdmin));
+
+                // Save account to savedAccounts for Switch Account feature
+                const savedAccounts = JSON.parse(localStorage.getItem('savedAccounts') || '[]');
+                const existingIdx = savedAccounts.findIndex(a => a.email === email);
+                const accountEntry = { email, username: name, password };
+                if (existingIdx >= 0) {
+                  savedAccounts[existingIdx] = accountEntry;
+                } else {
+                  savedAccounts.push(accountEntry);
+                }
+                localStorage.setItem('savedAccounts', JSON.stringify(savedAccounts));
             } else {
                 setMessage('Invalid email or password.');
             }

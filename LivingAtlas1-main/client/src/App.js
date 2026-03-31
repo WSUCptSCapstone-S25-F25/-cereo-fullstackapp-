@@ -10,6 +10,7 @@ import Navbar from './Navbar';
 import Signup from './Signup';
 import Administration from './Administration';
 import Reset from './Reset';
+import SwitchAccount from './SwitchAccount';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
@@ -138,6 +139,21 @@ function App() {
         <Route path="/signup" component={Signup} />
         <Route path="/administration">
           {isLoggedIn && isAdmin ? <Administration /> : <Redirect to="/login" />}
+        </Route>
+        <Route path="/switch-account">
+          {isLoggedIn ? (
+            <SwitchAccount
+              email={email}
+              setEmail={setEmail}
+              setPassword={setPassword}
+              setMessage={setMessage}
+              setIsLoggedIn={setIsLoggedIn}
+              setUsername={setUsername}
+              setIsAdmin={setIsAdmin}
+            />
+          ) : (
+            <Redirect to="/login" />
+          )}
         </Route>
         <Route path="/reset-password" component={Reset} />
         <Route path="*">
