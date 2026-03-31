@@ -455,9 +455,8 @@ function Home(props) {
                 </div>
                 <div className="changelog-modal-body">
                     <h3>Update Date: 3/31/2026</h3>
-                    <p>Resend email service was integrated with a custom domain (cereo-livingatlas.com) via GoDaddy DNS records, replacing the default onboarding@resend.dev sender. DKIM, SPF, and MX records are now verified for reliable delivery.</p>
+                    <p>Resend email service was integrated with a custom domain (cereo-livingatlas.com) via GoDaddy DNS records.</p>
                     <p>Password recovery and signup notification emails now send from the verified domain with a proper "Living Atlas" sender name.</p>
-                    <p>The Resend configuration was updated with consistent API key fallback logic across module-level and function-level code.</p>
                     <p>The Logout button in the navbar dropdown now properly clears the login session before redirecting to the login page.</p>
                     <p>A new Switch Account page was added. Users can view their current account, switch between previously logged-in accounts, or add a new account — similar to the account switcher in major platforms.</p>
 
