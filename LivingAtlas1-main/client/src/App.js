@@ -92,9 +92,22 @@ function App() {
     localStorage.setItem('isAdmin', JSON.stringify(isAdmin));
   }, [isLoggedIn, email, username, isAdmin]);
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setEmail('');
+    setPassword('');
+    setUsername("You're logged out.");
+    setIsAdmin(false);
+    setMessage('Successfully logged out.');
+    localStorage.setItem('isLoggedIn', JSON.stringify(false));
+    localStorage.setItem('email', '');
+    localStorage.setItem('username', '');
+    localStorage.setItem('isAdmin', JSON.stringify(false));
+  };
+
   return (
     <Router>
-      <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} username={username} />
+      <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} username={username} onLogout={handleLogout} />
       <Switch>
         <Route exact path="/">
           <Home isLoggedIn={isLoggedIn} username={username} email={email} isAdmin={isAdmin} />
