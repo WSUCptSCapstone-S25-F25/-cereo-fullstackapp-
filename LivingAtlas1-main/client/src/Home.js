@@ -457,8 +457,8 @@ function Home(props) {
                     <h3>Update Date: 3/31/2026</h3>
                     <p>Resend email service was integrated with a custom domain (cereo-livingatlas.com) via GoDaddy DNS records.</p>
                     <p>Password recovery and signup notification emails now send from the verified domain with a proper "Living Atlas" sender name.</p>
+                    <p>A new Switch Account page was added. Users can view their current account, switch between previously logged-in accounts, or add a new account.</p>
                     <p>The Logout button in the navbar dropdown now properly clears the login session before redirecting to the login page.</p>
-                    <p>A new Switch Account page was added. Users can view their current account, switch between previously logged-in accounts, or add a new account — similar to the account switcher in major platforms.</p>
 
                     <hr />
 
