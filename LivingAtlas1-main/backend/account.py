@@ -34,7 +34,7 @@ SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "wsu.cereoatlas26@gmail.com")
 
 # Resend configuration
 RESEND_API_KEY = (os.environ.get("RESEND_API_KEY") or os.environ.get("CEREO_API_KEY") or "").strip()
-RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "noreply@cereo-livingatlas.com")
 
 # SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
 # SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
@@ -188,8 +188,8 @@ def send_via_gmail_smtp(recipient_email, subject, body):
 
 def send_via_resend(recipient_email, subject, body):
     """Send email using Resend API over HTTPS."""
-    resend_api_key = (os.environ.get("RESEND_API_KEY") or "").strip()
-    resend_from_email = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev").strip()
+    resend_api_key = (os.environ.get("RESEND_API_KEY") or os.environ.get("CEREO_API_KEY") or "").strip()
+    resend_from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@cereo-livingatlas.com").strip()
 
     if not resend_api_key:
         raise Exception("Missing RESEND_API_KEY environment variable")
@@ -198,7 +198,7 @@ def send_via_resend(recipient_email, subject, body):
         raise Exception("Missing RESEND_FROM_EMAIL environment variable")
 
     payload = {
-        "from": resend_from_email,
+        "from": f"Living Atlas <{resend_from_email}>" if "<" not in resend_from_email else resend_from_email,
         "to": [recipient_email],
         "subject": subject,
         "html": body,
