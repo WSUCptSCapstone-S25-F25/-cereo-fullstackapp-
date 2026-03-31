@@ -47,11 +47,11 @@ function Home(props) {
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v2');
+        return !localStorage.getItem('changelog_seen_v3');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v2', 'true');
+        localStorage.setItem('changelog_seen_v3', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -454,6 +454,15 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 3/31/2026</h3>
+                    <p>Resend email service was integrated with a custom domain (cereo-livingatlas.com) via GoDaddy DNS records, replacing the default onboarding@resend.dev sender. DKIM, SPF, and MX records are now verified for reliable delivery.</p>
+                    <p>Password recovery and signup notification emails now send from the verified domain with a proper "Living Atlas" sender name.</p>
+                    <p>The Resend configuration was updated with consistent API key fallback logic across module-level and function-level code.</p>
+                    <p>The Logout button in the navbar dropdown now properly clears the login session before redirecting to the login page.</p>
+                    <p>A new Switch Account page was added. Users can view their current account, switch between previously logged-in accounts, or add a new account — similar to the account switcher in major platforms.</p>
+
+                    <hr />
+
                     <h3>Update Date: 3/28/2026</h3>
                     <p>The ArcGIS Upload Panel now uses a tree-style layout with connector lines and custom square checkboxes, similar to Google Earth's layer panel.</p>
                     <p>Right-click context menus were added on folders, services, and layers — supporting Rename, Learn More, and Delete actions. Rename and Delete require admin login.</p>
