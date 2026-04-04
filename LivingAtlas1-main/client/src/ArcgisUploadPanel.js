@@ -110,6 +110,9 @@ function ArcgisUploadPanel({
     // State for added-only checkbox
     const [showAddedOnly, setShowAddedOnly] = useState(false);
 
+    // Opacity slider state (0 to 1)
+    const [layerOpacity, setLayerOpacity] = useState(0.7);
+
     // Track previous checkedLayerIds for diffing
     const prevCheckedLayerIds = useRef({});
 
@@ -881,7 +884,7 @@ function ArcgisUploadPanel({
                                     type: 'raster',
                                     source: sublayerSourceId,
                                     paint: {
-                                        'raster-opacity': 0.7
+                                        'raster-opacity': layerOpacity
                                     }
                                 });
 
@@ -968,7 +971,7 @@ function ArcgisUploadPanel({
                         type: 'raster',
                         source: rasterSourceId,
                         paint: {
-                            'raster-opacity': 0.4
+                            'raster-opacity': layerOpacity
                         }
                     });
 
@@ -1028,6 +1031,29 @@ function ArcgisUploadPanel({
 
 
     // UI for search bar and dropdown
+    // Handle opacity slider change — update all ArcGIS raster/vector layers on the map
+    const handleOpacityChange = (newOpacity) => {
+        setLayerOpacity(newOpacity);
+        const map = mapInstance && mapInstance();
+        if (!map || !map.getStyle) return;
+        const style = map.getStyle();
+        if (!style || !Array.isArray(style.layers)) return;
+        style.layers.forEach(l => {
+            if (l.id.startsWith('arcgis-raster-layer-')) {
+                map.setPaintProperty(l.id, 'raster-opacity', newOpacity);
+            } else if (l.id.startsWith('arcgis-vector-layer-')) {
+                // Vector layers may be fill, line, or circle type
+                if (l.type === 'fill') {
+                    map.setPaintProperty(l.id, 'fill-opacity', newOpacity);
+                } else if (l.type === 'line') {
+                    map.setPaintProperty(l.id, 'line-opacity', newOpacity);
+                } else if (l.type === 'circle') {
+                    map.setPaintProperty(l.id, 'circle-opacity', newOpacity);
+                }
+            }
+        });
+    };
+
     const renderSearchBar = () => (
         <div>
             <div className="upload-panel-searchbar">
@@ -1335,6 +1361,20 @@ function ArcgisUploadPanel({
                     <>
                         <div className="upload-panel-sticky-toolbar">
                             {renderSearchBar()}
+                            <div className="upload-panel-opacity-slider-row">
+                                <label>Layer Opacity:</label>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.01"
+                                    value={layerOpacity}
+                                    onChange={e => handleOpacityChange(parseFloat(e.target.value))}
+                                    className="upload-panel-opacity-slider"
+                                    style={{ background: `linear-gradient(to right, #1976d2 ${layerOpacity * 100}%, #d0d0d0 ${layerOpacity * 100}%)` }}
+                                />
+                                <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
+                            </div>
                         </div>
                         {foldersToShow.map(folder => (
                     <div key={folder}>

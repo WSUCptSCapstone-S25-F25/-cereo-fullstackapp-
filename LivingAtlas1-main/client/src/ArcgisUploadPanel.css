@@ -436,6 +436,64 @@
     user-select: none;
 }
 
+/* Opacity slider */
+.upload-panel-opacity-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0 2px 0;
+    font-size: 13px;
+    color: #555;
+}
+
+.upload-panel-opacity-slider-row label {
+    color: #555 !important;
+    white-space: nowrap;
+    font-weight: 500;
+    min-width: fit-content;
+}
+
+.upload-panel-opacity-slider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, #1976d2 var(--slider-pct, 70%), #d0d0d0 var(--slider-pct, 70%));
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+.upload-panel-opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #1976d2;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.upload-panel-opacity-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #1976d2;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.upload-panel-opacity-value {
+    min-width: 36px;
+    text-align: right;
+    font-weight: 600;
+    color: #1976d2 !important;
+    font-size: 13px;
+}
+
 .arcgis-service-info-modal {
     margin-top: 200px;
     position: fixed;
