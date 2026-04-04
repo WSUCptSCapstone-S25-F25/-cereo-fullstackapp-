@@ -1290,6 +1290,26 @@ function ArcgisUploadPanel({
                     type="text"
                     value={searchKeyword}
                     onChange={e => setSearchKeyword(e.target.value)}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                            if (!searchKeyword) {
+                                setSearchResult(null);
+                                setExpandedFolders(new Set());
+                                setExpandedServices(new Set());
+                                setExpandedLayers(new Set());
+                                return;
+                            }
+                            const result = filterUploadPanelData({
+                                services: ARCGIS_SERVICES,
+                                serviceLayers,
+                                searchType,
+                                keyword: searchKeyword
+                            });
+                            setSearchResult(result);
+                            setExpandedFolders(new Set(result.expandedFolders));
+                            setExpandedServices(new Set(result.expandedServices));
+                        }
+                    }}
                     placeholder="Search folders, services, or layers..."
                 />
                 <select
