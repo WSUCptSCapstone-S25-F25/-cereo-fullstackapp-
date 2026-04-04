@@ -11,6 +11,11 @@ export function filterUploadPanelData({ services, serviceLayers, searchType, key
     let expandedFolders = new Set();
     let expandedServices = new Set();
 
+    // Track which items matched the keyword for bold highlighting
+    let matchedFolderNames = new Set();
+    let matchedServiceKeys = new Set();
+    let matchedLayerIds = {};  // { serviceKey: Set of layer ids }
+
     services.forEach(service => {
         const folder = service.folder || 'Root';
         const layers = serviceLayers[service.key] || [];
@@ -29,23 +34,34 @@ export function filterUploadPanelData({ services, serviceLayers, searchType, key
         if (searchType === 'folder' && folderMatch) {
             showService = true;
             expandedFolders.add(folder);
+            matchedFolderNames.add(folder);
         }
         if (searchType === 'service' && serviceMatch) {
             showService = true;
             expandedFolders.add(folder);
             expandedServices.add(service.key);
+            matchedServiceKeys.add(service.key);
         }
         if (searchType === 'layer' && matchedLayers.length > 0) {
             showService = true;
             expandedFolders.add(folder);
             expandedServices.add(service.key);
+            matchedLayerIds[service.key] = new Set(matchedLayers.map(l => l.id));
         }
-        if (searchType === 'any' && (folderMatch || serviceMatch || matchedLayers.some(l => matches(l.name)))) {
-            showService = true;
-            if (folderMatch) expandedFolders.add(folder);
-            if (serviceMatch || matchedLayers.length > 0) {
-                expandedFolders.add(folder);
-                expandedServices.add(service.key);
+        if (searchType === 'any') {
+            if (folderMatch) matchedFolderNames.add(folder);
+            if (serviceMatch) matchedServiceKeys.add(service.key);
+            const layersMatchingKeyword = layers.filter(l => matches(l.name));
+            if (layersMatchingKeyword.length > 0) {
+                matchedLayerIds[service.key] = new Set(layersMatchingKeyword.map(l => l.id));
+            }
+            if (folderMatch || serviceMatch || layersMatchingKeyword.length > 0) {
+                showService = true;
+                if (folderMatch) expandedFolders.add(folder);
+                if (serviceMatch || layersMatchingKeyword.length > 0) {
+                    expandedFolders.add(folder);
+                    expandedServices.add(service.key);
+                }
             }
         }
 
@@ -58,5 +74,5 @@ export function filterUploadPanelData({ services, serviceLayers, searchType, key
         }
     });
 
-    return { filteredFolders, expandedFolders, expandedServices };
+    return { filteredFolders, expandedFolders, expandedServices, matchedFolderNames, matchedServiceKeys, matchedLayerIds, keyword: lowerKeyword };
 }

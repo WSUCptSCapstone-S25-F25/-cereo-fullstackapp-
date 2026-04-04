@@ -1182,7 +1182,7 @@ function ArcgisUploadPanel({
                         <span style={{ color: '#666', userSelect: 'none', marginRight: 4 }}>
                             {isExpanded ? "▼" : "►"}
                         </span>
-                        <span style={{ flex: 1 }}>{node.name}</span>
+                        <span style={{ flex: 1, fontWeight: (searchResult?.matchedLayerIds?.[service.key]?.has(node.id) || (searchResult?.keyword && node.name && node.name.toLowerCase().includes(searchResult.keyword))) ? 'bold' : 'normal' }}>{node.name}</span>
                         {descendantIds.length > 0 && (
                             <span style={{ color: '#999', fontSize: '10px', marginLeft: 4 }}>
                                 ({checkedCount}/{descendantIds.length})
@@ -1244,7 +1244,7 @@ function ArcgisUploadPanel({
                             className="legend-img"
                         />
                     )}
-                    <span style={{ flex: 1 }}>{node.name}</span>
+                    <span style={{ flex: 1, fontWeight: (searchResult?.matchedLayerIds?.[service.key]?.has(node.id) || (searchResult?.keyword && node.name && node.name.toLowerCase().includes(searchResult.keyword))) ? 'bold' : 'normal' }}>{node.name}</span>
                     {hasMultipleLegends && (
                         <span style={{ color: '#888', marginLeft: 8 }}>
                             ({checkedSublayers.length}/{legendItems.length})
@@ -1274,7 +1274,7 @@ function ArcgisUploadPanel({
                                     className="legend-img"
                                     style={{ width: '14px', height: '14px', marginRight: '6px' }}
                                 />
-                                <span title={legendItem.label}>{legendItem.label}</span>
+                                <span title={legendItem.label} style={{ fontWeight: (searchResult?.keyword && legendItem.label && legendItem.label.toLowerCase().includes(searchResult.keyword)) ? 'bold' : 'normal' }}>{legendItem.label}</span>
                             </div>
                         ))}
                     </div>
@@ -1629,6 +1629,7 @@ function ArcgisUploadPanel({
                     <div key={folder}>
                         <div
                             className="upload-folder"
+                            style={searchResult?.matchedFolderNames?.has(folder) ? { fontWeight: 'bold' } : undefined}
                             onClick={() => handleFolderClick(folder)}
                             onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
                         >
@@ -1659,6 +1660,7 @@ function ArcgisUploadPanel({
                                         <div key={service.key} className="tree-node">
                                             <div
                                                 className="upload-item"
+                                                style={searchResult?.matchedServiceKeys?.has(service.key) ? { fontWeight: 'bold' } : undefined}
                                                 onClick={() => handleServiceClick(service.key)}
                                                 onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                             >

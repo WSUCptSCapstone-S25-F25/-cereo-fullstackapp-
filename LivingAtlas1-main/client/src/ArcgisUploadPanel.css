@@ -48,7 +48,7 @@
 
 .upload-folder {
     cursor: pointer;
-    font-weight: bold;
+    font-weight: normal;
     margin: 8px 0 4px 0;
     padding: 4px 6px 4px 4px;
     border-radius: 4px;
@@ -70,7 +70,7 @@
 
 .upload-item {
     cursor: pointer;
-    font-weight: bold;
+    font-weight: normal;
     margin: 2px 0;
     padding: 2px 0 2px 4px;
     display: flex;
