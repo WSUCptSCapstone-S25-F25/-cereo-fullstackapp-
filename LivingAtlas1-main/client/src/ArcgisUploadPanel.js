@@ -1308,6 +1308,7 @@ function ArcgisUploadPanel({
                             setSearchResult(result);
                             setExpandedFolders(new Set(result.expandedFolders));
                             setExpandedServices(new Set(result.expandedServices));
+                            setExpandedLayers(new Set(result.expandedLayerKeys));
                         }
                     }}
                     placeholder="Search folders, services, or layers..."
@@ -1342,6 +1343,7 @@ function ArcgisUploadPanel({
                         setSearchResult(result);
                         setExpandedFolders(new Set(result.expandedFolders));
                         setExpandedServices(new Set(result.expandedServices));
+                        setExpandedLayers(new Set(result.expandedLayerKeys));
                     }}
                 >
                     <FontAwesomeIcon icon={faSearch} />

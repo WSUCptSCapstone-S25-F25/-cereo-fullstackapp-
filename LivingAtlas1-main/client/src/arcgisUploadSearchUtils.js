@@ -10,11 +10,27 @@ export function filterUploadPanelData({ services, serviceLayers, searchType, key
     let filteredFolders = {};
     let expandedFolders = new Set();
     let expandedServices = new Set();
+    let expandedLayerKeys = new Set(); // Track group/layer expand keys: "serviceKey-layerId"
 
     // Track which items matched the keyword for bold highlighting
     let matchedFolderNames = new Set();
     let matchedServiceKeys = new Set();
     let matchedLayerIds = {};  // { serviceKey: Set of layer ids }
+
+    // Helper: given a flat layer list and a matched layer id, find all ancestor layer ids
+    function getAncestorIds(flatLayers, layerId) {
+        const layerMap = {};
+        flatLayers.forEach(l => { layerMap[l.id] = l; });
+        const ancestors = [];
+        let current = layerMap[layerId];
+        while (current) {
+            const pid = current.parentLayer ? current.parentLayer.id : (current.parentLayerId !== undefined ? current.parentLayerId : -1);
+            if (pid === -1 || pid === null || pid === undefined || !layerMap[pid]) break;
+            ancestors.push(pid);
+            current = layerMap[pid];
+        }
+        return ancestors;
+    }
 
     services.forEach(service => {
         const folder = service.folder || 'Root';
@@ -23,45 +39,56 @@ export function filterUploadPanelData({ services, serviceLayers, searchType, key
         let folderMatch = matches(folder);
         let serviceMatch = matches(service.label);
 
-        let matchedLayers = [];
-        if (searchType === 'layer') {
-            matchedLayers = layers.filter(layer => matches(layer.name));
-        } else {
-            matchedLayers = layers;
-        }
+        // Find layers matching the keyword (by name)
+        const layersMatchingKeyword = layers.filter(layer => matches(layer.name));
 
         let showService = false;
-        if (searchType === 'folder' && folderMatch) {
-            showService = true;
-            expandedFolders.add(folder);
-            matchedFolderNames.add(folder);
+        if (searchType === 'folder') {
+            if (folderMatch) {
+                showService = true;
+                expandedFolders.add(folder);
+                matchedFolderNames.add(folder);
+                expandedServices.add(service.key);
+            }
         }
-        if (searchType === 'service' && serviceMatch) {
-            showService = true;
-            expandedFolders.add(folder);
-            expandedServices.add(service.key);
-            matchedServiceKeys.add(service.key);
+        if (searchType === 'service') {
+            if (serviceMatch) {
+                showService = true;
+                expandedFolders.add(folder);
+                expandedServices.add(service.key);
+                matchedServiceKeys.add(service.key);
+            }
         }
-        if (searchType === 'layer' && matchedLayers.length > 0) {
-            showService = true;
-            expandedFolders.add(folder);
-            expandedServices.add(service.key);
-            matchedLayerIds[service.key] = new Set(matchedLayers.map(l => l.id));
+        if (searchType === 'layer') {
+            if (layersMatchingKeyword.length > 0) {
+                showService = true;
+                expandedFolders.add(folder);
+                expandedServices.add(service.key);
+                matchedLayerIds[service.key] = new Set(layersMatchingKeyword.map(l => l.id));
+                // Expand ancestor group layers for each matched layer
+                layersMatchingKeyword.forEach(l => {
+                    getAncestorIds(layers, l.id).forEach(aid => {
+                        expandedLayerKeys.add(`${service.key}-${aid}`);
+                    });
+                });
+            }
         }
         if (searchType === 'any') {
             if (folderMatch) matchedFolderNames.add(folder);
             if (serviceMatch) matchedServiceKeys.add(service.key);
-            const layersMatchingKeyword = layers.filter(l => matches(l.name));
             if (layersMatchingKeyword.length > 0) {
                 matchedLayerIds[service.key] = new Set(layersMatchingKeyword.map(l => l.id));
             }
             if (folderMatch || serviceMatch || layersMatchingKeyword.length > 0) {
                 showService = true;
-                if (folderMatch) expandedFolders.add(folder);
-                if (serviceMatch || layersMatchingKeyword.length > 0) {
-                    expandedFolders.add(folder);
-                    expandedServices.add(service.key);
-                }
+                expandedFolders.add(folder);
+                expandedServices.add(service.key);
+                // Expand ancestor group layers for matched layers
+                layersMatchingKeyword.forEach(l => {
+                    getAncestorIds(layers, l.id).forEach(aid => {
+                        expandedLayerKeys.add(`${service.key}-${aid}`);
+                    });
+                });
             }
         }
 
@@ -69,10 +96,10 @@ export function filterUploadPanelData({ services, serviceLayers, searchType, key
             filteredFolders[folder] = filteredFolders[folder] || [];
             filteredFolders[folder].push({
                 ...service,
-                layers: searchType === 'layer' ? matchedLayers : layers
+                layers: searchType === 'layer' ? layersMatchingKeyword : layers
             });
         }
     });
 
-    return { filteredFolders, expandedFolders, expandedServices, matchedFolderNames, matchedServiceKeys, matchedLayerIds, keyword: lowerKeyword };
+    return { filteredFolders, expandedFolders, expandedServices, expandedLayerKeys, matchedFolderNames, matchedServiceKeys, matchedLayerIds, keyword: lowerKeyword };
 }
