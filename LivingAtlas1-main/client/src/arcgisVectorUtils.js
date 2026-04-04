@@ -6,6 +6,9 @@ export const handlerRefs = {};
 // Track currently hovered feature per source for hover effects
 const hoveredFeatures = {};
 
+// Track clicked/pinned feature per source (stays highlighted while popup is open)
+const pinnedFeatures = {};
+
 /**
  * Add a vector layer for any ArcGIS service.
  * @param {mapboxgl.Map} map
@@ -90,8 +93,8 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
 
     // Hover helper: clear previous hover state and set new one
     function setHover(layerId, e) {
-        // Clear previous hovered feature for this source
-        if (hoveredFeatures[sourceId] != null) {
+        // Clear previous hovered feature (but not pinned one)
+        if (hoveredFeatures[sourceId] != null && hoveredFeatures[sourceId] !== pinnedFeatures[sourceId]) {
             map.setFeatureState({ source: sourceId, id: hoveredFeatures[sourceId] }, { hover: false });
         }
         if (e.features.length > 0) {
@@ -102,15 +105,51 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
     }
 
     function clearHover() {
-        if (hoveredFeatures[sourceId] != null) {
+        // Don't clear hover on pinned feature
+        if (hoveredFeatures[sourceId] != null && hoveredFeatures[sourceId] !== pinnedFeatures[sourceId]) {
             map.setFeatureState({ source: sourceId, id: hoveredFeatures[sourceId] }, { hover: false });
-            hoveredFeatures[sourceId] = null;
         }
+        hoveredFeatures[sourceId] = null;
         map.getCanvas().style.cursor = '';
     }
 
+    function pinFeature(featureId) {
+        pinnedFeatures[sourceId] = featureId;
+        if (featureId != null) {
+            map.setFeatureState({ source: sourceId, id: featureId }, { hover: true });
+        }
+    }
+
+    function unpinFeature() {
+        const pinnedId = pinnedFeatures[sourceId];
+        if (pinnedId != null) {
+            // Only clear if not currently being hovered
+            if (hoveredFeatures[sourceId] !== pinnedId) {
+                map.setFeatureState({ source: sourceId, id: pinnedId }, { hover: false });
+            }
+            pinnedFeatures[sourceId] = null;
+        }
+    }
+
     // Define handlers
-    const handleArcgisPopup = (e) => showArcgisPopup(e, layer);
+    const handleArcgisPopup = (e) => {
+        const feature = e.features[0];
+        if (feature) {
+            pinFeature(feature.id);
+        }
+        const popup = showArcgisPopup(e, layer);
+        // Listen for popup close to unpin feature
+        if (popup && typeof popup.then === 'function') {
+            // showArcgisPopup is async, handle the returned promise
+            popup.then(p => {
+                if (p && p.on) {
+                    p.on('close', () => unpinFeature());
+                }
+            });
+        } else if (popup && popup.on) {
+            popup.on('close', () => unpinFeature());
+        }
+    };
     const handleFillMouseMove = (e) => setHover(fillLayerId, e);
     const handleFillMouseLeave = () => clearHover();
     const handleLineMouseMove = (e) => setHover(lineLayerId, e);

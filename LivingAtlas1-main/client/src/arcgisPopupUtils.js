@@ -81,4 +81,6 @@ export async function showArcgisPopup(e, layer) {
             }
         }, 100);
     }
+
+    return popup;
 }
