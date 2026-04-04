@@ -46,6 +46,50 @@
     box-shadow: 0 4px 12px rgba(25,118,210,0.12);
 }
 
+.upload-state-folder {
+    all: revert;
+    cursor: pointer;
+    font-weight: bold;
+    margin: 0;
+    padding: 9px 12px;
+    border-radius: 0;
+    background: #fff;
+    color: #222;
+    font-size: 13.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s;
+    letter-spacing: 0.2px;
+    border: 1px solid #bbb;
+    border-bottom: none;
+}
+
+.upload-state-folder:last-of-type {
+    border-bottom: 1px solid #bbb;
+}
+
+.upload-state-folder:hover {
+    background: #f5f5f5;
+}
+
+.upload-state-folder-content {
+    border-left: 1px solid #bbb;
+    border-right: 1px solid #bbb;
+    border-bottom: 1px solid #bbb;
+    padding: 6px 8px;
+    margin-bottom: 0;
+    background: #fafafa;
+}
+
+.upload-panel-folder-area {
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    padding: 4px;
+    margin: 4px 0;
+    background: #f9f9f9;
+}
+
 .upload-folder {
     cursor: pointer;
     font-weight: normal;

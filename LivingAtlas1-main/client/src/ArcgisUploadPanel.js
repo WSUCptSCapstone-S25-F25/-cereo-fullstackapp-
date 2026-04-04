@@ -9,7 +9,7 @@ import {
     fetchArcgisLayerInfo
 } from './arcgisDataUtils';
 import { 
-    fetchArcgisServicesByState, 
+    fetchServicesByStateMap,
     removeArcgisService, 
     renameFolderServices, 
     renameService,
@@ -36,6 +36,7 @@ import {
 // --- State selector ---
 const STATE_CODES = ['WA', 'ID', 'OR'];
 const STATE_LABELS = { WA: 'WA', ID: 'ID', OR: 'OR' };
+const STATE_FULL_NAMES = { WA: 'Washington State ArcGIS Services', ID: 'Idaho ArcGIS Services', OR: 'Oregon ArcGIS Services' };
 
 // Local JSON fallback data
 const ARCGIS_SERVICES_BY_STATE = {
@@ -125,19 +126,48 @@ function ArcgisUploadPanel({
     const [dataSource, setDataSource] = useState('database');
 
     // Services fetched from DB for selected state
-    const [servicesFromDb, setServicesFromDb] = useState([]);
+    const [servicesFromDb, setServicesFromDb] = useState({});
     const [isLoadingServices, setIsLoadingServices] = useState(false);
     const [servicesError, setServicesError] = useState(null);
     const [usingFallback, setUsingFallback] = useState(false);
 
     // Use services based on data source selection
-    const ARCGIS_SERVICES = dataSource === 'local' 
-        ? (ARCGIS_SERVICES_BY_STATE[selectedState] || [])
-        : (servicesFromDb.length > 0 
-            ? servicesFromDb 
-            : (ARCGIS_SERVICES_BY_STATE[selectedState] || []));
+    // OLD single-state logic (kept for reference):
+    // const ARCGIS_SERVICES = dataSource === 'local' 
+    //     ? (ARCGIS_SERVICES_BY_STATE[selectedState] || [])
+    //     : (servicesFromDb.length > 0 
+    //         ? servicesFromDb 
+    //         : (ARCGIS_SERVICES_BY_STATE[selectedState] || []));
 
-    // Group services by folder
+    // NEW: Combine all states into a single list
+    const ALL_SERVICES_BY_STATE = {};
+    STATE_CODES.forEach(code => {
+        if (dataSource === 'local') {
+            ALL_SERVICES_BY_STATE[code] = ARCGIS_SERVICES_BY_STATE[code] || [];
+        } else {
+            ALL_SERVICES_BY_STATE[code] = (servicesFromDb[code] && servicesFromDb[code].length > 0)
+                ? servicesFromDb[code]
+                : (ARCGIS_SERVICES_BY_STATE[code] || []);
+        }
+    });
+    const ARCGIS_SERVICES = STATE_CODES.flatMap(code => ALL_SERVICES_BY_STATE[code]);
+
+    // Group services by state, then by folder
+    const servicesByStateAndFolder = {};
+    STATE_CODES.forEach(code => {
+        const byFolder = {};
+        (ALL_SERVICES_BY_STATE[code] || []).forEach(service => {
+            const folder = service.folder || 'Root';
+            if (!byFolder[folder]) byFolder[folder] = [];
+            byFolder[folder].push(service);
+        });
+        servicesByStateAndFolder[code] = {
+            folders: byFolder,
+            folderNames: Object.keys(byFolder).sort(),
+        };
+    });
+
+    // Flat servicesByFolder (for search compatibility)
     const servicesByFolder = {};
     ARCGIS_SERVICES.forEach(service => {
         const folder = service.folder || 'Root';
@@ -155,6 +185,7 @@ function ArcgisUploadPanel({
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('any'); // 'any', 'folder', 'service', 'layer'
     const [searchResult, setSearchResult] = useState(null);
+    const [expandedStates, setExpandedStates] = useState(new Set()); // Track which state-level folders are expanded
     const [expandedFolders, setExpandedFolders] = useState(new Set());
     const [expandedServices, setExpandedServices] = useState(new Set());
     const [expandedLayers, setExpandedLayers] = useState(new Set()); // Track which layers are expanded
@@ -230,13 +261,13 @@ function ArcgisUploadPanel({
         }
     };
 
-    // Fetch services from DB whenever panel opens, state changes, or data source changes
+    // Fetch services from DB whenever panel opens or data source changes
     useEffect(() => {
         if (!isOpen) return;
         
         // If local data source is selected, skip database fetch
         if (dataSource === 'local') {
-            setServicesFromDb([]);
+            setServicesFromDb({});
             setIsLoadingServices(false);
             setServicesError(null);
             setUsingFallback(false);
@@ -251,29 +282,28 @@ function ArcgisUploadPanel({
             setUsingFallback(false);
             
             try {
-                console.log(`[ArcgisUploadPanel] Attempting to fetch services from backend for ${selectedState}...`);
-                const list = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
+                console.log(`[ArcgisUploadPanel] Attempting to fetch services from backend for all states...`);
+                const stateMap = await fetchServicesByStateMap(STATE_CODES, { type: 'MapServer' });
                 
                 if (active) {
-                    if (Array.isArray(list) && list.length > 0) {
-                        setServicesFromDb(list);
+                    const totalCount = STATE_CODES.reduce((sum, c) => sum + (stateMap[c] || []).length, 0);
+                    if (totalCount > 0) {
+                        setServicesFromDb(stateMap);
                         setUsingFallback(false);
-                        console.log(`[ArcgisUploadPanel] Loaded ${list.length} services from backend for state ${selectedState}`);
+                        console.log(`[ArcgisUploadPanel] Loaded ${totalCount} services from backend for all states`);
                     } else {
-                        console.warn(`[ArcgisUploadPanel] Backend returned no services for ${selectedState}, using local fallback`);
-                        setServicesFromDb([]);
+                        console.warn(`[ArcgisUploadPanel] Backend returned no services, using local fallback`);
+                        setServicesFromDb({});
                         setUsingFallback(true);
-                        // Automatically switch to local data source when no services found in database
                         setDataSource('local');
                     }
                 }
             } catch (error) {
-                console.error(`[ArcgisUploadPanel] Failed to load from backend for ${selectedState}, using local fallback:`, error);
+                console.error(`[ArcgisUploadPanel] Failed to load from backend, using local fallback:`, error);
                 if (active) {
-                    setServicesFromDb([]);
+                    setServicesFromDb({});
                     setUsingFallback(true);
                     setServicesError(`Backend unavailable (using local data): ${error.message || 'Network error'}`);
-                    // Automatically switch to local data source when database is unavailable
                     setDataSource('local');
                 }
             } finally {
@@ -284,56 +314,64 @@ function ArcgisUploadPanel({
         })();
         
         return () => { active = false; };
-    }, [isOpen, selectedState, dataSource]);
+    }, [isOpen, dataSource]);
 
     // Show data source status as bottom notification
     useEffect(() => {
         const msgId = 'data-source-status';
         if (isLoadingServices && dataSource === 'database') {
-            addLoadingMessage(msgId, `🔄 Loading ArcGIS services from database for ${selectedState}...`);
+            addLoadingMessage(msgId, `🔄 Loading ArcGIS services from database...`);
         } else {
             removeLoadingMessage(msgId);
             if (dataSource === 'local' && !usingFallback) {
-                showFinishedMessage(msgId, `📂 Using local JSON data for ${selectedState} (${ARCGIS_SERVICES.length} services)`);
+                showFinishedMessage(msgId, `📂 Using local JSON data (${ARCGIS_SERVICES.length} services)`);
             } else if (dataSource === 'database' && usingFallback) {
-                showFinishedMessage(msgId, `📂 Database unavailable, using local data for ${selectedState}`);
-            } else if (dataSource === 'database' && !isLoadingServices && servicesFromDb.length > 0) {
-                showFinishedMessage(msgId, `🌐 Loaded from database: ${servicesFromDb.length} services for ${selectedState}`);
+                showFinishedMessage(msgId, `📂 Database unavailable, using local data`);
+            } else if (dataSource === 'database' && !isLoadingServices && ARCGIS_SERVICES.length > 0) {
+                showFinishedMessage(msgId, `🌐 Loaded from database: ${ARCGIS_SERVICES.length} services`);
             }
         }
-    }, [isLoadingServices, dataSource, usingFallback, servicesFromDb.length, selectedState]);
+    }, [isLoadingServices, dataSource, usingFallback, ARCGIS_SERVICES.length]);
 
-    // Reset state when state or data source changes (but not when panel just opens/closes)
+    // Reset state when data source changes (but not when panel just opens/closes)
     useEffect(() => {
-        // Reset per-state/datasource caches/UI
+        // Reset per-datasource caches/UI
         setServiceLayers({});
         setServiceLegends({});
         setCheckedLayerIds({});
         setServiceLayerAdded({});
         setCheckedSublayerIds({});
+        setExpandedStates(new Set());
         setExpandedFolders(new Set());
         setExpandedServices(new Set());
-        setExpandedLayers(new Set()); // Reset expanded layers when switching states/datasource
+        setExpandedLayers(new Set());
         setServiceInfoOpenKey(null);
-        setSearchKeyword(''); // Clear search when switching data source
+        setSearchKeyword('');
         setSearchResult(null);
         prevCheckedLayerIds.current = {};
-        loadingStates.current = {}; // Clear loading states when switching state/datasource
-        selectionsLoadedRef.current = false; // Need to reload selections for new state/datasource
+        loadingStates.current = {};
+        selectionsLoadedRef.current = false;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedState, dataSource, servicesFromDb.length]); // Only reset when state/datasource changes, not panel open/close
+    }, [dataSource, ARCGIS_SERVICES.length]); // Only reset when datasource changes
 
-    // Fetch layers and legends when panel opens or when services change
+    // Lazy-load layers and legends only for services in expanded state folders
     useEffect(() => {
         if (!isOpen) return;
 
-        // Fetch for current services (from DB or fallback)
-        (ARCGIS_SERVICES || []).forEach(service => {
-            if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
+        // Only fetch layers/legends for services belonging to expanded states
+        const expandedStateServices = [];
+        expandedStates.forEach(code => {
+            (ALL_SERVICES_BY_STATE[code] || []).forEach(service => {
+                if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
+                // Skip if already fetched
+                if (serviceLayers[service.key] !== undefined) return;
+                expandedStateServices.push(service);
+            });
+        });
 
+        expandedStateServices.forEach(service => {
             fetchArcgisLayers(service.url).then(layers => {
                 setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
-                // Only set initial empty state if service doesn't have existing checked layers
                 setCheckedLayerIds(prev => prev[service.key] ? prev : { ...prev, [service.key]: [] });
                 setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
                 setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
@@ -344,20 +382,19 @@ function ArcgisUploadPanel({
             });
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, ARCGIS_SERVICES]); // React to panel opening and services changing
+    }, [isOpen, ARCGIS_SERVICES, expandedStates]); // React to panel opening, services changing, or state expansion
 
-    // Load saved layer selections from DB once layers are fetched
+    // Load saved layer selections from DB once services are available
     useEffect(() => {
         if (!isOpen || !userEmail || selectionsLoadedRef.current) return;
-        // Wait until at least some serviceLayers are loaded
-        const loadedKeys = Object.keys(serviceLayers);
-        if (loadedKeys.length === 0) return;
+        // Wait until services are loaded (don't need to wait for layers with lazy loading)
+        if (ARCGIS_SERVICES.length === 0) return;
 
         selectionsLoadedRef.current = true;
 
         (async () => {
             try {
-                const saved = await loadLayerSelections(userEmail, selectedState, dataSource);
+                const saved = await loadLayerSelections(userEmail, 'ALL', dataSource);
                 if (!saved) return;
                 const { checkedLayerIds: savedChecked, checkedSublayerIds: savedSublayers } = saved;
 
@@ -384,17 +421,22 @@ function ArcgisUploadPanel({
                     });
                 }
 
-                // Auto-expand folders and services that contain checked items
+                // Auto-expand states, folders and services that contain checked items
                 if (savedChecked) {
+                    const statesToExpand = new Set();
                     const foldersToExpand = new Set();
                     const servicesToExpand = new Set();
-                    (ARCGIS_SERVICES || []).forEach(service => {
-                        const ids = savedChecked[service.key];
-                        if (Array.isArray(ids) && ids.length > 0) {
-                            foldersToExpand.add(service.folder || 'Root');
-                            servicesToExpand.add(service.key);
-                        }
+                    STATE_CODES.forEach(code => {
+                        (ALL_SERVICES_BY_STATE[code] || []).forEach(service => {
+                            const ids = savedChecked[service.key];
+                            if (Array.isArray(ids) && ids.length > 0) {
+                                statesToExpand.add(code);
+                                foldersToExpand.add(service.folder || 'Root');
+                                servicesToExpand.add(service.key);
+                            }
+                        });
                     });
+                    if (statesToExpand.size > 0) setExpandedStates(statesToExpand);
                     if (foldersToExpand.size > 0) setExpandedFolders(foldersToExpand);
                     if (servicesToExpand.size > 0) setExpandedServices(servicesToExpand);
                 }
@@ -403,7 +445,7 @@ function ArcgisUploadPanel({
             }
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, userEmail, selectedState, dataSource, serviceLayers]);
+    }, [isOpen, userEmail, dataSource, ARCGIS_SERVICES.length]);
 
     // Debounced save of layer selections to DB
     const saveSelectionsToDb = useCallback(() => {
@@ -417,12 +459,12 @@ function ArcgisUploadPanel({
 
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         saveTimerRef.current = setTimeout(() => {
-            saveLayerSelections(userEmail, selectedState, dataSource, {
+            saveLayerSelections(userEmail, 'ALL', dataSource, {
                 checkedLayerIds,
                 checkedSublayerIds,
             });
         }, 1000);
-    }, [userEmail, selectedState, dataSource, checkedLayerIds, checkedSublayerIds]);
+    }, [userEmail, dataSource, checkedLayerIds, checkedSublayerIds]);
 
     useEffect(() => {
         saveSelectionsToDb();
@@ -432,39 +474,34 @@ function ArcgisUploadPanel({
     }, [saveSelectionsToDb]);
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
-    useEffect(() => {
-        const map = mapInstance && mapInstance();
-        if (!map || !map.getStyle) return;
-
-        const style = map.getStyle();
-        // Remove layers first
-        if (style && Array.isArray(style.layers)) {
-            style.layers
-                .map(l => l.id)
-                .filter(id =>
-                    id.startsWith('arcgis-raster-layer-') ||
-                    id.startsWith('arcgis-vector-layer-')
-                )
-                .forEach(id => {
-                    if (map.getLayer(id)) map.removeLayer(id);
-                });
-        }
-        // Then remove sources
-        if (style && style.sources) {
-            Object.keys(style.sources)
-                .filter(id =>
-                    id.startsWith('arcgis-raster-') ||
-                    id.startsWith('arcgis-vector-source-')
-                )
-                .forEach(id => {
-                    if (map.getSource(id)) map.removeSource(id);
-                });
-        }
-
-        // Also reset our internal ref used for diffs
-        prevCheckedLayerIds.current = {};
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedState]); // Only clean up when state changes, not when panel opens/closes
+    // NOTE: Disabled since states are now all loaded together as top-level folders
+    // useEffect(() => {
+    //     const map = mapInstance && mapInstance();
+    //     if (!map || !map.getStyle) return;
+    //     const style = map.getStyle();
+    //     if (style && Array.isArray(style.layers)) {
+    //         style.layers
+    //             .map(l => l.id)
+    //             .filter(id =>
+    //                 id.startsWith('arcgis-raster-layer-') ||
+    //                 id.startsWith('arcgis-vector-layer-')
+    //             )
+    //             .forEach(id => {
+    //                 if (map.getLayer(id)) map.removeLayer(id);
+    //             });
+    //     }
+    //     if (style && style.sources) {
+    //         Object.keys(style.sources)
+    //             .filter(id =>
+    //                 id.startsWith('arcgis-raster-') ||
+    //                 id.startsWith('arcgis-vector-source-')
+    //             )
+    //             .forEach(id => {
+    //                 if (map.getSource(id)) map.removeSource(id);
+    //             });
+    //     }
+    //     prevCheckedLayerIds.current = {};
+    // }, [selectedState]);
 
     // Clear loading states when panel closes
     useEffect(() => {
@@ -799,8 +836,8 @@ function ArcgisUploadPanel({
 
             // Refresh services list from database
             console.log('Refreshing services list...');
-            const updatedList = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
-            setServicesFromDb(updatedList);
+            const updatedMap = await fetchServicesByStateMap(STATE_CODES, { type: 'MapServer' });
+            setServicesFromDb(updatedMap);
             
             console.log(`Service "${service.label}" removed successfully`);
             
@@ -864,8 +901,8 @@ function ArcgisUploadPanel({
             
             // Refresh services list from database
             console.log('Refreshing services list after folder rename...');
-            const updatedList = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
-            setServicesFromDb(updatedList);
+            const updatedMap = await fetchServicesByStateMap(STATE_CODES, { type: 'MapServer' });
+            setServicesFromDb(updatedMap);
             
             // Update expanded folders to reflect the new name
             setExpandedFolders(prev => {
@@ -900,8 +937,8 @@ function ArcgisUploadPanel({
             
             // Refresh services list from database
             console.log('Refreshing services list after service rename...');
-            const updatedList = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
-            setServicesFromDb(updatedList);
+            const updatedMap = await fetchServicesByStateMap(STATE_CODES, { type: 'MapServer' });
+            setServicesFromDb(updatedMap);
             
             console.log(`Service "${serviceKey}" renamed to "${newLabel}" successfully`);
             
@@ -929,8 +966,8 @@ function ArcgisUploadPanel({
             if (result.success && result.newCount > 0) {
                 // Refresh the services list to show new services
                 console.log('Refreshing services list after update...');
-                const updatedList = await fetchArcgisServicesByState(selectedState, { type: 'MapServer' });
-                setServicesFromDb(updatedList);
+                const updatedMap = await fetchServicesByStateMap(STATE_CODES, { type: 'MapServer' });
+                setServicesFromDb(updatedMap);
                 
                 setUpdateProgress(`✅ Update complete! Added ${result.newCount} new services.`);
             } else if (result.success && result.newCount === 0) {
@@ -1387,6 +1424,7 @@ function ArcgisUploadPanel({
                         if (e.key === 'Enter') {
                             if (!searchKeyword) {
                                 setSearchResult(null);
+                                setExpandedStates(new Set());
                                 setExpandedFolders(new Set());
                                 setExpandedServices(new Set());
                                 setExpandedLayers(new Set());
@@ -1399,6 +1437,7 @@ function ArcgisUploadPanel({
                                 keyword: searchKeyword
                             });
                             setSearchResult(result);
+                            setExpandedStates(new Set(STATE_CODES));
                             setExpandedFolders(new Set(result.expandedFolders));
                             setExpandedServices(new Set(result.expandedServices));
                             setExpandedLayers(new Set(result.expandedLayerKeys));
@@ -1422,6 +1461,7 @@ function ArcgisUploadPanel({
                     onClick={() => {
                         if (!searchKeyword) {
                             setSearchResult(null);
+                            setExpandedStates(new Set());
                             setExpandedFolders(new Set());
                             setExpandedServices(new Set());
                             setExpandedLayers(new Set());
@@ -1434,6 +1474,7 @@ function ArcgisUploadPanel({
                             keyword: searchKeyword
                         });
                         setSearchResult(result);
+                        setExpandedStates(new Set(STATE_CODES));
                         setExpandedFolders(new Set(result.expandedFolders));
                         setExpandedServices(new Set(result.expandedServices));
                         setExpandedLayers(new Set(result.expandedLayerKeys));
@@ -1447,6 +1488,7 @@ function ArcgisUploadPanel({
                     onClick={() => {
                         setSearchKeyword('');
                         setSearchResult(null);
+                        setExpandedStates(new Set());
                         setExpandedFolders(new Set());
                         setExpandedServices(new Set());
                         setExpandedLayers(new Set());
@@ -1511,8 +1553,32 @@ function ArcgisUploadPanel({
         foldersToShow = Object.keys(filteredFolders);
         servicesByFolderToShow = filteredFolders;
     }
-    const expandedFoldersSet = expandedFolders;
-    const expandedServicesSet = expandedServices;
+
+    // Build per-state folders to show
+    const stateFoldersToShow = {};
+    STATE_CODES.forEach(code => {
+        const stateServices = new Set((ALL_SERVICES_BY_STATE[code] || []).map(s => s.key));
+        const folders = [];
+        const byFolder = {};
+        foldersToShow.forEach(folder => {
+            const services = (servicesByFolderToShow[folder] || []).filter(s => stateServices.has(s.key));
+            if (services.length > 0) {
+                folders.push(folder);
+                byFolder[folder] = services;
+            }
+        });
+        stateFoldersToShow[code] = { folders, byFolder };
+    });
+
+    // State folder click
+    const handleStateClick = (code) => {
+        setExpandedStates(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(code)) newSet.delete(code);
+            else newSet.add(code);
+            return newSet;
+        });
+    };
 
     // Folder click
     const handleFolderClick = (folder) => {
@@ -1548,8 +1614,8 @@ function ArcgisUploadPanel({
     // State selection menu that sets selectedState and resets relevant state variables based on selection
     const renderStateMenu = () => (
         <div className="arcgis-upload-state-menu">
-            {/* State selection buttons */}
-            <div className="arcgis-upload-state-buttons">
+            {/* State selection buttons - disabled, states are now shown as top-level folders in the panel */}
+            {/* <div className="arcgis-upload-state-buttons">
                 {STATE_CODES.map(code => (
                     <button
                         key={code}
@@ -1560,7 +1626,7 @@ function ArcgisUploadPanel({
                         {STATE_LABELS[code]}
                     </button>
                 ))}
-            </div>
+            </div> */}
             
             {/* Data source toggle */}
             <div className="arcgis-upload-datasource-toggle">
@@ -1720,7 +1786,24 @@ function ArcgisUploadPanel({
                                 <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
                             </div>
                         </div>
-                        {foldersToShow.map(folder => (
+                        <div className="upload-panel-folder-area">
+                        {STATE_CODES.map(stateCode => {
+                            const stateData = stateFoldersToShow[stateCode];
+                            if (!stateData || stateData.folders.length === 0) return null;
+                            const isStateExpanded = expandedStates.has(stateCode);
+                            return (
+                                <div key={stateCode}>
+                                    <div
+                                        className="upload-state-folder"
+                                        onClick={() => handleStateClick(stateCode)}
+                                    >
+                                        <span>
+                                            {isStateExpanded ? "▼" : "►"} {STATE_FULL_NAMES[stateCode] || stateCode}
+                                        </span>
+                                    </div>
+                                    {isStateExpanded && (
+                                        <div className="upload-state-folder-content">
+                                            {stateData.folders.map(folder => (
                     <div key={folder}>
                         <div
                             className="upload-folder"
@@ -1743,7 +1826,7 @@ function ArcgisUploadPanel({
                         </div>
                         {expandedFolders.has(folder) && (
                             <div className="tree-children">
-                                {servicesByFolderToShow[folder].map(service => {
+                                {stateData.byFolder[folder].map(service => {
                                     const layers = serviceLayers[service.key] || [];
                                     const checkedIds = checkedLayerIds[service.key] || [];
                                     const rawLayers = layers.length > 0 ? layers : (service.layers || []);
@@ -1802,6 +1885,16 @@ function ArcgisUploadPanel({
                         )}
                     </div>
                 ))}
+                            {/* Per-state attribution */}
+                            <div className="upload-panel-attribution" style={{ marginTop: 4, marginBottom: 2 }}>
+                                Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[stateCode]?.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[stateCode]?.name} ArcGIS Services</a>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                );
+            })}
+                        </div>
                 
                 {/* Context Menu */}
                 {contextMenu && (
@@ -1828,10 +1921,7 @@ function ArcgisUploadPanel({
                     </div>
                 )}
 
-                {/* Attribution */}
-                <div className="upload-panel-attribution">
-                    Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[selectedState]?.url || STATE_ATTRIBUTION.WA.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[selectedState]?.name || 'Washington State'} ArcGIS Services</a>
-                </div>
+
                 
                 <div className="arcgis-loading-messages">
                     {messages.map((msg, idx) => (

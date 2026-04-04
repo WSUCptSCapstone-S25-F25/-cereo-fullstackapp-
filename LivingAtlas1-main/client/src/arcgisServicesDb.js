@@ -161,12 +161,14 @@ export async function fetchAllArcgisServices({ type = 'MapServer' } = {}) {
 // Fetch ArcGIS services for multiple states and return as an object keyed by state code
 export async function fetchServicesByStateMap(codes = ['WA', 'ID', 'OR'], { type = 'MapServer' } = {}) {
   console.log('[arcgisServicesDb] fetchServicesByStateMap start', { codes, type });
-  const results = {};
-  for (const code of codes) {
-    results[code] = await fetchArcgisServicesByState(code, { type });
-    console.log(`[arcgisServicesDb] fetched ${results[code].length} for ${code}`);
-  }
-  return results;
+  const entries = await Promise.all(
+    codes.map(async (code) => {
+      const list = await fetchArcgisServicesByState(code, { type });
+      console.log(`[arcgisServicesDb] fetched ${list.length} for ${code}`);
+      return [code, list];
+    })
+  );
+  return Object.fromEntries(entries);
 }
 
 // Remove an ArcGIS service by its key
