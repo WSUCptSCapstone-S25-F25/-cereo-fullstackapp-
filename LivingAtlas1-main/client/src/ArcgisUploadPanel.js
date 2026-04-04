@@ -59,6 +59,55 @@ const STATE_ATTRIBUTION = {
 };
 
 // Main component
+
+// --- Layer hierarchy helpers ---
+// Build a tree from ArcGIS flat layer list using parentLayer object
+// ArcGIS REST /layers endpoint returns parentLayer as {id, name} or null
+function buildLayerTree(flatLayers) {
+    const filtered = flatLayers.filter(l =>
+        !(typeof l.name === 'string' && l.name.trim().toLowerCase() === 'placeholder')
+    );
+    const layerMap = {};
+    filtered.forEach(l => { layerMap[l.id] = { ...l, children: [] }; });
+    const roots = [];
+    filtered.forEach(l => {
+        // Support both parentLayer (object from /layers) and parentLayerId (number from root)
+        const pid = l.parentLayer ? l.parentLayer.id : (l.parentLayerId !== undefined ? l.parentLayerId : -1);
+        if (pid === -1 || pid === null || pid === undefined || !layerMap[pid]) {
+            roots.push(layerMap[l.id]);
+        } else {
+            layerMap[pid].children.push(layerMap[l.id]);
+        }
+    });
+    return roots;
+}
+
+// Recursively get all non-group (leaf) layers from a tree
+function getAllLeafLayers(nodes) {
+    const result = [];
+    function collect(node) {
+        if (node.type !== 'Group Layer') {
+            result.push(node);
+        }
+        if (node.children) node.children.forEach(collect);
+    }
+    nodes.forEach(collect);
+    return result;
+}
+
+// Get all leaf layers that are descendants of a specific node
+function getDescendantLeafLayers(node) {
+    const result = [];
+    function collect(n) {
+        if (n.type !== 'Group Layer') {
+            result.push(n);
+        }
+        if (n.children) n.children.forEach(collect);
+    }
+    if (node.children) node.children.forEach(collect);
+    return result;
+}
+
 function ArcgisUploadPanel({
     isOpen,
     onClose,
@@ -505,6 +554,51 @@ function ArcgisUploadPanel({
                 }
             };
         });
+    };
+
+    // Handle group layer checkbox: toggle all descendant feature layers
+    const handleGroupLayerCheckbox = (service, groupNode, allChecked) => {
+        const descendantLeaves = getDescendantLeafLayers(groupNode);
+        const descendantIds = descendantLeaves.map(l => l.id);
+        if (descendantIds.length === 0) return;
+
+        if (allChecked) {
+            // Uncheck all descendants
+            setCheckedLayerIds(prev => ({
+                ...prev,
+                [service.key]: (prev[service.key] || []).filter(id => !descendantIds.includes(id))
+            }));
+            setCheckedSublayerIds(prev => {
+                const updated = { ...prev[service.key] };
+                descendantIds.forEach(id => { updated[id] = []; });
+                return { ...prev, [service.key]: updated };
+            });
+            descendantLeaves.forEach(l => removeLoadingMessage(getLoadingMsgId(service, l)));
+        } else {
+            // Check all descendants
+            setCheckedLayerIds(prev => {
+                const current = prev[service.key] || [];
+                const newIds = [...new Set([...current, ...descendantIds])];
+                return { ...prev, [service.key]: newIds };
+            });
+            // Also check all sublayers for each descendant
+            const newSublayerIds = { ...(checkedSublayerIds[service.key] || {}) };
+            descendantLeaves.forEach(layer => {
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                    if (legendLayer && legendLayer.legend && legendLayer.legend.length > 1) {
+                        newSublayerIds[layer.id] = legendLayer.legend.map((_, index) => index);
+                    }
+                }
+            });
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: newSublayerIds }));
+            addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
+        }
+        setServiceLayerAdded(prev => ({
+            ...prev,
+            [service.key]: !allChecked
+        }));
     };
 
     // Handle service removal
@@ -1054,6 +1148,141 @@ function ArcgisUploadPanel({
         });
     };
 
+    // Recursive renderer for hierarchical layer tree
+    const renderLayerNode = (node, service, checkedIds, allFeatureLayers, depth = 0) => {
+        const isGroupLayer = node.type === 'Group Layer';
+        const expandKey = `${service.key}-${node.id}`;
+        const isExpanded = expandedLayers.has(expandKey);
+
+        if (isGroupLayer) {
+            const descendantLeaves = getDescendantLeafLayers(node);
+            const descendantIds = descendantLeaves.map(l => l.id);
+            const checkedCount = descendantIds.filter(id => checkedIds.includes(id)).length;
+            const allChecked = descendantIds.length > 0 && checkedCount === descendantIds.length;
+            const someChecked = checkedCount > 0 && !allChecked;
+
+            return (
+                <div key={node.id} className="tree-node">
+                    <div
+                        className="upload-layer-group"
+                        onClick={() => handleLayerClick(service.key, node.id)}
+                        onContextMenu={(e) => handleContextMenu(e, 'layer', { service, layer: node })}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={allChecked}
+                            ref={el => { if (el) el.indeterminate = someChecked; }}
+                            onChange={(e) => {
+                                e.stopPropagation();
+                                handleGroupLayerCheckbox(service, node, allChecked);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ marginRight: 4 }}
+                        />
+                        <span style={{ color: '#666', userSelect: 'none', marginRight: 4 }}>
+                            {isExpanded ? "▼" : "►"}
+                        </span>
+                        <span style={{ flex: 1 }}>{node.name}</span>
+                        {descendantIds.length > 0 && (
+                            <span style={{ color: '#999', fontSize: '10px', marginLeft: 4 }}>
+                                ({checkedCount}/{descendantIds.length})
+                            </span>
+                        )}
+                    </div>
+                    {isExpanded && node.children.length > 0 && (
+                        <div className="tree-children">
+                            {node.children.map(child =>
+                                renderLayerNode(child, service, checkedIds, allFeatureLayers, depth + 1)
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Feature/Raster layer node
+        let legendItems = [];
+        const legend = serviceLegends[service.key];
+        if (legend && legend.layers) {
+            const legendLayer = legend.layers.find(l => l.layerId === node.id);
+            if (legendLayer) legendItems = legendLayer.legend || [];
+        }
+        const hasMultipleLegends = legendItems.length > 1;
+        const checkedSublayers = checkedSublayerIds[service.key]?.[node.id] || [];
+
+        return (
+            <li key={node.id} className="upload-layer-row tree-node" style={{
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                marginBottom: hasMultipleLegends ? 8 : 2
+            }}>
+                <div
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        minHeight: 20, width: '100%',
+                        cursor: hasMultipleLegends ? 'pointer' : 'default'
+                    }}
+                    onClick={hasMultipleLegends ? () => handleLayerClick(service.key, node.id) : undefined}
+                    onContextMenu={(e) => handleContextMenu(e, 'layer', { service, layer: node })}
+                >
+                    <input
+                        type="checkbox"
+                        checked={checkedIds.includes(node.id)}
+                        onChange={() => handleLayerCheckbox(service, node.id, allFeatureLayers)}
+                        style={{ marginRight: 8 }}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    {hasMultipleLegends && (
+                        <span style={{ color: '#666', marginRight: 4, userSelect: 'none' }}>
+                            {expandedLayers.has(`${service.key}-${node.id}`) ? "▼" : "►"}
+                        </span>
+                    )}
+                    {legendItems.length === 1 && (
+                        <img
+                            src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
+                            alt={legendItems[0].label}
+                            className="legend-img"
+                        />
+                    )}
+                    <span style={{ flex: 1 }}>{node.name}</span>
+                    {hasMultipleLegends && (
+                        <span style={{ color: '#888', marginLeft: 8 }}>
+                            ({checkedSublayers.length}/{legendItems.length})
+                        </span>
+                    )}
+                </div>
+                {hasMultipleLegends && expandedLayers.has(`${service.key}-${node.id}`) && (
+                    <div className="tree-children" style={{ marginTop: 4 }}>
+                        {legendItems.map((legendItem, index) => (
+                            <div
+                                key={index}
+                                className="upload-layer-sublayer tree-node"
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 4,
+                                    marginBottom: 3, color: '#666', minHeight: '18px'
+                                }}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={checkedSublayers.includes(index)}
+                                    onChange={() => handleSublayerCheckbox(service, node.id, index, allFeatureLayers)}
+                                    style={{ marginRight: 6, width: '12px', height: '12px', flexShrink: 0 }}
+                                />
+                                <img
+                                    src={`data:${legendItem.contentType};base64,${legendItem.imageData}`}
+                                    alt={legendItem.label}
+                                    className="legend-img"
+                                    style={{ width: '14px', height: '14px', marginRight: '6px' }}
+                                />
+                                <span title={legendItem.label}>{legendItem.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </li>
+        );
+    };
+
     const renderSearchBar = () => (
         <div>
             <div className="upload-panel-searchbar">
@@ -1401,29 +1630,28 @@ function ArcgisUploadPanel({
                                 {servicesByFolderToShow[folder].map(service => {
                                     const layers = serviceLayers[service.key] || [];
                                     const checkedIds = checkedLayerIds[service.key] || [];
-                                    // Filter out placeholder layers (case-insensitive name check)
-                                    const rawLayers = service.layers || layers;
-                                    const layersToShow = Array.isArray(rawLayers)
-                                        ? rawLayers.filter(l => !(typeof l.name === 'string' && l.name.trim().toLowerCase() === 'placeholder'))
-                                        : rawLayers;
+                                    const rawLayers = layers.length > 0 ? layers : (service.layers || []);
+                                    // Build hierarchical tree from flat layer list
+                                    const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+                                    const allFeatureLayers = getAllLeafLayers(layerTree);
 
                                     return (
                                         <div key={service.key} className="tree-node">
                                             <div
                                                 className="upload-item"
                                                 onClick={() => handleServiceClick(service.key)}
-                                                onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow })}
+                                                onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                             >
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                                     <input
                                                         type="checkbox"
-                                                        checked={checkedIds.length > 0 && checkedIds.length === layersToShow.length}
+                                                        checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length}
                                                         ref={el => {
-                                                            if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < layersToShow.length;
+                                                            if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length;
                                                         }}
                                                         onChange={(e) => {
                                                             e.stopPropagation();
-                                                            handleSelectAll(service, layersToShow);
+                                                            handleSelectAll(service, allFeatureLayers);
                                                         }}
                                                         onClick={(e) => e.stopPropagation()}
                                                         style={{ marginRight: 4 }}
@@ -1443,124 +1671,11 @@ function ArcgisUploadPanel({
                                             </div>
                                             {expandedServices.has(service.key) && (
                                                 <div className="tree-children">
-                                                    <div>
-                                                        <ul className="tree-children" style={{ listStyle: "none" }}>
-                                                            {layersToShow.map(layer => {
-                                                                let legendItems = [];
-                                                                const legend = serviceLegends[service.key];
-                                                                if (legend && legend.layers) {
-                                                                    const legendLayer = legend.layers.find(l => l.layerId === layer.id);
-                                                                    if (legendLayer) legendItems = legendLayer.legend || [];
-                                                                }
-
-                                                                // Check if this layer has multiple legend items
-                                                                const hasMultipleLegends = legendItems.length > 1;
-                                                                const checkedSublayers = checkedSublayerIds[service.key]?.[layer.id] || [];
-
-                                                                return (
-                                                                    <li key={layer.id} className="upload-layer-row tree-node" style={{ 
-                                                                        flexDirection: 'column', 
-                                                                        alignItems: 'flex-start',
-                                                                        marginBottom: hasMultipleLegends ? 8 : 2
-                                                                    }}>
-                                                                        {/* Main layer row */}
-                                                                        <div 
-                                                                            style={{ 
-                                                                                display: 'flex', 
-                                                                                alignItems: 'center', 
-                                                                                gap: 4, 
-                                                                                minHeight: 20,
-                                                                                width: '100%',
-                                                                                cursor: hasMultipleLegends ? 'pointer' : 'default'
-                                                                            }}
-                                                                            onClick={hasMultipleLegends ? () => handleLayerClick(service.key, layer.id) : undefined}
-                                                                            onContextMenu={(e) => handleContextMenu(e, 'layer', { service, layer })}
-                                                                        >
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={checkedIds.includes(layer.id)}
-                                                                                onChange={() => handleLayerCheckbox(service, layer.id, layersToShow)}
-                                                                                style={{ marginRight: 8 }}
-                                                                                onClick={(e) => e.stopPropagation()}
-                                                                            />
-                                                                            {hasMultipleLegends && (
-                                                                                <span style={{ 
-                                                                                    color: '#666', 
-                                                                                    marginRight: 4,
-                                                                                    userSelect: 'none'
-                                                                                }}>
-                                                                                    {expandedLayers.has(`${service.key}-${layer.id}`) ? "▼" : "►"}
-                                                                                </span>
-                                                                            )}
-                                                                            {legendItems.length === 1 && (
-                                                                                <img
-                                                                                    src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
-                                                                                    alt={legendItems[0].label}
-                                                                                    className="legend-img"
-                                                                                />
-                                                                            )}
-                                                                            <span style={{ flex: 1 }}>{layer.name}</span>
-                                                                            {hasMultipleLegends && (
-                                                                                <span style={{ 
-                                                                                    color: '#888', 
-                                                                                    marginLeft: 8 
-                                                                                }}>
-                                                                                    ({checkedSublayers.length}/{legendItems.length})
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {/* Show sublayers/legends if there are multiple AND layer is expanded */}
-                                                                        {hasMultipleLegends && expandedLayers.has(`${service.key}-${layer.id}`) && (
-                                                                            <div className="tree-children" style={{ 
-                                                                                marginTop: 4
-                                                                            }}>
-                                                                                {legendItems.map((legendItem, index) => (
-                                                                                    <div 
-                                                                                        key={index} 
-                                                                                        className="upload-layer-sublayer tree-node"
-                                                                                        style={{ 
-                                                                                            display: 'flex', 
-                                                                                            alignItems: 'center', 
-                                                                                            gap: 4, 
-                                                                                            marginBottom: 3,
-                                                                                            color: '#666',
-                                                                                            minHeight: '18px'
-                                                                                        }}
-                                                                                    >
-                                                                                        <input
-                                                                                            type="checkbox"
-                                                                                            checked={checkedSublayers.includes(index)}
-                                                                                            onChange={() => handleSublayerCheckbox(service, layer.id, index, layersToShow)}
-                                                                                            style={{ 
-                                                                                                marginRight: 6,
-                                                                                                width: '12px',
-                                                                                                height: '12px',
-                                                                                                flexShrink: 0
-                                                                                            }}
-                                                                                        />
-                                                                                        <img
-                                                                                            src={`data:${legendItem.contentType};base64,${legendItem.imageData}`}
-                                                                                            alt={legendItem.label}
-                                                                                            className="legend-img"
-                                                                                            style={{ 
-                                                                                                width: '14px', 
-                                                                                                height: '14px',
-                                                                                                marginRight: '6px'
-                                                                                            }}
-                                                                                        />
-                                                                                        <span title={legendItem.label}>
-                                                                                            {legendItem.label}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
-                                                                    </li>
-                                                                );
-                                                            })}
-                                                        </ul>
-                                                    </div>
+                                                    <ul className="tree-children" style={{ listStyle: "none" }}>
+                                                        {layerTree.map(node =>
+                                                            renderLayerNode(node, service, checkedIds, allFeatureLayers)
+                                                        )}
+                                                    </ul>
                                                 </div>
                                             )}
                                         </div>

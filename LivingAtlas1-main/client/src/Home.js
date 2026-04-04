@@ -47,11 +47,11 @@ function Home(props) {
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v3');
+        return !localStorage.getItem('changelog_seen_v4');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v3', 'true');
+        localStorage.setItem('changelog_seen_v4', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -454,6 +454,12 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/3/2026</h3>
+                    <p>Added an opacity slider to the ArcGIS Upload Panel toolbar. You can now drag the slider to adjust how transparent all visible map layers are.</p>
+                    <p>Fixed a bug where sublayers inside a group layer were incorrectly shown at the same level as their parent. Layers with nested groups now display in the correct hierarchy.</p>
+
+                    <hr />
+
                     <h3>Update Date: 3/31/2026</h3>
                     <p>Resend email service was integrated with a custom domain (cereo-livingatlas.com) via GoDaddy DNS records.</p>
                     <p>Password recovery and signup notification emails now send from the verified domain with a proper "Living Atlas" sender name.</p>

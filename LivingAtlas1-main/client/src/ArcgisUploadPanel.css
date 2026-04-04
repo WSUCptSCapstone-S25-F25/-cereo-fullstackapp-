@@ -711,6 +711,25 @@
     height: 10px;
 }
 
+/* Group Layer (expandable container in hierarchy) */
+.upload-layer-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 11px;
+    padding: 2px 0;
+    min-height: 22px;
+    color: #444 !important;
+    border-radius: 3px;
+    transition: background 0.15s;
+}
+
+.upload-layer-group:hover {
+    background: #e8e8e8;
+}
+
 .upload-panel input[type="checkbox"] {
     -webkit-appearance: none;
     -moz-appearance: none;
