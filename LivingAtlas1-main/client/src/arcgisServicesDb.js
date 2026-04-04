@@ -330,6 +330,39 @@ export async function permanentlyDeleteRemovedService(serviceKey) {
     }
 }
 
+// Save user layer selections to backend
+export async function saveLayerSelections(userEmail, stateCode, dataSource, selections) {
+    try {
+        const response = await api.post('/arcgis/selections/save', {
+            user_email: userEmail,
+            state_code: stateCode,
+            data_source: dataSource,
+            selections,
+        });
+        return response.data;
+    } catch (error) {
+        console.warn('[arcgisServicesDb] Failed to save layer selections:', error?.message || error);
+        return null;
+    }
+}
+
+// Load user layer selections from backend
+export async function loadLayerSelections(userEmail, stateCode, dataSource) {
+    try {
+        const response = await api.get('/arcgis/selections/load', {
+            params: {
+                user_email: userEmail,
+                state_code: stateCode,
+                data_source: dataSource,
+            },
+        });
+        return response.data?.selections || null;
+    } catch (error) {
+        console.warn('[arcgisServicesDb] Failed to load layer selections:', error?.message || error);
+        return null;
+    }
+}
+
 // Clear all removed ArcGIS services
 export async function clearAllRemovedServices() {
     try {

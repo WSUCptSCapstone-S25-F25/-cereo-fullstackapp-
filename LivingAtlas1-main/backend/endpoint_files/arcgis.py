@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 from database import cur, conn
+import json
 
 arcgis_router = APIRouter(prefix="/arcgis", tags=["ArcGIS"])
 
@@ -645,3 +646,84 @@ def bulk_add_services(request: BulkAddServicesRequest):
         conn.rollback()
         conn.autocommit = True
         raise HTTPException(status_code=500, detail=f"Failed to bulk add services: {str(e)}")
+
+
+# --- User layer selections persistence ---
+
+class SaveSelectionsRequest(BaseModel):
+    user_email: str
+    state_code: str
+    data_source: str = 'database'
+    selections: Dict[str, Any]  # { checkedLayerIds: {...}, checkedSublayerIds: {...} }
+
+@arcgis_router.post("/selections/save")
+def save_selections(request: SaveSelectionsRequest):
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+
+    try:
+        # Ensure table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_layer_selections (
+                id SERIAL PRIMARY KEY,
+                user_email VARCHAR(255) NOT NULL,
+                state_code VARCHAR(10) NOT NULL,
+                data_source VARCHAR(20) NOT NULL DEFAULT 'database',
+                selections JSONB NOT NULL DEFAULT '{}',
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT unique_user_state_source UNIQUE (user_email, state_code, data_source)
+            )
+        """)
+        conn.commit()
+
+        # Upsert selections
+        cur.execute("""
+            INSERT INTO user_layer_selections (user_email, state_code, data_source, selections, updated_at)
+            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_email, state_code, data_source)
+            DO UPDATE SET selections = EXCLUDED.selections, updated_at = CURRENT_TIMESTAMP
+        """, (request.user_email, request.state_code.upper(), request.data_source, json.dumps(request.selections)))
+        conn.commit()
+
+        return {"success": True}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save selections: {str(e)}")
+
+
+@arcgis_router.get("/selections/load")
+def load_selections(
+    user_email: str = Query(...),
+    state_code: str = Query(...),
+    data_source: str = Query('database'),
+):
+    if cur is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+
+    try:
+        # Ensure table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_layer_selections (
+                id SERIAL PRIMARY KEY,
+                user_email VARCHAR(255) NOT NULL,
+                state_code VARCHAR(10) NOT NULL,
+                data_source VARCHAR(20) NOT NULL DEFAULT 'database',
+                selections JSONB NOT NULL DEFAULT '{}',
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT unique_user_state_source UNIQUE (user_email, state_code, data_source)
+            )
+        """)
+        conn.commit()
+
+        cur.execute("""
+            SELECT selections FROM user_layer_selections
+            WHERE user_email = %s AND state_code = %s AND data_source = %s
+        """, (user_email, state_code.upper(), data_source))
+
+        row = cur.fetchone()
+        if row:
+            return {"selections": row[0]}
+        return {"selections": None}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to load selections: {str(e)}")

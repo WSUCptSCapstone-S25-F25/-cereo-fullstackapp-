@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
@@ -12,7 +12,9 @@ import {
     fetchArcgisServicesByState, 
     removeArcgisService, 
     renameFolderServices, 
-    renameService 
+    renameService,
+    saveLayerSelections,
+    loadLayerSelections
 } from './arcgisServicesDb'; // Fetch from DB
 import { updateCurrentStateServices } from './arcgisUpdateServices';
 import ArcgisRenameItem from './ArcgisRenameItem';
@@ -168,6 +170,11 @@ function ArcgisUploadPanel({
     // Track loading states for layers to reliably check completion
     const loadingStates = useRef({}); // { messageId: boolean }
 
+    // Persistence: track whether saved selections have been loaded for current state/datasource
+    const selectionsLoadedRef = useRef(false);
+    const saveTimerRef = useRef(null);
+    const userEmail = localStorage.getItem('email') || '';
+
     const {
         messages,
         addLoadingMessage: originalAddLoadingMessage,
@@ -312,6 +319,7 @@ function ArcgisUploadPanel({
         setSearchResult(null);
         prevCheckedLayerIds.current = {};
         loadingStates.current = {}; // Clear loading states when switching state/datasource
+        selectionsLoadedRef.current = false; // Need to reload selections for new state/datasource
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedState, dataSource, servicesFromDb.length]); // Only reset when state/datasource changes, not panel open/close
 
@@ -337,6 +345,91 @@ function ArcgisUploadPanel({
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, ARCGIS_SERVICES]); // React to panel opening and services changing
+
+    // Load saved layer selections from DB once layers are fetched
+    useEffect(() => {
+        if (!isOpen || !userEmail || selectionsLoadedRef.current) return;
+        // Wait until at least some serviceLayers are loaded
+        const loadedKeys = Object.keys(serviceLayers);
+        if (loadedKeys.length === 0) return;
+
+        selectionsLoadedRef.current = true;
+
+        (async () => {
+            try {
+                const saved = await loadLayerSelections(userEmail, selectedState, dataSource);
+                if (!saved) return;
+                const { checkedLayerIds: savedChecked, checkedSublayerIds: savedSublayers } = saved;
+
+                if (savedChecked && Object.keys(savedChecked).length > 0) {
+                    setCheckedLayerIds(prev => {
+                        const merged = { ...prev };
+                        Object.entries(savedChecked).forEach(([key, ids]) => {
+                            if (Array.isArray(ids) && ids.length > 0) {
+                                merged[key] = ids;
+                            }
+                        });
+                        return merged;
+                    });
+                }
+                if (savedSublayers && Object.keys(savedSublayers).length > 0) {
+                    setCheckedSublayerIds(prev => {
+                        const merged = { ...prev };
+                        Object.entries(savedSublayers).forEach(([key, val]) => {
+                            if (val && Object.keys(val).length > 0) {
+                                merged[key] = val;
+                            }
+                        });
+                        return merged;
+                    });
+                }
+
+                // Auto-expand folders and services that contain checked items
+                if (savedChecked) {
+                    const foldersToExpand = new Set();
+                    const servicesToExpand = new Set();
+                    (ARCGIS_SERVICES || []).forEach(service => {
+                        const ids = savedChecked[service.key];
+                        if (Array.isArray(ids) && ids.length > 0) {
+                            foldersToExpand.add(service.folder || 'Root');
+                            servicesToExpand.add(service.key);
+                        }
+                    });
+                    if (foldersToExpand.size > 0) setExpandedFolders(foldersToExpand);
+                    if (servicesToExpand.size > 0) setExpandedServices(servicesToExpand);
+                }
+            } catch (err) {
+                console.warn('[ArcgisUploadPanel] Failed to load saved selections:', err);
+            }
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, userEmail, selectedState, dataSource, serviceLayers]);
+
+    // Debounced save of layer selections to DB
+    const saveSelectionsToDb = useCallback(() => {
+        if (!userEmail || !selectionsLoadedRef.current) return;
+
+        // Check if there's anything to save
+        const hasChecked = Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0);
+        const hasSublayers = Object.values(checkedSublayerIds).some(obj => obj && Object.keys(obj).length > 0);
+
+        if (!hasChecked && !hasSublayers) return;
+
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => {
+            saveLayerSelections(userEmail, selectedState, dataSource, {
+                checkedLayerIds,
+                checkedSublayerIds,
+            });
+        }, 1000);
+    }, [userEmail, selectedState, dataSource, checkedLayerIds, checkedSublayerIds]);
+
+    useEffect(() => {
+        saveSelectionsToDb();
+        return () => {
+            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        };
+    }, [saveSelectionsToDb]);
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
     useEffect(() => {
