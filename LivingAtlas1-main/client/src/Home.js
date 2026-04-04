@@ -47,11 +47,11 @@ function Home(props) {
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v4');
+        return !localStorage.getItem('changelog_seen_v5');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v4', 'true');
+        localStorage.setItem('changelog_seen_v5', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -454,6 +454,16 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/4/2026</h3>
+                    <p>The DB/Local data source toggle was changed from two buttons to a compact switch control in the toolbar.</p>
+                    <p>The Update button is now an icon-only square button with a spinning animation while updating.</p>
+                    <p>The upload panel is now wider — side and bottom padding were reduced to give more room to the folder area.</p>
+                    <p>State folders and folders now highlight on hover for better visual feedback.</p>
+                    <p>A new "Pin" feature was added: right-click any service, layer, or sublayer and choose "Pin (Auto-load)" to have it automatically selected every time you open the panel. Pinned selections are saved locally in your browser.</p>
+                    <p>The previous database-based selection persistence was temporarily disabled in favor of the new pin system.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/3/2026</h3>
                     <p>Added an opacity slider to the ArcGIS Upload Panel toolbar. You can now drag the slider to adjust how transparent all visible map layers are.</p>
                     <p>Fixed a bug where sublayers inside a group layer were incorrectly shown at the same level as their parent. Layers with nested groups now display in the correct hierarchy.</p>
