@@ -26,7 +26,7 @@ import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync } from '@fortawesome/free-solid-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
@@ -1785,6 +1785,45 @@ function ArcgisUploadPanel({
                                 />
                                 <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
                             </div>
+                            <div className="upload-panel-controls-row">
+                                <label className="upload-panel-datasource-switch" title={dataSource === 'database' ? 'Using database (click to switch to local)' : 'Using local JSON (click to switch to database)'}>
+                                    <span className={`upload-panel-ds-label${dataSource === 'local' ? ' active' : ''}`}>Local</span>
+                                    <span
+                                        className={`upload-panel-ds-track${dataSource === 'database' ? ' db' : ''}`}
+                                        onClick={() => !isLoadingServices && handleDataSourceChange(dataSource === 'database' ? 'local' : 'database')}
+                                    >
+                                        <span className="upload-panel-ds-thumb" />
+                                    </span>
+                                    <span className={`upload-panel-ds-label${dataSource === 'database' ? ' active' : ''}`}>DB</span>
+                                </label>
+                                <button 
+                                    className="upload-panel-update-btn"
+                                    onClick={handleUpdateServices}
+                                    disabled={isUpdating}
+                                    title="Update services data from ArcGIS REST servers"
+                                >
+                                    <FontAwesomeIcon icon={faSync} spin={isUpdating} />
+                                </button>
+                            </div>
+                            {/* Update progress display */}
+                            {(updateProgress || updateResults) && (
+                                <div className="upload-panel-update-progress">
+                                    {updateProgress && (
+                                        <div className={`update-progress-message ${isUpdating ? 'updating' : 'complete'}`}>
+                                            {updateProgress}
+                                        </div>
+                                    )}
+                                    {updateResults && updateResults.success && (
+                                        <div className="update-results">
+                                            <small>
+                                                Found: {updateResults.totalFound || 0} | 
+                                                Existing: {updateResults.existingCount || 0} | 
+                                                New: {updateResults.newCount || 0}
+                                            </small>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         <div className="upload-panel-folder-area">
                         {STATE_CODES.map(stateCode => {
@@ -1929,39 +1968,6 @@ function ArcgisUploadPanel({
                             {msg.text}
                         </div>
                     ))}
-                </div>
-                
-                {/* Update button at the bottom */}
-                <div className="upload-panel-update-section">
-                    <button 
-                        className="upload-panel-update-btn"
-                        onClick={handleUpdateServices}
-                        disabled={isUpdating}
-                        title="Update services data from ArcGIS REST servers"
-                    >
-                        <FontAwesomeIcon icon={faDownload} />
-                        <span>{isUpdating ? 'Updating...' : 'Update'}</span>
-                    </button>
-                    
-                    {/* Update progress display */}
-                    {(updateProgress || updateResults) && (
-                        <div className="upload-panel-update-progress">
-                            {updateProgress && (
-                                <div className={`update-progress-message ${isUpdating ? 'updating' : 'complete'}`}>
-                                    {updateProgress}
-                                </div>
-                            )}
-                            {updateResults && updateResults.success && (
-                                <div className="update-results">
-                                    <small>
-                                        Found: {updateResults.totalFound || 0} | 
-                                        Existing: {updateResults.existingCount || 0} | 
-                                        New: {updateResults.newCount || 0}
-                                    </small>
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
                     </>
                 )}
@@ -2171,7 +2177,7 @@ function ArcgisUploadPanel({
             )}
 
             {/* State menu: outside the upload panel */}
-            {renderStateMenu()}
+            {/* renderStateMenu() - disabled, DB/Local toggle moved to toolbar */}
         </>
     );
 }
