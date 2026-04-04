@@ -384,94 +384,203 @@ function ArcgisUploadPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, ARCGIS_SERVICES, expandedStates]); // React to panel opening, services changing, or state expansion
 
-    // Load saved layer selections from DB once services are available
-    useEffect(() => {
-        if (!isOpen || !userEmail || selectionsLoadedRef.current) return;
-        // Wait until services are loaded (don't need to wait for layers with lazy loading)
-        if (ARCGIS_SERVICES.length === 0) return;
+    // --- DB persistence disabled (kept for future use) ---
+    // useEffect(() => {
+    //     if (!isOpen || !userEmail || selectionsLoadedRef.current) return;
+    //     if (ARCGIS_SERVICES.length === 0) return;
+    //     selectionsLoadedRef.current = true;
+    //     (async () => {
+    //         try {
+    //             const saved = await loadLayerSelections(userEmail, 'ALL', dataSource);
+    //             if (!saved) return;
+    //             const { checkedLayerIds: savedChecked, checkedSublayerIds: savedSublayers } = saved;
+    //             if (savedChecked && Object.keys(savedChecked).length > 0) {
+    //                 setCheckedLayerIds(prev => {
+    //                     const merged = { ...prev };
+    //                     Object.entries(savedChecked).forEach(([key, ids]) => {
+    //                         if (Array.isArray(ids) && ids.length > 0) merged[key] = ids;
+    //                     });
+    //                     return merged;
+    //                 });
+    //             }
+    //             if (savedSublayers && Object.keys(savedSublayers).length > 0) {
+    //                 setCheckedSublayerIds(prev => {
+    //                     const merged = { ...prev };
+    //                     Object.entries(savedSublayers).forEach(([key, val]) => {
+    //                         if (val && Object.keys(val).length > 0) merged[key] = val;
+    //                     });
+    //                     return merged;
+    //                 });
+    //             }
+    //             if (savedChecked) {
+    //                 const statesToExpand = new Set();
+    //                 const foldersToExpand = new Set();
+    //                 const servicesToExpand = new Set();
+    //                 STATE_CODES.forEach(code => {
+    //                     (ALL_SERVICES_BY_STATE[code] || []).forEach(service => {
+    //                         const ids = savedChecked[service.key];
+    //                         if (Array.isArray(ids) && ids.length > 0) {
+    //                             statesToExpand.add(code);
+    //                             foldersToExpand.add(service.folder || 'Root');
+    //                             servicesToExpand.add(service.key);
+    //                         }
+    //                     });
+    //                 });
+    //                 if (statesToExpand.size > 0) setExpandedStates(statesToExpand);
+    //                 if (foldersToExpand.size > 0) setExpandedFolders(foldersToExpand);
+    //                 if (servicesToExpand.size > 0) setExpandedServices(servicesToExpand);
+    //             }
+    //         } catch (err) {
+    //             console.warn('[ArcgisUploadPanel] Failed to load saved selections:', err);
+    //         }
+    //     })();
+    // }, [isOpen, userEmail, dataSource, ARCGIS_SERVICES.length]);
 
+    // const saveSelectionsToDb = useCallback(() => {
+    //     if (!userEmail || !selectionsLoadedRef.current) return;
+    //     const hasChecked = Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0);
+    //     const hasSublayers = Object.values(checkedSublayerIds).some(obj => obj && Object.keys(obj).length > 0);
+    //     if (!hasChecked && !hasSublayers) return;
+    //     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    //     saveTimerRef.current = setTimeout(() => {
+    //         saveLayerSelections(userEmail, 'ALL', dataSource, { checkedLayerIds, checkedSublayerIds });
+    //     }, 1000);
+    // }, [userEmail, dataSource, checkedLayerIds, checkedSublayerIds]);
+    // useEffect(() => {
+    //     saveSelectionsToDb();
+    //     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+    // }, [saveSelectionsToDb]);
+    // --- End DB persistence disabled ---
+
+    // --- Pinned items: localStorage-based auto-load ---
+    const PINNED_STORAGE_KEY = 'arcgis_pinned_items';
+
+    const loadPinnedItems = () => {
+        try {
+            const raw = localStorage.getItem(PINNED_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch { return []; }
+    };
+
+    const savePinnedItems = (items) => {
+        localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(items));
+    };
+
+    const [pinnedItems, setPinnedItems] = useState(() => loadPinnedItems());
+
+    // Persist pinned items to localStorage whenever they change
+    useEffect(() => {
+        savePinnedItems(pinnedItems);
+    }, [pinnedItems]);
+
+    const isPinned = (serviceKey, layerId, sublayerIndex) => {
+        return pinnedItems.some(p =>
+            p.serviceKey === serviceKey &&
+            p.layerId === (layerId ?? null) &&
+            p.sublayerIndex === (sublayerIndex ?? null)
+        );
+    };
+
+    const handleTogglePin = () => {
+        if (!contextMenu) return;
+        const { type, data } = contextMenu;
+        let pinEntry;
+        if (type === 'service') {
+            pinEntry = { serviceKey: data.service.key, layerId: null, sublayerIndex: null };
+        } else if (type === 'layer') {
+            pinEntry = { serviceKey: data.service.key, layerId: data.layer.id, sublayerIndex: null };
+        } else if (type === 'sublayer') {
+            pinEntry = { serviceKey: data.service.key, layerId: data.layerId, sublayerIndex: data.sublayerIndex };
+        } else {
+            closeContextMenu();
+            return;
+        }
+        setPinnedItems(prev => {
+            const exists = prev.some(p =>
+                p.serviceKey === pinEntry.serviceKey &&
+                p.layerId === pinEntry.layerId &&
+                p.sublayerIndex === pinEntry.sublayerIndex
+            );
+            if (exists) {
+                return prev.filter(p =>
+                    !(p.serviceKey === pinEntry.serviceKey &&
+                      p.layerId === pinEntry.layerId &&
+                      p.sublayerIndex === pinEntry.sublayerIndex)
+                );
+            } else {
+                return [...prev, pinEntry];
+            }
+        });
+        closeContextMenu();
+    };
+
+    // Auto-load pinned items once services are loaded
+    useEffect(() => {
+        if (!isOpen || ARCGIS_SERVICES.length === 0 || pinnedItems.length === 0) return;
+        if (selectionsLoadedRef.current) return;
         selectionsLoadedRef.current = true;
 
-        (async () => {
-            try {
-                const saved = await loadLayerSelections(userEmail, 'ALL', dataSource);
-                if (!saved) return;
-                const { checkedLayerIds: savedChecked, checkedSublayerIds: savedSublayers } = saved;
+        const statesToExpand = new Set();
+        const foldersToExpand = new Set();
+        const servicesToExpand = new Set();
+        const layerIdsToCheck = {}; // { serviceKey: [layerId, ...] }
+        const sublayerIdsToCheck = {}; // { serviceKey: { layerId: [index, ...] } }
 
-                if (savedChecked && Object.keys(savedChecked).length > 0) {
-                    setCheckedLayerIds(prev => {
-                        const merged = { ...prev };
-                        Object.entries(savedChecked).forEach(([key, ids]) => {
-                            if (Array.isArray(ids) && ids.length > 0) {
-                                merged[key] = ids;
-                            }
-                        });
-                        return merged;
-                    });
-                }
-                if (savedSublayers && Object.keys(savedSublayers).length > 0) {
-                    setCheckedSublayerIds(prev => {
-                        const merged = { ...prev };
-                        Object.entries(savedSublayers).forEach(([key, val]) => {
-                            if (val && Object.keys(val).length > 0) {
-                                merged[key] = val;
-                            }
-                        });
-                        return merged;
-                    });
-                }
-
-                // Auto-expand states, folders and services that contain checked items
-                if (savedChecked) {
-                    const statesToExpand = new Set();
-                    const foldersToExpand = new Set();
-                    const servicesToExpand = new Set();
-                    STATE_CODES.forEach(code => {
-                        (ALL_SERVICES_BY_STATE[code] || []).forEach(service => {
-                            const ids = savedChecked[service.key];
-                            if (Array.isArray(ids) && ids.length > 0) {
-                                statesToExpand.add(code);
-                                foldersToExpand.add(service.folder || 'Root');
-                                servicesToExpand.add(service.key);
-                            }
-                        });
-                    });
-                    if (statesToExpand.size > 0) setExpandedStates(statesToExpand);
-                    if (foldersToExpand.size > 0) setExpandedFolders(foldersToExpand);
-                    if (servicesToExpand.size > 0) setExpandedServices(servicesToExpand);
-                }
-            } catch (err) {
-                console.warn('[ArcgisUploadPanel] Failed to load saved selections:', err);
-            }
-        })();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, userEmail, dataSource, ARCGIS_SERVICES.length]);
-
-    // Debounced save of layer selections to DB
-    const saveSelectionsToDb = useCallback(() => {
-        if (!userEmail || !selectionsLoadedRef.current) return;
-
-        // Check if there's anything to save
-        const hasChecked = Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0);
-        const hasSublayers = Object.values(checkedSublayerIds).some(obj => obj && Object.keys(obj).length > 0);
-
-        if (!hasChecked && !hasSublayers) return;
-
-        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = setTimeout(() => {
-            saveLayerSelections(userEmail, 'ALL', dataSource, {
-                checkedLayerIds,
-                checkedSublayerIds,
+        pinnedItems.forEach(pin => {
+            // Find the service across all states
+            let foundService = null;
+            let foundState = null;
+            STATE_CODES.forEach(code => {
+                (ALL_SERVICES_BY_STATE[code] || []).forEach(s => {
+                    if (s.key === pin.serviceKey) { foundService = s; foundState = code; }
+                });
             });
-        }, 1000);
-    }, [userEmail, dataSource, checkedLayerIds, checkedSublayerIds]);
+            if (!foundService) return;
 
-    useEffect(() => {
-        saveSelectionsToDb();
-        return () => {
-            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        };
-    }, [saveSelectionsToDb]);
+            statesToExpand.add(foundState);
+            foldersToExpand.add(foundService.folder || 'Root');
+            servicesToExpand.add(pin.serviceKey);
+
+            if (pin.layerId != null) {
+                if (!layerIdsToCheck[pin.serviceKey]) layerIdsToCheck[pin.serviceKey] = [];
+                if (!layerIdsToCheck[pin.serviceKey].includes(pin.layerId)) {
+                    layerIdsToCheck[pin.serviceKey].push(pin.layerId);
+                }
+            }
+            if (pin.sublayerIndex != null && pin.layerId != null) {
+                if (!sublayerIdsToCheck[pin.serviceKey]) sublayerIdsToCheck[pin.serviceKey] = {};
+                if (!sublayerIdsToCheck[pin.serviceKey][pin.layerId]) sublayerIdsToCheck[pin.serviceKey][pin.layerId] = [];
+                sublayerIdsToCheck[pin.serviceKey][pin.layerId].push(pin.sublayerIndex);
+            }
+        });
+
+        if (statesToExpand.size > 0) setExpandedStates(statesToExpand);
+        if (foldersToExpand.size > 0) setExpandedFolders(foldersToExpand);
+        if (servicesToExpand.size > 0) setExpandedServices(servicesToExpand);
+
+        if (Object.keys(layerIdsToCheck).length > 0) {
+            setCheckedLayerIds(prev => {
+                const merged = { ...prev };
+                Object.entries(layerIdsToCheck).forEach(([key, ids]) => {
+                    merged[key] = [...new Set([...(merged[key] || []), ...ids])];
+                });
+                return merged;
+            });
+        }
+        if (Object.keys(sublayerIdsToCheck).length > 0) {
+            setCheckedSublayerIds(prev => {
+                const merged = { ...prev };
+                Object.entries(sublayerIdsToCheck).forEach(([sKey, layers]) => {
+                    if (!merged[sKey]) merged[sKey] = {};
+                    Object.entries(layers).forEach(([lid, indices]) => {
+                        merged[sKey][lid] = [...new Set([...(merged[sKey][lid] || []), ...indices])];
+                    });
+                });
+                return merged;
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, ARCGIS_SERVICES.length]);
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
     // NOTE: Disabled since states are now all loaded together as top-level folders
@@ -1391,6 +1500,7 @@ function ArcgisUploadPanel({
                                     display: 'flex', alignItems: 'center', gap: 4,
                                     marginBottom: 3, color: '#666', minHeight: '18px'
                                 }}
+                                onContextMenu={(e) => handleContextMenu(e, 'sublayer', { service, layerId: node.id, sublayerIndex: index })}
                             >
                                 <input
                                     type="checkbox"
@@ -1907,7 +2017,7 @@ function ArcgisUploadPanel({
                                                         onEditingDone={() => setRenamingItem(null)}
                                                     />
                                                 </span>
-                                            </div>
+                                                            </div>
                                             {expandedServices.has(service.key) && (
                                                 <div className="tree-children">
                                                     <ul className="tree-children" style={{ listStyle: "none" }}>
@@ -1952,10 +2062,23 @@ function ArcgisUploadPanel({
                                 {dataSource === 'database' && (
                                     <button onClick={handleContextDelete}>Delete</button>
                                 )}
+                                <button onClick={handleTogglePin}>
+                                    {isPinned(contextMenu.data.service.key) ? 'Unpin' : 'Pin (Auto-load)'}
+                                </button>
                             </>
                         )}
                         {contextMenu.type === 'layer' && (
-                            <button onClick={handleContextLearnMore}>Learn More</button>
+                            <>
+                                <button onClick={handleContextLearnMore}>Learn More</button>
+                                <button onClick={handleTogglePin}>
+                                    {isPinned(contextMenu.data.service.key, contextMenu.data.layer.id) ? 'Unpin' : 'Pin (Auto-load)'}
+                                </button>
+                            </>
+                        )}
+                        {contextMenu.type === 'sublayer' && (
+                            <button onClick={handleTogglePin}>
+                                {isPinned(contextMenu.data.service.key, contextMenu.data.layerId, contextMenu.data.sublayerIndex) ? 'Unpin' : 'Pin (Auto-load)'}
+                            </button>
                         )}
                     </div>
                 )}
