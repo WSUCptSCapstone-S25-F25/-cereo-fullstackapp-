@@ -751,6 +751,44 @@ const Content1 = (props) => {
           'line-width': 1,
         },
       });
+
+      // Click popup for Hydrological Boundaries (vector-tileset)
+      map.on('click', 'vector-tileset', (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ['vector-tileset'] });
+        if (!features.length) return;
+        const feature = features[0];
+        new mapboxgl.Popup({ offset: 30 })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<ul><strong>GNIS Name: </strong>${feature.properties.GNIS_Name || 'N/A'}</ul>` +
+            `<ul><strong>Object ID: </strong>${feature.properties.OBJECTID || 'N/A'}</ul>` +
+            `<ul><strong>Length in KM: </strong>${feature.properties.LengthKM || 'N/A'}</ul>` +
+            `<ul><strong>GNIS ID: </strong>${feature.properties.GNIS_ID || 'N/A'}</ul>`
+          )
+          .addTo(map);
+      });
+      map.on('mouseenter', 'vector-tileset', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'vector-tileset', () => { map.getCanvas().style.cursor = ''; });
+
+      // Click popup for City Limits (urban-areas-fill)
+      map.on('click', 'urban-areas-fill', (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ['urban-areas-fill'] });
+        if (!features.length) return;
+        const feature = features[0];
+        new mapboxgl.Popup({ offset: 30 })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<h3><strong>${feature.properties.CITY_NM || 'N/A'}</strong></h3>` +
+            `<ul><strong>OBJECTID:</strong> ${feature.properties.OBJECTID || 'N/A'}</ul>` +
+            `<ul><strong>UGA_NM:</strong> ${feature.properties.UGA_NM || 'N/A'}</ul>` +
+            `<ul><strong>COUNTY_NM:</strong> ${feature.properties.COUNTY_NM || 'N/A'}</ul>` +
+            `<ul><strong>GMA:</strong> ${feature.properties.GMA || 'N/A'}</ul>` +
+            `<ul><strong>INCORP:</strong> ${feature.properties.INCORP || 'N/A'}</ul>`
+          )
+          .addTo(map);
+      });
+      map.on('mouseenter', 'urban-areas-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'urban-areas-fill', () => { map.getCanvas().style.cursor = ''; });
     });
 
     return () => {
