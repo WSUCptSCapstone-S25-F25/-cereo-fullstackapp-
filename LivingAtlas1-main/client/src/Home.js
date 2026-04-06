@@ -17,7 +17,8 @@ import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { faBell } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faMap } from '@fortawesome/free-solid-svg-icons';
+import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
 import FormModal from './FormModal';
 
@@ -129,6 +130,9 @@ function Home(props) {
     };
 
     const getMapboxMap = () => window.atlasMapInstance;
+
+    // Basemap switcher state
+    const [isBasemapOpen, setIsBasemapOpen] = useState(false);
 
     const addArcgisLayer = (layerIds = checkedArcgisLayerIds) => {
         const map = window.atlasMapInstance;
@@ -315,6 +319,22 @@ function Home(props) {
                     mapInstance={getMapboxMap}
                     arcgisLayerAdded={arcgisLayerAdded}
                     setArcgisLayerAdded={setArcgisLayerAdded}
+                />
+
+                {/* Basemap Switcher Button */}
+                <button
+                    className="left-sidebar-basemap-button"
+                    onClick={() => setIsBasemapOpen(v => !v)}
+                    title="Change Basemap"
+                >
+                    <FontAwesomeIcon icon={faMap} />
+                </button>
+
+                {/* Basemap Switcher Panel */}
+                <BasemapSwitcher
+                    isOpen={isBasemapOpen}
+                    onClose={() => setIsBasemapOpen(false)}
+                    mapInstance={getMapboxMap}
                 />
 
                 {/* Layers Button */}
