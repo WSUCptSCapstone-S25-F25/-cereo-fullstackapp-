@@ -58,9 +58,9 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
         type: 'fill',
         source: sourceId,
         paint: {
-            'fill-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.25)', 'rgba(0,0,0,0)'],
-            'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 1, 0],
-            'fill-outline-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.8)', 'rgba(0,0,0,0)']
+            'fill-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.35)', 'rgba(25, 118, 210, 0.15)'],
+            'fill-opacity': 1,
+            'fill-outline-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.8)', 'rgba(25, 118, 210, 0.5)']
         },
         filter: ['==', '$type', 'Polygon']
     });
@@ -71,8 +71,8 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
         type: 'line',
         source: sourceId,
         paint: {
-            'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.8)', 'rgba(0,0,0,0)'],
-            'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 4, 8]
+            'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.9)', 'rgba(25, 118, 210, 0.6)'],
+            'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 4, 2]
         },
         filter: ['==', '$type', 'LineString']
     });
@@ -83,10 +83,10 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
         type: 'circle',
         source: sourceId,
         paint: {
-            'circle-radius': ['case', ['boolean', ['feature-state', 'hover'], false], 8, 12],
-            'circle-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.5)', 'rgba(0,0,0,0)'],
-            'circle-stroke-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.9)', 'rgba(0,0,0,0)'],
-            'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2, 0]
+            'circle-radius': ['case', ['boolean', ['feature-state', 'hover'], false], 8, 5],
+            'circle-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.5)', 'rgba(25, 118, 210, 0.3)'],
+            'circle-stroke-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.9)', 'rgba(25, 118, 210, 0.6)'],
+            'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2, 1]
         },
         filter: ['==', '$type', 'Point']
     });
