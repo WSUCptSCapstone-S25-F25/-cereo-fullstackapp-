@@ -48,11 +48,11 @@ function Home(props) {
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v5');
+        return !localStorage.getItem('changelog_seen_v6');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v5', 'true');
+        localStorage.setItem('changelog_seen_v6', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -474,6 +474,13 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/5/2026</h3>
+                    <p>Added a new Map Style panel in the left sidebar, so you can switch basemaps directly on the map page.</p>
+                    <p>Expanded the basemap list with more options, and each item now uses the exact style id as its label.</p>
+                    <p>Hydrological Boundaries and City Limits are now clickable and open a popup with basic attributes.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/4/2026</h3>
                     <p>The DB/Local data source toggle was changed from two buttons to a compact switch control in the toolbar.</p>
                     <p>The Update button is now an icon-only square button with a spinning animation while updating.</p>
