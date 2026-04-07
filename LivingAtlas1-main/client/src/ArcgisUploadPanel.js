@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
@@ -213,14 +214,34 @@ function ArcgisUploadPanel({
         showFinishedMessage
     } = useArcgisLoadingMessages();
 
+    // Whether any map layer is currently loading (for spinner overlay)
+    const [isMapLayerLoading, setIsMapLayerLoading] = useState(false);
+    const [mapContainerEl, setMapContainerEl] = useState(null);
+
+    // Keep map container element reference in sync
+    useEffect(() => {
+        const map = mapInstance && mapInstance();
+        if (map && map.getContainer) {
+            const container = map.getContainer();
+            if (container && container !== mapContainerEl) {
+                container.style.position = 'relative';
+                setMapContainerEl(container);
+            }
+        }
+    });
+
     // Wrapped functions to track loading states
     const addLoadingMessage = (id, text) => {
         loadingStates.current[id] = true;
+        setIsMapLayerLoading(true);
         originalAddLoadingMessage(id, text);
     };
 
     const removeLoadingMessage = (id) => {
         loadingStates.current[id] = false;
+        // Check if any layer is still loading
+        const stillLoading = Object.values(loadingStates.current).some(v => v === true);
+        if (!stillLoading) setIsMapLayerLoading(false);
         originalRemoveLoadingMessage(id);
     };
 
@@ -350,6 +371,7 @@ function ArcgisUploadPanel({
         setSearchResult(null);
         prevCheckedLayerIds.current = {};
         loadingStates.current = {};
+        setIsMapLayerLoading(false);
         selectionsLoadedRef.current = false;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dataSource, ARCGIS_SERVICES.length]); // Only reset when datasource changes
@@ -616,6 +638,7 @@ function ArcgisUploadPanel({
     useEffect(() => {
         if (!isOpen) {
             loadingStates.current = {};
+            setIsMapLayerLoading(false);
         }
     }, [isOpen]);
 
@@ -1221,64 +1244,41 @@ function ArcgisUploadPanel({
                                     }
                                 });
 
-                                // Add loading/finished message handling for sublayers
-                                let tilesLoaded = false;
-                                let renderedAfterTiles = false;
-                                let finishedTimeout = null;
+                                // Detect when sublayer tiles are fully loaded and rendered using 'idle' event
+                                const onIdle = () => {
+                                    if (!map.getLayer(sublayerLayerId)) { map.off('idle', onIdle); return; }
+                                    if (!map.isSourceLoaded(sublayerSourceId)) return;
+                                    map.off('idle', onIdle);
 
-                                const onTilesLoaded = (e) => {
-                                    if (e.sourceId === sublayerSourceId && map.isSourceLoaded(sublayerSourceId)) {
-                                        tilesLoaded = true;
-                                    }
-                                };
+                                    const sublayerMsgId = `${getLoadingMsgId(service, layer)}-sub-${sublayerIndex}`;
+                                    removeLoadingMessage(sublayerMsgId);
+                                    showFinishedMessage(sublayerMsgId, `${legendItem.label} loaded`);
 
-                                const onRender = () => {
-                                    if (tilesLoaded && map.getLayer(sublayerLayerId)) {
-                                        if (!renderedAfterTiles) {
-                                            renderedAfterTiles = true;
-                                            finishedTimeout = setTimeout(() => {
-                                                const sublayerMsgId = `${getLoadingMsgId(service, layer)}-sub-${sublayerIndex}`;
-                                                removeLoadingMessage(sublayerMsgId);
-                                                showFinishedMessage(sublayerMsgId, `${legendItem.label} loaded`);
-                                                
-                                                            // Check if this was the last sublayer to finish loading
-                                                const allSublayersFinished = checkedSublayers.every(subIdx => {
-                                                    const subMsgId = `${getLoadingMsgId(service, layer)}-sub-${subIdx}`;
-                                                    return !loadingStates.current[subMsgId];
-                                                });
-                                                
-                                                // If all sublayers are finished, remove the layer-level loading message
-                                                if (allSublayersFinished) {
-                                                    removeLoadingMessage(getLoadingMsgId(service, layer));
-                                                    showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
-                                                    
-                                                    // Also check if all layers for this service have finished loading
-                                                    const allServiceLayersFinished = currChecked.every(layerId => {
-                                                        const layerMsgId = getLoadingMsgId(service, layers.find(l => l.id === layerId));
-                                                        return !loadingStates.current[layerMsgId];
-                                                    });
-                                                    
-                                                    // Remove the "All layers" message if all individual layers are done
-                                                    if (allServiceLayersFinished && currChecked.length > 0) {
-                                                        const allLayersMessageId = getLoadingMsgId(service, null);
-                                                        // Only remove if it's currently loading
-                                                        if (loadingStates.current[allLayersMessageId]) {
-                                                            removeLoadingMessage(allLayersMessageId);
-                                                            showFinishedMessage(allLayersMessageId, getLoadingMsgText(service, null, true));
-                                                        }
-                                                    }
-                                                }
-                                                
-                                                map.off('sourcedata', onTilesLoaded);
-                                                map.off('render', onRender);
-                                                if (finishedTimeout) clearTimeout(finishedTimeout);
-                                            }, 500);
+                                    const allSublayersFinished = checkedSublayers.every(subIdx => {
+                                        const subMsgId = `${getLoadingMsgId(service, layer)}-sub-${subIdx}`;
+                                        return !loadingStates.current[subMsgId];
+                                    });
+
+                                    if (allSublayersFinished) {
+                                        removeLoadingMessage(getLoadingMsgId(service, layer));
+                                        showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
+
+                                        const allServiceLayersFinished = currChecked.every(layerId => {
+                                            const layerMsgId = getLoadingMsgId(service, layers.find(l => l.id === layerId));
+                                            return !loadingStates.current[layerMsgId];
+                                        });
+
+                                        if (allServiceLayersFinished && currChecked.length > 0) {
+                                            const allLayersMessageId = getLoadingMsgId(service, null);
+                                            if (loadingStates.current[allLayersMessageId]) {
+                                                removeLoadingMessage(allLayersMessageId);
+                                                showFinishedMessage(allLayersMessageId, getLoadingMsgText(service, null, true));
+                                            }
                                         }
                                     }
                                 };
 
-                                map.on('sourcedata', onTilesLoaded);
-                                map.on('render', onRender);
+                                map.on('idle', onIdle);
                             });
                         }
                     }
@@ -1308,50 +1308,30 @@ function ArcgisUploadPanel({
                         }
                     });
 
-                    let tilesLoaded = false;
-                    let renderedAfterTiles = false;
-                    let finishedTimeout = null;
+                    // Detect when tiles are fully loaded and rendered using 'idle' event
+                    const onIdle = () => {
+                        if (!map.getLayer(rasterLayerId)) { map.off('idle', onIdle); return; }
+                        if (!map.isSourceLoaded(rasterSourceId)) return;
+                        map.off('idle', onIdle);
 
-                    const onTilesLoaded = (e) => {
-                        if (e.sourceId === rasterSourceId && map.isSourceLoaded(rasterSourceId)) {
-                            tilesLoaded = true;
-                        }
-                    };
+                        removeLoadingMessage(getLoadingMsgId(service, layer));
+                        showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
 
-                    const onRender = () => {
-                        if (tilesLoaded && map.getLayer(rasterLayerId)) {
-                            if (!renderedAfterTiles) {
-                                renderedAfterTiles = true;
-                                finishedTimeout = setTimeout(() => {
-                                    removeLoadingMessage(getLoadingMsgId(service, layer));
-                                    showFinishedMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer, true));
-                                    
-                                    // Check if all layers for this service have finished loading
-                                    const allServiceLayersFinished = currChecked.every(layerId => {
-                                        const layerMsgId = getLoadingMsgId(service, layers.find(l => l.id === layerId));
-                                        return !loadingStates.current[layerMsgId];
-                                    });
-                                    
-                                    // Remove the "All layers" message if all individual layers are done
-                                    if (allServiceLayersFinished && currChecked.length > 0) {
-                                        const allLayersMessageId = getLoadingMsgId(service, null);
-                                        // Only remove if it's currently loading
-                                        if (loadingStates.current[allLayersMessageId]) {
-                                            removeLoadingMessage(allLayersMessageId);
-                                            showFinishedMessage(allLayersMessageId, getLoadingMsgText(service, null, true));
-                                        }
-                                    }
-                                    
-                                    map.off('sourcedata', onTilesLoaded);
-                                    map.off('render', onRender);
-                                    if (finishedTimeout) clearTimeout(finishedTimeout);
-                                }, 500);
+                        const allServiceLayersFinished = currChecked.every(layerId => {
+                            const layerMsgId = getLoadingMsgId(service, layers.find(l => l.id === layerId));
+                            return !loadingStates.current[layerMsgId];
+                        });
+
+                        if (allServiceLayersFinished && currChecked.length > 0) {
+                            const allLayersMessageId = getLoadingMsgId(service, null);
+                            if (loadingStates.current[allLayersMessageId]) {
+                                removeLoadingMessage(allLayersMessageId);
+                                showFinishedMessage(allLayersMessageId, getLoadingMsgText(service, null, true));
                             }
                         }
                     };
 
-                    map.on('sourcedata', onTilesLoaded);
-                    map.on('render', onRender);
+                    map.on('idle', onIdle);
                 }
             });
 
@@ -1874,6 +1854,20 @@ function ArcgisUploadPanel({
     // JSX return that renders the upload panel UI 
     return (
         <>
+            {/* Map loading spinner overlay */}
+            {isMapLayerLoading && mapContainerEl && createPortal(
+                <div className="arcgis-map-loading-overlay">
+                    <div className="arcgis-map-spinner">
+                        <div className="arcgis-spinner-dots">
+                            {[...Array(8)].map((_, i) => (
+                                <div key={i} className="arcgis-spinner-dot" style={{ '--dot-index': i }} />
+                            ))}
+                        </div>
+                        <div className="arcgis-spinner-text">loading...</div>
+                    </div>
+                </div>,
+                mapContainerEl
+            )}
             {/* Upload Panel */}
             <div className="upload-panel" onContextMenu={e => e.preventDefault()}>
                 {/* Only show search bar and services when not loading database data */}

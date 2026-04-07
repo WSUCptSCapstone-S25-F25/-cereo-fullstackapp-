@@ -465,6 +465,61 @@
     background: #f0fff4;
 }
 
+/* --- Map loading spinner overlay --- */
+.arcgis-map-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.arcgis-map-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.arcgis-spinner-dots {
+    position: relative;
+    width: 64px;
+    height: 64px;
+}
+
+.arcgis-spinner-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #555;
+    top: 50%;
+    left: 50%;
+    margin: -6px 0 0 -6px;
+    transform: rotate(calc(var(--dot-index) * 45deg)) translateY(-24px);
+    opacity: calc(1 - var(--dot-index) * 0.1);
+    animation: arcgis-spinner-fade 0.8s linear infinite;
+    animation-delay: calc(var(--dot-index) * 0.1s);
+}
+
+@keyframes arcgis-spinner-fade {
+    0%, 100% { opacity: 0.25; }
+    12.5% { opacity: 1; }
+}
+
+.arcgis-spinner-text {
+    font-size: 16px;
+    color: #555;
+    font-weight: 400;
+    letter-spacing: 1px;
+}
+
 .upload-panel-sticky-toolbar {
     position: sticky;
     top: 0;
