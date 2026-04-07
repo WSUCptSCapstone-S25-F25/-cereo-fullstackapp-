@@ -20,7 +20,9 @@ export async function showArcgisPopup(e, layer) {
         layerMeta = {};
     }
     const layerName = layerMeta.name || layer.name || "Layer";
-    const layerDescription = layerMeta.description || "";
+    const rawDescription = layerMeta.description || "";
+    // Strip HTML tags to prevent breaking popup DOM when expanding
+    const layerDescription = rawDescription.replace(/<[^>]*>/g, '').trim();
 
     // Collapse logic for long descriptions
     const descShort = layerDescription.length > 120 ? layerDescription.slice(0, 120) + "..." : layerDescription;
@@ -28,11 +30,11 @@ export async function showArcgisPopup(e, layer) {
     const descId = `desc-${layer.id}-${feature.properties.OBJECTID || Math.floor(Math.random()*100000)}`;
 
     let html = `
-  <div>
-    <div style="display:flex;justify-content:space-between;align-items:center;">
+  <div class="arcgis-popup-wrapper">
+    <div class="arcgis-popup-header">
       <h3 style="margin:0;font-size:1.1em;">${layerName}</h3>
-      <button onclick="this.closest('.mapboxgl-popup').remove()" style="background:none;border:none;font-size:1.3em;cursor:pointer;">&times;</button>
     </div>
+    <div class="arcgis-popup-body">
     ${layerDescription ? `
       <div style="font-size:0.95em;color:#444;margin-bottom:6px;">
         <div id="${descId}-container" style="display:inline;">
@@ -51,6 +53,7 @@ export async function showArcgisPopup(e, layer) {
         ).join('')}
       </tbody>
     </table>
+    </div>
   </div>
 `;
 
@@ -86,11 +89,7 @@ export async function showArcgisPopup(e, layer) {
             let expanded = false;
             function updateDesc() {
                 if (descSpan) {
-                    if (/<[a-z][\s\S]*>/i.test(layerDescription)) {
-                        descSpan.innerHTML = expanded ? layerDescription : descShort;
-                    } else {
-                        descSpan.textContent = expanded ? layerDescription : descShort;
-                    }
+                    descSpan.textContent = expanded ? layerDescription : descShort;
                 }
                 if (toggleLink) toggleLink.textContent = expanded ? "Show less" : "Show more";
             }
