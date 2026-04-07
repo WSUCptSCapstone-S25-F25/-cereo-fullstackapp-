@@ -178,3 +178,37 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
     map.on('mousemove', circleLayerId, handleCircleMouseMove);
     map.on('mouseleave', circleLayerId, handleCircleMouseLeave);
 }
+/**
+ * Apply an OBJECTID-based filter to existing vector layers.
+ * Only features whose OBJECTID is in objectIds will be shown.
+ */
+export function updateArcgisVectorLayerFilter(map, serviceKey, layerId, objectIds) {
+    const baseId = `arcgis-vector-layer-${serviceKey}-${layerId}`;
+    const fillId = baseId;
+    const lineId = `${baseId}-outline`;
+    const circleId = `${baseId}-circle`;
+    if (!objectIds || objectIds.length === 0) {
+        const hide = ['==', ['literal', 1], ['literal', 0]];
+        if (map.getLayer(fillId)) map.setFilter(fillId, hide);
+        if (map.getLayer(lineId)) map.setFilter(lineId, hide);
+        if (map.getLayer(circleId)) map.setFilter(circleId, hide);
+        return;
+    }
+    const objFilter = ['in', ['get', 'OBJECTID'], ['literal', objectIds]];
+    if (map.getLayer(fillId)) map.setFilter(fillId, ['all', ['==', '$type', 'Polygon'], objFilter]);
+    if (map.getLayer(lineId)) map.setFilter(lineId, ['all', ['==', '$type', 'LineString'], objFilter]);
+    if (map.getLayer(circleId)) map.setFilter(circleId, ['all', ['==', '$type', 'Point'], objFilter]);
+}
+
+/**
+ * Reset vector layer filters to default (show all features by geometry type).
+ */
+export function resetArcgisVectorLayerFilter(map, serviceKey, layerId) {
+    const baseId = `arcgis-vector-layer-${serviceKey}-${layerId}`;
+    const fillId = baseId;
+    const lineId = `${baseId}-outline`;
+    const circleId = `${baseId}-circle`;
+    if (map.getLayer(fillId)) map.setFilter(fillId, ['==', '$type', 'Polygon']);
+    if (map.getLayer(lineId)) map.setFilter(lineId, ['==', '$type', 'LineString']);
+    if (map.getLayer(circleId)) map.setFilter(circleId, ['==', '$type', 'Point']);
+}

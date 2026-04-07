@@ -1,5 +1,8 @@
 import mapboxgl from 'mapbox-gl';
 
+// Track all active ArcGIS popups for stacking offset
+const activePopups = [];
+
 /**
  * Show a popup for a feature from any ArcGIS service.
  * @param {Object} e - Mapbox event
@@ -51,10 +54,29 @@ export async function showArcgisPopup(e, layer) {
   </div>
 `;
 
-    const popup = new mapboxgl.Popup({ offset: 20, closeButton: true })
+    // Calculate stacking offset: each successive popup shifts upper-right
+    const stackIndex = activePopups.length;
+    const stackOffset = 10; // px per popup
+    const offsetX = 20 - stackIndex * stackOffset;
+    const offsetY = 20 + stackIndex * stackOffset;
+
+    const popup = new mapboxgl.Popup({ offset: [offsetX, offsetY], closeButton: true, anchor: 'bottom' })
       .setLngLat(e.lngLat)
       .setHTML(html)
       .addTo(e.target._map || e.target);
+
+    // Track this popup and set z-index for stacking order
+    activePopups.push(popup);
+    const popupEl = popup.getElement();
+    if (popupEl) {
+        popupEl.style.zIndex = 1000 + stackIndex;
+        popupEl.classList.add('arcgis-stacked-popup');
+    }
+
+    popup.on('close', () => {
+        const idx = activePopups.indexOf(popup);
+        if (idx !== -1) activePopups.splice(idx, 1);
+    });
 
     // Add collapse/expand logic after popup is added to DOM
     if (hasLongDesc) {
