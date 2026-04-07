@@ -422,7 +422,6 @@ const Content1 = (props) => {
     props.cardPanelWidth,
     props.isUploadPanelOpen,
     props.isRemovedPanelOpen,
-    props.isLayerPanelOpen,
     props.isModalOpen,
     props.isSidebarOpen
   ]);
@@ -809,7 +808,7 @@ const Content1 = (props) => {
   const leftSidebarWidth = props.isSidebarOpen ? 300 : 60;
   const leftPanelWidth = (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)
     ? 420
-    : (props.isLayerPanelOpen ? 350 : 0);
+    : 0;
   const mapContainerLeft = leftSidebarWidth + leftPanelWidth;
   const mapContainerRight = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
 

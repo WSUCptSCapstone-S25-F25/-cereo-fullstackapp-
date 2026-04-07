@@ -3,20 +3,17 @@ import Header from './Header';
 import Main from './Main';
 import Content2 from './Content2';
 import Content1 from './Content1';
-import LayerPanel from './LayerPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
-import { faUpload, faEarthAmericas, faClone } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faClone } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
 import './Sidebars.css';
-import './LayerPanel.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
 import RemovedServicesPanel from './RemovedServicesPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
-import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faLayerGroup, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { faBell, faMap } from '@fortawesome/free-solid-svg-icons';
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
@@ -46,7 +43,6 @@ function Home(props) {
     const [arcgisLayers, setArcgisLayers] = useState([]);
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
-    const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
         return !localStorage.getItem('changelog_seen_v6');
     });
@@ -292,9 +288,9 @@ function Home(props) {
                 <button
                     className="left-sidebar-gis-button"
                     onClick={() => setIsUploadPanelOpen(v => !v)}
-                    title="Browse GIS Services"
+                    title="Toggle Layers"
                 >
-                    <FontAwesomeIcon icon={faEarthAmericas} />
+                    <FontAwesomeIcon icon={faLayerGroup} />
                 </button>
 
                 {/* Upload Button (blocked if not logged in) */}
@@ -338,15 +334,6 @@ function Home(props) {
                     onClose={() => setIsBasemapOpen(false)}
                     mapInstance={getMapboxMap}
                 />
-
-                {/* Layers Button */}
-                <button
-                    className="left-sidebar-layers-button"
-                    onClick={() => setIsLayerPanelOpen((prev) => !prev)}
-                    title="Toggle Layers"
-                >
-                    <FontAwesomeIcon icon={faLayerGroup} />
-                </button>
 
                 {/* Trash button*/}
                 <button
@@ -433,7 +420,6 @@ function Home(props) {
                 isSidebarOpen={isSidebarOpen}
                 isUploadPanelOpen={isUploadPanelOpen}
                 isRemovedPanelOpen={isRemovedPanelOpen}
-                isLayerPanelOpen={isLayerPanelOpen}
                 isModalOpen={isModalOpen}
                 selectedCardCoords={selectedCardCoords}
                 onMarkerCardSelect={setSelectedCardIdFromMap}
@@ -555,21 +541,6 @@ function Home(props) {
                 isLoggedIn={props.isLoggedIn}             /* <-- extra prop if needed */
             />
 
-            {/* Layer Panel */}
-            <LayerPanel
-                isOpen={isLayerPanelOpen}
-                onClose={() => setIsLayerPanelOpen(false)}
-                layerVisibility={layerVisibility}
-                areaVisibility={areaVisibility}
-                handleLayerCheckbox={handleCategoryLayerCheckbox}
-                handleAreaCheckbox={handleAreaCheckbox}
-                filterCondition={filterCondition}
-                setFilterCondition={setFilterCondition}
-                sortCondition={sortCondition}
-                setSortCondition={setSortCondition}
-                CategoryCondition={CategoryCondition}
-                setCategoryConditionCondition={setCategoryConditionCondition}
-            />
         </div>
     );
 }
