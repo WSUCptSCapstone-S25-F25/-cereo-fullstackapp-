@@ -7,9 +7,7 @@ function LayerPanel({
     isOpen,
     onClose,
     layerVisibility,
-    areaVisibility,
     handleLayerCheckbox,
-    handleAreaCheckbox,
     filterCondition,
     setFilterCondition,
     sortCondition,
@@ -144,35 +142,7 @@ function LayerPanel({
                         Places Cards
                     </label>
                 </div>
-                {/* Colored area checkboxes */}
-                <div>
-                    <strong>Filter by Spatial Area Category</strong>
-                    <label style={{ display: "block", marginBottom: 8, marginTop: 8 }}>
-                        <input
-                            type="checkbox"
-                            checked={areaVisibility.River}
-                            onChange={() => handleAreaCheckbox("River")}
-                        />{" "}
-                        Hydrological Boundaries
-                    </label>
-                    {/*
-                    <label style={{ display: "block", marginBottom: 8 }}>
-                        <input
-                            type="checkbox"
-                            checked={areaVisibility.Watershed}
-                            onChange={() => handleAreaCheckbox("Watershed")}
-                        />{" "}
-                        Watershed Area
-                    </label> */}
-                    <label style={{ display: "block", marginBottom: 8 }}>
-                        <input
-                            type="checkbox"
-                            checked={areaVisibility.Places}
-                            onChange={() => handleAreaCheckbox("Places")}
-                        />{" "}
-                        City Limits
-                    </label>
-                </div>
+
             </div>
             {/* <button onClick={addCustomFilter} className='custom-filter'>Add Custom filters</button> */}
             {/* New Custom Filter popup */}

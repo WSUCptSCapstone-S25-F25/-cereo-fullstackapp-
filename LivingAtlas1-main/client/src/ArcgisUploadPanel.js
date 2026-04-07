@@ -112,6 +112,13 @@ function getDescendantLeafLayers(node) {
     return result;
 }
 
+// Built-in (hardcoded) layers that are not from ArcGIS REST services
+const BUILTIN_LAYERS = [
+    { id: 'River', label: 'Hydrological Boundaries' },
+    { id: 'Places', label: 'City Limits' },
+];
+const BUILTIN_FOLDER_NAME = 'Built-in Layers';
+
 function ArcgisUploadPanel({
     isOpen,
     onClose,
@@ -119,6 +126,8 @@ function ArcgisUploadPanel({
     arcgisLayerAdded: propArcgisLayerAdded,
     setArcgisLayerAdded: setPropArcgisLayerAdded,
     isAdmin = false,
+    areaVisibility = {},
+    handleAreaCheckbox,
 }) {
     // Track selected state
     const [selectedState, setSelectedState] = useState('WA');
@@ -1930,6 +1939,41 @@ function ArcgisUploadPanel({
                             )}
                         </div>
                         <div className="upload-panel-folder-area">
+                        {/* Built-in Layers folder */}
+                        <div>
+                            <div
+                                className="upload-state-folder"
+                                onClick={() => {
+                                    setExpandedStates(prev => {
+                                        const newSet = new Set(prev);
+                                        if (newSet.has('__builtin__')) newSet.delete('__builtin__');
+                                        else newSet.add('__builtin__');
+                                        return newSet;
+                                    });
+                                }}
+                            >
+                                <span>
+                                    {expandedStates.has('__builtin__') ? '▼' : '►'} {BUILTIN_FOLDER_NAME}
+                                </span>
+                            </div>
+                            {expandedStates.has('__builtin__') && (
+                                <div className="upload-state-folder-content">
+                                    {BUILTIN_LAYERS.map(layer => (
+                                        <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
+                                            <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!areaVisibility[layer.id]}
+                                                    onChange={() => handleAreaCheckbox?.(layer.id)}
+                                                    style={{ marginRight: 4 }}
+                                                />
+                                                {layer.label}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                         {STATE_CODES.map(stateCode => {
                             const stateData = stateFoldersToShow[stateCode];
                             if (!stateData || stateData.folders.length === 0) return null;

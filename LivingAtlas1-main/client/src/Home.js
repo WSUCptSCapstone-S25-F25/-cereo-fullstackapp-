@@ -319,6 +319,8 @@ function Home(props) {
                     mapInstance={getMapboxMap}
                     arcgisLayerAdded={arcgisLayerAdded}
                     setArcgisLayerAdded={setArcgisLayerAdded}
+                    areaVisibility={areaVisibility}
+                    handleAreaCheckbox={handleAreaCheckbox}
                 />
 
                 {/* Basemap Switcher Button */}
