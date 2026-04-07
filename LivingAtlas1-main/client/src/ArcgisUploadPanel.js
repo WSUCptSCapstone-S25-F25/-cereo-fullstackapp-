@@ -2008,7 +2008,7 @@ function ArcgisUploadPanel({
                                                     {expandedServices.has(service.key) ? "▼" : "►"} 
                                                     <ArcgisRenameItem
                                                         value={service.label}
-                                                        displayValue={service.label.replace(/\s*\(MapServer\)$/i, '')}
+                                                        displayValue={service.label}
                                                         onSave={(newLabel) => handleServiceRename(service.key, newLabel)}
                                                         placeholder="Enter service name..."
                                                         isFolder={false}
