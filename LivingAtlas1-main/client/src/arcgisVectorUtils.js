@@ -15,7 +15,7 @@ const pinnedFeatures = {};
  * @param {Object} layer - Should include .id and .serviceUrl
  * @param {Function} showArcgisPopup
  */
-export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
+export function addArcgisVectorLayer(map, layer, showArcgisPopup, { minzoom, maxzoom } = {}) {
     const serviceKey = layer.serviceKey || '';
     const sourceId = `arcgis-vector-source-${serviceKey}-${layer.id}`;
     const fillLayerId = `arcgis-vector-layer-${serviceKey}-${layer.id}`;
@@ -57,6 +57,8 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
         id: fillLayerId,
         type: 'fill',
         source: sourceId,
+        ...(minzoom != null && { minzoom }),
+        ...(maxzoom != null && { maxzoom }),
         paint: {
             'fill-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.35)', 'rgba(25, 118, 210, 0.15)'],
             'fill-opacity': 1,
@@ -70,6 +72,8 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
         id: lineLayerId,
         type: 'line',
         source: sourceId,
+        ...(minzoom != null && { minzoom }),
+        ...(maxzoom != null && { maxzoom }),
         paint: {
             'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.9)', 'rgba(25, 118, 210, 0.6)'],
             'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 4, 2]
@@ -82,11 +86,13 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
         id: circleLayerId,
         type: 'circle',
         source: sourceId,
+        ...(minzoom != null && { minzoom }),
+        ...(maxzoom != null && { maxzoom }),
         paint: {
             'circle-radius': ['case', ['boolean', ['feature-state', 'hover'], false], 8, 5],
             'circle-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.5)', 'rgba(25, 118, 210, 0.3)'],
             'circle-stroke-color': ['case', ['boolean', ['feature-state', 'hover'], false], 'rgba(25, 118, 210, 0.9)', 'rgba(25, 118, 210, 0.6)'],
-            'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2, 1]
+            'circle-stroke-width': ['case', ['boolean', ['feature-state', 'hover'], false], 1.5, 0.5]
         },
         filter: ['==', '$type', 'Point']
     });
@@ -133,6 +139,10 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup) {
 
     // Define handlers
     const handleArcgisPopup = (e) => {
+        // Prevent duplicate popup when click hits multiple layers for the same feature
+        if (e.originalEvent._arcgisPopupHandled) return;
+        e.originalEvent._arcgisPopupHandled = true;
+
         const feature = e.features[0];
         if (feature) {
             pinFeature(feature.id);

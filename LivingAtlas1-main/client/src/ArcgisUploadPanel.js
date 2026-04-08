@@ -1166,7 +1166,8 @@ function ArcgisUploadPanel({
                     addArcgisVectorLayer(
                         map,
                         { ...layer, serviceKey: service.key, serviceUrl: service.url },
-                        showArcgisPopup
+                        showArcgisPopup,
+                        { minzoom: 6, maxzoom: 12 }
                     );
                     vectorAddedIds.add(id);
                 }
