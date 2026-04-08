@@ -897,7 +897,7 @@ function Content2(props) {
                                 title={props.isLoggedIn ? 'Show only favorited cards' : 'Log in to use favorites filter'}
                             >
                                 <FontAwesomeIcon icon={faStar} />
-                                <span>{showFavoritesOnly ? 'Favorites On' : 'Show Favorites'}</span>
+                                <span>{showFavoritesOnly ? 'Favorites On' : 'Favorites'}</span>
                             </button>
 
                             <button

@@ -1158,6 +1158,7 @@ function ArcgisUploadPanel({
                 if (map.getSource(sourceId)) map.removeSource(sourceId);
             });
 
+            const vectorAddedIds = new Set();
             toAdd.forEach(id => {
                 const layer = layers.find(l => l.id === id);
                 if (layer) {
@@ -1166,6 +1167,7 @@ function ArcgisUploadPanel({
                         { ...layer, serviceKey: service.key, serviceUrl: service.url },
                         showArcgisPopup
                     );
+                    vectorAddedIds.add(id);
                 }
             });
 
@@ -1344,8 +1346,11 @@ function ArcgisUploadPanel({
                 }
             });
 
-            // Update refs for next diff
-            prevCheckedLayerIds.current[service.key] = [...currChecked];
+            // Update refs for next diff — only mark IDs as processed if layer data was available,
+            // so that layers not yet in serviceLayers will be retried when data arrives
+            prevCheckedLayerIds.current[service.key] = currChecked.filter(id =>
+                vectorAddedIds.has(id) || prevChecked.includes(id)
+            );
             prevCheckedLayerIds.current[`${service.key}_sublayers`] = JSON.parse(JSON.stringify(serviceSublayers));
         });
         // eslint-disable-next-line
