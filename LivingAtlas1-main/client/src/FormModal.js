@@ -39,8 +39,10 @@ const FormModal = (props) => {
     });
 
     const [selectedFiles, setSelectedFiles] = useState([]);   // <-- multiple files
-    const [thumbnailFile, setThumbnailFile] = useState(null);
-    const [thumbnailPreview, setThumbnailPreview] = useState(null);
+    const [imageFiles, setImageFiles] = useState([]);         // multi-image upload
+    const [imagePreviews, setImagePreviews] = useState([]);
+    const imageInputRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const handleInputChange = (e) => {
         setFormData({
@@ -56,21 +58,47 @@ const FormModal = (props) => {
         for (let file of files) {
             if (file.size > MAX_FILE_SIZE) {
                 alert(`File "${file.name}" exceeds ${MAX_FILE_SIZE / 1024 / 1024} MB`);
-                return;
+                continue;
             }
             validFiles.push(file);
         }
-        setSelectedFiles(validFiles);
+        setSelectedFiles(prev => [...prev, ...validFiles]);
+        e.target.value = '';
     };
 
-    const handleThumbnailInput = (e) => {
-        const file = e.target.files[0];
-        if (file && ["image/png", "image/jpeg", "image/gif"].includes(file.type)) {
-            setThumbnailFile(file);
-            setThumbnailPreview(URL.createObjectURL(file));
-        } else {
-            alert("Invalid thumbnail format. Use PNG, JPG, or GIF.");
+    const removeFile = (index) => {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleImageInput = (e) => {
+        const files = Array.from(e.target.files);
+        const validImages = [];
+        const validTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+
+        for (let file of files) {
+            if (!validTypes.includes(file.type)) {
+                alert(`"${file.name}" is not a supported image format. Use PNG, JPG, GIF, or WebP.`);
+                continue;
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                alert(`Image "${file.name}" exceeds ${MAX_FILE_SIZE / 1024 / 1024} MB`);
+                continue;
+            }
+            validImages.push(file);
         }
+
+        const newPreviews = validImages.map(f => URL.createObjectURL(f));
+        setImageFiles(prev => [...prev, ...validImages]);
+        setImagePreviews(prev => [...prev, ...newPreviews]);
+        e.target.value = '';
+    };
+
+    const removeImage = (index) => {
+        setImageFiles(prev => prev.filter((_, i) => i !== index));
+        setImagePreviews(prev => {
+            URL.revokeObjectURL(prev[index]);
+            return prev.filter((_, i) => i !== index);
+        });
     };
 
     const validateForm = () => {
@@ -115,7 +143,13 @@ const FormModal = (props) => {
             });
         }
         
-        if (thumbnailFile) formData2.append('thumbnail', thumbnailFile);
+        // append multiple images
+        if (imageFiles.length > 0) {
+            formData2.append('thumbnail', imageFiles[0]); // first image as thumbnail
+            imageFiles.forEach((file) => {
+                formData2.append('images', file);
+            });
+        }
 
         console.log("Uploading FormData:", [...formData2.entries()]);
 
@@ -141,29 +175,94 @@ const FormModal = (props) => {
             return;
         }
 
+        // Hide the modal while selecting location
         setIsSelectingLocation(true);
 
-        map.once("click", (e) => {
+        const onMapClick = (e) => {
             const { lat, lng } = e.lngLat;
 
-            setFormData((prevData) => ({
-                ...prevData,
-                latitude: lat.toFixed(6),
-                longitude: lng.toFixed(6),
-            }));
-
+            // Remove previous temp marker if any
             if (selectLocationMarker.current) {
                 selectLocationMarker.current.remove();
             }
-            selectLocationMarker.current = new mapboxgl.Marker({ color: "red" }).setLngLat([lng, lat]).addTo(map);
-            setIsSelectingLocation(false);
-        });
+
+            // Create popup with confirm/cancel buttons
+            const popupContainer = document.createElement('div');
+            popupContainer.className = 'location-select-popup';
+            popupContainer.innerHTML = `
+                <div style="font-size:12px;margin-bottom:6px;color:#333;">
+                    ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button class="location-select-confirm">OK</button>
+                    <button class="location-select-cancel">Cancel</button>
+                </div>
+            `;
+
+            const popup = new mapboxgl.Popup({
+                closeButton: false,
+                closeOnClick: false,
+                offset: 25,
+                className: 'location-select-mapbox-popup',
+            }).setDOMContent(popupContainer);
+
+            const marker = new mapboxgl.Marker({ color: "red" })
+                .setLngLat([lng, lat])
+                .setPopup(popup)
+                .addTo(map);
+
+            marker.togglePopup(); // open immediately
+            selectLocationMarker.current = marker;
+
+            // Confirm: fill form, close popup, show modal
+            popupContainer.querySelector('.location-select-confirm').addEventListener('click', () => {
+                setFormData((prevData) => ({
+                    ...prevData,
+                    latitude: lat.toFixed(6),
+                    longitude: lng.toFixed(6),
+                }));
+                marker.remove();
+                selectLocationMarker.current = null;
+                setIsSelectingLocation(false);
+                map.off('click', onMapClick);
+            });
+
+            // Cancel: just remove marker, let user click again
+            popupContainer.querySelector('.location-select-cancel').addEventListener('click', () => {
+                marker.remove();
+                selectLocationMarker.current = null;
+            });
+        };
+
+        map.on('click', onMapClick);
+
+        // Store ref so we can clean up
+        selectLocationMarker.current = { _onMapClick: onMapClick, remove: () => {} };
+    };
+
+    const cancelSelectLocation = () => {
+        const map = window.atlasMapInstance;
+        if (map && selectLocationMarker.current) {
+            if (selectLocationMarker.current._onMapClick) {
+                map.off('click', selectLocationMarker.current._onMapClick);
+            }
+            selectLocationMarker.current.remove();
+            selectLocationMarker.current = null;
+        }
+        setIsSelectingLocation(false);
     };
 
     return (
         <div>
+            {/* Floating hint when selecting location */}
+            {isSelectingLocation && (
+                <div className="location-select-hint">
+                    <span>Click on the map to select a location</span>
+                    <button type="button" onClick={cancelSelectLocation}>Cancel</button>
+                </div>
+            )}
             <Modal
-                isOpen={isModalOpen}
+                isOpen={isModalOpen && !isSelectingLocation}
                 onRequestClose={handleCloseModal}
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
@@ -213,12 +312,6 @@ const FormModal = (props) => {
                         Select Location
                     </button>
 
-                    {isSelectingLocation && (
-                        <span className="select-location-message">
-                            Click on the map to select location.
-                        </span>
-                    )}
-
                     <label>Latitude (required):</label>
                     <input type="text" name="latitude" value={formData.latitude} onChange={handleInputChange} required />
 
@@ -228,12 +321,60 @@ const FormModal = (props) => {
                     <label>Tags (comma-separated):</label>
                     <input type="text" name="tags" value={formData.tags} onChange={handleInputChange} />
 
-                    <label>Thumbnail Image:</label>
-                    <input type="file" accept="image/*" onChange={handleThumbnailInput} />
-                    {thumbnailPreview && <img src={thumbnailPreview} alt="Preview" style={{ width: "100px", marginBottom: "10px" }} />}
+                    <label>Images:</label>
+                    <div
+                        className="form-modal-image-upload-area"
+                        onClick={() => imageInputRef.current?.click()}
+                    >
+                        <p>Click or drag to add images (PNG, JPG, GIF, WebP)</p>
+                        <span className="form-modal-image-upload-btn">Choose Images</span>
+                        <input
+                            ref={imageInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/gif,image/webp"
+                            multiple
+                            onChange={handleImageInput}
+                        />
+                    </div>
+                    {imagePreviews.length > 0 && (
+                        <div className="form-modal-image-previews">
+                            {imagePreviews.map((src, i) => (
+                                <div key={i} className="form-modal-image-preview-item">
+                                    <img src={src} alt={`preview ${i + 1}`} />
+                                    <button
+                                        type="button"
+                                        className="form-modal-image-preview-remove"
+                                        onClick={() => removeImage(i)}
+                                    >&times;</button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     <label>Upload Files:</label>
-                    <input type="file" multiple onChange={handleFileInput} />
+                    <div
+                        className="form-modal-file-upload-area"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <p>Click to add files (max 5 MB each)</p>
+                        <span className="form-modal-image-upload-btn">Choose Files</span>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            onChange={handleFileInput}
+                        />
+                    </div>
+                    {selectedFiles.length > 0 && (
+                        <div className="form-modal-file-list">
+                            {selectedFiles.map((file, i) => (
+                                <div key={i} className="form-modal-file-item">
+                                    <span>{file.name}</span>
+                                    <button type="button" onClick={() => removeFile(i)}>&times;</button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
                         <button type="submit">Submit</button>
