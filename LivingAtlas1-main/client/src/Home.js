@@ -444,6 +444,16 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/7/2026</h3>
+                    <p>Improved layer popup appearance and stacking behavior — when multiple popups are open at the same time, they now stack with visible offsets and distinct border colors so each one stays readable.</p>
+                    <p>The "Add Card" form is now accessible directly from the card panel toolbar via the "+" button, instead of a separate page.</p>
+                    <p>A "Tags" button was added to the card panel toolbar, allowing you to filter cards by tag right inside the card list.</p>
+                    <p>The card upload form now supports adding multiple images and multiple files at once, and includes a "Select Location" button that lets you pick coordinates by clicking on the map. The same feature is also available when editing a card through Learn More.</p>
+                    <p>The standalone Layer Panel was removed. Built-in layers (Hydrological Boundaries, City Limits) are now inside the ArcGIS Layers panel's "Built-in Layers" section, and the panel icon was updated.</p>
+                    <p>Vector hover overlays now match the zoom range of raster tile layers, so they appear and disappear together as you zoom in and out.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/5/2026</h3>
                     <p>Added a new Map Style panel in the left sidebar, so you can switch basemaps directly on the map page.</p>
                     <p>Expanded the basemap list with more options, and each item now uses the exact style id as its label.</p>
