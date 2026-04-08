@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from 'react-modal';
+import mapboxgl from 'mapbox-gl';
 import api from './api.js';
 import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -21,8 +22,10 @@ function Card(props) {
     const [pendingImageSlotIndex, setPendingImageSlotIndex] = useState(null);
     const [sessionUploadedImageIDs, setSessionUploadedImageIDs] = useState([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isSelectingLocation, setIsSelectingLocation] = useState(false);
     const isEditingRef = useRef(false); // Track editing state across renders
     const learnMoreImageInputRef = useRef(null);
+    const selectLocationMarker = useRef(null);
     const [formData, setFormData] = useState({
         ...props.formData,
         files: props.formData?.files || [],      // <-- ensure files array always exists
@@ -348,6 +351,70 @@ function Card(props) {
     }
 };
 
+    const handleSelectLocation = () => {
+        const map = window.atlasMapInstance;
+        if (!map) { console.error('Map not found'); return; }
+
+        setIsSelectingLocation(true);
+
+        const onMapClick = (e) => {
+            const { lat, lng } = e.lngLat;
+            if (selectLocationMarker.current && selectLocationMarker.current.remove) {
+                selectLocationMarker.current.remove();
+            }
+
+            const popupContainer = document.createElement('div');
+            popupContainer.className = 'location-select-popup';
+            popupContainer.innerHTML = `
+                <div style="font-size:12px;margin-bottom:6px;color:#333;">
+                    ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button class="location-select-confirm">OK</button>
+                    <button class="location-select-cancel">Cancel</button>
+                </div>
+            `;
+
+            const popup = new mapboxgl.Popup({
+                closeButton: false, closeOnClick: false, offset: 25,
+                className: 'location-select-mapbox-popup',
+            }).setDOMContent(popupContainer);
+
+            const marker = new mapboxgl.Marker({ color: 'red' })
+                .setLngLat([lng, lat]).setPopup(popup).addTo(map);
+            marker.togglePopup();
+            selectLocationMarker.current = marker;
+
+            popupContainer.querySelector('.location-select-confirm').addEventListener('click', () => {
+                setFormData((prev) => ({ ...prev, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
+                marker.remove();
+                selectLocationMarker.current = null;
+                setIsSelectingLocation(false);
+                map.off('click', onMapClick);
+            });
+
+            popupContainer.querySelector('.location-select-cancel').addEventListener('click', () => {
+                marker.remove();
+                selectLocationMarker.current = null;
+            });
+        };
+
+        map.on('click', onMapClick);
+        selectLocationMarker.current = { _onMapClick: onMapClick, remove: () => {} };
+    };
+
+    const cancelSelectLocation = () => {
+        const map = window.atlasMapInstance;
+        if (map && selectLocationMarker.current) {
+            if (selectLocationMarker.current._onMapClick) {
+                map.off('click', selectLocationMarker.current._onMapClick);
+            }
+            selectLocationMarker.current.remove();
+            selectLocationMarker.current = null;
+        }
+        setIsSelectingLocation(false);
+    };
+
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
         setLearnMoreBackup({ ...formData });
@@ -387,6 +454,9 @@ function Card(props) {
     const handleLearnMoreEditCancel = async (e) => {
         if (e?.stopPropagation) e.stopPropagation();
         if (isImageMutationLoading) return;
+
+        // Clean up any active location selection
+        cancelSelectLocation();
 
         setIsImageMutationLoading(true);
         await rollbackSessionUploads();
@@ -871,9 +941,17 @@ function Card(props) {
                 </button>
             </div>
 
+            {/* Floating hint when selecting location from learn-more */}
+            {isSelectingLocation && (
+                <div className="location-select-hint">
+                    <span>Click on the map to select a location</span>
+                    <button type="button" onClick={cancelSelectLocation}>Cancel</button>
+                </div>
+            )}
+
             {/* Learn More Modal */}
             <Modal
-                isOpen={isModalOpen}
+                isOpen={isModalOpen && !isSelectingLocation}
                 onRequestClose={handleLearnMoreClose}
                 className="Modal Modal--learn-more"
                 overlayClassName="ModalOverlay ModalOverlay--learn-more"
@@ -1194,6 +1272,10 @@ function Card(props) {
 
                             <p><strong>Longitude:</strong></p>
                             <input className="learn-more-inline-input" type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
+
+                            <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
+                                Select Location
+                            </button>
                         </>
                     ) : (
                         <>
