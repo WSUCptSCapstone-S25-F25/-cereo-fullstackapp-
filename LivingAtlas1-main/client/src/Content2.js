@@ -346,6 +346,18 @@ function Content2(props) {
         props.setFilterCondition?.('');
     };
 
+    const applyTagFilters = () => {
+        const value = tagFilterInput.trim();
+        let filters = [...activeTagFilters];
+        if (value && !filters.includes(value)) {
+            filters = [...filters, value];
+            setActiveTagFilters(filters);
+            setTagFilterInput('');
+        }
+        props.setFilterCondition?.(filters.join(','));
+        setIsTagFilterOpen(false);
+    };
+
     // Click-outside to close tag filter dropdown
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -671,7 +683,13 @@ function Content2(props) {
         ? 'Currently showing cards inside the map viewport. Click to show all cards.'
         : 'Currently showing all cards. Click to show only cards in the map viewport.';
 
-    const displayedCards = cardsInViewByType.filter(
+    const cardsFilteredByTag = cardsInViewByType.filter((card) => {
+        if (activeTagFilters.length === 0) return true;
+        const cardTags = (card.tags || '').toLowerCase().split(',').map(t => t.trim());
+        return activeTagFilters.every(f => cardTags.includes(f.toLowerCase()));
+    });
+
+    const displayedCards = cardsFilteredByTag.filter(
         card => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID)
     );
 
@@ -866,7 +884,7 @@ function Content2(props) {
                                         )}
                                         <div className="tag-filter-dropdown-footer">
                                             <button className="sort-dropdown-btn clear" onClick={clearAllTagFilters}>Clear</button>
-                                            <button className="sort-dropdown-btn apply" onClick={() => setIsTagFilterOpen(false)}>Done</button>
+                                            <button className="sort-dropdown-btn apply" onClick={applyTagFilters}>Done</button>
                                         </div>
                                     </div>
                                 )}
