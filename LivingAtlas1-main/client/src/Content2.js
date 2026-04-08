@@ -8,9 +8,10 @@ import SortDropdown from './SortDropdown';
 import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
 import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js';
+import { allMarkers } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faStar, faSearch, faTimes, faFilter, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faStar, faSearch, faTimes, faFilter, faPlus, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
@@ -75,6 +76,7 @@ function Content2(props) {
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
 
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+    const [markersVisible, setMarkersVisible] = useState(true);
     const [cardSearchKeyword, setCardSearchKeyword] = useState(props.searchCondition || '');
     const [cardTypeFilter, setCardTypeFilter] = useState(props.CategoryCondition || '');
     const [sortMode, setSortMode] = useState((props.sortCondition || '').split(',')[0] || '');
@@ -791,6 +793,37 @@ function Content2(props) {
                         </div>
 
                         <div className="card-panel-toolbar-actions">
+                            <button
+                                type="button"
+                                className="card-toolbar-button"
+                                title={props.isLoggedIn ? 'Add Card' : 'Log in to add a card'}
+                                onClick={() => {
+                                    if (!props.isLoggedIn) {
+                                        alert('Please log in to upload a data card.');
+                                        return;
+                                    }
+                                    openModal();
+                                }}
+                            >
+                                <FontAwesomeIcon icon={faPlus} />
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`card-toolbar-button ${!markersVisible ? 'active' : ''}`}
+                                title={markersVisible ? 'Hide Markers' : 'Show Markers'}
+                                onClick={() => {
+                                    const newVisible = !markersVisible;
+                                    setMarkersVisible(newVisible);
+                                    allMarkers.forEach(m => {
+                                        const el = m.getElement();
+                                        if (el) el.style.display = newVisible ? '' : 'none';
+                                    });
+                                }}
+                            >
+                                <FontAwesomeIcon icon={faMapMarkerAlt} />
+                            </button>
+
                             <SortDropdown
                                 value={sortMode}
                                 onChange={handleSortModeChange}

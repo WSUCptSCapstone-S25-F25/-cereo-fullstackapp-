@@ -422,7 +422,6 @@ const Content1 = (props) => {
     props.cardPanelWidth,
     props.isUploadPanelOpen,
     props.isRemovedPanelOpen,
-    props.isModalOpen,
     props.isSidebarOpen
   ]);
 
@@ -806,7 +805,7 @@ const Content1 = (props) => {
 
   // Compute styles for outer map container to respond to card panel state
   const leftSidebarWidth = props.isSidebarOpen ? 300 : 60;
-  const leftPanelWidth = (props.isUploadPanelOpen || props.isRemovedPanelOpen || props.isModalOpen)
+  const leftPanelWidth = (props.isUploadPanelOpen || props.isRemovedPanelOpen)
     ? 420
     : 0;
   const mapContainerLeft = leftSidebarWidth + leftPanelWidth;

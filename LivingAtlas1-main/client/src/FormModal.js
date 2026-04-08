@@ -162,7 +162,6 @@ const FormModal = (props) => {
 
     return (
         <div>
-            <button className="open-form-button" onClick={() => setModalIsOpen(true)}>Upload</button>
             <Modal
                 isOpen={isModalOpen}
                 onRequestClose={handleCloseModal}

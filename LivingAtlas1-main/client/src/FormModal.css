@@ -1,43 +1,72 @@
-.form-modal {
-    position: absolute;
-    top: 401px !important;
-    left: 18px !important;
-    transform: translate(10%, -50%);
-    background: white;
-    background-color: #fff;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    z-index: 9999;
-    width: 420px !important;
-    max-width: 500px;          /* limit width on large screens */
-    max-height: 91.2vh;          /* fit inside the screen vertically */
-    overflow-y: auto;          /* allow scrolling inside modal */
+.form-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+.form-modal {
+    position: relative;
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    z-index: 9999;
+    width: 480px;
+    max-width: 92vw;
+    max-height: 85vh;
+    overflow-y: auto;
+}
 
 .form-modal h2 {
     margin-top: 0;
-    font-size: 24px;
+    margin-bottom: 18px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a2a3a;
 }
 
 .form-modal label {
     display: block;
-    margin-bottom: 15px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374957;
 }
 
 .form-modal input[type="text"],
+.form-modal input[type="email"],
+.form-modal select,
 .form-modal textarea {
     width: 100%;
-    padding: 8px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #c6d2df;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    background: #f9fafb;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.form-modal input[type="text"]:focus,
+.form-modal input[type="email"]:focus,
+.form-modal select:focus,
+.form-modal textarea:focus {
+    border-color: #4a90d9;
+    outline: none;
+    background: #fff;
 }
 
 .form-modal textarea {
-    height: 100px;
-    resize: none;
+    height: 80px;
+    resize: vertical;
 }
 
 .location_button {
@@ -45,10 +74,16 @@
     color: #fff;
     padding: 8px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
-    margin-right: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    transition: background 0.2s;
+}
+
+.location_button:hover {
+    background-color: #005d99;
 }
 
 .select-location-message {
@@ -58,27 +93,29 @@
 .form-modal button[type="submit"] {
     background-color: #0077c0;
     color: #fff;
-    padding: 8px 16px;
+    padding: 9px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
-    margin-right: 10px;
-}
-
-.cancel_button:hover {
-    background-color: rgb(193, 2, 2);
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s;
 }
 
 .cancel_button {
-    background-color: red;
+    background-color: #e74c4c;
     color: white;
     border: none;
-    padding: 10px 20px;
-    margin-right: 10px;
+    padding: 9px 20px;
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.cancel_button:hover {
+    background-color: #c0392b;
 }
 
 .form-modal button[type="submit"]:hover {
@@ -112,18 +149,18 @@
 
 .close-modal-button {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 12px;
+    right: 14px;
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: bold;
-    color: #333;
+    color: #666;
     cursor: pointer;
     z-index: 1001;
-    /* transition: color 0.3s ease; */
+    transition: color 0.2s;
 }
 
 .close-modal-button:hover {
-    color: #333;
+    color: #c0392b;
 }

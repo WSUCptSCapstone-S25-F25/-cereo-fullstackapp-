@@ -6,7 +6,7 @@ import Content1 from './Content1';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
-import { faUpload, faClone } from '@fortawesome/free-solid-svg-icons';
+import { faClone } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
 import './Sidebars.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
@@ -17,7 +17,6 @@ import { faLayerGroup, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { faBell, faMap } from '@fortawesome/free-solid-svg-icons';
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
-import FormModal from './FormModal';
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -37,7 +36,6 @@ function Home(props) {
     );
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
     const [arcgisLayers, setArcgisLayers] = useState([]);
@@ -293,21 +291,6 @@ function Home(props) {
                     <FontAwesomeIcon icon={faLayerGroup} />
                 </button>
 
-                {/* Upload Button (blocked if not logged in) */}
-                <button
-                    className="left-sidebar-upload-button"
-                    title="Upload Card"
-                    onClick={() => {
-                        if (!props.isLoggedIn) {
-                            alert("Please log in to upload a data card.");
-                            return;
-                        }
-                        setIsModalOpen(true);
-                    }}
-                >
-                    <FontAwesomeIcon icon={faUpload} />
-                </button>
-
                 {/* Upload Panel */}
                 <ArcgisUploadPanel
                     isOpen={isUploadPanelOpen}
@@ -420,7 +403,6 @@ function Home(props) {
                 isSidebarOpen={isSidebarOpen}
                 isUploadPanelOpen={isUploadPanelOpen}
                 isRemovedPanelOpen={isRemovedPanelOpen}
-                isModalOpen={isModalOpen}
                 selectedCardCoords={selectedCardCoords}
                 onMarkerCardSelect={setSelectedCardIdFromMap}
                 cardPanelWidth={cardPanelWidth}
@@ -531,15 +513,6 @@ function Home(props) {
                     <button className="changelog-modal-dismiss" onClick={closeChangelog}>Got it</button>
                 </div>
             </Modal>
-
-            {/* FormModal for Upload */}
-            <FormModal
-                isOpen={isModalOpen}
-                onRequestClose={() => setIsModalOpen(false)}
-                username={props.username || localStorage.getItem("username")}
-                email={props.email}
-                isLoggedIn={props.isLoggedIn}             /* <-- extra prop if needed */
-            />
 
         </div>
     );
