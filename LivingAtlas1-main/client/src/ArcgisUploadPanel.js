@@ -38,6 +38,7 @@ import {
 const STATE_CODES = ['WA', 'ID', 'OR'];
 const STATE_LABELS = { WA: 'WA', ID: 'ID', OR: 'OR' };
 const STATE_FULL_NAMES = { WA: 'Washington State ArcGIS Services', ID: 'Idaho ArcGIS Services', OR: 'Oregon ArcGIS Services' };
+const STATE_CODE_TO_NAME = { WA: 'washington', ID: 'idaho', OR: 'oregon' };
 
 // Local JSON fallback data
 const ARCGIS_SERVICES_BY_STATE = {
@@ -1658,14 +1659,17 @@ function ArcgisUploadPanel({
         servicesByFolderToShow = filteredFolders;
     }
 
-    // Build per-state folders to show
+    // Build per-state folders to show (filter by service.state, not by key membership,
+    // because keys can collide across states when folder+service names are identical)
     const stateFoldersToShow = {};
     STATE_CODES.forEach(code => {
-        const stateServices = new Set((ALL_SERVICES_BY_STATE[code] || []).map(s => s.key));
+        const stateName = STATE_CODE_TO_NAME[code];
         const folders = [];
         const byFolder = {};
         foldersToShow.forEach(folder => {
-            const services = (servicesByFolderToShow[folder] || []).filter(s => stateServices.has(s.key));
+            const services = (servicesByFolderToShow[folder] || []).filter(s =>
+                s.state && s.state.toLowerCase() === stateName
+            );
             if (services.length > 0) {
                 folders.push(folder);
                 byFolder[folder] = services;
