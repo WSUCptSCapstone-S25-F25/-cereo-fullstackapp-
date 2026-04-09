@@ -1376,6 +1376,10 @@ function Card(props) {
                     )}
                         </>
                     )}
+
+                    <p className="learn-more-modal-created-date" style={{ marginTop: '1.5rem', color: '#888', fontSize: '0.9rem', textAlign: 'right' }}>
+                        <strong>Created:</strong> {formData.date ? new Date(formData.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
+                    </p>
                 </div>
 
                 </div>

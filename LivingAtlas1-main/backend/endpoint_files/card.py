@@ -324,7 +324,7 @@ def allCards():
                 c.Title,
                 c.CardID,
                 cat.CategoryLabel,
-                c.DatePosted,
+                COALESCE(c.DatePosted, CURRENT_DATE) AS DatePosted,
                 c.Description,
                 c.Organization,
                 c.Funding,
