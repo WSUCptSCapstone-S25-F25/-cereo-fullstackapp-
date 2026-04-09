@@ -6,11 +6,10 @@ import Register from './Register';
 
 function Profile(props) {
     const [showRegister, setShowRegister] = useState(false);
-    const [isEditingUsername, setIsEditingUsername] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const [editedUsername, setEditedUsername] = useState(props.username || '');
     const [bio, setBio] = useState('');
     const [editedBio, setEditedBio] = useState('');
-    const [isEditingBio, setIsEditingBio] = useState(false);
 
     const BIO_MAX_LENGTH = 300;
 
@@ -27,6 +26,57 @@ function Profile(props) {
         };
         if (props.email) fetchBio();
     }, [props.email]);
+
+    const handleEditClick = () => {
+        setEditedUsername(props.username);
+        setEditedBio(bio);
+        setIsEditing(true);
+    };
+
+    const handleCancelEdit = () => {
+        setEditedUsername(props.username);
+        setEditedBio(bio);
+        setIsEditing(false);
+    };
+
+    const handleSaveAll = async () => {
+        if (!editedUsername.trim()) {
+            setMessage('Username cannot be empty.');
+            return;
+        }
+        if (editedBio.length > BIO_MAX_LENGTH) {
+            setMessage(`Bio must be ${BIO_MAX_LENGTH} characters or less.`);
+            return;
+        }
+        try {
+            const usernameChanged = editedUsername.trim() !== props.username;
+            const bioChanged = editedBio !== bio;
+
+            if (usernameChanged) {
+                const res = await api.post('/updateUsername', {
+                    email: props.email,
+                    new_username: editedUsername.trim()
+                });
+                if (res.data.success) {
+                    props.setUsername(res.data.username);
+                }
+            }
+            if (bioChanged) {
+                const res = await api.post('/updateBio', {
+                    email: props.email,
+                    bio: editedBio
+                });
+                if (res.data.success) {
+                    setBio(res.data.bio);
+                }
+            }
+            setMessage('Profile updated successfully.');
+            setIsEditing(false);
+        } catch (err) {
+            setMessage('Error updating profile.');
+            console.error(err);
+        }
+    };
 
     // Password Reset & Change Password States
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -81,53 +131,21 @@ function Profile(props) {
                 <h1>Profile page</h1>
                 <h2>
                   User Name:{' '}
-                  {isEditingUsername ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editedUsername}
-                        onChange={(e) => setEditedUsername(e.target.value)}
-                      />
-                      <button onClick={async () => {
-                        if (!editedUsername.trim()) {
-                          setMessage('Username cannot be empty.');
-                          return;
-                        }
-                        try {
-                          const res = await api.post('/updateUsername', {
-                            email: props.email,
-                            new_username: editedUsername.trim()
-                          });
-                          if (res.data.success) {
-                            props.setUsername(res.data.username);
-                            setMessage('Username updated successfully.');
-                            setIsEditingUsername(false);
-                          }
-                        } catch (err) {
-                          setMessage('Error updating username.');
-                          console.error(err);
-                        }
-                      }}>Save</button>
-                      <button onClick={() => {
-                        setEditedUsername(props.username);
-                        setIsEditingUsername(false);
-                      }}>Cancel</button>
-                    </>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedUsername}
+                      onChange={(e) => setEditedUsername(e.target.value)}
+                    />
                   ) : (
-                    <>
-                      {props.username}{' '}
-                      <button onClick={() => {
-                        setEditedUsername(props.username);
-                        setIsEditingUsername(true);
-                      }}>Edit</button>
-                    </>
+                    props.username
                   )}
                 </h2>
                 <h2>Email: {props.email}</h2>
 
                 <div className="bio-section">
                   <h3>Bio</h3>
-                  {isEditingBio ? (
+                  {isEditing ? (
                     <>
                       <textarea
                         value={editedBio}
@@ -143,37 +161,20 @@ function Profile(props) {
                       <p style={{ fontSize: '0.85em', color: '#888' }}>
                         {editedBio.length}/{BIO_MAX_LENGTH}
                       </p>
-                      <button onClick={async () => {
-                        try {
-                          const res = await api.post('/updateBio', {
-                            email: props.email,
-                            bio: editedBio
-                          });
-                          if (res.data.success) {
-                            setBio(res.data.bio);
-                            setMessage('Bio updated successfully.');
-                            setIsEditingBio(false);
-                          }
-                        } catch (err) {
-                          setMessage('Error updating bio.');
-                          console.error(err);
-                        }
-                      }}>Save</button>
-                      <button onClick={() => {
-                        setEditedBio(bio);
-                        setIsEditingBio(false);
-                      }}>Cancel</button>
                     </>
                   ) : (
-                    <>
-                      <p>{bio || 'No bio yet.'}</p>
-                      <button onClick={() => {
-                        setEditedBio(bio);
-                        setIsEditingBio(true);
-                      }}>Edit Bio</button>
-                    </>
+                    <p>{bio || 'No bio yet.'}</p>
                   )}
                 </div>
+
+                {isEditing ? (
+                  <>
+                    <button onClick={handleSaveAll}>Save</button>
+                    <button onClick={handleCancelEdit}>Cancel</button>
+                  </>
+                ) : (
+                  <button onClick={handleEditClick}>Edit Profile</button>
+                )}
                 <p>
                 On the profile page, you're granted a comprehensive view of every
                 piece of data you've shared with our community. If you ever notice
