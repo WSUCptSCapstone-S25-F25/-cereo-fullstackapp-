@@ -351,12 +351,14 @@ const FormModal = (props) => {
                     <label>Title (required):</label>
                     <input type="text" name="title" value={formData.title} onChange={handleInputChange} required />
 
-                    <label>Category (required):</label>
-                    <select name="category" value={formData.category} onChange={handleInputChange} required>
+                    <label>Category:</label>
+                    <select name="category" value={formData.category} onChange={handleInputChange}>
                         <option value="">Select a Category</option>
                         <option value="River">River</option>
                         <option value="Watershed">Watershed</option>
                         <option value="Places">Places</option>
+                        <option value="None">None</option>
+                        <option value="Other">Other</option>
                     </select>
 
                     <label>Description:</label>

@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
 
-const CARD_CATEGORIES = ['River', 'Watershed', 'Places'];
+const CARD_CATEGORIES = ['River', 'Watershed', 'Places', 'None', 'Other'];
 
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);

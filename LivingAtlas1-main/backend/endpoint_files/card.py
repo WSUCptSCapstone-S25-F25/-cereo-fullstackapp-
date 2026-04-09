@@ -426,7 +426,7 @@ async def upload_form(
     original_username: Optional[str] = Form(None),
     original_email: Optional[str] = Form(None),
     original_title: Optional[str] = Form(None),
-    category: str = Form(...),
+    category: Optional[str] = Form("None"),
     latitude: Optional[str] = Form(None),
     longitude: Optional[str] = Form(None),
     location_type: Optional[str] = Form("point"),
@@ -476,7 +476,7 @@ async def upload_form(
         # --------------------------------------------------
         # Map category name to ID
         # --------------------------------------------------
-        category_map = {"River": 1, "Watershed": 2, "Places": 3}
+        category_map = {"River": 1, "Watershed": 2, "Places": 3, "None": 4, "Other": 5}
         if category not in category_map:
             raise HTTPException(status_code=400, detail="Invalid category")
         categoryID = category_map[category]
