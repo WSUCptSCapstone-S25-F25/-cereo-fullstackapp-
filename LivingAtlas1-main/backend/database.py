@@ -34,3 +34,56 @@ if conn:
     cur = conn.cursor()
 else:
     cur = None
+
+
+# -----------------------------------------------------------
+# Auto-apply pending schema migrations (idempotent)
+# -----------------------------------------------------------
+def _ensure_schema():
+    """Run on every startup to guarantee the schema is up-to-date."""
+    if not conn or not cur:
+        return
+    try:
+        # Migration 003 — LocationType column + CardPolygonVertices table
+        cur.execute("""
+            ALTER TABLE Cards ADD COLUMN IF NOT EXISTS LocationType VARCHAR(10) DEFAULT 'point';
+        """)
+        # Make Latitude / Longitude nullable (safe even if already nullable)
+        cur.execute("""
+            ALTER TABLE Cards ALTER COLUMN Latitude DROP NOT NULL;
+        """)
+        cur.execute("""
+            ALTER TABLE Cards ALTER COLUMN Longitude DROP NOT NULL;
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS CardPolygonVertices (
+                VertexID SERIAL PRIMARY KEY,
+                CardID INT NOT NULL,
+                VertexOrder INT NOT NULL,
+                Latitude DECIMAL(10,8) NOT NULL,
+                Longitude DECIMAL(11,8) NOT NULL,
+                FOREIGN KEY (CardID) REFERENCES Cards(CardID) ON DELETE CASCADE
+            );
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_card_polygon_cardid
+            ON CardPolygonVertices(CardID, VertexOrder);
+        """)
+
+        # Migration 004 — None / Other categories + CategoryID nullable
+        cur.execute("""
+            INSERT INTO Categories (CategoryID, CategoryLabel)
+            VALUES (4, 'None'), (5, 'Other')
+            ON CONFLICT (CategoryID) DO NOTHING;
+        """)
+        cur.execute("""
+            ALTER TABLE Cards ALTER COLUMN CategoryID DROP NOT NULL;
+        """)
+
+        conn.commit()
+        print("[MIGRATIONS] Schema is up-to-date.")
+    except Exception as e:
+        conn.rollback()
+        print(f"[MIGRATIONS] Error applying migrations: {e}")
+
+_ensure_schema()
