@@ -15,6 +15,7 @@ from google.cloud import storage
 import psycopg2
 import os
 import uuid
+import json
 import tempfile
 from .file_utils import compress_file #importing my function that handles compressing files for use in /uploadForm
 
@@ -333,6 +334,7 @@ def allCards():
                 c.Latitude,
                 c.Longitude,
                 c.Thumbnail_Link,
+                COALESCE(c.LocationType, 'point') AS LocationType,
                 COALESCE(
                     (
                         SELECT json_agg(
@@ -359,7 +361,21 @@ def allCards():
                         )
                     ) FILTER (WHERE f.fileid IS NOT NULL),
                     '[]'
-                ) AS files
+                ) AS files,
+                COALESCE(
+                    (
+                        SELECT json_agg(
+                            jsonb_build_object(
+                                'lat', pv.Latitude,
+                                'lng', pv.Longitude
+                            )
+                            ORDER BY pv.VertexOrder ASC
+                        )
+                        FROM CardPolygonVertices pv
+                        WHERE pv.CardID = c.CardID
+                    ),
+                    '[]'
+                ) AS polygon_vertices
             FROM Cards c
             INNER JOIN Categories cat ON c.CategoryID = cat.CategoryID
             LEFT JOIN Files f ON c.CardID = f.CardID
@@ -377,7 +393,8 @@ def allCards():
 
         columns = [
             "username", "email", "name", "title", "cardID", "category", "date", "description",
-            "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link", "images", "files"
+            "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link",
+            "location_type", "images", "files", "polygon_vertices"
         ]
 
         rows = cur.fetchall()
@@ -410,8 +427,10 @@ async def upload_form(
     original_email: Optional[str] = Form(None),
     original_title: Optional[str] = Form(None),
     category: str = Form(...),
-    latitude: str = Form(...),
-    longitude: str = Form(...),
+    latitude: Optional[str] = Form(None),
+    longitude: Optional[str] = Form(None),
+    location_type: Optional[str] = Form("point"),
+    polygon_coordinates: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     funding: Optional[str] = Form(None),
     org: Optional[str] = Form(None),
@@ -467,16 +486,30 @@ async def upload_form(
         # --------------------------------------------------
         if len(title) > 255:
             raise HTTPException(status_code=400, detail="Title exceeds 255 characters")
-        try:
-            latitude_val = float(latitude)
-            longitude_val = float(longitude)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Latitude/Longitude must be numeric")
 
-        if not (-90 <= latitude_val <= 90):
-            raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90")
-        if not (-180 <= longitude_val <= 180):
-            raise HTTPException(status_code=400, detail="Longitude must be between -180 and 180")
+        # For polygon cards, compute centroid from vertices if lat/lng not provided
+        if (location_type == "polygon") and polygon_coordinates and (not latitude or not longitude):
+            try:
+                verts = json.loads(polygon_coordinates)
+                if len(verts) >= 3:
+                    latitude_val = sum(float(v["lat"]) for v in verts) / len(verts)
+                    longitude_val = sum(float(v["lng"]) for v in verts) / len(verts)
+                else:
+                    raise HTTPException(status_code=400, detail="Polygon must have at least 3 vertices")
+            except (json.JSONDecodeError, KeyError):
+                raise HTTPException(status_code=400, detail="Invalid polygon_coordinates format")
+        elif latitude and longitude:
+            try:
+                latitude_val = float(latitude)
+                longitude_val = float(longitude)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Latitude/Longitude must be numeric")
+            if not (-90 <= latitude_val <= 90):
+                raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90")
+            if not (-180 <= longitude_val <= 180):
+                raise HTTPException(status_code=400, detail="Longitude must be between -180 and 180")
+        else:
+            raise HTTPException(status_code=400, detail="Either lat/lng or polygon coordinates are required")
 
         print(f"[VALIDATED] CardID={nextcardid}, category={categoryID}")
 
@@ -533,20 +566,44 @@ async def upload_form(
                 UPDATE Cards
                 SET Name=%s, Latitude=%s, Longitude=%s, CategoryID=%s,
                     Description=%s, Organization=%s, Funding=%s, Link=%s,
-                    Thumbnail_Link=COALESCE(%s, Thumbnail_Link), UserID=%s
+                    Thumbnail_Link=COALESCE(%s, Thumbnail_Link), UserID=%s,
+                    LocationType=%s
                 WHERE CardID=%s
             """, (name, latitude_val, longitude_val, categoryID, description, org,
-                  funding, link, thumbnail_url, userID, nextcardid))
+                  funding, link, thumbnail_url, userID, location_type or "point", nextcardid))
             cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
+            # Delete old polygon vertices on update
+            cur.execute("DELETE FROM CardPolygonVertices WHERE CardID=%s", (nextcardid,))
         else:
             cur.execute("""
                 INSERT INTO Cards
                     (CardID, UserID, Name, Title, Latitude, Longitude, CategoryID,
-                     Description, Organization, Funding, Link, Thumbnail_Link)
+                     Description, Organization, Funding, Link, Thumbnail_Link, LocationType)
                 VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (nextcardid, userID, name, title, latitude_val, longitude_val,
-                  categoryID, description, org, funding, link, thumbnail_url))
+                  categoryID, description, org, funding, link, thumbnail_url, location_type or "point"))
+
+        # --------------------------------------------------
+        # Handle polygon vertices (if location_type is 'polygon')
+        # --------------------------------------------------
+        if location_type == "polygon" and polygon_coordinates:
+            try:
+                vertices = json.loads(polygon_coordinates)
+                if not isinstance(vertices, list) or len(vertices) < 3:
+                    raise HTTPException(status_code=400, detail="Polygon must have at least 3 vertices")
+                for i, vertex in enumerate(vertices):
+                    v_lat = float(vertex["lat"])
+                    v_lng = float(vertex["lng"])
+                    if not (-90 <= v_lat <= 90) or not (-180 <= v_lng <= 180):
+                        raise HTTPException(status_code=400, detail=f"Vertex {i} has invalid coordinates")
+                    cur.execute(
+                        "INSERT INTO CardPolygonVertices (CardID, VertexOrder, Latitude, Longitude) VALUES (%s, %s, %s, %s)",
+                        (nextcardid, i, v_lat, v_lng)
+                    )
+                print(f"[DB] Polygon vertices inserted: {len(vertices)} points")
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid polygon_coordinates JSON format")
 
         print("[DB] Card record inserted/updated")
         enable_commits = True

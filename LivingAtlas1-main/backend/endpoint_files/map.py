@@ -54,7 +54,22 @@ def getMarkers():
                             )
                         ) FILTER (WHERE f.fileid IS NOT NULL),
                         '[]'
-                    ) AS files
+                    ) AS files,
+                    COALESCE(c.LocationType, 'point') AS LocationType,
+                    COALESCE(
+                        (
+                            SELECT json_agg(
+                                jsonb_build_object(
+                                    'lat', pv.Latitude,
+                                    'lng', pv.Longitude
+                                )
+                                ORDER BY pv.VertexOrder ASC
+                            )
+                            FROM CardPolygonVertices pv
+                            WHERE pv.CardID = c.CardID
+                        ),
+                        '[]'
+                    ) AS polygon_vertices
                 FROM Cards c
                 LEFT JOIN Categories cat ON c.CategoryID = cat.CategoryID
                 LEFT JOIN CardTags ct ON c.CardID = ct.CardID
@@ -80,7 +95,8 @@ def getMarkers():
             rows = local_cur.fetchall() if local_cur.description else []
         columns = [
             "cardID", "title", "latitude", "longitude", "category", "name", "username", "email",
-            "description", "org", "funding", "link", "thumbnail_link", "tags", "files"
+            "description", "org", "funding", "link", "thumbnail_link", "tags", "files",
+            "location_type", "polygon_vertices"
         ]
         data = [dict(zip(columns, row)) for row in rows]
         return {"data": data}
