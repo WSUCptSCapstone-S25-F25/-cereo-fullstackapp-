@@ -6,6 +6,10 @@ import './PolygonDrawingModal.css';
 const PolygonDrawingModal = ({ onSave, onCancel }) => {
     const [vertices, setVertices] = useState([]);
     const [isDrawing, setIsDrawing] = useState(true);
+    const [lineStyle, setLineStyle] = useState('solid'); // 'solid', 'dashed', 'dotted'
+    const [fillColor, setFillColor] = useState('#0077c0');
+    const [showLineMenu, setShowLineMenu] = useState(false);
+    const [showColorMenu, setShowColorMenu] = useState(false);
     const markersRef = useRef([]);
     const linesSourceAdded = useRef(false);
     const fillSourceAdded = useRef(false);
@@ -16,6 +20,45 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
     const POLYGON_LINE_LAYER = 'card-polygon-draw-line-layer';
     const POLYGON_FILL_SOURCE = 'card-polygon-draw-fill';
     const POLYGON_FILL_LAYER = 'card-polygon-draw-fill-layer';
+
+    const LINE_STYLES = {
+        solid: [],
+        dashed: [6, 3],
+        dotted: [1.5, 3],
+        dashdot: [6, 3, 1.5, 3],
+    };
+
+    const PALETTE_COLORS = [
+        '#0077c0', '#e74c3c', '#27ae60', '#f39c12', '#8e44ad',
+        '#1abc9c', '#2c3e50', '#d35400', '#c0392b', '#2980b9',
+    ];
+
+    // Update line style on map when lineStyle changes
+    useEffect(() => {
+        const map = window.atlasMapInstance;
+        if (!map || !map.getLayer(POLYGON_LINE_LAYER)) return;
+        const dash = LINE_STYLES[lineStyle] || [];
+        map.setPaintProperty(POLYGON_LINE_LAYER, 'line-dasharray', dash.length ? dash : undefined);
+    }, [lineStyle]);
+
+    // Update fill color on map when fillColor changes
+    useEffect(() => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+        if (map.getLayer(POLYGON_LINE_LAYER)) {
+            map.setPaintProperty(POLYGON_LINE_LAYER, 'line-color', fillColor);
+        }
+        if (map.getLayer(POLYGON_FILL_LAYER)) {
+            map.setPaintProperty(POLYGON_FILL_LAYER, 'fill-color', fillColor);
+        }
+        // Update dot colors
+        markersRef.current.forEach(m => {
+            const dot = m.getElement().querySelector('.polygon-draw-vertex-dot');
+            if (dot) dot.style.background = fillColor;
+            const lbl = m.getElement().querySelector('.polygon-draw-vertex-label');
+            if (lbl) lbl.style.color = fillColor;
+        });
+    }, [fillColor]);
 
     const updatePolygonOnMap = useCallback((verts) => {
         const map = window.atlasMapInstance;
@@ -80,7 +123,8 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
 
         const marker = new mapboxgl.Marker({
             element: el,
-            draggable: true
+            draggable: true,
+            anchor: 'center'
         })
             .setLngLat([vertex.lng, vertex.lat])
             .addTo(map);
@@ -139,9 +183,9 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
                 type: 'line',
                 source: POLYGON_LINE_SOURCE,
                 paint: {
-                    'line-color': '#0077c0',
-                    'line-width': 2.5,
-                    'line-dasharray': [2, 1]
+                    'line-color': fillColor,
+                    'line-width': 1.5,
+                    'line-dasharray': LINE_STYLES[lineStyle] || []
                 }
             });
         }
@@ -160,7 +204,7 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
                 type: 'fill',
                 source: POLYGON_FILL_SOURCE,
                 paint: {
-                    'fill-color': '#0077c0',
+                    'fill-color': fillColor,
                     'fill-opacity': 0.15
                 }
             });
@@ -275,7 +319,7 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
             (acc, v) => ({ lat: acc.lat + v.lat / vertices.length, lng: acc.lng + v.lng / vertices.length }),
             { lat: 0, lng: 0 }
         );
-        onSave(vertices, centroid);
+        onSave(vertices, centroid, { lineStyle, fillColor });
     };
 
     const handleCancel = () => {
@@ -294,21 +338,83 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
                 </span>
             </div>
 
+            {/* Style toolbar */}
+            <div className="polygon-draw-style-toolbar">
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className="polygon-draw-style-btn"
+                        title="Line Style"
+                        onClick={() => { setShowLineMenu(v => !v); setShowColorMenu(false); }}
+                    >
+                        <svg width="18" height="10" viewBox="0 0 18 10">
+                            {lineStyle === 'solid' && <line x1="0" y1="5" x2="18" y2="5" stroke="currentColor" strokeWidth="2"/>}
+                            {lineStyle === 'dashed' && <line x1="0" y1="5" x2="18" y2="5" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2"/>}
+                            {lineStyle === 'dotted' && <line x1="0" y1="5" x2="18" y2="5" stroke="currentColor" strokeWidth="2" strokeDasharray="1 3" strokeLinecap="round"/>}
+                            {lineStyle === 'dashdot' && <line x1="0" y1="5" x2="18" y2="5" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2 1 2"/>}
+                        </svg>
+                    </button>
+                    {showLineMenu && (
+                        <div className="polygon-draw-dropdown">
+                            {Object.keys(LINE_STYLES).map(key => (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    className={`polygon-draw-dropdown-item${lineStyle === key ? ' active' : ''}`}
+                                    onClick={() => { setLineStyle(key); setShowLineMenu(false); }}
+                                >
+                                    <svg width="32" height="8" viewBox="0 0 32 8">
+                                        {key === 'solid' && <line x1="0" y1="4" x2="32" y2="4" stroke="currentColor" strokeWidth="2"/>}
+                                        {key === 'dashed' && <line x1="0" y1="4" x2="32" y2="4" stroke="currentColor" strokeWidth="2" strokeDasharray="6 3"/>}
+                                        {key === 'dotted' && <line x1="0" y1="4" x2="32" y2="4" stroke="currentColor" strokeWidth="2" strokeDasharray="1.5 3" strokeLinecap="round"/>}
+                                        {key === 'dashdot' && <line x1="0" y1="4" x2="32" y2="4" stroke="currentColor" strokeWidth="2" strokeDasharray="6 3 1.5 3"/>}
+                                    </svg>
+                                    <span>{key}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className="polygon-draw-style-btn"
+                        title="Fill Color"
+                        onClick={() => { setShowColorMenu(v => !v); setShowLineMenu(false); }}
+                    >
+                        <span className="polygon-draw-color-swatch" style={{ background: fillColor }} />
+                    </button>
+                    {showColorMenu && (
+                        <div className="polygon-draw-dropdown polygon-draw-color-grid">
+                            {PALETTE_COLORS.map(c => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    className={`polygon-draw-color-option${fillColor === c ? ' active' : ''}`}
+                                    style={{ background: c }}
+                                    onClick={() => { setFillColor(c); setShowColorMenu(false); }}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <div className="polygon-draw-modal-vertices">
                 {vertices.length === 0 && (
-                    <div className="polygon-draw-modal-empty">No points added yet</div>
+                    <div className="polygon-draw-modal-empty">No points yet</div>
                 )}
                 {vertices.map((v, i) => (
                     <div key={i} className="polygon-draw-modal-vertex-row">
                         <span className="polygon-draw-modal-vertex-num">{i + 1}</span>
                         <span className="polygon-draw-modal-vertex-coords">
-                            {v.lat.toFixed(6)}, {v.lng.toFixed(6)}
+                            {v.lat.toFixed(4)}, {v.lng.toFixed(4)}
                         </span>
                         <button
                             type="button"
                             className="polygon-draw-modal-vertex-remove"
                             onClick={() => handleRemoveVertex(i)}
-                            title="Remove point"
+                            title="Remove"
                         >
                             &times;
                         </button>
