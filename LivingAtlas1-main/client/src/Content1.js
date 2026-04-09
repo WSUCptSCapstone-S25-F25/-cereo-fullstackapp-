@@ -596,6 +596,11 @@ const Content1 = (props) => {
       for (let feature of markersData) {
         if (!isActive) return;
 
+        // Skip polygon cards — they are rendered by renderCardPolygons
+        if (feature.location_type === 'polygon' && feature.polygon_vertices && feature.polygon_vertices.length >= 3) {
+          continue;
+        }
+
         const el = document.createElement('div');
 
         if (feature.category === "River") {
@@ -688,6 +693,46 @@ const Content1 = (props) => {
             'line-color': fillColor,
             'line-width': 2
           }
+        });
+
+        // Click handler for polygon fill — open card popup
+        mapInstance.on('click', fillLayerId, (e) => {
+          e.originalEvent.stopPropagation();
+          marker_clicked = true;
+          setSearchCondition(feature.title);
+
+          closeMarkerPopup();
+          const popupContent = buildMarkerPopupContent(feature);
+          const popup = new mapboxgl.Popup({
+            closeButton: true,
+            closeOnClick: false,
+            anchor: 'bottom-left',
+            offset: [12, -8],
+            className: 'card-pin-rich-popup'
+          })
+            .setLngLat(e.lngLat)
+            .setDOMContent(popupContent)
+            .addTo(mapInstance);
+
+          popup.on('close', () => {
+            popupContent.cleanupImageOverlay?.();
+            if (markerPopupRef.current === popup) {
+              markerPopupRef.current = null;
+            }
+            marker_clicked = false;
+            setSearchCondition("");
+            onMarkerCardSelect?.(null);
+          });
+          markerPopupRef.current = popup;
+          onMarkerCardSelect?.(feature.cardID);
+        });
+
+        // Cursor style on hover
+        mapInstance.on('mouseenter', fillLayerId, () => {
+          mapInstance.getCanvas().style.cursor = 'pointer';
+        });
+        mapInstance.on('mouseleave', fillLayerId, () => {
+          mapInstance.getCanvas().style.cursor = '';
         });
       }
     };
