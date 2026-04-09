@@ -1,31 +1,19 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState } from 'react';
 import './Content2.css';
-import Card from './Card.js';
-import axios from 'axios';
-import { Link } from 'react-router-dom';
 import './Profile.css';
 import api from './api.js';
 import Register from './Register';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faStarHalfStroke } from '@fortawesome/free-regular-svg-icons';
 
 function Profile(props) {
-    const [cards, setCards] = useState([]);
     const [showRegister, setShowRegister] = useState(false);
-    const [lastDeletedCard, setLastDeletedCard] = useState(false);
 
     // Password Reset & Change Password States
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(false);
     const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
     const [message, setMessage] = useState('');
-    const [bookmarkedCardIDs, setBookmarkedCardIDs] = useState(new Set());
-    const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
-    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-
-    // NEW STATE for collapsible right-hand side
-    const [isCollapsed, setIsCollapsed] = useState(false);
 
     // Toggle register visibility
     function handleOpenRegister() {
@@ -35,23 +23,6 @@ function Profile(props) {
     function handleCloseRegister() {
         setShowRegister(false);
     }
-
-    const fetchBookmarks = async () => {
-        try {
-            const res = await api.get('/getBookmarkedCards', {
-                params: { username: props.username }
-            });
-            const cardIDs = new Set(
-                res.data.bookmarkedCards.map(card =>
-                    card.cardID || card.cardid || card.CardID
-                )
-            );
-            setBookmarkedCardIDs(cardIDs);
-            setBookmarksLoaded(true);
-        } catch (error) {
-            console.error("Error fetching bookmarks:", error);
-        }
-    };
 
     const handleForgotPasswordSubmit = (e) => {
         e.preventDefault();
@@ -65,72 +36,26 @@ function Profile(props) {
 
     const handleChangePasswordSubmit = (e) => {
         e.preventDefault();
+        if (newPassword !== confirmPassword) {
+            setMessage('Passwords do not match.');
+            return;
+        }
         api.post('/reset-password', { email: props.email, new_password: newPassword })
-            .then(response => setMessage('Password changed successfully.'))
+            .then(response => {
+                setMessage('Password changed successfully.');
+                setNewPassword('');
+                setConfirmPassword('');
+            })
             .catch(error => {
                 setMessage('Error changing password.');
                 console.error(error);
             });
     };
 
-    const handleBookmarkChange = async () => {
-        try {
-            const res = await api.get('/getBookmarkedCards', {
-                params: { username: props.username }
-            });
-            const cardIDs = new Set(
-                res.data.bookmarkedCards.map(card =>
-                    card.cardID || card.cardid || card.CardID
-                )
-            );
-            setBookmarkedCardIDs(cardIDs);
-        } catch (error) {
-            console.error("Error updating bookmark status:", error);
-        }
-    };
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const isAdmin = props.isAdmin;
-                let cardResponse;
-
-                if (isAdmin) {
-                    cardResponse = await api.get('/allCards');
-                } else {
-                    cardResponse = await api.get(`/profileCards?username=${props.username}`);
-                }
-
-                const cardData = cardResponse.data.data;
-                setCards(cardData);
-
-                // Fetch bookmarks
-                const bookmarkRes = await api.get('/getBookmarkedCards', {
-                    params: { username: props.username }
-                });
-
-                const bookmarkedIDs = new Set(
-                    bookmarkRes.data.bookmarkedCards.map(card =>
-                        card.cardID || card.cardid || card.CardID
-                    )
-                );
-
-                console.log("[Profile] Final bookmarked set:", bookmarkedIDs);
-                setBookmarkedCardIDs(bookmarkedIDs);
-                setBookmarksLoaded(true);
-                setLastDeletedCard(false);
-            } catch (error) {
-                console.error("Profile fetch error:", error);
-            }
-        };
-
-        fetchData();
-    }, [props.isAdmin, props.username, lastDeletedCard]);
-
     return (
         <div className="profile-container">
             {/* LEFT SIDE */}
-            <div className={`profile-left ${isCollapsed ? 'expanded' : ''}`}>
+            <div className="profile-left expanded">
             <div className="about">
                 <h1>Profile page</h1>
                 <h2>User Name: {props.username}</h2>
@@ -179,65 +104,22 @@ function Profile(props) {
                         required
                     />
                     </div>
+                    <div>
+                    <label>Confirm New Password:</label>
+                    <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                    />
+                    </div>
                     <button type="submit">Change Password</button>
                 </form>
                 )}
+
+                {message && <p>{message}</p>}
             </div>
             </div>
-
-            {/* RIGHT SIDE (cards) */}
-            <div className={`profile-right ${isCollapsed ? 'collapsed' : ''}`}>
-            {!isCollapsed && (
-                <section id="content-2" className="profile-content-2">
-                <div className="card-container">
-                    {cards
-                    .filter(
-                        (card) => !showFavoritesOnly || bookmarkedCardIDs.has(card.cardID)
-                    )
-                    .map((card, index) => (
-                        <Card
-                        key={`${card.cardID}-${index}`}
-                        formData={{
-                            ...card,
-                            cardID: card.cardID,
-                            cardOwner: card.username,
-                            viewerUsername: props.username,
-                        }}
-                        isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                        username={props.username}
-                        onCardDelete={setLastDeletedCard}
-                        onBookmarkChange={handleBookmarkChange}
-                        />
-                    ))}
-                </div>
-
-                <div className="favorites-toggle-wrapper-profile">
-                    <div
-                    className={`favorites-toggle-icon ${
-                        showFavoritesOnly ? 'active' : ''
-                    }`}
-                    onClick={() => setShowFavoritesOnly((prev) => !prev)}
-                    title="Favorites"
-                    >
-                    <FontAwesomeIcon
-                        icon={faStarHalfStroke}
-                        style={{ marginRight: '8px' }}
-                    />
-                    Favorites
-                    </div>
-                </div>
-                </section>
-            )}
-            </div>
-
-            {/* Toggle button OUTSIDE so it stays fixed mid-screen */}
-            <button
-                className={`collapse-toggle ${isCollapsed ? 'collapsed' : 'expanded'}`}
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-                <span className="arrow">➤</span>
-            </button>
         </div>
         );
 }
