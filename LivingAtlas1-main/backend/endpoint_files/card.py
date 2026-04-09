@@ -101,7 +101,7 @@ async def create_card(
     description: str = Form(...),
     thumbnail: UploadFile = File(None)
 ):
-    thumbnail_link = upload_image(thumbnail) if thumbnail else None
+    thumbnail_link = upload_image(thumbnail) if thumbnail else DEFAULT_THUMBNAIL_URL
     cur.execute("INSERT INTO Cards (title, description, thumbnail_link) VALUES (%s, %s, %s)",
                 (title, description, thumbnail_link))
     conn.commit()

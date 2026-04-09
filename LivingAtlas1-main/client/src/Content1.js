@@ -137,6 +137,7 @@ const Content1 = (props) => {
       const currentImage = popupImages[currentImageIndex] || popupImages[0];
       thumbnail.src = currentImage?.url || '/CEREO-logo.png';
       thumbnail.alt = currentImage?.alt || 'Card Thumbnail';
+      thumbnail.onerror = function() { this.onerror = null; this.src = '/CEREO-logo.png'; };
 
       const hasMultipleImages = popupImages.length > 1;
       prevButton.style.display = hasMultipleImages ? 'inline-flex' : 'none';
@@ -206,6 +207,7 @@ const Content1 = (props) => {
         const img = popupImages[overlayImageIndex] || popupImages[0];
         largeImage.src = img?.url || '/CEREO-logo.png';
         largeImage.alt = img?.alt || 'Card image';
+        largeImage.onerror = function() { this.onerror = null; this.src = '/CEREO-logo.png'; };
 
         const hasMultiple = popupImages.length > 1;
         prevNav.style.display = hasMultiple ? 'flex' : 'none';

@@ -885,6 +885,7 @@ function Card(props) {
                     alt={cardCurrentImage.alt || "Card Thumbnail"}
                     className="card-thumbnail"
                     onClick={handleOpenImagePreview}
+                    onError={(e) => { e.target.onerror = null; e.target.src = '/CEREO-logo.png'; }}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
                     role="button"
                     tabIndex={0}
@@ -1399,7 +1400,7 @@ function Card(props) {
                 {hasMultipleImages && (
                     <button className="image-preview-nav image-preview-nav-prev" onClick={goToPrevImage} aria-label="Previous image">&#8249;</button>
                 )}
-                <img src={currentImage.url} alt="Card enlarged preview" className="image-preview-content" />
+                <img src={currentImage.url} alt="Card enlarged preview" className="image-preview-content" onError={(e) => { e.target.onerror = null; e.target.src = '/CEREO-logo.png'; }} />
                 {hasMultipleImages && (
                     <button className="image-preview-nav image-preview-nav-next" onClick={goToNextImage} aria-label="Next image">&#8250;</button>
                 )}
@@ -1555,6 +1556,7 @@ function Card(props) {
                                     src={preview}
                                     alt="Thumbnail Preview"
                                     width="120"
+                                    onError={(e) => { e.target.onerror = null; e.target.src = '/CEREO-logo.png'; }}
                                     style={{
                                         marginBottom: "10px",
                                         borderRadius: "6px",
