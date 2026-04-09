@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './Content2.css';
 import './Profile.css';
 import api from './api.js';
@@ -8,6 +8,25 @@ function Profile(props) {
     const [showRegister, setShowRegister] = useState(false);
     const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [editedUsername, setEditedUsername] = useState(props.username || '');
+    const [bio, setBio] = useState('');
+    const [editedBio, setEditedBio] = useState('');
+    const [isEditingBio, setIsEditingBio] = useState(false);
+
+    const BIO_MAX_LENGTH = 300;
+
+    useEffect(() => {
+        const fetchBio = async () => {
+            try {
+                const res = await api.get('/getBio', { params: { email: props.email } });
+                if (res.data.success) {
+                    setBio(res.data.bio);
+                }
+            } catch (err) {
+                console.error('Error fetching bio:', err);
+            }
+        };
+        if (props.email) fetchBio();
+    }, [props.email]);
 
     // Password Reset & Change Password States
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -105,6 +124,56 @@ function Profile(props) {
                   )}
                 </h2>
                 <h2>Email: {props.email}</h2>
+
+                <div className="bio-section">
+                  <h3>Bio</h3>
+                  {isEditingBio ? (
+                    <>
+                      <textarea
+                        value={editedBio}
+                        onChange={(e) => {
+                          if (e.target.value.length <= BIO_MAX_LENGTH) {
+                            setEditedBio(e.target.value);
+                          }
+                        }}
+                        maxLength={BIO_MAX_LENGTH}
+                        rows={4}
+                        style={{ width: '100%', resize: 'vertical' }}
+                      />
+                      <p style={{ fontSize: '0.85em', color: '#888' }}>
+                        {editedBio.length}/{BIO_MAX_LENGTH}
+                      </p>
+                      <button onClick={async () => {
+                        try {
+                          const res = await api.post('/updateBio', {
+                            email: props.email,
+                            bio: editedBio
+                          });
+                          if (res.data.success) {
+                            setBio(res.data.bio);
+                            setMessage('Bio updated successfully.');
+                            setIsEditingBio(false);
+                          }
+                        } catch (err) {
+                          setMessage('Error updating bio.');
+                          console.error(err);
+                        }
+                      }}>Save</button>
+                      <button onClick={() => {
+                        setEditedBio(bio);
+                        setIsEditingBio(false);
+                      }}>Cancel</button>
+                    </>
+                  ) : (
+                    <>
+                      <p>{bio || 'No bio yet.'}</p>
+                      <button onClick={() => {
+                        setEditedBio(bio);
+                        setIsEditingBio(true);
+                      }}>Edit Bio</button>
+                    </>
+                  )}
+                </div>
                 <p>
                 On the profile page, you're granted a comprehensive view of every
                 piece of data you've shared with our community. If you ever notice

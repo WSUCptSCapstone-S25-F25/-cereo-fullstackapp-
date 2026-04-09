@@ -389,6 +389,43 @@ class UpdateUsernameRequest(BaseModel):
     email: str
     new_username: str
 
+class UpdateBioRequest(BaseModel):
+    email: str
+    bio: str
+
+BIO_MAX_LENGTH = 300
+
+@account_router.get("/getBio")
+async def get_bio(email: str):
+    try:
+        cur.execute("SELECT bio FROM users WHERE email = %s", (email,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"success": True, "bio": row[0] or ""}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@account_router.post("/updateBio")
+async def update_bio(request: UpdateBioRequest):
+    try:
+        if len(request.bio) > BIO_MAX_LENGTH:
+            raise HTTPException(status_code=400, detail=f"Bio must be {BIO_MAX_LENGTH} characters or less.")
+        cur.execute("SELECT username FROM users WHERE email = %s", (request.email,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+        cur.execute("UPDATE users SET bio = %s WHERE email = %s", (request.bio, request.email))
+        conn.commit()
+        return {"success": True, "message": "Bio updated successfully.", "bio": request.bio}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @account_router.post("/updateUsername")
 async def update_username(request: UpdateUsernameRequest):
     try:
