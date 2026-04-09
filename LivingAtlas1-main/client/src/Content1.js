@@ -355,14 +355,10 @@ const Content1 = (props) => {
     return root;
   }, [resolveImageUrl]);
 
-  const openMarkerPopup = useCallback((feature, markerInstanceOrLngLat, mapInstance) => {
+  const openMarkerPopup = useCallback((feature, markerInstance, mapInstance) => {
     closeMarkerPopup();
 
     const popupContent = buildMarkerPopupContent(feature);
-
-    const lngLat = Array.isArray(markerInstanceOrLngLat)
-      ? markerInstanceOrLngLat
-      : markerInstanceOrLngLat.getLngLat();
 
     const popup = new mapboxgl.Popup({
       closeButton: true,
@@ -371,7 +367,7 @@ const Content1 = (props) => {
       offset: [12, -8],
       className: 'card-pin-rich-popup'
     })
-      .setLngLat(lngLat)
+      .setLngLat(markerInstance.getLngLat())
       .setDOMContent(popupContent)
       .addTo(mapInstance);
 
@@ -600,29 +596,17 @@ const Content1 = (props) => {
       for (let feature of markersData) {
         if (!isActive) return;
 
-        if (feature.category === "River") {
-          blueMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-        } else if (feature.category === "Watershed") {
-          greenMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-        } else {
-          yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-        }
-
-        // Polygon cards are rendered as polygon shapes, not pin markers
-        if (feature.location_type === 'polygon' &&
-            feature.polygon_vertices && Array.isArray(feature.polygon_vertices) &&
-            feature.polygon_vertices.length >= 3) {
-          continue;
-        }
-
         const el = document.createElement('div');
 
         if (feature.category === "River") {
           el.className = 'blue-marker';
+          blueMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
         } else if (feature.category === "Watershed") {
           el.className = 'green-marker';
+          greenMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
         } else {
           el.className = 'yellow-marker';
+          yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
         }
 
         const marker = new mapboxgl.Marker(el);
@@ -705,22 +689,6 @@ const Content1 = (props) => {
             'line-width': 2
           }
         });
-
-        // Click handler on polygon fill to open popup
-        ((feat) => {
-          mapInstance.on('click', fillLayerId, (e) => {
-            e.originalEvent.stopPropagation();
-            marker_clicked = true;
-            setSearchCondition(feat.title);
-            openMarkerPopup(feat, [parseFloat(feat.longitude), parseFloat(feat.latitude)], mapInstance);
-          });
-          mapInstance.on('mouseenter', fillLayerId, () => {
-            mapInstance.getCanvas().style.cursor = 'pointer';
-          });
-          mapInstance.on('mouseleave', fillLayerId, () => {
-            mapInstance.getCanvas().style.cursor = '';
-          });
-        })(feature);
       }
     };
 
