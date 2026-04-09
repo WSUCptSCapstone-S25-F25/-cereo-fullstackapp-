@@ -397,3 +397,61 @@
 .location-select-popup .location-select-cancel:hover {
     background: #ccc;
 }
+
+/* Location type tab selector */
+.form-modal-location-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #c6d2df;
+}
+
+.form-modal-location-tab {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    background: #f3f6f9;
+    color: #555;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.form-modal-location-tab:first-child {
+    border-right: 1px solid #c6d2df;
+}
+
+.form-modal-location-tab.active {
+    background: #0077c0;
+    color: #fff;
+}
+
+.form-modal-location-tab:hover:not(.active) {
+    background: #e5ecf3;
+}
+
+/* Polygon section */
+.form-modal-polygon-section {
+    margin-bottom: 8px;
+}
+
+.form-modal-polygon-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #e8f5e9;
+    border-radius: 5px;
+    font-size: 13px;
+    color: #2e7d32;
+    font-weight: 600;
+    margin-top: 6px;
+}
+
+.form-modal-polygon-check {
+    font-size: 15px;
+    color: #27ae60;
+}
