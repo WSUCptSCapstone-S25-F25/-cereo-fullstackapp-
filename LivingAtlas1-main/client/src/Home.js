@@ -42,11 +42,11 @@ function Home(props) {
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v6');
+        return !localStorage.getItem('changelog_seen_v7');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v6', 'true');
+        localStorage.setItem('changelog_seen_v7', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -444,6 +444,14 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/8/2026</h3>
+                    <p>Improved the Profile page — added profile image upload and a bio section, and removed the card container that was previously shown on the profile page.</p>
+                    <p>Users can now click the Edit button on their profile to modify their username, profile image, and bio in a single edit session.</p>
+                    <p>Fixed an issue where newly created cards without a custom thumbnail would show a broken image. A default CEREO logo is now used as fallback.</p>
+                    <p>Cards now display their creation date at the bottom of the Learn More modal. Existing cards without a date default to today's date.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/7/2026</h3>
                     <p>Improved layer popup appearance and stacking behavior — when multiple popups are open at the same time, they now stack with visible offsets and distinct border colors so each one stays readable.</p>
                     <p>The "Add Card" form is now accessible directly from the card panel toolbar via the "+" button, instead of a separate page.</p>
