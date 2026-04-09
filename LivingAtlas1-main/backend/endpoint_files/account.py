@@ -9,7 +9,7 @@ import os
 import hashlib
 import secrets
 import smtplib
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Form, UploadFile, File
 from pydantic import BaseModel
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -394,6 +394,39 @@ class UpdateBioRequest(BaseModel):
     bio: str
 
 BIO_MAX_LENGTH = 300
+
+@account_router.get("/getProfileImage")
+async def get_profile_image(email: str):
+    try:
+        cur.execute("SELECT profile_image FROM users WHERE email = %s", (email,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"success": True, "profile_image": row[0] or ""}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@account_router.post("/uploadProfileImage")
+async def upload_profile_image(email: str = Form(...), image: UploadFile = File(...)):
+    try:
+        cur.execute("SELECT username FROM users WHERE email = %s", (email,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        from endpoint_files.images import save_uploaded_file
+        image_url = save_uploaded_file(image, require_gcs=True)
+
+        cur.execute("UPDATE users SET profile_image = %s WHERE email = %s", (image_url, email))
+        conn.commit()
+        return {"success": True, "message": "Profile image updated.", "profile_image": image_url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @account_router.get("/getBio")
 async def get_bio(email: str):

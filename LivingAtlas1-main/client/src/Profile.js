@@ -3,6 +3,8 @@ import './Content2.css';
 import './Profile.css';
 import api from './api.js';
 import Register from './Register';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleUser } from '@fortawesome/free-solid-svg-icons';
 
 function Profile(props) {
     const [showRegister, setShowRegister] = useState(false);
@@ -10,6 +12,9 @@ function Profile(props) {
     const [editedUsername, setEditedUsername] = useState(props.username || '');
     const [bio, setBio] = useState('');
     const [editedBio, setEditedBio] = useState('');
+    const [profileImage, setProfileImage] = useState('');
+    const [selectedImageFile, setSelectedImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState('');
 
     const BIO_MAX_LENGTH = 300;
 
@@ -24,18 +29,35 @@ function Profile(props) {
                 console.error('Error fetching bio:', err);
             }
         };
-        if (props.email) fetchBio();
+        const fetchProfileImage = async () => {
+            try {
+                const res = await api.get('/getProfileImage', { params: { email: props.email } });
+                if (res.data.success) {
+                    setProfileImage(res.data.profile_image);
+                }
+            } catch (err) {
+                console.error('Error fetching profile image:', err);
+            }
+        };
+        if (props.email) {
+            fetchBio();
+            fetchProfileImage();
+        }
     }, [props.email]);
 
     const handleEditClick = () => {
         setEditedUsername(props.username);
         setEditedBio(bio);
+        setSelectedImageFile(null);
+        setImagePreview('');
         setIsEditing(true);
     };
 
     const handleCancelEdit = () => {
         setEditedUsername(props.username);
         setEditedBio(bio);
+        setSelectedImageFile(null);
+        setImagePreview('');
         setIsEditing(false);
     };
 
@@ -70,6 +92,19 @@ function Profile(props) {
                     setBio(res.data.bio);
                 }
             }
+            if (selectedImageFile) {
+                const formData = new FormData();
+                formData.append('email', props.email);
+                formData.append('image', selectedImageFile);
+                const res = await api.post('/uploadProfileImage', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (res.data.success) {
+                    setProfileImage(res.data.profile_image);
+                }
+            }
+            setSelectedImageFile(null);
+            setImagePreview('');
             setMessage('Profile updated successfully.');
             setIsEditing(false);
         } catch (err) {
@@ -129,6 +164,45 @@ function Profile(props) {
             <div className="profile-left expanded">
             <div className="about">
                 <h1>Profile page</h1>
+
+                <div className="profile-image-section" style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  {isEditing ? (
+                    <label style={{ cursor: 'pointer', display: 'inline-block' }}>
+                      {(imagePreview || profileImage) ? (
+                        <img
+                          src={imagePreview || profileImage}
+                          alt="Profile"
+                          style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '120px', color: '#aaa' }} />
+                      )}
+                      <p style={{ fontSize: '0.85em', color: '#888', marginTop: '4px' }}>Click to change</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setSelectedImageFile(file);
+                            setImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt="Profile"
+                        style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '120px', color: '#aaa' }} />
+                    )
+                  )}
+                </div>
                 <h2>
                   User Name:{' '}
                   {isEditing ? (
