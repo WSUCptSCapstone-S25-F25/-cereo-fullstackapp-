@@ -17,6 +17,7 @@ import { useLocation } from 'react-router-dom';
 function Content2(props) {
     const { setCardPanelWidth } = props;
     const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
+    const [pendingPolygonData, setPendingPolygonData] = useState(null);
     const containerWidth = props.cardPanelWidth ?? 300;
     const containerRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -26,7 +27,21 @@ function Content2(props) {
     const lastHandledSidebarSearchRequestRef = useRef(0);
 
     const openModal = () => setIsModalOpen(true);
-    const closeModal = () => setIsModalOpen(false);
+    const closeModal = () => { setIsModalOpen(false); setPendingPolygonData(null); };
+
+    // Listen for polygon-tool-save from Content1's Polygon Tool
+    useEffect(() => {
+        const handler = (e) => {
+            if (!props.isLoggedIn) {
+                alert('Please log in to upload a data card.');
+                return;
+            }
+            setPendingPolygonData(e.detail);
+            setIsModalOpen(true);
+        };
+        window.addEventListener('polygon-tool-save', handler);
+        return () => window.removeEventListener('polygon-tool-save', handler);
+    }, [props.isLoggedIn]);
 
     function useDidMount() {
         const mountRef = useRef(false);
@@ -779,7 +794,8 @@ function Content2(props) {
                 username={resolvedUsername} 
                 email={props.email} 
                 isOpen={isModalOpen} 
-                onRequestClose={closeModal} 
+                onRequestClose={closeModal}
+                initialPolygonData={pendingPolygonData}
             />
     
             <section

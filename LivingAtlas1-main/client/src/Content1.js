@@ -10,6 +10,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import updateMarkers from './PolygonFiltering.js';
 import { showAll } from './Filter';
 import api from './api.js';
+import PolygonDrawingModal from './PolygonDrawingModal';
 
 // Mapbox Token
 mapboxgl.accessToken =
@@ -50,6 +51,7 @@ const Content1 = (props) => {
   const [zoom, setZoom] = useState(5.5);
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
+  const [isPolygonToolDrawing, setIsPolygonToolDrawing] = useState(false);
 
   const closeMarkerPopup = useCallback(() => {
     if (markerPopupRef.current) {
@@ -521,6 +523,13 @@ const Content1 = (props) => {
 
     map.addControl(draw);
 
+    map.on('draw.modechange', (e) => {
+      if (e.mode === 'draw_polygon') {
+        draw.changeMode('simple_select');
+        setIsPolygonToolDrawing(true);
+      }
+    });
+
     map.on('draw.create', updateMarkers);
     map.on('draw.delete', showAll);
     map.on('draw.update', updateMarkers);
@@ -620,7 +629,67 @@ const Content1 = (props) => {
         allMarkers.push(marker);
       }
 
+      // Render polygons for cards with polygon_vertices
+      renderCardPolygons(markersData, map);
+
       showAll();
+    };
+
+    const renderCardPolygons = (markersData, mapInstance) => {
+      // Remove existing polygon layers/sources
+      markersData.forEach(feature => {
+        const sourceId = `card-polygon-${feature.cardID}`;
+        const fillLayerId = `card-polygon-fill-${feature.cardID}`;
+        const lineLayerId = `card-polygon-line-${feature.cardID}`;
+        if (mapInstance.getLayer(fillLayerId)) mapInstance.removeLayer(fillLayerId);
+        if (mapInstance.getLayer(lineLayerId)) mapInstance.removeLayer(lineLayerId);
+        if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+      });
+
+      for (let feature of markersData) {
+        const vertices = feature.polygon_vertices;
+        if (!vertices || !Array.isArray(vertices) || vertices.length < 3) continue;
+        if (feature.location_type !== 'polygon') continue;
+
+        const coords = vertices.map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
+        coords.push(coords[0]); // close polygon
+
+        const sourceId = `card-polygon-${feature.cardID}`;
+        const fillLayerId = `card-polygon-fill-${feature.cardID}`;
+        const lineLayerId = `card-polygon-line-${feature.cardID}`;
+
+        let fillColor = '#f39c12'; // default yellow/places
+        if (feature.category === 'River') fillColor = '#3498db';
+        else if (feature.category === 'Watershed') fillColor = '#27ae60';
+
+        mapInstance.addSource(sourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: { type: 'Polygon', coordinates: [coords] }
+          }
+        });
+
+        mapInstance.addLayer({
+          id: fillLayerId,
+          type: 'fill',
+          source: sourceId,
+          paint: {
+            'fill-color': fillColor,
+            'fill-opacity': 0.2
+          }
+        });
+
+        mapInstance.addLayer({
+          id: lineLayerId,
+          type: 'line',
+          source: sourceId,
+          paint: {
+            'line-color': fillColor,
+            'line-width': 2
+          }
+        });
+      }
     };
 
     const fetchMarkersWithRetry = async (reason = 'initial-load') => {
@@ -839,6 +908,18 @@ const Content1 = (props) => {
           <a href="https://icons8.com/icon/" title="marker icons" target="_blank" rel="noopener noreferrer">icons8.</a>
         </div>,
         creditPortalHost
+      )}
+
+      {isPolygonToolDrawing && (
+        <PolygonDrawingModal
+          onSave={(vertices, centroid) => {
+            setIsPolygonToolDrawing(false);
+            window.dispatchEvent(new CustomEvent('polygon-tool-save', {
+              detail: { vertices, centroid }
+            }));
+          }}
+          onCancel={() => setIsPolygonToolDrawing(false)}
+        />
       )}
     </div>
   );

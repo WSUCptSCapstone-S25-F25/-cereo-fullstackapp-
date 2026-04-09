@@ -1,19 +1,38 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Modal from 'react-modal';
 import mapboxgl from 'mapbox-gl';
 import './FormModal.css';
 import api from './api.js';
+import PolygonDrawingModal from './PolygonDrawingModal';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const FormModal = (props) => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
+    const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
+    const [locationType, setLocationType] = useState('point'); // 'point' or 'polygon'
+    const [polygonVertices, setPolygonVertices] = useState([]);
     const isModalOpen = modalIsOpen || props.isOpen;
     const selectLocationMarker = useRef(null);
 
+    // Apply initial polygon data from Polygon Tool flow
+    useEffect(() => {
+        if (props.initialPolygonData) {
+            const { vertices, centroid } = props.initialPolygonData;
+            setLocationType('polygon');
+            setPolygonVertices(vertices);
+            setFormData(prev => ({
+                ...prev,
+                latitude: centroid.lat.toFixed(6),
+                longitude: centroid.lng.toFixed(6),
+            }));
+        }
+    }, [props.initialPolygonData]);
+
     const handleCloseModal = () => {
         setModalIsOpen(false);
+        setIsDrawingPolygon(false);
         if (selectLocationMarker.current) {
             selectLocationMarker.current.remove();
             selectLocationMarker.current = null;
@@ -106,8 +125,12 @@ const FormModal = (props) => {
         if (!formData.username.trim()) errors.push("Username is required.");
         if (!formData.name.trim()) errors.push("Name is required.");
         if (!formData.title.trim() || formData.title.length > 255) errors.push("Title is required and must be <256 chars.");
-        if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.latitude)) errors.push("Latitude format is invalid.");
-        if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.longitude)) errors.push("Longitude format is invalid.");
+        if (locationType === 'polygon') {
+            if (polygonVertices.length < 3) errors.push("Polygon must have at least 3 points.");
+        } else {
+            if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.latitude)) errors.push("Latitude format is invalid.");
+            if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.longitude)) errors.push("Longitude format is invalid.");
+        }
         if (formData.description && formData.description.length > 2000) errors.push("Description must be <2001 chars.");
         if (formData.org && formData.org.length > 255) errors.push("Org must be <256 chars.");
         if (formData.funding && formData.funding.length > 255) errors.push("Funding must be <256 chars.");
@@ -135,6 +158,12 @@ const FormModal = (props) => {
                 formData2.append(key, value);
             }
         });
+
+        // Add location type and polygon data
+        formData2.append('location_type', locationType);
+        if (locationType === 'polygon' && polygonVertices.length >= 3) {
+            formData2.append('polygon_coordinates', JSON.stringify(polygonVertices));
+        }
 
         // append multiple files
         if (selectedFiles.length > 0) {
@@ -252,6 +281,31 @@ const FormModal = (props) => {
         setIsSelectingLocation(false);
     };
 
+    const handleStartPolygonDraw = () => {
+        setIsDrawingPolygon(true);
+    };
+
+    const handlePolygonSave = (vertices, centroid) => {
+        setPolygonVertices(vertices);
+        setFormData(prev => ({
+            ...prev,
+            latitude: centroid.lat.toFixed(6),
+            longitude: centroid.lng.toFixed(6),
+        }));
+        setIsDrawingPolygon(false);
+    };
+
+    const handlePolygonCancel = () => {
+        setIsDrawingPolygon(false);
+    };
+
+    const handleLocationTypeChange = (type) => {
+        setLocationType(type);
+        if (type === 'point') {
+            setPolygonVertices([]);
+        }
+    };
+
     return (
         <div>
             {/* Floating hint when selecting location */}
@@ -261,8 +315,17 @@ const FormModal = (props) => {
                     <button type="button" onClick={cancelSelectLocation}>Cancel</button>
                 </div>
             )}
+
+            {/* Polygon drawing flow */}
+            {isDrawingPolygon && (
+                <PolygonDrawingModal
+                    onSave={handlePolygonSave}
+                    onCancel={handlePolygonCancel}
+                />
+            )}
+
             <Modal
-                isOpen={isModalOpen && !isSelectingLocation}
+                isOpen={isModalOpen && !isSelectingLocation && !isDrawingPolygon}
                 onRequestClose={handleCloseModal}
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
@@ -308,15 +371,63 @@ const FormModal = (props) => {
                     <label>Link:</label>
                     <input type="text" name="link" value={formData.link} onChange={handleInputChange} />
 
-                    <button type="button" className="location_button" onClick={handleSelectLocation}>
-                        Select Location
-                    </button>
+                    <label>Location Type:</label>
+                    <div className="form-modal-location-tabs">
+                        <button
+                            type="button"
+                            className={`form-modal-location-tab ${locationType === 'point' ? 'active' : ''}`}
+                            onClick={() => handleLocationTypeChange('point')}
+                        >
+                            Single Point
+                        </button>
+                        <button
+                            type="button"
+                            className={`form-modal-location-tab ${locationType === 'polygon' ? 'active' : ''}`}
+                            onClick={() => handleLocationTypeChange('polygon')}
+                        >
+                            Polygon Area
+                        </button>
+                    </div>
 
-                    <label>Latitude (required):</label>
-                    <input type="text" name="latitude" value={formData.latitude} onChange={handleInputChange} required />
+                    {locationType === 'point' && (
+                        <>
+                            <button type="button" className="location_button" onClick={handleSelectLocation}>
+                                Select a Location
+                            </button>
 
-                    <label>Longitude (required):</label>
-                    <input type="text" name="longitude" value={formData.longitude} onChange={handleInputChange} required />
+                            <label>Latitude (required):</label>
+                            <input
+                                type="text"
+                                name="latitude"
+                                value={formData.latitude}
+                                onChange={handleInputChange}
+                                required
+                            />
+
+                            <label>Longitude (required):</label>
+                            <input
+                                type="text"
+                                name="longitude"
+                                value={formData.longitude}
+                                onChange={handleInputChange}
+                                required
+                            />
+                        </>
+                    )}
+
+                    {locationType === 'polygon' && (
+                        <div className="form-modal-polygon-section">
+                            <button type="button" className="location_button" onClick={handleStartPolygonDraw}>
+                                {polygonVertices.length >= 3 ? 'Redraw Polygon' : 'Draw Polygon on Map'}
+                            </button>
+                            {polygonVertices.length >= 3 && (
+                                <div className="form-modal-polygon-summary">
+                                    <span className="form-modal-polygon-check">&#10003;</span>
+                                    Polygon saved: {polygonVertices.length} points
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <label>Tags (comma-separated):</label>
                     <input type="text" name="tags" value={formData.tags} onChange={handleInputChange} />
