@@ -335,6 +335,8 @@ def allCards():
                 c.Longitude,
                 c.Thumbnail_Link,
                 COALESCE(c.LocationType, 'point') AS LocationType,
+                COALESCE(c.PolygonFillColor, '#0077c0') AS PolygonFillColor,
+                COALESCE(c.PolygonLineStyle, 'solid') AS PolygonLineStyle,
                 COALESCE(
                     (
                         SELECT json_agg(
@@ -394,7 +396,7 @@ def allCards():
         columns = [
             "username", "email", "name", "title", "cardID", "category", "date", "description",
             "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link",
-            "location_type", "images", "files", "polygon_vertices"
+            "location_type", "polygon_fill_color", "polygon_line_style", "images", "files", "polygon_vertices"
         ]
 
         rows = cur.fetchall()
@@ -431,6 +433,8 @@ async def upload_form(
     longitude: Optional[str] = Form(None),
     location_type: Optional[str] = Form("point"),
     polygon_coordinates: Optional[str] = Form(None),
+    polygon_fill_color: Optional[str] = Form(None),
+    polygon_line_style: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     funding: Optional[str] = Form(None),
     org: Optional[str] = Form(None),
@@ -567,10 +571,11 @@ async def upload_form(
                 SET Name=%s, Latitude=%s, Longitude=%s, CategoryID=%s,
                     Description=%s, Organization=%s, Funding=%s, Link=%s,
                     Thumbnail_Link=COALESCE(%s, Thumbnail_Link), UserID=%s,
-                    LocationType=%s
+                    LocationType=%s, PolygonFillColor=%s, PolygonLineStyle=%s
                 WHERE CardID=%s
             """, (name, latitude_val, longitude_val, categoryID, description, org,
-                  funding, link, thumbnail_url, userID, location_type or "point", nextcardid))
+                  funding, link, thumbnail_url, userID, location_type or "point",
+                  polygon_fill_color or '#0077c0', polygon_line_style or 'solid', nextcardid))
             cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
             # Delete old polygon vertices on update
             cur.execute("DELETE FROM CardPolygonVertices WHERE CardID=%s", (nextcardid,))
@@ -578,11 +583,13 @@ async def upload_form(
             cur.execute("""
                 INSERT INTO Cards
                     (CardID, UserID, Name, Title, Latitude, Longitude, CategoryID,
-                     Description, Organization, Funding, Link, Thumbnail_Link, LocationType)
+                     Description, Organization, Funding, Link, Thumbnail_Link, LocationType,
+                     PolygonFillColor, PolygonLineStyle)
                 VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (nextcardid, userID, name, title, latitude_val, longitude_val,
-                  categoryID, description, org, funding, link, thumbnail_url, location_type or "point"))
+                  categoryID, description, org, funding, link, thumbnail_url, location_type or "point",
+                  polygon_fill_color or '#0077c0', polygon_line_style or 'solid'))
 
         # --------------------------------------------------
         # Handle polygon vertices (if location_type is 'polygon')

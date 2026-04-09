@@ -408,6 +408,13 @@ function Content2(props) {
         setSortMode((props.sortCondition || '').split(',')[0] || '');
     }, [props.sortCondition]);
 
+    // Reload card list when a new card is uploaded
+    useEffect(() => {
+        const handler = () => loadCardsByCriteria();
+        window.addEventListener('atlas:card-uploaded', handler);
+        return () => window.removeEventListener('atlas:card-uploaded', handler);
+    }, []);
+
     useEffect(() => {
         loadCardsByCriteria();
         /*

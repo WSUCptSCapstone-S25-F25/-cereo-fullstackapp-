@@ -80,6 +80,14 @@ def _ensure_schema():
             ALTER TABLE Cards ALTER COLUMN CategoryID DROP NOT NULL;
         """)
 
+        # Migration 005 — Polygon style columns (fill color + line style)
+        cur.execute("""
+            ALTER TABLE Cards ADD COLUMN IF NOT EXISTS PolygonFillColor VARCHAR(20) DEFAULT '#0077c0';
+        """)
+        cur.execute("""
+            ALTER TABLE Cards ADD COLUMN IF NOT EXISTS PolygonLineStyle VARCHAR(20) DEFAULT 'solid';
+        """)
+
         conn.commit()
         print("[MIGRATIONS] Schema is up-to-date.")
     except Exception as e:

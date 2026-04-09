@@ -651,6 +651,14 @@ const Content1 = (props) => {
         if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
       });
 
+      // Line style dash patterns (must match PolygonDrawingModal.js)
+      const LINE_STYLE_DASH = {
+        solid: [],
+        dashed: [4, 3],
+        dotted: [1, 2],
+        dashdot: [4, 2, 1, 2]
+      };
+
       for (let feature of markersData) {
         const vertices = feature.polygon_vertices;
         if (!vertices || !Array.isArray(vertices) || vertices.length < 3) continue;
@@ -663,9 +671,9 @@ const Content1 = (props) => {
         const fillLayerId = `card-polygon-fill-${feature.cardID}`;
         const lineLayerId = `card-polygon-line-${feature.cardID}`;
 
-        let fillColor = '#f39c12'; // default yellow/places
-        if (feature.category === 'River') fillColor = '#3498db';
-        else if (feature.category === 'Watershed') fillColor = '#27ae60';
+        // Use the user-chosen color saved on the card; fall back to default blue
+        const fillColor = feature.polygon_fill_color || '#0077c0';
+        const lineDash = LINE_STYLE_DASH[feature.polygon_line_style] || [];
 
         mapInstance.addSource(sourceId, {
           type: 'geojson',
@@ -685,14 +693,19 @@ const Content1 = (props) => {
           }
         });
 
+        const linePaint = {
+          'line-color': fillColor,
+          'line-width': 2
+        };
+        if (lineDash.length > 0) {
+          linePaint['line-dasharray'] = lineDash;
+        }
+
         mapInstance.addLayer({
           id: lineLayerId,
           type: 'line',
           source: sourceId,
-          paint: {
-            'line-color': fillColor,
-            'line-width': 2
-          }
+          paint: linePaint
         });
 
         // Click handler for polygon fill — open card popup
@@ -782,8 +795,16 @@ const Content1 = (props) => {
       fetchMarkersWithRetry('cards-loaded-event');
     };
 
+    const handleCardUploaded = () => {
+      if (!isActive) return;
+      // Force re-fetch so new card (including polygons) appears immediately
+      markersFetchInFlight = false;
+      fetchMarkersWithRetry('card-uploaded');
+    };
+
     clearMarkers();
     window.addEventListener('atlas:cards-loaded', handleCardsLoaded);
+    window.addEventListener('atlas:card-uploaded', handleCardUploaded);
 
     // Wait for map style/container readiness before mounting marker DOM nodes.
     if (map.loaded()) {
@@ -908,6 +929,7 @@ const Content1 = (props) => {
     return () => {
       isActive = false;
       window.removeEventListener('atlas:cards-loaded', handleCardsLoaded);
+      window.removeEventListener('atlas:card-uploaded', handleCardUploaded);
       window.cancelAnimationFrame(creditSyncRafId);
       map.off('load', syncBottomRightMeta);
       closeMarkerPopup();
@@ -957,10 +979,10 @@ const Content1 = (props) => {
 
       {isPolygonToolDrawing && (
         <PolygonDrawingModal
-          onSave={(vertices, centroid) => {
+          onSave={(vertices, centroid, style) => {
             setIsPolygonToolDrawing(false);
             window.dispatchEvent(new CustomEvent('polygon-tool-save', {
-              detail: { vertices, centroid }
+              detail: { vertices, centroid, fillColor: style?.fillColor, lineStyle: style?.lineStyle }
             }));
           }}
           onCancel={() => setIsPolygonToolDrawing(false)}

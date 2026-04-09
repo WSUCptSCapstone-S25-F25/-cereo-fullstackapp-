@@ -13,15 +13,19 @@ const FormModal = (props) => {
     const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
     const [locationType, setLocationType] = useState('point'); // 'point' or 'polygon'
     const [polygonVertices, setPolygonVertices] = useState([]);
+    const [polygonFillColor, setPolygonFillColor] = useState('#0077c0');
+    const [polygonLineStyle, setPolygonLineStyle] = useState('solid');
     const isModalOpen = modalIsOpen || props.isOpen;
     const selectLocationMarker = useRef(null);
 
     // Apply initial polygon data from Polygon Tool flow
     useEffect(() => {
         if (props.initialPolygonData) {
-            const { vertices, centroid } = props.initialPolygonData;
+            const { vertices, centroid, fillColor, lineStyle } = props.initialPolygonData;
             setLocationType('polygon');
             setPolygonVertices(vertices);
+            if (fillColor) setPolygonFillColor(fillColor);
+            if (lineStyle) setPolygonLineStyle(lineStyle);
             setFormData(prev => ({
                 ...prev,
                 latitude: centroid.lat.toFixed(6),
@@ -163,6 +167,8 @@ const FormModal = (props) => {
         formData2.append('location_type', locationType);
         if (locationType === 'polygon' && polygonVertices.length >= 3) {
             formData2.append('polygon_coordinates', JSON.stringify(polygonVertices));
+            formData2.append('polygon_fill_color', polygonFillColor);
+            formData2.append('polygon_line_style', polygonLineStyle);
         }
 
         // append multiple files
@@ -188,6 +194,8 @@ const FormModal = (props) => {
         .then(response => {
             setModalIsOpen(false);
             alert("Upload Successful");
+            // Tell the map to refresh markers & polygons immediately
+            window.dispatchEvent(new CustomEvent('atlas:card-uploaded'));
         })
         .catch(error => {
             console.error("Upload error:", error.response?.data || error.message);
@@ -285,8 +293,12 @@ const FormModal = (props) => {
         setIsDrawingPolygon(true);
     };
 
-    const handlePolygonSave = (vertices, centroid) => {
+    const handlePolygonSave = (vertices, centroid, style) => {
         setPolygonVertices(vertices);
+        if (style) {
+            if (style.fillColor) setPolygonFillColor(style.fillColor);
+            if (style.lineStyle) setPolygonLineStyle(style.lineStyle);
+        }
         setFormData(prev => ({
             ...prev,
             latitude: centroid.lat.toFixed(6),

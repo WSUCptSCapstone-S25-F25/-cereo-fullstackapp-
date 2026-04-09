@@ -56,6 +56,8 @@ def getMarkers():
                         '[]'
                     ) AS files,
                     COALESCE(c.LocationType, 'point') AS LocationType,
+                    COALESCE(c.PolygonFillColor, '#0077c0') AS PolygonFillColor,
+                    COALESCE(c.PolygonLineStyle, 'solid') AS PolygonLineStyle,
                     COALESCE(
                         (
                             SELECT json_agg(
@@ -96,7 +98,7 @@ def getMarkers():
         columns = [
             "cardID", "title", "latitude", "longitude", "category", "name", "username", "email",
             "description", "org", "funding", "link", "thumbnail_link", "tags", "files",
-            "location_type", "polygon_vertices"
+            "location_type", "polygon_fill_color", "polygon_line_style", "polygon_vertices"
         ]
         data = [dict(zip(columns, row)) for row in rows]
         return {"data": data}
