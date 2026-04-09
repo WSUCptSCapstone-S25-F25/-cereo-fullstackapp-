@@ -6,6 +6,8 @@ import Register from './Register';
 
 function Profile(props) {
     const [showRegister, setShowRegister] = useState(false);
+    const [isEditingUsername, setIsEditingUsername] = useState(false);
+    const [editedUsername, setEditedUsername] = useState(props.username || '');
 
     // Password Reset & Change Password States
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -58,7 +60,50 @@ function Profile(props) {
             <div className="profile-left expanded">
             <div className="about">
                 <h1>Profile page</h1>
-                <h2>User Name: {props.username}</h2>
+                <h2>
+                  User Name:{' '}
+                  {isEditingUsername ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editedUsername}
+                        onChange={(e) => setEditedUsername(e.target.value)}
+                      />
+                      <button onClick={async () => {
+                        if (!editedUsername.trim()) {
+                          setMessage('Username cannot be empty.');
+                          return;
+                        }
+                        try {
+                          const res = await api.post('/updateUsername', {
+                            email: props.email,
+                            new_username: editedUsername.trim()
+                          });
+                          if (res.data.success) {
+                            props.setUsername(res.data.username);
+                            setMessage('Username updated successfully.');
+                            setIsEditingUsername(false);
+                          }
+                        } catch (err) {
+                          setMessage('Error updating username.');
+                          console.error(err);
+                        }
+                      }}>Save</button>
+                      <button onClick={() => {
+                        setEditedUsername(props.username);
+                        setIsEditingUsername(false);
+                      }}>Cancel</button>
+                    </>
+                  ) : (
+                    <>
+                      {props.username}{' '}
+                      <button onClick={() => {
+                        setEditedUsername(props.username);
+                        setIsEditingUsername(true);
+                      }}>Edit</button>
+                    </>
+                  )}
+                </h2>
                 <h2>Email: {props.email}</h2>
                 <p>
                 On the profile page, you're granted a comprehensive view of every

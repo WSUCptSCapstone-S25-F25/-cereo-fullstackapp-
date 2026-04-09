@@ -385,6 +385,27 @@ async def deny_request(email: str):
 
 
 
+class UpdateUsernameRequest(BaseModel):
+    email: str
+    new_username: str
+
+@account_router.post("/updateUsername")
+async def update_username(request: UpdateUsernameRequest):
+    try:
+        cur.execute("SELECT username FROM users WHERE email = %s", (request.email,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+        cur.execute("UPDATE users SET username = %s WHERE email = %s", (request.new_username, request.email))
+        conn.commit()
+        return {"success": True, "message": "Username updated successfully.", "username": request.new_username}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 #This takes the users email and password and then returns the account information to show for the profile page
 @account_router.get("/profileAccount")
 def profileAccount(email: str, password: str):
