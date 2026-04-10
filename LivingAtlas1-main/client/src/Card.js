@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Modal from 'react-modal';
 import mapboxgl from 'mapbox-gl';
 import api from './api.js';
@@ -6,6 +6,7 @@ import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
+import PolygonDrawingModal from './PolygonDrawingModal';
 
 const CARD_CATEGORIES = ['River', 'Watershed', 'Places', 'None', 'Other'];
 
@@ -23,6 +24,7 @@ function Card(props) {
     const [sessionUploadedImageIDs, setSessionUploadedImageIDs] = useState([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
+    const [isEditingPolygon, setIsEditingPolygon] = useState(false);
     const isEditingRef = useRef(false); // Track editing state across renders
     const learnMoreImageInputRef = useRef(null);
     const selectLocationMarker = useRef(null);
@@ -199,8 +201,12 @@ function Card(props) {
         }
     };
 
+    const isPolygonCard = formData.location_type === 'polygon';
+
     const validateForm = () => {
-        const requiredFields = ['username', 'name', 'email', 'title', 'category', 'latitude', 'longitude'];
+        const requiredFields = isPolygonCard
+            ? ['username', 'name', 'email', 'title', 'category']
+            : ['username', 'name', 'email', 'title', 'category', 'latitude', 'longitude'];
         for (const field of requiredFields) {
             const value = formData[field];
             if (value === undefined || value === null || value.toString().trim() === '') {
@@ -260,11 +266,17 @@ function Card(props) {
             key !== "filesToUpload" &&
             key !== "images" &&
             key !== "thumbnail_link" &&
+            key !== "polygon_vertices" &&
             formData[key] !== undefined && formData[key] !== null
         ) {
             formDataToSend.append(key, formData[key]);
         }
     });
+
+    // Send polygon vertices as JSON string if polygon card
+    if (formData.location_type === 'polygon' && Array.isArray(formData.polygon_vertices) && formData.polygon_vertices.length >= 3) {
+        formDataToSend.append('polygon_coordinates', JSON.stringify(formData.polygon_vertices));
+    }
 
     //Only true if editing an existing card
     formDataToSend.append("update", !!formData.cardID);
@@ -414,6 +426,41 @@ function Card(props) {
         }
         setIsSelectingLocation(false);
     };
+
+    // Edit polygon: hide modal → fly to polygon → open PolygonDrawingModal
+    const handleEditPolygon = useCallback(() => {
+        const map = window.atlasMapInstance;
+        const verts = formData.polygon_vertices;
+        if (!map || !Array.isArray(verts) || verts.length < 3) return;
+
+        setIsEditingPolygon(true);
+
+        // Fly to polygon bounds
+        const lats = verts.map(v => v.lat);
+        const lngs = verts.map(v => v.lng);
+        const bounds = [
+            [Math.min(...lngs), Math.min(...lats)],
+            [Math.max(...lngs), Math.max(...lats)]
+        ];
+        map.fitBounds(bounds, { padding: 80, maxZoom: 16 });
+    }, [formData.polygon_vertices]);
+
+    // After polygon edit save: update formData and return to learn-more modal
+    const handlePolygonEditSave = useCallback((vertices, centroid, style) => {
+        setFormData(prev => ({
+            ...prev,
+            polygon_vertices: vertices,
+            latitude: centroid.lat.toFixed(6),
+            longitude: centroid.lng.toFixed(6),
+            polygon_fill_color: style?.fillColor || prev.polygon_fill_color,
+            polygon_line_style: style?.lineStyle || prev.polygon_line_style,
+        }));
+        setIsEditingPolygon(false);
+    }, []);
+
+    const handlePolygonEditCancel = useCallback(() => {
+        setIsEditingPolygon(false);
+    }, []);
 
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
@@ -952,7 +999,7 @@ function Card(props) {
 
             {/* Learn More Modal */}
             <Modal
-                isOpen={isModalOpen && !isSelectingLocation}
+                isOpen={isModalOpen && !isSelectingLocation && !isEditingPolygon}
                 onRequestClose={handleLearnMoreClose}
                 className="Modal Modal--learn-more"
                 overlayClassName="ModalOverlay ModalOverlay--learn-more"
@@ -1268,15 +1315,23 @@ function Card(props) {
                             <p><strong>Tags:</strong></p>
                             <input className="learn-more-inline-input" type="text" name="tags" value={formData.tags || ''} onChange={handleInputChange} />
 
-                            <p><strong>Latitude:</strong></p>
-                            <input className="learn-more-inline-input" type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} />
+                            {isPolygonCard ? (
+                                <button type="button" className="learn-more-select-location-btn" onClick={handleEditPolygon}>
+                                    Edit Polygon
+                                </button>
+                            ) : (
+                                <>
+                                    <p><strong>Latitude:</strong></p>
+                                    <input className="learn-more-inline-input" type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} />
 
-                            <p><strong>Longitude:</strong></p>
-                            <input className="learn-more-inline-input" type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
+                                    <p><strong>Longitude:</strong></p>
+                                    <input className="learn-more-inline-input" type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
 
-                            <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
-                                Select Location
-                            </button>
+                                    <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
+                                        Select Location
+                                    </button>
+                                </>
+                            )}
                         </>
                     ) : (
                         <>
@@ -1297,8 +1352,12 @@ function Card(props) {
                             </p>
                             <p className="learn-more-modal-description"><strong>Description:</strong> {formData.description}</p>
                             <p><strong>Tags:</strong> {formData.tags}</p>
-                            <p><strong>Latitude:</strong> {formData.latitude}</p>
-                            <p><strong>Longitude:</strong> {formData.longitude}</p>
+                            {!isPolygonCard && (
+                                <>
+                                    <p><strong>Latitude:</strong> {formData.latitude}</p>
+                                    <p><strong>Longitude:</strong> {formData.longitude}</p>
+                                </>
+                            )}
                         </>
                     )}
 
@@ -1701,6 +1760,17 @@ function Card(props) {
                     </button>
                 </form>
             </Modal>
+
+            {/* Polygon Editing Modal (from learn-more edit) */}
+            {isEditingPolygon && (
+                <PolygonDrawingModal
+                    initialVertices={formData.polygon_vertices}
+                    initialLineStyle={formData.polygon_line_style}
+                    initialFillColor={formData.polygon_fill_color}
+                    onSave={handlePolygonEditSave}
+                    onCancel={handlePolygonEditCancel}
+                />
+            )}
         </div>
     );
 }

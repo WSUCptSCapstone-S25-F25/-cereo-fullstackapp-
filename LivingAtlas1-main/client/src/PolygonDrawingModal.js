@@ -3,11 +3,11 @@ import ReactDOM from 'react-dom';
 import mapboxgl from 'mapbox-gl';
 import './PolygonDrawingModal.css';
 
-const PolygonDrawingModal = ({ onSave, onCancel }) => {
-    const [vertices, setVertices] = useState([]);
-    const [isDrawing, setIsDrawing] = useState(true);
-    const [lineStyle, setLineStyle] = useState('solid'); // 'solid', 'dashed', 'dotted'
-    const [fillColor, setFillColor] = useState('#0077c0');
+const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor }) => {
+    const [vertices, setVertices] = useState(initialVertices || []);
+    const [isDrawing, setIsDrawing] = useState(!(initialVertices && initialVertices.length >= 3));
+    const [lineStyle, setLineStyle] = useState(initialLineStyle || 'solid'); // 'solid', 'dashed', 'dotted'
+    const [fillColor, setFillColor] = useState(initialFillColor || '#0077c0');
     const [showLineMenu, setShowLineMenu] = useState(false);
     const [showColorMenu, setShowColorMenu] = useState(false);
     const [showShapeMenu, setShowShapeMenu] = useState(false);
@@ -399,6 +399,13 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
             });
         }
 
+        // Render initial vertices if provided (edit mode)
+        if (initialVertices && initialVertices.length >= 3) {
+            updatePolygonOnMap(initialVertices);
+            rebuildMarkers(initialVertices);
+            updateMarkerLabels(false); // editing mode: hide labels initially
+        }
+
         // Click handler for adding vertices
         const handleMapClick = (e) => {
             const { lat, lng } = e.lngLat;
@@ -416,11 +423,12 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
             });
         };
 
-        mapClickHandlerRef.current = handleMapClick;
-        map.on('click', handleMapClick);
-
-        // Change cursor
-        map.getCanvas().style.cursor = 'crosshair';
+        // If editing existing polygon, start in drag/edit mode (not drawing)
+        if (!(initialVertices && initialVertices.length >= 3)) {
+            mapClickHandlerRef.current = handleMapClick;
+            map.on('click', handleMapClick);
+            map.getCanvas().style.cursor = 'crosshair';
+        }
 
         return () => {
             // Clean up
