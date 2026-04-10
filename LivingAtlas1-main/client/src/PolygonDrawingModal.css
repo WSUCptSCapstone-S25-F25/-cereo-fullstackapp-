@@ -1,7 +1,7 @@
 .polygon-draw-modal {
     position: absolute;
     top: 10px;
-    right: 50px;
+    right: 39px;
     z-index: 10;
     background: #fff;
     border-radius: 4px;
@@ -257,6 +257,21 @@
 }
 
 /* Vertex markers on map */
+
+/* Shape preset button active state */
+.polygon-draw-shape-active {
+    background: rgba(0,0,0,.1) !important;
+    box-shadow: inset 0 0 0 1.5px #333;
+}
+
+.polygon-draw-shape-dropdown {
+    min-width: 110px;
+}
+
+.polygon-draw-shape-dropdown .polygon-draw-dropdown-item svg {
+    flex-shrink: 0;
+}
+
 .polygon-draw-vertex-marker {
     position: relative;
     width: 8px;

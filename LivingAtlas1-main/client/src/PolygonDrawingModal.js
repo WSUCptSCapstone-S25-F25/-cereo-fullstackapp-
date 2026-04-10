@@ -10,6 +10,9 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
     const [fillColor, setFillColor] = useState('#0077c0');
     const [showLineMenu, setShowLineMenu] = useState(false);
     const [showColorMenu, setShowColorMenu] = useState(false);
+    const [showShapeMenu, setShowShapeMenu] = useState(false);
+    const [activeShape, setActiveShape] = useState(null); // 'triangle' | 'square' | 'rectangle' | null
+    const shapePlacingRef = useRef(null); // { shape, origin: {lat,lng}, active: bool }
     const markersRef = useRef([]);
     const linesSourceAdded = useRef(false);
     const fillSourceAdded = useRef(false);
@@ -164,6 +167,192 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
         });
     }, [createDraggableMarker]);
 
+    // Toggle label visibility on markers when drawing state changes
+    const updateMarkerLabels = useCallback((show) => {
+        markersRef.current.forEach(m => {
+            const label = m.getElement().querySelector('.polygon-draw-vertex-label');
+            if (label) {
+                label.style.display = show ? '' : 'none';
+            }
+        });
+    }, []);
+
+    // ── Shape preset helpers ──
+    const generateShapeVertices = useCallback((shape, center, dx, dy) => {
+        // dx/dy are lng/lat offsets from center to the drag point
+        // Compensate for Mercator distortion: 1° lng is visually cos(lat) × 1° lat
+        const cosLat = Math.cos(center.lat * Math.PI / 180);
+        const lngScale = cosLat > 0.0001 ? 1 / cosLat : 1;
+        // Normalize dx to lat-equivalent units for radius computation
+        const dxNorm = dx * cosLat;
+
+        if (shape === 'triangle') {
+            // Equilateral-ish triangle inscribed in the drag radius
+            const r = Math.sqrt(dxNorm * dxNorm + dy * dy);
+            if (r < 0.00001) return [];
+            return [
+                { lat: center.lat + r,        lng: center.lng },                          // top
+                { lat: center.lat - r * 0.5,  lng: center.lng - r * 0.866 * lngScale },   // bottom-left
+                { lat: center.lat - r * 0.5,  lng: center.lng + r * 0.866 * lngScale },   // bottom-right
+            ];
+        }
+        if (shape === 'square') {
+            const r = Math.sqrt(dxNorm * dxNorm + dy * dy);
+            if (r < 0.00001) return [];
+            const s = r / Math.SQRT2; // half-side so corners land on the circle
+            return [
+                { lat: center.lat + s, lng: center.lng - s * lngScale },
+                { lat: center.lat + s, lng: center.lng + s * lngScale },
+                { lat: center.lat - s, lng: center.lng + s * lngScale },
+                { lat: center.lat - s, lng: center.lng - s * lngScale },
+            ];
+        }
+        if (shape === 'rectangle') {
+            const halfW = Math.abs(dx);
+            const halfH = Math.abs(dy);
+            if (halfW < 0.00001 && halfH < 0.00001) return [];
+            return [
+                { lat: center.lat + halfH, lng: center.lng - halfW },
+                { lat: center.lat + halfH, lng: center.lng + halfW },
+                { lat: center.lat - halfH, lng: center.lng + halfW },
+                { lat: center.lat - halfH, lng: center.lng - halfW },
+            ];
+        }
+        return [];
+    }, []);
+
+    // Start shape placement mode
+    const startShapePlacement = useCallback((shape) => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+
+        // Disable normal vertex-click while placing shape
+        if (mapClickHandlerRef.current) {
+            map.off('click', mapClickHandlerRef.current);
+            mapClickHandlerRef.current = null;
+        }
+
+        setActiveShape(shape);
+        setShowShapeMenu(false);
+        map.getCanvas().style.cursor = 'crosshair';
+
+        const onMouseDown = (e) => {
+            e.preventDefault();
+            const { lat, lng } = e.lngLat;
+            shapePlacingRef.current = { shape, origin: { lat, lng }, active: true };
+            map.getCanvas().style.cursor = 'nwse-resize';
+
+            // Prevent map panning while dragging
+            map.dragPan.disable();
+        };
+
+        const onMouseMove = (e) => {
+            if (!shapePlacingRef.current?.active) return;
+            const { origin } = shapePlacingRef.current;
+            const dx = e.lngLat.lng - origin.lng;
+            const dy = e.lngLat.lat - origin.lat;
+            const preview = generateShapeVertices(shapePlacingRef.current.shape, origin, dx, dy);
+            if (preview.length >= 3) {
+                updatePolygonOnMap(preview);
+            }
+        };
+
+        const onMouseUp = (e) => {
+            if (!shapePlacingRef.current?.active) return;
+            const { origin } = shapePlacingRef.current;
+            const dx = e.lngLat.lng - origin.lng;
+            const dy = e.lngLat.lat - origin.lat;
+            const finalVerts = generateShapeVertices(shapePlacingRef.current.shape, origin, dx, dy);
+
+            // Re-enable map panning
+            map.dragPan.enable();
+            shapePlacingRef.current = null;
+
+            // Clean up listeners
+            map.off('mousedown', onMouseDown);
+            map.off('mousemove', onMouseMove);
+            map.off('mouseup', onMouseUp);
+
+            if (finalVerts.length >= 3) {
+                // Round vertices
+                const rounded = finalVerts.map(v => ({
+                    lat: parseFloat(v.lat.toFixed(6)),
+                    lng: parseFloat(v.lng.toFixed(6)),
+                }));
+                setVertices(rounded);
+                updatePolygonOnMap(rounded);
+                rebuildMarkers(rounded);
+                setIsDrawing(false);
+                updateMarkerLabels(false);
+            }
+            setActiveShape(null);
+            map.getCanvas().style.cursor = '';
+        };
+
+        map.on('mousedown', onMouseDown);
+        map.on('mousemove', onMouseMove);
+        map.on('mouseup', onMouseUp);
+    }, [generateShapeVertices, updatePolygonOnMap, rebuildMarkers, updateMarkerLabels]);
+
+    // Clear all drawn vertices and shapes
+    const handleClearAll = useCallback(() => {
+        setVertices([]);
+        markersRef.current.forEach(m => m.remove());
+        markersRef.current = [];
+        updatePolygonOnMap([]);
+        setIsDrawing(true);
+
+        // Re-attach click handler if not already present
+        const map = window.atlasMapInstance;
+        if (map && !mapClickHandlerRef.current) {
+            const handleMapClick = (e) => {
+                const { lat, lng } = e.lngLat;
+                const newVertex = { lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)) };
+                setVertices(prev => {
+                    const updated = [...prev, newVertex];
+                    updatePolygonOnMap(updated);
+                    const marker = createDraggableMarker(newVertex, updated.length - 1, updated);
+                    if (marker) markersRef.current.push(marker);
+                    return updated;
+                });
+            };
+            mapClickHandlerRef.current = handleMapClick;
+            map.on('click', handleMapClick);
+            map.getCanvas().style.cursor = 'crosshair';
+        }
+    }, [updatePolygonOnMap, createDraggableMarker]);
+
+    // Hijack MapboxDraw trash button to clear polygon drawing
+    useEffect(() => {
+        const trashBtn = document.querySelector('.mapbox-gl-draw_trash');
+        if (!trashBtn) return;
+
+        const onTrashClick = (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleClearAll();
+        };
+
+        trashBtn.addEventListener('click', onTrashClick, true);
+        return () => trashBtn.removeEventListener('click', onTrashClick, true);
+    }, [handleClearAll]);
+
+    // Position modal flush with the draw control bar
+    useEffect(() => {
+        const modal = modalRef.current;
+        const mapContainer = window.atlasMapInstance?.getContainer();
+        if (!modal || !mapContainer) return;
+
+        const drawGroup = mapContainer.querySelector('.mapboxgl-ctrl-top-right .mapboxgl-ctrl-group');
+        if (!drawGroup) return;
+
+        const mapRect = mapContainer.getBoundingClientRect();
+        const barRect = drawGroup.getBoundingClientRect();
+
+        modal.style.top = (barRect.top - mapRect.top) + 'px';
+        modal.style.right = (mapRect.right - barRect.left) + 'px';
+    }, []);
+
     // Initialize map layers and click handler
     useEffect(() => {
         const map = window.atlasMapInstance;
@@ -240,6 +429,12 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
             }
             map.getCanvas().style.cursor = '';
 
+            // Cancel any in-progress shape placement
+            if (shapePlacingRef.current) {
+                map.dragPan.enable();
+                shapePlacingRef.current = null;
+            }
+
             // Remove markers
             markersRef.current.forEach(m => m.remove());
             markersRef.current = [];
@@ -253,16 +448,6 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
             fillSourceAdded.current = false;
         };
     }, [updatePolygonOnMap, createDraggableMarker]);
-
-    // Toggle label visibility on markers when drawing state changes
-    const updateMarkerLabels = useCallback((show) => {
-        markersRef.current.forEach(m => {
-            const label = m.getElement().querySelector('.polygon-draw-vertex-label');
-            if (label) {
-                label.style.display = show ? '' : 'none';
-            }
-        });
-    }, []);
 
     // Stop drawing mode (finish polygon)
     const handleFinishDrawing = () => {
@@ -279,7 +464,7 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
     // Resume drawing
     const handleResumeDrawing = () => {
         const map = window.atlasMapInstance;
-        if (!map) return;
+        if (!map) return;setShowShapeMenu(false); 
 
         const handleMapClick = (e) => {
             const { lat, lng } = e.lngLat;
@@ -314,7 +499,7 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
             alert('A polygon needs at least 3 points.');
             return;
         }
-        // Compute centroid for lat/lng fields
+        // Compute centroid for lat/lng fieldssetShowShapeMenu(false); 
         const centroid = vertices.reduce(
             (acc, v) => ({ lat: acc.lat + v.lat / vertices.length, lng: acc.lng + v.lng / vertices.length }),
             { lat: 0, lng: 0 }
@@ -334,7 +519,9 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
             <div className="polygon-draw-modal-header">
                 <h3>Draw Polygon</h3>
                 <span className="polygon-draw-modal-hint">
-                    {isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
+                    {activeShape
+                        ? `Click & drag on map to place ${activeShape}`
+                        : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
                 </span>
             </div>
 
@@ -395,6 +582,35 @@ const PolygonDrawingModal = ({ onSave, onCancel }) => {
                                     onClick={() => { setFillColor(c); setShowColorMenu(false); }}
                                 />
                             ))}
+                        </div>
+                    )}
+                </div>
+                {/* Shape presets */}
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className={`polygon-draw-style-btn${activeShape ? ' polygon-draw-shape-active' : ''}`}
+                        title="Shape Presets"
+                        onClick={() => { setShowShapeMenu(v => !v); setShowLineMenu(false); setShowColorMenu(false); }}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+                            <rect x="2" y="2" width="12" height="12" rx="1" />
+                        </svg>
+                    </button>
+                    {showShapeMenu && (
+                        <div className="polygon-draw-dropdown polygon-draw-shape-dropdown">
+                            <button type="button" className="polygon-draw-dropdown-item" onClick={() => startShapePlacement('triangle')}>
+                                <svg width="20" height="18" viewBox="0 0 20 18" fill="none" stroke="currentColor" strokeWidth="1.4"><polygon points="10,1 1,17 19,17"/></svg>
+                                <span>Triangle</span>
+                            </button>
+                            <button type="button" className="polygon-draw-dropdown-item" onClick={() => startShapePlacement('square')}>
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="1" width="16" height="16"/></svg>
+                                <span>Square</span>
+                            </button>
+                            <button type="button" className="polygon-draw-dropdown-item" onClick={() => startShapePlacement('rectangle')}>
+                                <svg width="24" height="16" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="1" width="22" height="14"/></svg>
+                                <span>Rectangle</span>
+                            </button>
                         </div>
                     )}
                 </div>
