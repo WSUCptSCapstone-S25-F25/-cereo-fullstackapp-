@@ -1221,6 +1221,35 @@
   margin-bottom: 4px;
 }
 
+/* Two-column grid for short fields */
+.learn-more-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+  margin-bottom: 4px;
+}
+
+.learn-more-fields-grid > p {
+  margin: 0 0 10px;
+}
+
+.learn-more-fields-grid > .learn-more-field-cell {
+  min-width: 0;
+}
+
+.learn-more-field-cell .learn-more-inline-input {
+  margin-bottom: 8px;
+}
+
+.learn-more-field-cell p {
+  margin-bottom: 4px !important;
+}
+
+.learn-more-fields-grid > p strong {
+  display: inline;
+  margin-right: 4px;
+}
+
 .learn-more-modal-description {
   font-size: 0.95rem;
   line-height: 1.6;

@@ -1291,20 +1291,40 @@ function Card(props) {
 
                     {isLearnMoreEditMode ? (
                         <>
-                            <p><strong>Author:</strong></p>
-                            <input className="learn-more-inline-input" type="text" name="name" value={formData.name || ''} onChange={handleInputChange} />
-
-                            <p><strong>Card Creator:</strong></p>
-                            <input className="learn-more-inline-input learn-more-inline-readonly" type="text" name="username" value={formData.username || ''} readOnly disabled title="Card Creator cannot be edited" />
-
-                            <p><strong>Email:</strong></p>
-                            <input className="learn-more-inline-input" type="email" name="email" value={formData.email || ''} onChange={handleInputChange} />
-
-                            <p><strong>Funding:</strong></p>
-                            <input className="learn-more-inline-input" type="text" name="funding" value={formData.funding || ''} onChange={handleInputChange} />
-
-                            <p><strong>Organization:</strong></p>
-                            <input className="learn-more-inline-input" type="text" name="org" value={formData.org || ''} onChange={handleInputChange} />
+                            <div className="learn-more-fields-grid">
+                                <div className="learn-more-field-cell">
+                                    <p><strong>Author:</strong></p>
+                                    <input className="learn-more-inline-input" type="text" name="name" value={formData.name || ''} onChange={handleInputChange} />
+                                </div>
+                                <div className="learn-more-field-cell">
+                                    <p><strong>Card Creator:</strong></p>
+                                    <input className="learn-more-inline-input learn-more-inline-readonly" type="text" name="username" value={formData.username || ''} readOnly disabled title="Card Creator cannot be edited" />
+                                </div>
+                                <div className="learn-more-field-cell">
+                                    <p><strong>Email:</strong></p>
+                                    <input className="learn-more-inline-input" type="email" name="email" value={formData.email || ''} onChange={handleInputChange} />
+                                </div>
+                                <div className="learn-more-field-cell">
+                                    <p><strong>Funding:</strong></p>
+                                    <input className="learn-more-inline-input" type="text" name="funding" value={formData.funding || ''} onChange={handleInputChange} />
+                                </div>
+                                <div className="learn-more-field-cell">
+                                    <p><strong>Organization:</strong></p>
+                                    <input className="learn-more-inline-input" type="text" name="org" value={formData.org || ''} onChange={handleInputChange} />
+                                </div>
+                                {!isPolygonCard && (
+                                    <>
+                                        <div className="learn-more-field-cell">
+                                            <p><strong>Latitude:</strong></p>
+                                            <input className="learn-more-inline-input" type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} />
+                                        </div>
+                                        <div className="learn-more-field-cell">
+                                            <p><strong>Longitude:</strong></p>
+                                            <input className="learn-more-inline-input" type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
 
                             <p><strong>Link:</strong></p>
                             <input className="learn-more-inline-input" type="text" name="link" value={formData.link || ''} onChange={handleInputChange} />
@@ -1320,26 +1340,26 @@ function Card(props) {
                                     Edit Polygon
                                 </button>
                             ) : (
-                                <>
-                                    <p><strong>Latitude:</strong></p>
-                                    <input className="learn-more-inline-input" type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} />
-
-                                    <p><strong>Longitude:</strong></p>
-                                    <input className="learn-more-inline-input" type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
-
-                                    <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
-                                        Select Location
-                                    </button>
-                                </>
+                                <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
+                                    Select Location
+                                </button>
                             )}
                         </>
                     ) : (
                         <>
-                            <p><strong>Author:</strong> {formData.name}</p>
-                            <p><strong>Card Creator:</strong> {formData.username}</p>
-                            <p><strong>Email:</strong> {formData.email}</p>
-                            <p><strong>Funding:</strong> {formData.funding}</p>
-                            <p><strong>Organization:</strong> {formData.org}</p>
+                            <div className="learn-more-fields-grid">
+                                <p><strong>Author:</strong> {formData.name}</p>
+                                <p><strong>Card Creator:</strong> {formData.username}</p>
+                                <p><strong>Email:</strong> {formData.email}</p>
+                                <p><strong>Funding:</strong> {formData.funding}</p>
+                                <p><strong>Organization:</strong> {formData.org}</p>
+                                {!isPolygonCard && (
+                                    <>
+                                        <p><strong>Latitude:</strong> {formData.latitude}</p>
+                                        <p><strong>Longitude:</strong> {formData.longitude}</p>
+                                    </>
+                                )}
+                            </div>
                             <p>
                                 <strong>Link:</strong>{' '}
                                 {formData.link ? (
@@ -1352,12 +1372,6 @@ function Card(props) {
                             </p>
                             <p className="learn-more-modal-description"><strong>Description:</strong> {formData.description}</p>
                             <p><strong>Tags:</strong> {formData.tags}</p>
-                            {!isPolygonCard && (
-                                <>
-                                    <p><strong>Latitude:</strong> {formData.latitude}</p>
-                                    <p><strong>Longitude:</strong> {formData.longitude}</p>
-                                </>
-                            )}
                         </>
                     )}
 
