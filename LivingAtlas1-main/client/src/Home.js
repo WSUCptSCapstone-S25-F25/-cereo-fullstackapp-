@@ -42,11 +42,11 @@ function Home(props) {
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v7');
+        return !localStorage.getItem('changelog_seen_v8');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v7', 'true');
+        localStorage.setItem('changelog_seen_v8', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -444,6 +444,15 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/9/2026</h3>
+                    <p>Cards now support polygon areas as an alternative to single-point locations. You can represent a card with a custom polygon shape drawn directly on the map.</p>
+                    <p>Two workflows are available to draw a polygon: (1) open the Upload Card panel → choose "Polygon Area" → click "Draw Polygon on Map"; or (2) click the Polygon tool (P) button in the top-right map controls.</p>
+                    <p>The polygon drawing modal includes options for border line style, fill color, and quick shape presets (triangle, square, rectangle). Note: custom color and line style may not persist after saving — this will be fixed in a future update.</p>
+                    <p>Improved the layout of the Learn More modal — short fields are now arranged in a two-column grid for a cleaner, more compact view.</p>
+                    <p>Added "Other" and "None" as new Category options when creating or editing a card.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/8/2026</h3>
                     <p>Improved the Profile page — added profile image upload and a bio section, and removed the card container that was previously shown on the profile page.</p>
                     <p>Users can now click the Edit button on their profile to modify their username, profile image, and bio in a single edit session.</p>
