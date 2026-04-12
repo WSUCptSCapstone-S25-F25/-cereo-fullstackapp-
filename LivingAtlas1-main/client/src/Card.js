@@ -275,7 +275,11 @@ function Card(props) {
 
     // Send polygon vertices as JSON string if polygon card
     if (formData.location_type === 'polygon' && Array.isArray(formData.polygon_vertices) && formData.polygon_vertices.length >= 3) {
-        formDataToSend.append('polygon_coordinates', JSON.stringify(formData.polygon_vertices));
+        formDataToSend.append('polygon_coordinates', JSON.stringify({
+            vertices: formData.polygon_vertices,
+            fillColor: formData.polygon_fill_color,
+            lineStyle: formData.polygon_line_style
+        }));
     }
 
     //Only true if editing an existing card

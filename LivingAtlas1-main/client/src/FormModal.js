@@ -166,7 +166,12 @@ const FormModal = (props) => {
         // Add location type and polygon data
         formData2.append('location_type', locationType);
         if (locationType === 'polygon' && polygonVertices.length >= 3) {
-            formData2.append('polygon_coordinates', JSON.stringify(polygonVertices));
+            // Embed style inside JSON so it always travels with vertices
+            formData2.append('polygon_coordinates', JSON.stringify({
+                vertices: polygonVertices,
+                fillColor: polygonFillColor,
+                lineStyle: polygonLineStyle
+            }));
             formData2.append('polygon_fill_color', polygonFillColor);
             formData2.append('polygon_line_style', polygonLineStyle);
         }

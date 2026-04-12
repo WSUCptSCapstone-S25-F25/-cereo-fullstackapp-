@@ -450,6 +450,8 @@ async def upload_form(
     """
     enable_commits = False
     print(f"[UPLOAD] username={username}, email={email}, orig_username={original_username or ''}, orig_email={original_email or ''}")
+    print(f"[UPLOAD] location_type={location_type}, polygon_fill_color={polygon_fill_color!r}, polygon_line_style={polygon_line_style!r}")
+    print(f"[UPLOAD] polygon_coordinates (first 200 chars): {str(polygon_coordinates)[:200] if polygon_coordinates else 'None'}")
 
     try:
         # --------------------------------------------------
@@ -494,7 +496,12 @@ async def upload_form(
         # For polygon cards, compute centroid from vertices if lat/lng not provided
         if (location_type == "polygon") and polygon_coordinates and (not latitude or not longitude):
             try:
-                verts = json.loads(polygon_coordinates)
+                parsed_coords = json.loads(polygon_coordinates)
+                # Handle envelope format: { vertices: [...], fillColor, lineStyle }
+                if isinstance(parsed_coords, dict) and "vertices" in parsed_coords:
+                    verts = parsed_coords["vertices"]
+                else:
+                    verts = parsed_coords
                 if len(verts) >= 3:
                     latitude_val = sum(float(v["lat"]) for v in verts) / len(verts)
                     longitude_val = sum(float(v["lng"]) for v in verts) / len(verts)
@@ -596,9 +603,26 @@ async def upload_form(
         # --------------------------------------------------
         if location_type == "polygon" and polygon_coordinates:
             try:
-                vertices = json.loads(polygon_coordinates)
+                parsed = json.loads(polygon_coordinates)
+                # Support new envelope format: { vertices: [...], fillColor, lineStyle }
+                if isinstance(parsed, dict) and "vertices" in parsed:
+                    vertices = parsed["vertices"]
+                    # Extract style from JSON envelope when Form params are missing/default
+                    if not polygon_fill_color and parsed.get("fillColor"):
+                        polygon_fill_color = parsed["fillColor"]
+                    if not polygon_line_style and parsed.get("lineStyle"):
+                        polygon_line_style = parsed["lineStyle"]
+                else:
+                    vertices = parsed  # legacy: plain array of vertices
+
                 if not isinstance(vertices, list) or len(vertices) < 3:
                     raise HTTPException(status_code=400, detail="Polygon must have at least 3 vertices")
+
+                # Re-run UPDATE with the (possibly corrected) style values
+                cur.execute("""
+                    UPDATE Cards SET PolygonFillColor=%s, PolygonLineStyle=%s WHERE CardID=%s
+                """, (polygon_fill_color or '#0077c0', polygon_line_style or 'solid', nextcardid))
+
                 for i, vertex in enumerate(vertices):
                     v_lat = float(vertex["lat"])
                     v_lng = float(vertex["lng"])
@@ -608,7 +632,7 @@ async def upload_form(
                         "INSERT INTO CardPolygonVertices (CardID, VertexOrder, Latitude, Longitude) VALUES (%s, %s, %s, %s)",
                         (nextcardid, i, v_lat, v_lng)
                     )
-                print(f"[DB] Polygon vertices inserted: {len(vertices)} points")
+                print(f"[DB] Polygon vertices inserted: {len(vertices)} points, fillColor={polygon_fill_color}, lineStyle={polygon_line_style}")
             except json.JSONDecodeError:
                 raise HTTPException(status_code=400, detail="Invalid polygon_coordinates JSON format")
 
