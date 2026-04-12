@@ -1245,6 +1245,40 @@
   margin-bottom: 4px !important;
 }
 
+.learn-more-coordinate-cell {
+  grid-column: 1 / -1;
+}
+
+.learn-more-coordinate-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.learn-more-coordinate-item {
+  min-width: 0;
+}
+
+.learn-more-coordinate-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.learn-more-coordinate-item .learn-more-inline-input {
+  margin-bottom: 0;
+}
+
+.learn-more-coordinate-readonly {
+  grid-column: 1 / -1;
+}
+
+.learn-more-coordinate-separator {
+  color: #9ca3af;
+}
+
 .learn-more-fields-grid > p strong {
   display: inline;
   margin-right: 4px;

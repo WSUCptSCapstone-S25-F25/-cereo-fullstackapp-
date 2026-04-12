@@ -1317,16 +1317,19 @@ function Card(props) {
                                     <input className="learn-more-inline-input" type="text" name="org" value={formData.org || ''} onChange={handleInputChange} />
                                 </div>
                                 {!isPolygonCard && (
-                                    <>
-                                        <div className="learn-more-field-cell">
-                                            <p><strong>Latitude:</strong></p>
-                                            <input className="learn-more-inline-input" type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} />
+                                    <div className="learn-more-field-cell learn-more-coordinate-cell">
+                                        <p><strong>Coordinates:</strong></p>
+                                        <div className="learn-more-coordinate-row">
+                                            <div className="learn-more-coordinate-item">
+                                                <span className="learn-more-coordinate-label">Latitude</span>
+                                                <input className="learn-more-inline-input" type="number" step="any" name="latitude" value={formData.latitude || ''} onChange={handleInputChange} />
+                                            </div>
+                                            <div className="learn-more-coordinate-item">
+                                                <span className="learn-more-coordinate-label">Longitude</span>
+                                                <input className="learn-more-inline-input" type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
+                                            </div>
                                         </div>
-                                        <div className="learn-more-field-cell">
-                                            <p><strong>Longitude:</strong></p>
-                                            <input className="learn-more-inline-input" type="number" step="any" name="longitude" value={formData.longitude || ''} onChange={handleInputChange} />
-                                        </div>
-                                    </>
+                                    </div>
                                 )}
                             </div>
 
@@ -1358,10 +1361,11 @@ function Card(props) {
                                 <p><strong>Funding:</strong> {formData.funding}</p>
                                 <p><strong>Organization:</strong> {formData.org}</p>
                                 {!isPolygonCard && (
-                                    <>
-                                        <p><strong>Latitude:</strong> {formData.latitude}</p>
-                                        <p><strong>Longitude:</strong> {formData.longitude}</p>
-                                    </>
+                                    <p className="learn-more-coordinate-readonly">
+                                        <strong>Latitude:</strong> {formData.latitude}
+                                        <span className="learn-more-coordinate-separator"> | </span>
+                                        <strong>Longitude:</strong> {formData.longitude}
+                                    </p>
                                 )}
                             </div>
                             <p>
