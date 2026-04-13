@@ -14,7 +14,10 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const [showOpacityMenu, setShowOpacityMenu] = useState(false);
     const [fillOpacity, setFillOpacity] = useState(0.15);
     const [activeShape, setActiveShape] = useState(null); // 'triangle' | 'square' | 'rectangle' | null
+    const [isDragMode, setIsDragMode] = useState(false);
     const shapePlacingRef = useRef(null); // { shape, origin: {lat,lng}, active: bool }
+    const dragRef = useRef(null); // { origin: {lat,lng}, startVertices: [...] }
+    const dragHandlersRef = useRef(null); // store bound handlers for cleanup
     const markersRef = useRef([]);
     const linesSourceAdded = useRef(false);
     const fillSourceAdded = useRef(false);
@@ -230,8 +233,116 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         return [];
     }, []);
 
+    // ── Whole-polygon drag mode ──
+    const stopDragMode = useCallback(() => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+        if (dragHandlersRef.current) {
+            map.off('mousedown', dragHandlersRef.current.onMouseDown);
+            map.off('mousemove', dragHandlersRef.current.onMouseMove);
+            map.off('mouseup', dragHandlersRef.current.onMouseUp);
+            dragHandlersRef.current = null;
+        }
+        dragRef.current = null;
+        map.dragPan.enable();
+        map.getCanvas().style.cursor = '';
+        // Re-enable individual vertex dragging
+        markersRef.current.forEach(m => m.setDraggable(true));
+    }, []);
+
+    const startDragMode = useCallback(() => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+
+        // Disable vertex click handler
+        if (mapClickHandlerRef.current) {
+            map.off('click', mapClickHandlerRef.current);
+            mapClickHandlerRef.current = null;
+        }
+        setIsDrawing(false);
+
+        // Disable individual vertex dragging while in drag mode
+        markersRef.current.forEach(m => m.setDraggable(false));
+
+        map.getCanvas().style.cursor = 'grab';
+
+        const onMouseDown = (e) => {
+            e.preventDefault();
+            const { lat, lng } = e.lngLat;
+            setVertices(currentVerts => {
+                dragRef.current = { origin: { lat, lng }, startVertices: currentVerts.map(v => ({ ...v })) };
+                return currentVerts;
+            });
+            map.dragPan.disable();
+            map.getCanvas().style.cursor = 'grabbing';
+        };
+
+        const onMouseMove = (e) => {
+            if (!dragRef.current) return;
+            const { origin, startVertices } = dragRef.current;
+            const dLat = e.lngLat.lat - origin.lat;
+            const dLng = e.lngLat.lng - origin.lng;
+            const moved = startVertices.map(v => ({
+                lat: parseFloat((v.lat + dLat).toFixed(6)),
+                lng: parseFloat((v.lng + dLng).toFixed(6)),
+            }));
+            updatePolygonOnMap(moved);
+            moved.forEach((v, i) => {
+                if (markersRef.current[i]) {
+                    markersRef.current[i].setLngLat([v.lng, v.lat]);
+                }
+            });
+        };
+
+        const onMouseUp = (e) => {
+            if (!dragRef.current) return;
+            const { origin, startVertices } = dragRef.current;
+            const dLat = e.lngLat.lat - origin.lat;
+            const dLng = e.lngLat.lng - origin.lng;
+            const moved = startVertices.map(v => ({
+                lat: parseFloat((v.lat + dLat).toFixed(6)),
+                lng: parseFloat((v.lng + dLng).toFixed(6)),
+            }));
+            dragRef.current = null;
+            map.dragPan.enable();
+            map.getCanvas().style.cursor = 'grab';
+            setVertices(moved);
+            updatePolygonOnMap(moved);
+            moved.forEach((v, i) => {
+                if (markersRef.current[i]) {
+                    markersRef.current[i].setLngLat([v.lng, v.lat]);
+                }
+            });
+        };
+
+        dragHandlersRef.current = { onMouseDown, onMouseMove, onMouseUp };
+        map.on('mousedown', onMouseDown);
+        map.on('mousemove', onMouseMove);
+        map.on('mouseup', onMouseUp);
+    }, [updatePolygonOnMap]);
+
+    const handleToggleDragMode = useCallback(() => {
+        setIsDragMode(prev => {
+            if (!prev) {
+                startDragMode();
+            } else {
+                stopDragMode();
+            }
+            return !prev;
+        });
+    }, [startDragMode, stopDragMode]);
+
+    // Clean up drag mode on unmount
+    useEffect(() => {
+        return () => {
+            stopDragMode();
+        };
+    }, [stopDragMode]);
+
     // Start shape placement mode
     const startShapePlacement = useCallback((shape) => {
+        // Exit drag mode if active
+        if (isDragMode) { stopDragMode(); setIsDragMode(false); }
         const map = window.atlasMapInstance;
         if (!map) return;
 
@@ -301,10 +412,12 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         map.on('mousedown', onMouseDown);
         map.on('mousemove', onMouseMove);
         map.on('mouseup', onMouseUp);
-    }, [generateShapeVertices, updatePolygonOnMap, rebuildMarkers, updateMarkerLabels]);
+    }, [generateShapeVertices, updatePolygonOnMap, rebuildMarkers, updateMarkerLabels, isDragMode, stopDragMode]);
 
     // Clear all drawn vertices and shapes
     const handleClearAll = useCallback(() => {
+        // Exit drag mode if active
+        if (isDragMode) { stopDragMode(); setIsDragMode(false); }
         setVertices([]);
         markersRef.current.forEach(m => m.remove());
         markersRef.current = [];
@@ -329,7 +442,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             map.on('click', handleMapClick);
             map.getCanvas().style.cursor = 'crosshair';
         }
-    }, [updatePolygonOnMap, createDraggableMarker]);
+    }, [updatePolygonOnMap, createDraggableMarker, isDragMode, stopDragMode]);
 
     // Hijack MapboxDraw trash button to clear polygon drawing
     useEffect(() => {
@@ -480,6 +593,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
 
     // Resume drawing
     const handleResumeDrawing = () => {
+        // Exit drag mode if active
+        if (isDragMode) { stopDragMode(); setIsDragMode(false); }
         const map = window.atlasMapInstance;
         if (!map) return;setShowShapeMenu(false); 
 
@@ -536,9 +651,11 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             <div className="polygon-draw-modal-header">
                 <h3>Draw Polygon</h3>
                 <span className="polygon-draw-modal-hint">
-                    {activeShape
-                        ? `Click & drag on map to place ${activeShape}`
-                        : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
+                    {isDragMode
+                        ? 'Drag to move the entire polygon'
+                        : activeShape
+                            ? `Click & drag on map to place ${activeShape}`
+                            : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
                 </span>
             </div>
 
@@ -657,6 +774,20 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                             </button>
                         </div>
                     )}
+                </div>
+                {/* Move / drag whole polygon */}
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className={`polygon-draw-style-btn${isDragMode ? ' polygon-draw-drag-active' : ''}`}
+                        title="Move Polygon"
+                        disabled={vertices.length < 3}
+                        onClick={handleToggleDragMode}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" stroke="none">
+                            <path d="M6.5 1C6.5 0.6 6.8 0.3 7.1 0.1 7.5-0.1 8 0 8.2 0.3L8.5 1V5.5H9.5V2.5C9.5 2 9.8 1.5 10.3 1.3 10.8 1.1 11.3 1.3 11.5 1.8L11.5 2.5V6.5H12.5V4C12.5 3.5 12.8 3 13.3 2.8 13.8 2.6 14.3 2.8 14.5 3.3L14.5 4V9C14.5 12 12 14.5 9 14.5H8C5.5 14.5 3.5 12.5 3.5 10V8.5C3.5 8 3.8 7.5 4.3 7.3 4.8 7.1 5.3 7.3 5.5 7.8V8.5V5.5H6.5V1Z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
