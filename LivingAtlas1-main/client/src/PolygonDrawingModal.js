@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import mapboxgl from 'mapbox-gl';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHand, faRotate } from '@fortawesome/free-solid-svg-icons';
 import './PolygonDrawingModal.css';
 
 const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor }) => {
@@ -900,9 +902,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         disabled={vertices.length < 3}
                         onClick={handleToggleDragMode}
                     >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" stroke="none">
-                            <path d="M6.5 1C6.5 0.6 6.8 0.3 7.1 0.1 7.5-0.1 8 0 8.2 0.3L8.5 1V5.5H9.5V2.5C9.5 2 9.8 1.5 10.3 1.3 10.8 1.1 11.3 1.3 11.5 1.8L11.5 2.5V6.5H12.5V4C12.5 3.5 12.8 3 13.3 2.8 13.8 2.6 14.3 2.8 14.5 3.3L14.5 4V9C14.5 12 12 14.5 9 14.5H8C5.5 14.5 3.5 12.5 3.5 10V8.5C3.5 8 3.8 7.5 4.3 7.3 4.8 7.1 5.3 7.3 5.5 7.8V8.5V5.5H6.5V1Z"/>
-                        </svg>
+                        <FontAwesomeIcon icon={faHand} style={{ fontSize: 16, width: 16, height: 16 }} />
                     </button>
                 </div>
                 {/* Rotate polygon */}
@@ -914,10 +914,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         disabled={vertices.length < 3}
                         onClick={handleToggleRotateMode}
                     >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <path d="M13.5 8A5.5 5.5 0 1 1 4.5 3" strokeLinecap="round"/>
-                            <polyline points="4.5 0.5 4.5 3.5 7.5 3.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
+                        <FontAwesomeIcon icon={faRotate} style={{ fontSize: 16, width: 16, height: 16 }} />
                     </button>
                 </div>
             </div>
