@@ -444,6 +444,15 @@ function Card(props) {
             else el.remove();
         });
 
+        // Hide the existing card polygon layers so they don't show underneath the editor
+        const cardID = formData.cardID || props.cardID;
+        if (cardID) {
+            const fillLayerId = `card-polygon-fill-${cardID}`;
+            const lineLayerId = `card-polygon-line-${cardID}`;
+            if (map.getLayer(fillLayerId)) map.setLayoutProperty(fillLayerId, 'visibility', 'none');
+            if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', 'none');
+        }
+
         setIsEditingPolygon(true);
 
         // Fly to polygon bounds
@@ -454,7 +463,18 @@ function Card(props) {
             [Math.max(...lngs), Math.max(...lats)]
         ];
         map.fitBounds(bounds, { padding: 80, maxZoom: 16 });
-    }, [formData.polygon_vertices]);
+    }, [formData.polygon_vertices, formData.cardID, props.cardID]);
+
+    // Restore card polygon layer visibility
+    const restoreCardPolygonLayers = useCallback(() => {
+        const map = window.atlasMapInstance;
+        const cardID = formData.cardID || props.cardID;
+        if (!map || !cardID) return;
+        const fillLayerId = `card-polygon-fill-${cardID}`;
+        const lineLayerId = `card-polygon-line-${cardID}`;
+        if (map.getLayer(fillLayerId)) map.setLayoutProperty(fillLayerId, 'visibility', 'visible');
+        if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', 'visible');
+    }, [formData.cardID, props.cardID]);
 
     // After polygon edit save: update formData and return to learn-more modal (edit mode)
     const handlePolygonEditSave = useCallback((vertices, centroid, style) => {
@@ -470,6 +490,9 @@ function Card(props) {
         setIsEditingPolygon(false);
         // Ensure learn-more modal stays in edit mode
         setIsLearnMoreEditMode(true);
+
+        // Restore card polygon layer visibility
+        restoreCardPolygonLayers();
 
         // Update the polygon on the main map immediately
         const map = window.atlasMapInstance;
@@ -506,7 +529,8 @@ function Card(props) {
 
     const handlePolygonEditCancel = useCallback(() => {
         setIsEditingPolygon(false);
-    }, []);
+        restoreCardPolygonLayers();
+    }, [restoreCardPolygonLayers]);
 
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
