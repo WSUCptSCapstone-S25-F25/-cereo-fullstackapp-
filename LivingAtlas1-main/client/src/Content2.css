@@ -206,24 +206,6 @@
   border-color: #8eabc8;
 }
 
-/* Style for the CategoryDropdown in toolbar — match sort-dropdown exactly */
-.card-panel-toolbar .category-dropdown {
-  width: auto !important;
-  min-width: auto !important;
-  display: inline-block !important;
-}
-
-.card-panel-toolbar .category-dropdown-trigger {
-  height: auto !important;
-  padding: 7px 10px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  border-radius: 8px !important;
-  border: 1px solid #bfd0e2 !important;
-  background: #fff !important;
-  color: #27425d !important;
-}
-
 .card-panel-searchbar-btn {
   width: 32px;
   height: 32px;
@@ -261,101 +243,6 @@
 
 .card-panel-searchbar-btn.clear:hover {
   background: #f2f7fc;
-}
-
-/* --- Tag Filter Dropdown --- */
-.tag-filter-dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.tag-filter-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background-color: #fff;
-  border: 1px solid #cdd5e0;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  min-width: 220px;
-  overflow: hidden;
-}
-
-.tag-filter-dropdown-input {
-  display: flex;
-  gap: 4px;
-  padding: 10px;
-  border-bottom: 1px solid #e8ecf1;
-}
-
-.tag-filter-dropdown-input input {
-  flex: 1;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 13px;
-  outline: none;
-}
-
-.tag-filter-dropdown-input input:focus {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
-}
-
-.tag-filter-dropdown-add {
-  background: #28a745;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: background 0.2s;
-}
-
-.tag-filter-dropdown-add:hover {
-  background: #218838;
-}
-
-.tag-filter-dropdown-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 8px 10px;
-  border-bottom: 1px solid #e8ecf1;
-}
-
-.tag-filter-dropdown-footer {
-  display: flex;
-  gap: 8px;
-  padding: 10px;
-  background-color: #f8fafb;
-}
-
-.card-panel-tag-filter-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  background: #d1ecf1;
-  color: #0c5460;
-  border-radius: 12px;
-  padding: 2px 8px;
-  font-size: 0.8em;
-}
-
-.card-panel-tag-filter-tag button {
-  background: none;
-  border: none;
-  color: #0c5460;
-  font-size: 1em;
-  cursor: pointer;
-  padding: 0 2px;
-  line-height: 1;
-}
-
-.card-panel-tag-filter-tag button:hover {
-  color: #dc3545;
 }
 
 .card-container-loading {

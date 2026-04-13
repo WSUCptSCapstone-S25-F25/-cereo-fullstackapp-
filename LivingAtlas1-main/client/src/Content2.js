@@ -3,7 +3,7 @@ import './Content2.css';
 import './Sidebars.css';
 import Card from './Card.js';
 import FormModal from './FormModal';
-import CategoryDropdown from './CategoryDropdown';
+import FilterDropdown from './FilterDropdown';
 import SortDropdown from './SortDropdown';
 import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
@@ -11,7 +11,7 @@ import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js
 import { allMarkers } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faFilter, faPlus, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
@@ -335,55 +335,8 @@ function Content2(props) {
     const [searchCondition, setSearchCondition] = useState(props.searchCondition);
     const [sortCondition, setSortCondition] = useState(props.sortCondition);
 
-    // Tag filter state
-    const [tagFilterInput, setTagFilterInput] = useState('');
+    // Tag filter state (managed here, passed to FilterDropdown)
     const [activeTagFilters, setActiveTagFilters] = useState([]);
-    const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
-    const tagFilterRef = useRef(null);
-
-    const addTagFilter = () => {
-        const value = tagFilterInput.trim();
-        if (!value || activeTagFilters.includes(value)) return;
-        const newFilters = [...activeTagFilters, value];
-        setActiveTagFilters(newFilters);
-        props.setFilterCondition?.(newFilters.join(','));
-        setTagFilterInput('');
-    };
-
-    const removeTagFilter = (filter) => {
-        const newFilters = activeTagFilters.filter(f => f !== filter);
-        setActiveTagFilters(newFilters);
-        props.setFilterCondition?.(newFilters.join(','));
-    };
-
-    const clearAllTagFilters = () => {
-        setActiveTagFilters([]);
-        setTagFilterInput('');
-        props.setFilterCondition?.('');
-    };
-
-    const applyTagFilters = () => {
-        const value = tagFilterInput.trim();
-        let filters = [...activeTagFilters];
-        if (value && !filters.includes(value)) {
-            filters = [...filters, value];
-            setActiveTagFilters(filters);
-            setTagFilterInput('');
-        }
-        props.setFilterCondition?.(filters.join(','));
-        setIsTagFilterOpen(false);
-    };
-
-    // Click-outside to close tag filter dropdown
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (tagFilterRef.current && !tagFilterRef.current.contains(e.target)) {
-                setIsTagFilterOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     useEffect(() => {
         if (resolvedUsername) {
@@ -865,56 +818,18 @@ function Content2(props) {
                                 onChange={handleSortModeChange}
                             />
 
-                            <CategoryDropdown
-                                value={cardTypeFilter}
-                                onChange={(newValue) => {
+                            <FilterDropdown
+                                categoryValue={cardTypeFilter}
+                                onCategoryChange={(newValue) => {
                                     setCardTypeFilter(newValue);
                                     props.setCategoryConditionCondition?.(newValue);
                                 }}
+                                activeTagFilters={activeTagFilters}
+                                onTagFiltersChange={(newTags) => {
+                                    setActiveTagFilters(newTags);
+                                    props.setFilterCondition?.(newTags.join(','));
+                                }}
                             />
-
-                            <div className="tag-filter-dropdown" ref={tagFilterRef}>
-                                <button
-                                    type="button"
-                                    className={`card-toolbar-button ${activeTagFilters.length > 0 ? 'active' : ''}`}
-                                    title="Filter by Tag"
-                                    onClick={() => setIsTagFilterOpen(v => !v)}
-                                >
-                                    <FontAwesomeIcon icon={faFilter} />
-                                    {activeTagFilters.length > 0 && <span>({activeTagFilters.length})</span>}
-                                </button>
-                                {isTagFilterOpen && (
-                                    <div className="tag-filter-dropdown-menu">
-                                        <div className="tag-filter-dropdown-input">
-                                            <input
-                                                type="text"
-                                                value={tagFilterInput}
-                                                onChange={e => setTagFilterInput(e.target.value)}
-                                                placeholder="Enter tag..."
-                                                onKeyDown={e => { if (e.key === 'Enter') addTagFilter(); }}
-                                                autoFocus
-                                            />
-                                            <button onClick={addTagFilter} className="tag-filter-dropdown-add" title="Add Tag">
-                                                <FontAwesomeIcon icon={faPlus} />
-                                            </button>
-                                        </div>
-                                        {activeTagFilters.length > 0 && (
-                                            <div className="tag-filter-dropdown-tags">
-                                                {activeTagFilters.map(tag => (
-                                                    <span key={tag} className="card-panel-tag-filter-tag">
-                                                        {tag}
-                                                        <button onClick={() => removeTagFilter(tag)}>&times;</button>
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div className="tag-filter-dropdown-footer">
-                                            <button className="sort-dropdown-btn clear" onClick={clearAllTagFilters}>Clear</button>
-                                            <button className="sort-dropdown-btn apply" onClick={applyTagFilters}>Done</button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
 
                             <button
                                 type="button"
