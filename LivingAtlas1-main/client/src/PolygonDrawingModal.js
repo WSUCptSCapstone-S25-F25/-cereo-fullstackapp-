@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import mapboxgl from 'mapbox-gl';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHand, faRotate } from '@fortawesome/free-solid-svg-icons';
+import { faHand, faRotate, faUpRightAndDownLeftFromCenter } from '@fortawesome/free-solid-svg-icons';
 import './PolygonDrawingModal.css';
 
 const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor }) => {
@@ -18,11 +18,14 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const [activeShape, setActiveShape] = useState(null); // 'triangle' | 'square' | 'rectangle' | null
     const [isDragMode, setIsDragMode] = useState(false);
     const [isRotateMode, setIsRotateMode] = useState(false);
+    const [isResizeMode, setIsResizeMode] = useState(false);
     const shapePlacingRef = useRef(null); // { shape, origin: {lat,lng}, active: bool }
     const dragRef = useRef(null); // { origin: {lat,lng}, startVertices: [...] }
     const dragHandlersRef = useRef(null); // store bound handlers for cleanup
     const rotateRef = useRef(null); // { startAngle, centroid, startVertices }
     const rotateHandlersRef = useRef(null);
+    const resizeHandlesRef = useRef([]); // 8 Mapbox markers for bounding-box handles
+    const resizeStateRef = useRef(null); // { handleType, anchorLat, anchorLng, startVertices, startBBox }
     const markersRef = useRef([]);
     const linesSourceAdded = useRef(false);
     const fillSourceAdded = useRef(false);
@@ -418,9 +421,183 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         map.on('mouseup', onMouseUp);
     }, [updatePolygonOnMap]);
 
+    // ── Bounding-box resize mode ──
+    const stopResizeMode = useCallback(() => {
+        resizeHandlesRef.current.forEach(m => m.remove());
+        resizeHandlesRef.current = [];
+        resizeStateRef.current = null;
+        markersRef.current.forEach(m => m.setDraggable(true));
+    }, []);
+
+    const startResizeMode = useCallback(() => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+
+        if (mapClickHandlerRef.current) {
+            map.off('click', mapClickHandlerRef.current);
+            mapClickHandlerRef.current = null;
+        }
+        setIsDrawing(false);
+        markersRef.current.forEach(m => m.setDraggable(false));
+
+        // Compute bounding box
+        const buildBBox = (verts) => {
+            const lats = verts.map(v => v.lat);
+            const lngs = verts.map(v => v.lng);
+            return { minLat: Math.min(...lats), maxLat: Math.max(...lats), minLng: Math.min(...lngs), maxLng: Math.max(...lngs) };
+        };
+
+        const computeHandles = (bbox) => {
+            const { minLat, maxLat, minLng, maxLng } = bbox;
+            const midLat = (minLat + maxLat) / 2;
+            const midLng = (minLng + maxLng) / 2;
+            return [
+                // corners: type, lat, lng, cursor
+                { type: 'corner-tl', lat: maxLat, lng: minLng, cursor: 'nwse-resize' },
+                { type: 'corner-tr', lat: maxLat, lng: maxLng, cursor: 'nesw-resize' },
+                { type: 'corner-br', lat: minLat, lng: maxLng, cursor: 'nwse-resize' },
+                { type: 'corner-bl', lat: minLat, lng: minLng, cursor: 'nesw-resize' },
+                // edges: top, right, bottom, left
+                { type: 'edge-t', lat: maxLat, lng: midLng, cursor: 'ns-resize' },
+                { type: 'edge-r', lat: midLat, lng: maxLng, cursor: 'ew-resize' },
+                { type: 'edge-b', lat: minLat, lng: midLng, cursor: 'ns-resize' },
+                { type: 'edge-l', lat: midLat, lng: minLng, cursor: 'ew-resize' },
+            ];
+        };
+
+        const applyResize = (startVerts, startBBox, handleType, newLat, newLng) => {
+            const { minLat, maxLat, minLng, maxLng } = startBBox;
+
+            // Corner drag → uniform scale (preserve shape) with cos(lat) compensation
+            if (handleType.startsWith('corner')) {
+                // Determine anchor (opposite corner) and original corner
+                let anchorLat, anchorLng, origLat, origLng;
+                if (handleType === 'corner-tl') { anchorLat = minLat; anchorLng = maxLng; origLat = maxLat; origLng = minLng; }
+                else if (handleType === 'corner-tr') { anchorLat = minLat; anchorLng = minLng; origLat = maxLat; origLng = maxLng; }
+                else if (handleType === 'corner-br') { anchorLat = maxLat; anchorLng = minLng; origLat = minLat; origLng = maxLng; }
+                else { /* corner-bl */ anchorLat = maxLat; anchorLng = maxLng; origLat = minLat; origLng = minLng; }
+
+                const centerLat = (minLat + maxLat) / 2;
+                const cosLat = Math.cos(centerLat * Math.PI / 180);
+                const oDx = (origLng - anchorLng) * cosLat;
+                const oDy = origLat - anchorLat;
+                const origDist = Math.sqrt(oDx * oDx + oDy * oDy);
+                const nDx = (newLng - anchorLng) * cosLat;
+                const nDy = newLat - anchorLat;
+                const newDist = Math.sqrt(nDx * nDx + nDy * nDy);
+                const s = origDist > 1e-9 ? newDist / origDist : 1;
+
+                return startVerts.map(v => ({
+                    lng: parseFloat((anchorLng + (v.lng - anchorLng) * s).toFixed(6)),
+                    lat: parseFloat((anchorLat + (v.lat - anchorLat) * s).toFixed(6)),
+                }));
+            }
+
+            // Edge drag → stretch single axis
+            let nMinLat = minLat, nMaxLat = maxLat, nMinLng = minLng, nMaxLng = maxLng;
+            if (handleType === 'edge-t') { nMaxLat = newLat; }
+            else if (handleType === 'edge-b') { nMinLat = newLat; }
+            else if (handleType === 'edge-r') { nMaxLng = newLng; }
+            else if (handleType === 'edge-l') { nMinLng = newLng; }
+
+            const oW = maxLng - minLng;
+            const oH = maxLat - minLat;
+            const nW = nMaxLng - nMinLng;
+            const nH = nMaxLat - nMinLat;
+            const sX = oW > 1e-9 ? nW / oW : 1;
+            const sY = oH > 1e-9 ? nH / oH : 1;
+
+            return startVerts.map(v => ({
+                lng: parseFloat((nMinLng + (v.lng - minLng) * sX).toFixed(6)),
+                lat: parseFloat((nMinLat + (v.lat - minLat) * sY).toFixed(6)),
+            }));
+        };
+
+        const placeHandles = (verts) => {
+            // Remove old handles
+            resizeHandlesRef.current.forEach(m => m.remove());
+            resizeHandlesRef.current = [];
+
+            const bbox = buildBBox(verts);
+            const handles = computeHandles(bbox);
+
+            handles.forEach(h => {
+                const el = document.createElement('div');
+                el.className = 'polygon-draw-resize-handle';
+                if (h.type.startsWith('corner')) el.classList.add('polygon-draw-resize-handle-corner');
+                else el.classList.add('polygon-draw-resize-handle-edge');
+                el.style.cursor = h.cursor;
+
+                const marker = new mapboxgl.Marker({ element: el, draggable: true, anchor: 'center' })
+                    .setLngLat([h.lng, h.lat])
+                    .addTo(map);
+
+                marker._resizeType = h.type;
+
+                marker.on('dragstart', () => {
+                    setVertices(currentVerts => {
+                        resizeStateRef.current = {
+                            handleType: h.type,
+                            startVertices: currentVerts.map(v => ({ ...v })),
+                            startBBox: buildBBox(currentVerts),
+                        };
+                        return currentVerts;
+                    });
+                });
+
+                marker.on('drag', () => {
+                    if (!resizeStateRef.current) return;
+                    const { handleType, startVertices, startBBox } = resizeStateRef.current;
+                    const pos = marker.getLngLat();
+                    const resized = applyResize(startVertices, startBBox, handleType, pos.lat, pos.lng);
+                    updatePolygonOnMap(resized);
+                    resized.forEach((v, i) => {
+                        if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
+                    });
+                    // Update other handle positions
+                    const newBBox = buildBBox(resized);
+                    const newPositions = computeHandles(newBBox);
+                    resizeHandlesRef.current.forEach(rm => {
+                        if (rm === marker) return;
+                        const np = newPositions.find(p => p.type === rm._resizeType);
+                        if (np) rm.setLngLat([np.lng, np.lat]);
+                    });
+                });
+
+                marker.on('dragend', () => {
+                    if (!resizeStateRef.current) return;
+                    const { handleType, startVertices, startBBox } = resizeStateRef.current;
+                    const pos = marker.getLngLat();
+                    const resized = applyResize(startVertices, startBBox, handleType, pos.lat, pos.lng);
+                    resizeStateRef.current = null;
+                    setVertices(resized);
+                    updatePolygonOnMap(resized);
+                    resized.forEach((v, i) => {
+                        if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
+                    });
+                    // Reposition all handles to final bbox
+                    const newBBox = buildBBox(resized);
+                    const newPositions = computeHandles(newBBox);
+                    resizeHandlesRef.current.forEach(rm => {
+                        const np = newPositions.find(p => p.type === rm._resizeType);
+                        if (np) rm.setLngLat([np.lng, np.lat]);
+                    });
+                });
+
+                resizeHandlesRef.current.push(marker);
+            });
+        };
+
+        setVertices(currentVerts => {
+            placeHandles(currentVerts);
+            return currentVerts;
+        });
+    }, [updatePolygonOnMap]);
+
     const handleToggleDragMode = useCallback(() => {
-        // Exit rotate mode if active
+        // Exit rotate/resize mode if active
         if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
+        if (isResizeMode) { stopResizeMode(); setIsResizeMode(false); }
         setIsDragMode(prev => {
             if (!prev) {
                 startDragMode();
@@ -429,34 +606,49 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             }
             return !prev;
         });
-    }, [startDragMode, stopDragMode, isRotateMode, stopRotateMode]);
+    }, [startDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode]);
 
     const handleToggleRotateMode = useCallback(() => {
         setIsRotateMode(prev => {
             if (!prev) {
-                // Exit drag mode if active
                 if (isDragMode) { stopDragMode(); setIsDragMode(false); }
+                if (isResizeMode) { stopResizeMode(); setIsResizeMode(false); }
                 startRotateMode();
             } else {
                 stopRotateMode();
             }
             return !prev;
         });
-    }, [startRotateMode, stopRotateMode, isDragMode, stopDragMode]);
+    }, [startRotateMode, stopRotateMode, isDragMode, stopDragMode, isResizeMode, stopResizeMode]);
 
-    // Clean up drag/rotate mode on unmount
+    const handleToggleResizeMode = useCallback(() => {
+        setIsResizeMode(prev => {
+            if (!prev) {
+                if (isDragMode) { stopDragMode(); setIsDragMode(false); }
+                if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
+                startResizeMode();
+            } else {
+                stopResizeMode();
+            }
+            return !prev;
+        });
+    }, [startResizeMode, stopResizeMode, isDragMode, stopDragMode, isRotateMode, stopRotateMode]);
+
+    // Clean up drag/rotate/resize mode on unmount
     useEffect(() => {
         return () => {
             stopDragMode();
             stopRotateMode();
+            stopResizeMode();
         };
-    }, [stopDragMode, stopRotateMode]);
+    }, [stopDragMode, stopRotateMode, stopResizeMode]);
 
     // Start shape placement mode
     const startShapePlacement = useCallback((shape) => {
         // Exit drag mode if active
         if (isDragMode) { stopDragMode(); setIsDragMode(false); }
         if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
+        if (isResizeMode) { stopResizeMode(); setIsResizeMode(false); }
         const map = window.atlasMapInstance;
         if (!map) return;
 
@@ -526,13 +718,14 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         map.on('mousedown', onMouseDown);
         map.on('mousemove', onMouseMove);
         map.on('mouseup', onMouseUp);
-    }, [generateShapeVertices, updatePolygonOnMap, rebuildMarkers, updateMarkerLabels, isDragMode, stopDragMode, isRotateMode, stopRotateMode]);
+    }, [generateShapeVertices, updatePolygonOnMap, rebuildMarkers, updateMarkerLabels, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode]);
 
     // Clear all drawn vertices and shapes
     const handleClearAll = useCallback(() => {
         // Exit drag/rotate mode if active
         if (isDragMode) { stopDragMode(); setIsDragMode(false); }
         if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
+        if (isResizeMode) { stopResizeMode(); setIsResizeMode(false); }
         setVertices([]);
         markersRef.current.forEach(m => m.remove());
         markersRef.current = [];
@@ -557,7 +750,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             map.on('click', handleMapClick);
             map.getCanvas().style.cursor = 'crosshair';
         }
-    }, [updatePolygonOnMap, createDraggableMarker, isDragMode, stopDragMode, isRotateMode, stopRotateMode]);
+    }, [updatePolygonOnMap, createDraggableMarker, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode]);
 
     // Hijack MapboxDraw trash button to clear polygon drawing
     useEffect(() => {
@@ -711,6 +904,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         // Exit drag/rotate mode if active
         if (isDragMode) { stopDragMode(); setIsDragMode(false); }
         if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
+        if (isResizeMode) { stopResizeMode(); setIsResizeMode(false); }
         const map = window.atlasMapInstance;
         if (!map) return;setShowShapeMenu(false); 
 
@@ -767,13 +961,15 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             <div className="polygon-draw-modal-header">
                 <h3>Draw Polygon</h3>
                 <span className="polygon-draw-modal-hint">
-                    {isRotateMode
-                        ? 'Drag to rotate the polygon'
-                        : isDragMode
-                            ? 'Drag to move the entire polygon'
-                            : activeShape
-                                ? `Click & drag on map to place ${activeShape}`
-                                : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
+                    {isResizeMode
+                        ? 'Drag corner to scale, edge to stretch'
+                        : isRotateMode
+                            ? 'Drag to rotate the polygon'
+                            : isDragMode
+                                ? 'Drag to move the entire polygon'
+                                : activeShape
+                                    ? `Click & drag on map to place ${activeShape}`
+                                    : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
                 </span>
             </div>
 
@@ -915,6 +1111,18 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         onClick={handleToggleRotateMode}
                     >
                         <FontAwesomeIcon icon={faRotate} style={{ fontSize: 16, width: 16, height: 16 }} />
+                    </button>
+                </div>
+                {/* Resize polygon */}
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className={`polygon-draw-style-btn${isResizeMode ? ' polygon-draw-resize-active' : ''}`}
+                        title="Resize Polygon"
+                        disabled={vertices.length < 3}
+                        onClick={handleToggleResizeMode}
+                    >
+                        <FontAwesomeIcon icon={faUpRightAndDownLeftFromCenter} style={{ fontSize: 14, width: 16, height: 16 }} />
                     </button>
                 </div>
             </div>

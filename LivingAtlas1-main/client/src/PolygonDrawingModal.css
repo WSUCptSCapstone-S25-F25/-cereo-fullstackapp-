@@ -35,8 +35,9 @@
 /* Style toolbar */
 .polygon-draw-style-toolbar {
     display: flex;
-    gap: 4px;
-    padding: 5px 10px;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 5px 6px;
     border-bottom: 1px solid #ddd;
 }
 
@@ -48,8 +49,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 29px;
-    height: 29px;
+    width: 27px;
+    height: 27px;
     border: none;
     border-radius: 4px;
     background: transparent;
@@ -336,6 +337,28 @@
 .polygon-draw-rotate-active {
     background: rgba(0,0,0,.1) !important;
     box-shadow: inset 0 0 0 1.5px #333;
+}
+
+.polygon-draw-resize-active {
+    background: rgba(0,0,0,.1) !important;
+    box-shadow: inset 0 0 0 1.5px #333;
+}
+
+/* Resize bounding-box handles */
+.polygon-draw-resize-handle {
+    width: 10px;
+    height: 10px;
+    border: 2px solid #333;
+    background: #fff;
+    border-radius: 2px;
+    z-index: 10;
+    box-sizing: border-box;
+}
+.polygon-draw-resize-handle-corner {
+    border-radius: 0;
+}
+.polygon-draw-resize-handle-edge {
+    border-radius: 50%;
 }
 
 .polygon-draw-shape-dropdown {
