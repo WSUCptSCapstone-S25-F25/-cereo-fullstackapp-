@@ -11,6 +11,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const [showLineMenu, setShowLineMenu] = useState(false);
     const [showColorMenu, setShowColorMenu] = useState(false);
     const [showShapeMenu, setShowShapeMenu] = useState(false);
+    const [showOpacityMenu, setShowOpacityMenu] = useState(false);
+    const [fillOpacity, setFillOpacity] = useState(0.15);
     const [activeShape, setActiveShape] = useState(null); // 'triangle' | 'square' | 'rectangle' | null
     const shapePlacingRef = useRef(null); // { shape, origin: {lat,lng}, active: bool }
     const markersRef = useRef([]);
@@ -62,6 +64,13 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             if (lbl) lbl.style.color = fillColor;
         });
     }, [fillColor]);
+
+    // Update fill opacity on map when fillOpacity changes
+    useEffect(() => {
+        const map = window.atlasMapInstance;
+        if (!map || !map.getLayer(POLYGON_FILL_LAYER)) return;
+        map.setPaintProperty(POLYGON_FILL_LAYER, 'fill-opacity', fillOpacity);
+    }, [fillOpacity]);
 
     const updatePolygonOnMap = useCallback((verts) => {
         const map = window.atlasMapInstance;
@@ -394,7 +403,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 source: POLYGON_FILL_SOURCE,
                 paint: {
                     'fill-color': fillColor,
-                    'fill-opacity': 0.15
+                    'fill-opacity': fillOpacity
                 }
             });
         }
@@ -512,7 +521,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             (acc, v) => ({ lat: acc.lat + v.lat / vertices.length, lng: acc.lng + v.lng / vertices.length }),
             { lat: 0, lng: 0 }
         );
-        onSave(vertices, centroid, { lineStyle, fillColor });
+        onSave(vertices, centroid, { lineStyle, fillColor, fillOpacity });
     };
 
     const handleCancel = () => {
@@ -540,7 +549,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         type="button"
                         className="polygon-draw-style-btn"
                         title="Line Style"
-                        onClick={() => { setShowLineMenu(v => !v); setShowColorMenu(false); }}
+                        onClick={() => { setShowLineMenu(v => !v); setShowColorMenu(false); setShowOpacityMenu(false); }}
                     >
                         <svg width="18" height="10" viewBox="0 0 18 10">
                             {lineStyle === 'solid' && <line x1="0" y1="5" x2="18" y2="5" stroke="currentColor" strokeWidth="2"/>}
@@ -575,7 +584,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         type="button"
                         className="polygon-draw-style-btn"
                         title="Fill Color"
-                        onClick={() => { setShowColorMenu(v => !v); setShowLineMenu(false); }}
+                        onClick={() => { setShowColorMenu(v => !v); setShowLineMenu(false); setShowOpacityMenu(false); }}
                     >
                         <span className="polygon-draw-color-swatch" style={{ background: fillColor }} />
                     </button>
@@ -593,13 +602,40 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         </div>
                     )}
                 </div>
+                {/* Fill opacity */}
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className="polygon-draw-style-btn"
+                        title="Fill Opacity"
+                        onClick={() => { setShowOpacityMenu(v => !v); setShowLineMenu(false); setShowColorMenu(false); setShowShapeMenu(false); }}
+                    >
+                        <span className="polygon-draw-opacity-swatch" style={{ background: fillColor, opacity: fillOpacity + 0.25 }} />
+                    </button>
+                    {showOpacityMenu && (
+                        <div className="polygon-draw-dropdown polygon-draw-opacity-dropdown">
+                            <label className="polygon-draw-opacity-label">
+                                Opacity: {Math.round(fillOpacity * 100)}%
+                            </label>
+                            <input
+                                type="range"
+                                className="polygon-draw-opacity-slider"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={fillOpacity}
+                                onChange={(e) => setFillOpacity(parseFloat(e.target.value))}
+                            />
+                        </div>
+                    )}
+                </div>
                 {/* Shape presets */}
                 <div className="polygon-draw-style-btn-wrap">
                     <button
                         type="button"
                         className={`polygon-draw-style-btn${activeShape ? ' polygon-draw-shape-active' : ''}`}
                         title="Shape Presets"
-                        onClick={() => { setShowShapeMenu(v => !v); setShowLineMenu(false); setShowColorMenu(false); }}
+                        onClick={() => { setShowShapeMenu(v => !v); setShowLineMenu(false); setShowColorMenu(false); setShowOpacityMenu(false); }}
                     >
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
                             <rect x="2" y="2" width="12" height="12" rx="1" />
