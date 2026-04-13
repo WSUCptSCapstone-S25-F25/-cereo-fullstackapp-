@@ -437,6 +437,13 @@ function Card(props) {
         const verts = formData.polygon_vertices;
         if (!map || !Array.isArray(verts) || verts.length < 3) return;
 
+        // Close any open Mapbox popups on the map
+        document.querySelectorAll('.mapboxgl-popup').forEach(el => {
+            const closeBtn = el.querySelector('.mapboxgl-popup-close-button');
+            if (closeBtn) closeBtn.click();
+            else el.remove();
+        });
+
         setIsEditingPolygon(true);
 
         // Fly to polygon bounds
@@ -449,7 +456,7 @@ function Card(props) {
         map.fitBounds(bounds, { padding: 80, maxZoom: 16 });
     }, [formData.polygon_vertices]);
 
-    // After polygon edit save: update formData and return to learn-more modal
+    // After polygon edit save: update formData and return to learn-more modal (edit mode)
     const handlePolygonEditSave = useCallback((vertices, centroid, style) => {
         setFormData(prev => ({
             ...prev,
@@ -458,9 +465,44 @@ function Card(props) {
             longitude: centroid.lng.toFixed(6),
             polygon_fill_color: style?.fillColor || prev.polygon_fill_color,
             polygon_line_style: style?.lineStyle || prev.polygon_line_style,
+            polygon_fill_opacity: style?.fillOpacity ?? prev.polygon_fill_opacity,
         }));
         setIsEditingPolygon(false);
-    }, []);
+        // Ensure learn-more modal stays in edit mode
+        setIsLearnMoreEditMode(true);
+
+        // Update the polygon on the main map immediately
+        const map = window.atlasMapInstance;
+        const cardID = formData.cardID || props.cardID;
+        if (map && cardID && vertices.length >= 3) {
+            const sourceId = `card-polygon-${cardID}`;
+            const fillLayerId = `card-polygon-fill-${cardID}`;
+            const lineLayerId = `card-polygon-line-${cardID}`;
+            const coords = vertices.map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
+            coords.push(coords[0]); // close polygon
+
+            const newData = {
+                type: 'Feature',
+                geometry: { type: 'Polygon', coordinates: [coords] }
+            };
+
+            const source = map.getSource(sourceId);
+            if (source) {
+                source.setData(newData);
+            }
+
+            // Update fill color / opacity if the layers exist
+            const fillColor = style?.fillColor || formData.polygon_fill_color || '#0077c0';
+            const fillOpacity = style?.fillOpacity ?? 0.2;
+            if (map.getLayer(fillLayerId)) {
+                map.setPaintProperty(fillLayerId, 'fill-color', fillColor);
+                map.setPaintProperty(fillLayerId, 'fill-opacity', fillOpacity);
+            }
+            if (map.getLayer(lineLayerId)) {
+                map.setPaintProperty(lineLayerId, 'line-color', fillColor);
+            }
+        }
+    }, [formData.cardID, formData.polygon_fill_color, props.cardID]);
 
     const handlePolygonEditCancel = useCallback(() => {
         setIsEditingPolygon(false);
@@ -1784,6 +1826,8 @@ function Card(props) {
             </Modal>
 
             {/* Polygon Editing Modal (from learn-more edit) */}
+            {/* Wrap in a click-stopper so portal events don't bubble to the card's onClick */}
+            <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
             {isEditingPolygon && (
                 <PolygonDrawingModal
                     initialVertices={formData.polygon_vertices}
@@ -1793,6 +1837,7 @@ function Card(props) {
                     onCancel={handlePolygonEditCancel}
                 />
             )}
+            </div>
         </div>
     );
 }
