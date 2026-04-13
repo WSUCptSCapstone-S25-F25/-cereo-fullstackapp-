@@ -11,7 +11,7 @@ import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js
 import { allMarkers } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faStar, faSearch, faTimes, faFilter, faPlus, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faFilter, faPlus, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
@@ -71,7 +71,8 @@ function Content2(props) {
         const onMouseMove = (e) => {
             const dx = startX.current - e.clientX;
             let newWidth = startWidth.current + dx;
-            newWidth = Math.max(250, Math.min(newWidth, 900));
+            const minWidth = Math.max(250, window.innerWidth * 0.25);
+            newWidth = Math.max(minWidth, Math.min(newWidth, 900));
             setCardPanelWidth?.(newWidth);
         };
         const onMouseUp = () => {
@@ -828,12 +829,6 @@ function Content2(props) {
 
                 <div className="card-panel-top">
                     <div className="card-panel-toolbar">
-                        <div className="card-panel-toolbar-title">
-                            <span className="card-panel-title">Cards</span>
-                            <span className="card-panel-subtitle">{cardsInViewByType.length} {scopeSubtitle}</span>
-                        </div>
-
-                        <div className="card-panel-toolbar-actions">
                             <button
                                 type="button"
                                 className="card-toolbar-button"
@@ -870,6 +865,14 @@ function Content2(props) {
                                 onChange={handleSortModeChange}
                             />
 
+                            <CategoryDropdown
+                                value={cardTypeFilter}
+                                onChange={(newValue) => {
+                                    setCardTypeFilter(newValue);
+                                    props.setCategoryConditionCondition?.(newValue);
+                                }}
+                            />
+
                             <div className="tag-filter-dropdown" ref={tagFilterRef}>
                                 <button
                                     type="button"
@@ -878,7 +881,7 @@ function Content2(props) {
                                     onClick={() => setIsTagFilterOpen(v => !v)}
                                 >
                                     <FontAwesomeIcon icon={faFilter} />
-                                    <span>Tags{activeTagFilters.length > 0 ? ` (${activeTagFilters.length})` : ''}</span>
+                                    {activeTagFilters.length > 0 && <span>({activeTagFilters.length})</span>}
                                 </button>
                                 {isTagFilterOpen && (
                                     <div className="tag-filter-dropdown-menu">
@@ -919,7 +922,7 @@ function Content2(props) {
                                 onClick={handleFavoritesToggle}
                                 title={props.isLoggedIn ? 'Show only favorited cards' : 'Log in to use favorites filter'}
                             >
-                                <FontAwesomeIcon icon={faStar} />
+                                <FontAwesomeIcon icon={faHeart} />
                                 <span>{showFavoritesOnly ? 'Favorites On' : 'Favorites'}</span>
                             </button>
 
@@ -931,19 +934,9 @@ function Content2(props) {
                             >
                                 {scopeButtonLabel}
                             </button>
-                        </div>
                     </div>
 
                     <div className="card-panel-searchbar">
-                        <CategoryDropdown
-                            value={cardTypeFilter}
-                            onChange={(newValue) => {
-                                setCardTypeFilter(newValue);
-                                // Automatically apply filter when selection changes
-                                props.setCategoryConditionCondition?.(newValue);
-                            }}
-                        />
-
                         <input
                             type="text"
                             value={cardSearchKeyword}
@@ -973,7 +966,10 @@ function Content2(props) {
                         </button>
                     </div>
 
-
+                    <div className="card-panel-info-bar">
+                        <span className="card-panel-title">Cards</span>
+                        <span className="card-panel-subtitle">{cardsInViewByType.length} {scopeSubtitle}</span>
+                    </div>
                 </div>
 
 

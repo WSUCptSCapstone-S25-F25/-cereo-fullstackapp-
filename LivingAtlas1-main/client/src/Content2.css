@@ -14,6 +14,7 @@
   top: 65px;
   right: 0;
   width: 500px;
+  min-width: 25%;
   height: calc(100vh - 65px);
   background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
   border-left: 1px solid #ccd6e0;
@@ -71,8 +72,8 @@
   z-index: 12;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 6px;
+  padding: 4px 10px 6px;
   background: rgba(248, 250, 252, 0.94);
   border-bottom: 1px solid #d8e1ea;
   backdrop-filter: blur(6px);
@@ -81,8 +82,9 @@
 .card-panel-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
   padding: 0;
 }
 
@@ -107,19 +109,24 @@
 .card-panel-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.card-panel-toolbar-actions .sort-dropdown {
-  width: 105px;
-  min-width: 105px;
+.card-panel-toolbar .sort-dropdown {
+  width: auto !important;
+  min-width: auto !important;
 }
 
-.card-panel-toolbar-actions .sort-dropdown-trigger {
-  height: 34px;
-  padding: 6px 8px;
-  font-size: 13px;
-  border-radius: 8px;
+.card-panel-toolbar .sort-dropdown-trigger {
+  height: auto !important;
+  padding: 7px 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  border: 1px solid #bfd0e2 !important;
+  background: #fff !important;
+  color: #27425d !important;
 }
 
 .card-toolbar-button {
@@ -166,6 +173,13 @@
   color: #2a6a1f;
 }
 
+.card-panel-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 0;
+}
+
 .card-panel-searchbar {
   display: flex;
   align-items: center;
@@ -192,23 +206,22 @@
   border-color: #8eabc8;
 }
 
-/* Style for the CategoryDropdown component */
-.card-panel-searchbar .category-dropdown {
-  width: 105px;
-  min-width: 105px;
+/* Style for the CategoryDropdown in toolbar — match sort-dropdown exactly */
+.card-panel-toolbar .category-dropdown {
+  width: auto !important;
+  min-width: auto !important;
+  display: inline-block !important;
 }
 
-.card-panel-searchbar .category-dropdown-trigger {
-  height: 32px;
-  padding: 5px 10px;
-  font-size: 13px;
-  font-weight: 600;
-  margin: 0;
-  border-radius: 8px;
-  border: 1px solid #bfd0e2;
-  background: #fff;
-  color: #27425d;
-  box-sizing: border-box;
+.card-panel-toolbar .category-dropdown-trigger {
+  height: auto !important;
+  padding: 7px 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  border: 1px solid #bfd0e2 !important;
+  background: #fff !important;
+  color: #27425d !important;
 }
 
 .card-panel-searchbar-btn {

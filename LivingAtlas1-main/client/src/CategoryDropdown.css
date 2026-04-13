@@ -2,7 +2,8 @@
 
 .category-dropdown {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  vertical-align: middle;
   width: 100%;
 }
 
