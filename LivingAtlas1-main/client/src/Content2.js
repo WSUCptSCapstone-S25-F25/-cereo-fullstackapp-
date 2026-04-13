@@ -11,7 +11,7 @@ import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js
 import { allMarkers } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
@@ -98,6 +98,8 @@ function Content2(props) {
     const [sortMode, setSortMode] = useState((props.sortCondition || '').split(',')[0] || '');
     const [showOnlyInView, setShowOnlyInView] = useState(false);
     const [learnMoreRequest, setLearnMoreRequest] = useState(null);
+    const [isListView, setIsListView] = useState(false);
+    const prevWidthBeforeList = useRef(null);
     const selectedCardIdFromMap = props.selectedCardIdFromMap != null
         ? String(props.selectedCardIdFromMap)
         : null;
@@ -849,6 +851,26 @@ function Content2(props) {
                             >
                                 {scopeButtonLabel}
                             </button>
+
+                            <button
+                                type="button"
+                                className={`card-toolbar-button ${isListView ? 'active' : ''}`}
+                                onClick={() => {
+                                    const goingToList = !isListView;
+                                    if (goingToList) {
+                                        prevWidthBeforeList.current = containerWidth;
+                                        const minW = Math.round(window.innerWidth * 0.25);
+                                        setCardPanelWidth?.(minW);
+                                    } else if (prevWidthBeforeList.current) {
+                                        setCardPanelWidth?.(prevWidthBeforeList.current);
+                                        prevWidthBeforeList.current = null;
+                                    }
+                                    setIsListView(goingToList);
+                                }}
+                                title={isListView ? 'Grid View' : 'List View'}
+                            >
+                                <FontAwesomeIcon icon={isListView ? faGrip : faList} />
+                            </button>
                     </div>
 
                     <div className="card-panel-searchbar">
@@ -890,35 +912,100 @@ function Content2(props) {
 
                 {(!props.isLoggedIn || bookmarksLoaded) ? (
                     <div
-                        className="card-container"
+                        className={`card-container ${isListView ? 'card-container--list' : ''}`}
                         ref={cardContainerRef}
-                        style={{ display: props.isCollapsed ? 'none' : 'grid' }}
+                        style={{ display: props.isCollapsed ? 'none' : (isListView ? 'flex' : 'grid') }}
                     >
                         {(() => {
                             console.log('[Content2] Rendering cards:', prioritizedDisplayedCards.map(c => ({ cardID: c.cardID, title: c.title })));
-                            return prioritizedDisplayedCards.map((card, index) => (
-                                <div key={`card-${card.cardID}-${index}`} onClick={() => handleCardClick(card)}>
-                                    <Card
-                                        formData={{
-                                            ...card,
-                                            files: card.files || [],
-                                            viewerUsername: resolvedUsername,
-                                            cardID: card.cardID
-                                        }}
-                                        forceOpenLearnMoreSignal={
-                                            learnMoreRequest && String(card.cardID) === learnMoreRequest.cardID
-                                                ? learnMoreRequest.token
-                                                : null
-                                        }
-                                        isSelectedFromMap={!!selectedCardIdFromMap && String(card.cardID) === selectedCardIdFromMap}
-                                        isFavorited={bookmarkedCardIDs.has(card.cardID)}
-                                        username={resolvedUsername}
-                                        fetchBookmarks={fetchBookmarks}
-                                        isLoggedIn={props.isLoggedIn}
-                                        onZoom={() => handleCardClick(card)}   // pass zoom handler down
-                                    />
-                                </div>
-                            ));
+                            return prioritizedDisplayedCards.map((card, index) => {
+                                const cardKey = `card-${card.cardID}-${index}`;
+                                const learnMoreSignal =
+                                    learnMoreRequest && String(card.cardID) === learnMoreRequest.cardID
+                                        ? learnMoreRequest.token
+                                        : null;
+
+                                if (isListView) {
+                                    return (
+                                        <div key={cardKey} className="card-list-item">
+                                            <span
+                                                className="card-list-item-title"
+                                                onClick={() => {
+                                                    setLearnMoreRequest({ cardID: String(card.cardID), token: Date.now() });
+                                                }}
+                                                title={card.title}
+                                            >
+                                                {card.title}
+                                            </span>
+                                            <div className="card-list-item-actions">
+                                                <button
+                                                    className={`card-list-item-btn fav ${bookmarkedCardIDs.has(card.cardID) ? 'active' : ''}`}
+                                                    title={bookmarkedCardIDs.has(card.cardID) ? 'Remove from favorites' : 'Add to favorites'}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (!props.isLoggedIn) { alert('Please log in to use favorites.'); return; }
+                                                        const endpoint = bookmarkedCardIDs.has(card.cardID) ? '/unbookmarkCard' : '/bookmarkCard';
+                                                        const fd = new FormData();
+                                                        fd.append('username', resolvedUsername);
+                                                        fd.append('cardID', card.cardID);
+                                                        api.post(endpoint, fd).then(() => fetchBookmarks()).catch(err => console.error(err));
+                                                    }}
+                                                >
+                                                    <FontAwesomeIcon icon={faHeart} />
+                                                </button>
+                                                <button
+                                                    className="card-list-item-btn locate"
+                                                    title="Locate on map"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleCardClick(card);
+                                                    }}
+                                                >
+                                                    <FontAwesomeIcon icon={faMapMarkerAlt} />
+                                                </button>
+                                            </div>
+                                            {/* Hidden Card for learn-more modal */}
+                                            <div style={{ display: 'none' }}>
+                                                <Card
+                                                    formData={{
+                                                        ...card,
+                                                        files: card.files || [],
+                                                        viewerUsername: resolvedUsername,
+                                                        cardID: card.cardID
+                                                    }}
+                                                    forceOpenLearnMoreSignal={learnMoreSignal}
+                                                    isSelectedFromMap={false}
+                                                    isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                                    username={resolvedUsername}
+                                                    fetchBookmarks={fetchBookmarks}
+                                                    isLoggedIn={props.isLoggedIn}
+                                                    onZoom={() => handleCardClick(card)}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div key={cardKey} onClick={() => handleCardClick(card)}>
+                                        <Card
+                                            formData={{
+                                                ...card,
+                                                files: card.files || [],
+                                                viewerUsername: resolvedUsername,
+                                                cardID: card.cardID
+                                            }}
+                                            forceOpenLearnMoreSignal={learnMoreSignal}
+                                            isSelectedFromMap={!!selectedCardIdFromMap && String(card.cardID) === selectedCardIdFromMap}
+                                            isFavorited={bookmarkedCardIDs.has(card.cardID)}
+                                            username={resolvedUsername}
+                                            fetchBookmarks={fetchBookmarks}
+                                            isLoggedIn={props.isLoggedIn}
+                                            onZoom={() => handleCardClick(card)}
+                                        />
+                                    </div>
+                                );
+                            });
                         })()}
                     </div>
                 ) : (

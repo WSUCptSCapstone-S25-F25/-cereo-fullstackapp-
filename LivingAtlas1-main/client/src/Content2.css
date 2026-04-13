@@ -19,12 +19,11 @@
   background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
   border-left: 1px solid #ccd6e0;
   box-shadow: -10px 0 24px rgba(16, 33, 54, 0.18);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   box-sizing: border-box;
   transition: transform 0.2s ease;
   z-index: 999;
-  display: flex;
-  flex-direction: column;
 }
 
 #content-2.collapsed {
@@ -55,8 +54,6 @@
 }
 
 .card-container {
-  flex: 1;
-  overflow-y: auto;
   display: grid;
   grid-template-columns: repeat(auto-fill, 280px);
   grid-gap: 16px;
@@ -64,6 +61,86 @@
   justify-content: center;
   align-content: start;
   z-index: 1;
+}
+
+/* List view mode */
+.card-container--list {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.card-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background-color: #fff;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(20, 49, 81, 0.22);
+  border-color: #90a9c2;
+}
+
+.card-list-item-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #223244;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+.card-list-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.card-list-item-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid rgba(0, 0, 0, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.82);
+  color: #111;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.2s, transform 0.15s, border-color 0.2s;
+}
+
+.card-list-item-btn:hover {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(0, 0, 0, 0.35);
+  transform: scale(1.12);
+}
+
+.card-list-item-btn.fav.active {
+  border-color: #e53935;
+  color: #e53935;
+}
+
+.card-list-item-btn.fav.active svg {
+  color: #e53935;
+  fill: #e53935;
 }
 
 .card-panel-top {
@@ -246,8 +323,8 @@
 }
 
 .card-container-loading {
-  flex: 1;
   margin: 0;
+  padding: 40px 0;
   display: flex;
   align-items: center;
   justify-content: center;
