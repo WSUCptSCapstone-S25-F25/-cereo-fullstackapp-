@@ -935,6 +935,15 @@ function Content2(props) {
                     </div>
 
                     <div className="card-panel-searchbar">
+                        <CategoryDropdown
+                            value={cardTypeFilter}
+                            onChange={(newValue) => {
+                                setCardTypeFilter(newValue);
+                                // Automatically apply filter when selection changes
+                                props.setCategoryConditionCondition?.(newValue);
+                            }}
+                        />
+
                         <input
                             type="text"
                             value={cardSearchKeyword}
@@ -944,15 +953,6 @@ function Content2(props) {
                                 if (e.key === 'Enter') {
                                     handleCardSearch();
                                 }
-                            }}
-                        />
-
-                        <CategoryDropdown
-                            value={cardTypeFilter}
-                            onChange={(newValue) => {
-                                setCardTypeFilter(newValue);
-                                // Automatically apply filter when selection changes
-                                props.setCategoryConditionCondition?.(newValue);
                             }}
                         />
 

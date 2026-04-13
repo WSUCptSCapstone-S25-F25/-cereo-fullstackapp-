@@ -4,7 +4,8 @@ import './CategoryDropdown.css';
 const CATEGORIES = [
   { value: 'River', label: 'River' },
   { value: 'Watershed', label: 'Watershed' },
-  { value: 'Places', label: 'Places' }
+  { value: 'Places', label: 'Places' },
+  { value: 'Other', label: 'Other' }
 ];
 
 function CategoryDropdown({ value, onChange }) {
