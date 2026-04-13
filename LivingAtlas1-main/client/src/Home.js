@@ -43,11 +43,11 @@ function Home(props) {
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v8');
+        return !localStorage.getItem('changelog_seen_v9');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v8', 'true');
+        localStorage.setItem('changelog_seen_v9', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -450,6 +450,17 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/12/2026</h3>
+                    <p>Fixed an issue where custom colors and line styles for polygons were not saved correctly.</p>
+                    <p>Added more features to the Draw Polygon modal: adjust shape opacity, drag to reposition, rotate, and scale (enlarge/shrink) shapes.</p>
+                    <p>Fixed polygon display issues during editing and resolved a bug where the Save button in the Learn More modal would not appear after completing polygon edits.</p>
+                    <p>Improved card container layout and button display for a cleaner toolbar appearance.</p>
+                    <p>Enhanced card container toolbar: merged "Filter by Category" and "Filter by Tags" into a single unified modal, and added more sort options (Newest First, Oldest First).</p>
+                    <p>Added a List View mode to the card container, toggleable via a toolbar button.</p>
+                    <p>Added a left-side display mode for the card container, which can be shown alongside the Upload Panel in a split layout.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/9/2026</h3>
                     <p>Cards now support polygon areas as an alternative to single-point locations. You can represent a card with a custom polygon shape drawn directly on the map.</p>
                     <p>Two workflows are available to draw a polygon: (1) open the Upload Card panel → choose "Polygon Area" → click "Draw Polygon on Map"; or (2) click the Polygon tool (P) button in the top-right map controls.</p>
