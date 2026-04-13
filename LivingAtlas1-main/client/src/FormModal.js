@@ -153,7 +153,8 @@ const FormModal = (props) => {
         // Always use current props.username to avoid stale state
         const payload = {
             ...formData,
-            username: props.username || formData.username
+            username: props.username || formData.username,
+            category: formData.category || 'None',
         };
 
         const formData2 = new FormData();
@@ -351,7 +352,7 @@ const FormModal = (props) => {
                 <button className="close-modal-button" onClick={handleCloseModal}>
                     &times;
                 </button>
-                <h2>Upload Document</h2>
+                <h2>Create Card</h2>
                 <form onSubmit={handleSubmit}>
                     <label>Author Name (required):</label>
                     <input 
@@ -374,7 +375,6 @@ const FormModal = (props) => {
                         <option value="River">River</option>
                         <option value="Watershed">Watershed</option>
                         <option value="Places">Places</option>
-                        <option value="None">None</option>
                         <option value="Other">Other</option>
                     </select>
 

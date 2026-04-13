@@ -8,7 +8,7 @@ import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan } f
 import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
 import PolygonDrawingModal from './PolygonDrawingModal';
 
-const CARD_CATEGORIES = ['River', 'Watershed', 'Places', 'None', 'Other'];
+const CARD_CATEGORIES = ['River', 'Watershed', 'Places', 'Other'];
 
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -267,11 +267,13 @@ function Card(props) {
             key !== "images" &&
             key !== "thumbnail_link" &&
             key !== "polygon_vertices" &&
+            key !== "category" &&
             formData[key] !== undefined && formData[key] !== null
         ) {
             formDataToSend.append(key, formData[key]);
         }
     });
+    formDataToSend.append('category', formData.category || 'None');
 
     // Send polygon vertices as JSON string if polygon card
     if (formData.location_type === 'polygon' && Array.isArray(formData.polygon_vertices) && formData.polygon_vertices.length >= 3) {
@@ -1344,6 +1346,7 @@ function Card(props) {
                                     value={formData.category || ''}
                                     onChange={handleInputChange}
                                 >
+                                    <option value="">Select a Category</option>
                                     {CARD_CATEGORIES.map((categoryOption) => (
                                         <option key={categoryOption} value={categoryOption}>
                                             {categoryOption}
@@ -1661,6 +1664,7 @@ function Card(props) {
                             value={formData.category || ""}
                             onChange={handleInputChange}
                         >
+                            <option value="">Select a Category</option>
                             {CARD_CATEGORIES.map((categoryOption) => (
                                 <option key={categoryOption} value={categoryOption}>
                                     {categoryOption}
