@@ -656,7 +656,7 @@ function Content2(props) {
     });
 
     const scopeSubtitle = isViewportFilteringActive ? 'in view' : 'all cards';
-    const scopeButtonLabel = isViewportFilteringActive ? 'View: In View' : 'View: All Cards';
+    const scopeButtonLabel = isViewportFilteringActive ? 'In View' : 'All Cards';
     const scopeButtonTitle = isViewportFilteringActive
         ? 'Currently showing cards inside the map viewport. Click to show all cards.'
         : 'Currently showing all cards. Click to show only cards in the map viewport.';
@@ -786,7 +786,7 @@ function Content2(props) {
                     <div className="card-panel-toolbar">
                             <button
                                 type="button"
-                                className="card-toolbar-button"
+                                className="card-toolbar-button card-toolbar-button--icon"
                                 title={props.isLoggedIn ? 'Add Card' : 'Log in to add a card'}
                                 onClick={() => {
                                     if (!props.isLoggedIn) {
@@ -801,7 +801,7 @@ function Content2(props) {
 
                             <button
                                 type="button"
-                                className={`card-toolbar-button ${!markersVisible ? 'active' : ''}`}
+                                className={`card-toolbar-button card-toolbar-button--icon ${!markersVisible ? 'active' : ''}`}
                                 title={markersVisible ? 'Hide Markers' : 'Show Markers'}
                                 onClick={() => {
                                     const newVisible = !markersVisible;
@@ -854,7 +854,7 @@ function Content2(props) {
 
                             <button
                                 type="button"
-                                className={`card-toolbar-button ${isListView ? 'active' : ''}`}
+                                className={`card-toolbar-button card-toolbar-button--icon ${isListView ? 'active' : ''}`}
                                 onClick={() => {
                                     const goingToList = !isListView;
                                     if (goingToList) {

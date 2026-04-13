@@ -19,11 +19,12 @@
   background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
   border-left: 1px solid #ccd6e0;
   box-shadow: -10px 0 24px rgba(16, 33, 54, 0.18);
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   box-sizing: border-box;
   transition: transform 0.2s ease;
   z-index: 999;
+  display: flex;
+  flex-direction: column;
 }
 
 #content-2.collapsed {
@@ -54,6 +55,9 @@
 }
 
 .card-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   grid-template-columns: repeat(auto-fill, 280px);
   grid-gap: 16px;
@@ -144,13 +148,12 @@
 }
 
 .card-panel-top {
-  position: sticky;
-  top: 0;
   z-index: 12;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 4px 10px 6px;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 2px 10px 4px;
   background: rgba(248, 250, 252, 0.94);
   border-bottom: 1px solid #d8e1ea;
   backdrop-filter: blur(6px);
@@ -161,7 +164,7 @@
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 2px 6px;
   padding: 0;
 }
 
@@ -226,6 +229,13 @@
   background: #f2f7fc;
 }
 
+.card-toolbar-button--icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
 .card-toolbar-button.active {
   border-color: #b88b0a;
   background: #fff4d0;
@@ -233,21 +243,21 @@
 }
 
 .card-toolbar-button--scope {
-  border-color: #a2b9cf;
-  background: #eef4fb;
-  color: #294463;
+  border-color: #bfd0e2;
+  background: #fff;
+  color: #27425d;
 }
 
 .card-toolbar-button--scope.in-view {
-  border-color: #4b83b9;
-  background: #e8f2fb;
-  color: #1f4f7e;
+  border-color: #bfd0e2;
+  background: #fff;
+  color: #27425d;
 }
 
 .card-toolbar-button--scope.all-cards {
-  border-color: #73a25f;
-  background: #ecf8e8;
-  color: #2a6a1f;
+  border-color: #bfd0e2;
+  background: #fff;
+  color: #27425d;
 }
 
 .card-panel-info-bar {
