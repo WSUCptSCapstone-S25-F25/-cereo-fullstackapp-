@@ -39,6 +39,7 @@ function Main(props) {
                 isModalOpen={props.isModalOpen}
                 isSidebarOpen={props.isSidebarOpen}
                 cardPanelWidth={props.cardPanelWidth}
+                cardPanelSide={props.cardPanelSide}
 
                 selectedCardCoords={props.selectedCardCoords}
                 onMarkerCardSelect={props.onMarkerCardSelect}

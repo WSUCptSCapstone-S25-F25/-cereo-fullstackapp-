@@ -946,8 +946,13 @@ const Content1 = (props) => {
   const leftPanelWidth = (props.isUploadPanelOpen || props.isRemovedPanelOpen)
     ? 420
     : 0;
-  const mapContainerLeft = leftSidebarWidth + leftPanelWidth;
-  const mapContainerRight = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
+  const cardPanelW = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
+  const cardOnLeft = props.cardPanelSide === 'left';
+  const bothOnLeft = cardOnLeft && !props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen);
+  // When both card panel and upload panel are on left, they stack vertically in same column
+  const cardLeftExtra = (cardOnLeft && !bothOnLeft) ? cardPanelW : 0;
+  const mapContainerLeft = leftSidebarWidth + leftPanelWidth + cardLeftExtra;
+  const mapContainerRight = cardOnLeft ? 0 : cardPanelW;
 
   return (
     <div 

@@ -123,6 +123,7 @@ const BUILTIN_FOLDER_NAME = 'Built-in Layers';
 function ArcgisUploadPanel({
     isOpen,
     onClose,
+    splitBottom = false,
     mapInstance,
     arcgisLayerAdded: propArcgisLayerAdded,
     setArcgisLayerAdded: setPropArcgisLayerAdded,
@@ -1888,7 +1889,7 @@ function ArcgisUploadPanel({
                 mapContainerEl
             )}
             {/* Upload Panel */}
-            <div className="upload-panel" onContextMenu={e => e.preventDefault()}>
+            <div className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}`} onContextMenu={e => e.preventDefault()}>
                 {/* Only show search bar and services when not loading database data */}
                 {!(isLoadingServices && dataSource === 'database') && (
                     <>

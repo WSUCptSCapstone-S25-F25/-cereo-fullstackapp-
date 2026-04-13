@@ -11,11 +11,13 @@ import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js
 import { allMarkers } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip, faRightLeft } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
-    const { setCardPanelWidth } = props;
+    const { setCardPanelWidth, cardPanelSide, setCardPanelSide } = props;
+    const isOnLeft = cardPanelSide === 'left';
+    const bothOnLeft = isOnLeft && !props.isCollapsed && props.isUploadPanelOpen;
     const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
     const [pendingPolygonData, setPendingPolygonData] = useState(null);
     const containerWidth = props.cardPanelWidth ?? 300;
@@ -69,7 +71,9 @@ function Content2(props) {
     useEffect(() => {
         if (!isDragging) return;
         const onMouseMove = (e) => {
-            const dx = startX.current - e.clientX;
+            const dx = isOnLeft
+                ? e.clientX - startX.current
+                : startX.current - e.clientX;
             let newWidth = startWidth.current + dx;
             const minWidth = Math.max(250, window.innerWidth * 0.25);
             newWidth = Math.max(minWidth, Math.min(newWidth, 900));
@@ -86,7 +90,7 @@ function Content2(props) {
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', onMouseUp);
         };
-    }, [isDragging, setCardPanelWidth]);
+    }, [isDragging, setCardPanelWidth, isOnLeft]);
 
     const location = useLocation();
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
@@ -100,6 +104,18 @@ function Content2(props) {
     const [learnMoreRequest, setLearnMoreRequest] = useState(null);
     const [isListView, setIsListView] = useState(false);
     const prevWidthBeforeList = useRef(null);
+    const prevListViewBeforeBothLeft = useRef(null);
+
+    // Force list view when card panel + upload panel both on left
+    useEffect(() => {
+        if (bothOnLeft && !isListView) {
+            prevListViewBeforeBothLeft.current = false;
+            setIsListView(true);
+        } else if (!bothOnLeft && prevListViewBeforeBothLeft.current === false) {
+            prevListViewBeforeBothLeft.current = null;
+            setIsListView(false);
+        }
+    }, [bothOnLeft]); // eslint-disable-line react-hooks/exhaustive-deps
     const selectedCardIdFromMap = props.selectedCardIdFromMap != null
         ? String(props.selectedCardIdFromMap)
         : null;
@@ -746,10 +762,14 @@ function Content2(props) {
 
     return (
         <>
-            {/* Right Sidebar */}
+            {/* Sidebar collapse toggle */}
             <div id="right-sidebar">
-                <div className="collapse-toggle" onClick={toggleCollapse}>
-                    <FontAwesomeIcon icon={props.isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight} />
+                <div className={`collapse-toggle ${isOnLeft ? 'collapse-toggle--left' : ''}`} onClick={toggleCollapse}>
+                    <FontAwesomeIcon icon={
+                        isOnLeft
+                            ? (props.isCollapsed ? faAngleDoubleRight : faAngleDoubleLeft)
+                            : (props.isCollapsed ? faAngleDoubleLeft : faAngleDoubleRight)
+                    } />
                 </div>
             </div>
 
@@ -763,15 +783,15 @@ function Content2(props) {
     
             <section
                 id="content-2"
-                className={props.isCollapsed ? 'collapsed' : ''}
+                className={`${props.isCollapsed ? 'collapsed' : ''} ${isOnLeft ? 'content-2--left' : ''} ${bothOnLeft ? 'content-2--split-top' : ''}`}
                 ref={containerRef}
                 style={{ width: containerWidth }}
             >
-                {/* Draggable left edge handle */}
+                {/* Draggable edge handle */}
                 <div
                     style={{
                         position: 'absolute',
-                        left: 0,
+                        [isOnLeft ? 'right' : 'left']: 0,
                         top: 0,
                         width: '6px',
                         height: '100%',
@@ -855,6 +875,7 @@ function Content2(props) {
                             <button
                                 type="button"
                                 className={`card-toolbar-button card-toolbar-button--icon ${isListView ? 'active' : ''}`}
+                                disabled={bothOnLeft}
                                 onClick={() => {
                                     const goingToList = !isListView;
                                     if (goingToList) {
@@ -870,6 +891,15 @@ function Content2(props) {
                                 title={isListView ? 'Grid View' : 'List View'}
                             >
                                 <FontAwesomeIcon icon={isListView ? faGrip : faList} />
+                            </button>
+
+                            <button
+                                type="button"
+                                className="card-toolbar-button card-toolbar-button--icon"
+                                onClick={() => setCardPanelSide?.(isOnLeft ? 'right' : 'left')}
+                                title={isOnLeft ? 'Move panel to right' : 'Move panel to left'}
+                            >
+                                <FontAwesomeIcon icon={faRightLeft} />
                             </button>
                     </div>
 

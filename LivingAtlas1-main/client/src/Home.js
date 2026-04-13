@@ -36,6 +36,7 @@ function Home(props) {
     );
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);
+    const [cardPanelSide, setCardPanelSide] = useState('right');
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
     const [arcgisLayers, setArcgisLayers] = useState([]);
@@ -295,6 +296,7 @@ function Home(props) {
                 <ArcgisUploadPanel
                     isOpen={isUploadPanelOpen}
                     onClose={() => setIsUploadPanelOpen(false)}
+                    splitBottom={cardPanelSide === 'left' && !isCollapsed}
                     mapInstance={getMapboxMap}
                     arcgisLayerAdded={arcgisLayerAdded}
                     setArcgisLayerAdded={setArcgisLayerAdded}
@@ -406,6 +408,7 @@ function Home(props) {
                 selectedCardCoords={selectedCardCoords}
                 onMarkerCardSelect={setSelectedCardIdFromMap}
                 cardPanelWidth={cardPanelWidth}
+                cardPanelSide={cardPanelSide}
             />
 
             <Content2
@@ -429,6 +432,9 @@ function Home(props) {
                 selectedCardIdFromMap={selectedCardIdFromMap}
                 cardPanelWidth={cardPanelWidth}
                 setCardPanelWidth={setCardPanelWidth}
+                cardPanelSide={cardPanelSide}
+                setCardPanelSide={setCardPanelSide}
+                isUploadPanelOpen={isUploadPanelOpen}
                 onCardClick={handleCardClick}
             />
 
