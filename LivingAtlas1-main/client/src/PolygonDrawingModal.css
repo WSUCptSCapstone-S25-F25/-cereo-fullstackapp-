@@ -333,6 +333,11 @@
     box-shadow: inset 0 0 0 1.5px #333;
 }
 
+.polygon-draw-rotate-active {
+    background: rgba(0,0,0,.1) !important;
+    box-shadow: inset 0 0 0 1.5px #333;
+}
+
 .polygon-draw-shape-dropdown {
     min-width: 110px;
 }

@@ -15,9 +15,12 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const [fillOpacity, setFillOpacity] = useState(0.15);
     const [activeShape, setActiveShape] = useState(null); // 'triangle' | 'square' | 'rectangle' | null
     const [isDragMode, setIsDragMode] = useState(false);
+    const [isRotateMode, setIsRotateMode] = useState(false);
     const shapePlacingRef = useRef(null); // { shape, origin: {lat,lng}, active: bool }
     const dragRef = useRef(null); // { origin: {lat,lng}, startVertices: [...] }
     const dragHandlersRef = useRef(null); // store bound handlers for cleanup
+    const rotateRef = useRef(null); // { startAngle, centroid, startVertices }
+    const rotateHandlersRef = useRef(null);
     const markersRef = useRef([]);
     const linesSourceAdded = useRef(false);
     const fillSourceAdded = useRef(false);
@@ -321,7 +324,101 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         map.on('mouseup', onMouseUp);
     }, [updatePolygonOnMap]);
 
+    // ── Whole-polygon rotate mode ──
+    const stopRotateMode = useCallback(() => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+        if (rotateHandlersRef.current) {
+            map.off('mousedown', rotateHandlersRef.current.onMouseDown);
+            map.off('mousemove', rotateHandlersRef.current.onMouseMove);
+            map.off('mouseup', rotateHandlersRef.current.onMouseUp);
+            rotateHandlersRef.current = null;
+        }
+        rotateRef.current = null;
+        map.dragPan.enable();
+        map.getCanvas().style.cursor = '';
+        markersRef.current.forEach(m => m.setDraggable(true));
+    }, []);
+
+    const startRotateMode = useCallback(() => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+
+        if (mapClickHandlerRef.current) {
+            map.off('click', mapClickHandlerRef.current);
+            mapClickHandlerRef.current = null;
+        }
+        setIsDrawing(false);
+        markersRef.current.forEach(m => m.setDraggable(false));
+        map.getCanvas().style.cursor = 'crosshair';
+
+        const onMouseDown = (e) => {
+            e.preventDefault();
+            const { lat, lng } = e.lngLat;
+            setVertices(currentVerts => {
+                const cx = currentVerts.reduce((s, v) => s + v.lng, 0) / currentVerts.length;
+                const cy = currentVerts.reduce((s, v) => s + v.lat, 0) / currentVerts.length;
+                const startAngle = Math.atan2(lat - cy, lng - cx);
+                rotateRef.current = {
+                    startAngle,
+                    centroid: { lat: cy, lng: cx },
+                    startVertices: currentVerts.map(v => ({ ...v })),
+                };
+                return currentVerts;
+            });
+            map.dragPan.disable();
+        };
+
+        const rotateVertices = (startVerts, centroid, angle) => {
+            const cosA = Math.cos(angle);
+            const sinA = Math.sin(angle);
+            const cosLat = Math.cos(centroid.lat * Math.PI / 180);
+            return startVerts.map(v => {
+                const dx = (v.lng - centroid.lng) * cosLat;
+                const dy = v.lat - centroid.lat;
+                return {
+                    lng: parseFloat((centroid.lng + (dx * cosA - dy * sinA) / cosLat).toFixed(6)),
+                    lat: parseFloat((centroid.lat + dx * sinA + dy * cosA).toFixed(6)),
+                };
+            });
+        };
+
+        const onMouseMove = (e) => {
+            if (!rotateRef.current) return;
+            const { startAngle, centroid, startVertices } = rotateRef.current;
+            const curAngle = Math.atan2(e.lngLat.lat - centroid.lat, e.lngLat.lng - centroid.lng);
+            const delta = curAngle - startAngle;
+            const rotated = rotateVertices(startVertices, centroid, delta);
+            updatePolygonOnMap(rotated);
+            rotated.forEach((v, i) => {
+                if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
+            });
+        };
+
+        const onMouseUp = (e) => {
+            if (!rotateRef.current) return;
+            const { startAngle, centroid, startVertices } = rotateRef.current;
+            const curAngle = Math.atan2(e.lngLat.lat - centroid.lat, e.lngLat.lng - centroid.lng);
+            const delta = curAngle - startAngle;
+            const rotated = rotateVertices(startVertices, centroid, delta);
+            rotateRef.current = null;
+            map.dragPan.enable();
+            setVertices(rotated);
+            updatePolygonOnMap(rotated);
+            rotated.forEach((v, i) => {
+                if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
+            });
+        };
+
+        rotateHandlersRef.current = { onMouseDown, onMouseMove, onMouseUp };
+        map.on('mousedown', onMouseDown);
+        map.on('mousemove', onMouseMove);
+        map.on('mouseup', onMouseUp);
+    }, [updatePolygonOnMap]);
+
     const handleToggleDragMode = useCallback(() => {
+        // Exit rotate mode if active
+        if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
         setIsDragMode(prev => {
             if (!prev) {
                 startDragMode();
@@ -330,19 +427,34 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             }
             return !prev;
         });
-    }, [startDragMode, stopDragMode]);
+    }, [startDragMode, stopDragMode, isRotateMode, stopRotateMode]);
 
-    // Clean up drag mode on unmount
+    const handleToggleRotateMode = useCallback(() => {
+        setIsRotateMode(prev => {
+            if (!prev) {
+                // Exit drag mode if active
+                if (isDragMode) { stopDragMode(); setIsDragMode(false); }
+                startRotateMode();
+            } else {
+                stopRotateMode();
+            }
+            return !prev;
+        });
+    }, [startRotateMode, stopRotateMode, isDragMode, stopDragMode]);
+
+    // Clean up drag/rotate mode on unmount
     useEffect(() => {
         return () => {
             stopDragMode();
+            stopRotateMode();
         };
-    }, [stopDragMode]);
+    }, [stopDragMode, stopRotateMode]);
 
     // Start shape placement mode
     const startShapePlacement = useCallback((shape) => {
         // Exit drag mode if active
         if (isDragMode) { stopDragMode(); setIsDragMode(false); }
+        if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
         const map = window.atlasMapInstance;
         if (!map) return;
 
@@ -412,12 +524,13 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         map.on('mousedown', onMouseDown);
         map.on('mousemove', onMouseMove);
         map.on('mouseup', onMouseUp);
-    }, [generateShapeVertices, updatePolygonOnMap, rebuildMarkers, updateMarkerLabels, isDragMode, stopDragMode]);
+    }, [generateShapeVertices, updatePolygonOnMap, rebuildMarkers, updateMarkerLabels, isDragMode, stopDragMode, isRotateMode, stopRotateMode]);
 
     // Clear all drawn vertices and shapes
     const handleClearAll = useCallback(() => {
-        // Exit drag mode if active
+        // Exit drag/rotate mode if active
         if (isDragMode) { stopDragMode(); setIsDragMode(false); }
+        if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
         setVertices([]);
         markersRef.current.forEach(m => m.remove());
         markersRef.current = [];
@@ -442,7 +555,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             map.on('click', handleMapClick);
             map.getCanvas().style.cursor = 'crosshair';
         }
-    }, [updatePolygonOnMap, createDraggableMarker, isDragMode, stopDragMode]);
+    }, [updatePolygonOnMap, createDraggableMarker, isDragMode, stopDragMode, isRotateMode, stopRotateMode]);
 
     // Hijack MapboxDraw trash button to clear polygon drawing
     useEffect(() => {
@@ -593,8 +706,9 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
 
     // Resume drawing
     const handleResumeDrawing = () => {
-        // Exit drag mode if active
+        // Exit drag/rotate mode if active
         if (isDragMode) { stopDragMode(); setIsDragMode(false); }
+        if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
         const map = window.atlasMapInstance;
         if (!map) return;setShowShapeMenu(false); 
 
@@ -651,11 +765,13 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             <div className="polygon-draw-modal-header">
                 <h3>Draw Polygon</h3>
                 <span className="polygon-draw-modal-hint">
-                    {isDragMode
-                        ? 'Drag to move the entire polygon'
-                        : activeShape
-                            ? `Click & drag on map to place ${activeShape}`
-                            : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
+                    {isRotateMode
+                        ? 'Drag to rotate the polygon'
+                        : isDragMode
+                            ? 'Drag to move the entire polygon'
+                            : activeShape
+                                ? `Click & drag on map to place ${activeShape}`
+                                : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
                 </span>
             </div>
 
@@ -786,6 +902,21 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     >
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" stroke="none">
                             <path d="M6.5 1C6.5 0.6 6.8 0.3 7.1 0.1 7.5-0.1 8 0 8.2 0.3L8.5 1V5.5H9.5V2.5C9.5 2 9.8 1.5 10.3 1.3 10.8 1.1 11.3 1.3 11.5 1.8L11.5 2.5V6.5H12.5V4C12.5 3.5 12.8 3 13.3 2.8 13.8 2.6 14.3 2.8 14.5 3.3L14.5 4V9C14.5 12 12 14.5 9 14.5H8C5.5 14.5 3.5 12.5 3.5 10V8.5C3.5 8 3.8 7.5 4.3 7.3 4.8 7.1 5.3 7.3 5.5 7.8V8.5V5.5H6.5V1Z"/>
+                        </svg>
+                    </button>
+                </div>
+                {/* Rotate polygon */}
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className={`polygon-draw-style-btn${isRotateMode ? ' polygon-draw-rotate-active' : ''}`}
+                        title="Rotate Polygon"
+                        disabled={vertices.length < 3}
+                        onClick={handleToggleRotateMode}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M13.5 8A5.5 5.5 0 1 1 4.5 3" strokeLinecap="round"/>
+                            <polyline points="4.5 0.5 4.5 3.5 7.5 3.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                     </button>
                 </div>
