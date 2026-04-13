@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSort } from '@fortawesome/free-solid-svg-icons';
 import './SortDropdown.css';
 
 const SORT_OPTIONS = [
-  { value: 'RecentlyAdded', label: 'Recently Added' },
+  { value: 'NewestFirst', label: 'Newest First' },
+  { value: 'OldestFirst', label: 'Oldest First' },
   { value: 'ClosestToMe', label: 'Closest To Me' },
   { value: 'ClosestToPin', label: 'Closest To Pin' }
 ];
@@ -51,7 +54,8 @@ function SortDropdown({ value, onChange }) {
         onClick={() => setIsOpen((prev) => !prev)}
         title="Sort cards"
       >
-        {displayText}
+        <FontAwesomeIcon icon={faSort} />
+        <span>{displayText}</span>
       </button>
 
       {isOpen && (

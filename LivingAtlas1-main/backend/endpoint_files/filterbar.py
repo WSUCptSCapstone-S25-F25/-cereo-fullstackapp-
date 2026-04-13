@@ -194,8 +194,10 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
         sortSplit = sortString.split(',')
         if sortSplit[0] == "ClosestToMe" or sortSplit[0] == "ClosestToPin":
             finalQUERY += " ORDER BY distance ASC"
-        elif sortSplit[0] == "RecentlyAdded":
+        elif sortSplit[0] == "RecentlyAdded" or sortSplit[0] == "NewestFirst":
             finalQUERY += " ORDER BY c.DatePosted DESC"
+        elif sortSplit[0] == "OldestFirst":
+            finalQUERY += " ORDER BY c.DatePosted ASC"
 
     cur.execute(finalQUERY)
     rows = cur.fetchall()

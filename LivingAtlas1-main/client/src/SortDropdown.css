@@ -29,13 +29,6 @@
   background-color: #f9fafb;
 }
 
-.sort-dropdown-trigger::after {
-  content: '▼';
-  font-size: 10px;
-  color: #7a8a99;
-  margin-left: auto;
-}
-
 .sort-dropdown-menu {
   position: absolute;
   top: 100%;
