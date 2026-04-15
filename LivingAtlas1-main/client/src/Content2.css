@@ -11,11 +11,11 @@
 /* Card container styles */
 #content-2 {
   position: fixed;
-  top: 65px;
+  top: 50px;
   right: 0;
   width: 500px;
   min-width: 25%;
-  height: calc(100vh - 65px);
+  height: calc(100vh - 50px);
   background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
   border: 1px solid #222;
   box-shadow: -10px 0 24px rgba(16, 33, 54, 0.18);
@@ -34,7 +34,7 @@
 /* Left-side positioning */
 #content-2.content-2--left {
   right: auto;
-  left: 60px;
+  left: 48px;
   box-shadow: 10px 0 24px rgba(16, 33, 54, 0.18);
 }
 
@@ -44,7 +44,7 @@
 
 /* Split layout: card container takes top half when upload panel is also open on left */
 #content-2.content-2--split-top {
-  height: calc(50vh - 65px);
+  height: calc(50vh - 50px);
   width: 25vw !important;
 }
 
@@ -377,7 +377,7 @@
 
 @media screen and (max-width: 767px) {
   #content-2 {
-    width: min(100vw - 60px, 420px);
+    width: min(100vw - 48px, 420px);
   }
 
   .card-panel-top {

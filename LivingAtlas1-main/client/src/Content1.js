@@ -11,6 +11,8 @@ import updateMarkers from './PolygonFiltering.js';
 import { showAll } from './Filter';
 import api from './api.js';
 import PolygonDrawingModal from './PolygonDrawingModal';
+import { icon } from '@fortawesome/fontawesome-svg-core';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
 // Mapbox Token
 mapboxgl.accessToken =
@@ -52,6 +54,7 @@ const Content1 = (props) => {
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
   const [isPolygonToolDrawing, setIsPolygonToolDrawing] = useState(false);
+  const markersVisibleRef = useRef(true);
 
   const closeMarkerPopup = useCallback(() => {
     if (markerPopupRef.current) {
@@ -523,6 +526,42 @@ const Content1 = (props) => {
 
     map.addControl(draw);
 
+    // Inject visibility toggle button into the draw control group
+    {
+      const drawGroup = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-top-right .mapboxgl-ctrl-group');
+      if (drawGroup) {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'mapbox-gl-draw_ctrl-draw-btn marker-visibility-toggle active';
+        toggleBtn.title = 'Toggle markers & polygons visibility';
+        toggleBtn.type = 'button';
+        toggleBtn.innerHTML = icon(faEye).html[0];
+        toggleBtn.addEventListener('click', () => {
+          const visible = !markersVisibleRef.current;
+          markersVisibleRef.current = visible;
+          toggleBtn.classList.toggle('active', visible);
+          toggleBtn.innerHTML = visible ? icon(faEye).html[0] : icon(faEyeSlash).html[0];
+          toggleBtn.title = visible ? 'Hide markers & polygons' : 'Show markers & polygons';
+
+          // Toggle marker DOM elements
+          allMarkers.forEach(m => {
+            const el = m.getElement();
+            if (el) el.style.display = visible ? '' : 'none';
+          });
+
+          // Toggle polygon layers
+          const style = map.getStyle();
+          if (style && style.layers) {
+            style.layers.forEach(layer => {
+              if (layer.id.startsWith('card-polygon-fill-') || layer.id.startsWith('card-polygon-line-')) {
+                map.setLayoutProperty(layer.id, 'visibility', visible ? 'visible' : 'none');
+              }
+            });
+          }
+        });
+        drawGroup.appendChild(toggleBtn);
+      }
+    }
+
     map.on('draw.modechange', (e) => {
       if (e.mode === 'draw_polygon') {
         draw.changeMode('simple_select');
@@ -942,7 +981,7 @@ const Content1 = (props) => {
   }, []);
 
   // Compute styles for outer map container to respond to card panel state
-  const leftSidebarWidth = props.isSidebarOpen ? 300 : 60;
+  const leftSidebarWidth = props.isSidebarOpen ? 300 : 48;
   const hasLeftPanel = props.isUploadPanelOpen || props.isRemovedPanelOpen;
   const cardPanelW = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
   const cardOnLeft = props.cardPanelSide === 'left';

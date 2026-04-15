@@ -14,7 +14,7 @@ main {
   padding: 20px;
   margin: 0 auto;
   width: calc(100% - 360px); /* Account for the width of the right sidebar and card container */
-  height: calc(100vh - 65px); /* Ensure height fits the viewport */
+  height: calc(100vh - 50px); /* Ensure height fits the viewport */
   box-sizing: border-box;
   transition: margin-left 0.3s ease, width 0.3s ease; /* Add smooth transition effects */
 }

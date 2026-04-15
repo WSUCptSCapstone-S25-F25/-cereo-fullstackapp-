@@ -11,16 +11,16 @@
 
 /* Left sidebar styles */
 .left-sidebar {
-    width: 60px;
+    width: 48px;
     background-color: #333;
     color: white;
-    height: calc(100vh - 65px); /* Subtract navbar height */
+    height: calc(100vh - 50px); /* Subtract navbar height */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     position: fixed;
-    top: 65px; /* Place the sidebar below the navbar */
+    top: 50px; /* Place the sidebar below the navbar */
     left: 0;
     z-index: 1000;
     transition: width 0.3s ease;
@@ -49,7 +49,7 @@
     box-sizing: border-box;
     background-color: #444;
     color: white;
-    height: calc(100vh - 85px); /* Subtract navbar and top button height */
+    height: calc(100vh - 70px); /* Subtract navbar and top button height */
     overflow-y: auto;
 }
 
@@ -68,8 +68,8 @@
 }
 
 .left-sidebar + .main {
-    margin-left: 60px; /* Adjust main content offset when sidebar is closed */
-    width: calc(100% - 60px); /* Adjust width to fit the sidebar */
+    margin-left: 48px; /* Adjust main content offset when sidebar is closed */
+    width: calc(100% - 48px); /* Adjust width to fit the sidebar */
 }
 
 /* Left Sidebar Toggle Button */
@@ -92,7 +92,7 @@
     background: none;
     border: none;
     color: white;
-    font-size: 24px;
+    font-size: 20px;
     cursor: pointer;
     z-index: 1001;
     margin: 12px 0 0 0; /* Add vertical spacing */
@@ -103,8 +103,8 @@
 /* Mini Search Modal – slides out from behind the left sidebar */
 .search-mini-modal {
     position: fixed;
-    left: 60px;          /* flush against the right edge of the sidebar */
-    top: 65px;           /* flush below the topnav */
+    left: 48px;          /* flush against the right edge of the sidebar */
+    top: 50px;           /* flush below the topnav */
     z-index: 999;        /* below sidebar (1000) so it slides from behind it */
     background: #d9d9d9;
     box-shadow: 5px 6px 20px rgba(0, 0, 0, 0.18);
@@ -212,10 +212,10 @@
 /* Right sidebar styles */
 #right-sidebar {
     position: fixed; /* Fixed on the right side of the page */
-    top: 65px; /* Ensures it does not overlap with the navbar */
-    right: -60px;
-    width: 60px; /* Width of the right sidebar */
-    height: calc(100vh - 65px); /* Height adapts to the viewport minus the navbar height */
+    top: 50px; /* Ensures it does not overlap with the navbar */
+    right: -48px;
+    width: 48px; /* Width of the right sidebar */
+    height: calc(100vh - 50px); /* Height adapts to the viewport minus the navbar height */
     background-color: transparent; /* Background color */
     display: flex;
     flex-direction: column; /* Vertical alignment of child elements */
