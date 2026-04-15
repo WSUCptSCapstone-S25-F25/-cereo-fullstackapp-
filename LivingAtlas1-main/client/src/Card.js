@@ -25,6 +25,7 @@ function Card(props) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
     const [isEditingPolygon, setIsEditingPolygon] = useState(false);
+    const [isConvertingToPolygon, setIsConvertingToPolygon] = useState(false);
     const isEditingRef = useRef(false); // Track editing state across renders
     const learnMoreImageInputRef = useRef(null);
     const selectLocationMarker = useRef(null);
@@ -433,6 +434,24 @@ function Card(props) {
         setIsSelectingLocation(false);
     };
 
+    // Change marker card to polygon: hide modal → open PolygonDrawingModal
+    const handleChangeToPolygon = useCallback(() => {
+        const map = window.atlasMapInstance;
+        if (!map) { console.error('Map not found'); return; }
+
+        // Switch location_type but preserve existing lat/lng
+        setFormData(prev => ({ ...prev, location_type: 'polygon' }));
+        setIsConvertingToPolygon(true);
+        setIsEditingPolygon(true);
+
+        // Fly to the current marker location
+        const lat = parseFloat(formData.latitude);
+        const lng = parseFloat(formData.longitude);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            map.flyTo({ center: [lng, lat], zoom: 14 });
+        }
+    }, [formData.latitude, formData.longitude]);
+
     // Edit polygon: hide modal → fly to polygon → open PolygonDrawingModal
     const handleEditPolygon = useCallback(() => {
         const map = window.atlasMapInstance;
@@ -490,6 +509,7 @@ function Card(props) {
             polygon_fill_opacity: style?.fillOpacity ?? prev.polygon_fill_opacity,
         }));
         setIsEditingPolygon(false);
+        setIsConvertingToPolygon(false);
         // Ensure learn-more modal stays in edit mode
         setIsLearnMoreEditMode(true);
 
@@ -530,9 +550,14 @@ function Card(props) {
     }, [formData.cardID, formData.polygon_fill_color, props.cardID]);
 
     const handlePolygonEditCancel = useCallback(() => {
+        // If was converting from marker to polygon, revert location_type
+        if (isConvertingToPolygon) {
+            setFormData(prev => ({ ...prev, location_type: 'point' }));
+            setIsConvertingToPolygon(false);
+        }
         setIsEditingPolygon(false);
         restoreCardPolygonLayers();
-    }, [restoreCardPolygonLayers]);
+    }, [restoreCardPolygonLayers, isConvertingToPolygon]);
 
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
@@ -1416,9 +1441,14 @@ function Card(props) {
                                     Edit Polygon
                                 </button>
                             ) : (
-                                <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
-                                    Select Location
-                                </button>
+                                <div className="learn-more-location-btn-group">
+                                    <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
+                                        Select Location
+                                    </button>
+                                    <button type="button" className="learn-more-select-location-btn learn-more-change-to-polygon-btn" onClick={handleChangeToPolygon}>
+                                        Change to Polygon
+                                    </button>
+                                </div>
                             )}
                         </>
                     ) : (
@@ -1858,9 +1888,9 @@ function Card(props) {
             <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
             {isEditingPolygon && (
                 <PolygonDrawingModal
-                    initialVertices={formData.polygon_vertices}
-                    initialLineStyle={formData.polygon_line_style}
-                    initialFillColor={formData.polygon_fill_color}
+                    initialVertices={isConvertingToPolygon ? [] : formData.polygon_vertices}
+                    initialLineStyle={isConvertingToPolygon ? undefined : formData.polygon_line_style}
+                    initialFillColor={isConvertingToPolygon ? undefined : formData.polygon_fill_color}
                     onSave={handlePolygonEditSave}
                     onCancel={handlePolygonEditCancel}
                 />

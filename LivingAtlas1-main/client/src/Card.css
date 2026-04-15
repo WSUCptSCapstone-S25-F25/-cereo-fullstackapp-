@@ -1207,6 +1207,22 @@
   background: #1d4ed8;
 }
 
+.learn-more-location-btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 4px 0 12px;
+}
+.learn-more-location-btn-group .learn-more-select-location-btn {
+  margin: 0;
+}
+.learn-more-change-to-polygon-btn {
+  background: #7c3aed !important;
+}
+.learn-more-change-to-polygon-btn:hover {
+  background: #6d28d9 !important;
+}
+
 .learn-more-modal-body p {
   margin: 0 0 12px;
   color: #374151;
