@@ -43,11 +43,11 @@ function Home(props) {
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v9');
+        return !localStorage.getItem('changelog_seen_v10');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v9', 'true');
+        localStorage.setItem('changelog_seen_v10', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -450,6 +450,15 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/14/2026</h3>
+                    <p>Added a "Change to Polygon" button in the Learn More modal, allowing you to convert a marker-based card into a polygon area directly from the card detail view.</p>
+                    <p>Shape coordinates in the Draw Polygons modal can now be edited manually in real time. Additional shape presets have also been added to the modal.</p>
+                    <p>Refreshed the visual appearance of the Upload Panel and the card container toolbar for a cleaner, more modern look.</p>
+                    <p>Added a visibility toggle button to the Polygon tool (P) menu on the map, allowing you to show or hide all markers and polygons at once.</p>
+                    <p>Fixed an issue where cards with only the default image would incorrectly display the logo in the Learn More gallery instead of showing the "No Image" placeholder. Also fixed a bug where clicking blank areas in the image preview mode would unintentionally open the Learn More modal.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/12/2026</h3>
                     <p>Fixed an issue where custom colors and line styles for polygons were not saved correctly.</p>
                     <p>Added more features to the Draw Polygon modal: adjust shape opacity, drag to reposition, rotate, and scale (enlarge/shrink) shapes.</p>
