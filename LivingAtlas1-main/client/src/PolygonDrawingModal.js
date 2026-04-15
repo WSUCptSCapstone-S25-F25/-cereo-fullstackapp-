@@ -15,7 +15,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const [showShapeMenu, setShowShapeMenu] = useState(false);
     const [showOpacityMenu, setShowOpacityMenu] = useState(false);
     const [fillOpacity, setFillOpacity] = useState(0.15);
-    const [activeShape, setActiveShape] = useState(null); // 'triangle' | 'square' | 'rectangle' | null
+    const [activeShape, setActiveShape] = useState(null); // 'triangle' | 'square' | 'rectangle' | 'circle' | 'dot' | null
     const [isDragMode, setIsDragMode] = useState(false);
     const [isRotateMode, setIsRotateMode] = useState(false);
     const [isResizeMode, setIsResizeMode] = useState(false);
@@ -26,6 +26,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const rotateHandlersRef = useRef(null);
     const resizeHandlesRef = useRef([]); // 8 Mapbox markers for bounding-box handles
     const resizeStateRef = useRef(null); // { handleType, anchorLat, anchorLng, startVertices, startBBox }
+    const circleMetaRef = useRef(null); // { center:{lat,lng}, radiusLat, radiusLng, segments } when current shape is circle/dot
     const markersRef = useRef([]);
     const linesSourceAdded = useRef(false);
     const fillSourceAdded = useRef(false);
@@ -237,6 +238,35 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 { lat: center.lat - halfH, lng: center.lng + halfW },
                 { lat: center.lat - halfH, lng: center.lng - halfW },
             ];
+        }
+        if (shape === 'circle') {
+            const r = Math.sqrt(dxNorm * dxNorm + dy * dy);
+            if (r < 0.00001) return [];
+            const segments = 36;
+            const verts = [];
+            for (let i = 0; i < segments; i++) {
+                const angle = (2 * Math.PI * i) / segments;
+                verts.push({
+                    lat: center.lat + r * Math.cos(angle),
+                    lng: center.lng + r * Math.sin(angle) * lngScale,
+                });
+            }
+            return verts;
+        }
+        if (shape === 'dot') {
+            const r = Math.sqrt(dxNorm * dxNorm + dy * dy);
+            // Dot uses a small fixed radius (clamp to a minimum)
+            const dotR = Math.max(r, 0.0005);
+            const segments = 24;
+            const verts = [];
+            for (let i = 0; i < segments; i++) {
+                const angle = (2 * Math.PI * i) / segments;
+                verts.push({
+                    lat: center.lat + dotR * Math.cos(angle),
+                    lng: center.lng + dotR * Math.sin(angle) * lngScale,
+                });
+            }
+            return verts;
         }
         return [];
     }, []);
@@ -551,9 +581,18 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     const pos = marker.getLngLat();
                     const resized = applyResize(startVertices, startBBox, handleType, pos.lat, pos.lng);
                     updatePolygonOnMap(resized);
-                    resized.forEach((v, i) => {
-                        if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
-                    });
+                    // For circle/dot: update center marker position
+                    if (circleMetaRef.current && markersRef.current.length === 1) {
+                        const rLats = resized.map(v => v.lat);
+                        const rLngs = resized.map(v => v.lng);
+                        const cLat = (Math.min(...rLats) + Math.max(...rLats)) / 2;
+                        const cLng = (Math.min(...rLngs) + Math.max(...rLngs)) / 2;
+                        markersRef.current[0].setLngLat([cLng, cLat]);
+                    } else {
+                        resized.forEach((v, i) => {
+                            if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
+                        });
+                    }
                     // Update other handle positions
                     const newBBox = buildBBox(resized);
                     const newPositions = computeHandles(newBBox);
@@ -572,9 +611,26 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     resizeStateRef.current = null;
                     setVertices(resized);
                     updatePolygonOnMap(resized);
-                    resized.forEach((v, i) => {
-                        if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
-                    });
+                    // For circle/dot: update center marker and metadata
+                    if (circleMetaRef.current) {
+                        const rLats = resized.map(v => v.lat);
+                        const rLngs = resized.map(v => v.lng);
+                        const cLat = (Math.min(...rLats) + Math.max(...rLats)) / 2;
+                        const cLng = (Math.min(...rLngs) + Math.max(...rLngs)) / 2;
+                        circleMetaRef.current = {
+                            ...circleMetaRef.current,
+                            center: { lat: cLat, lng: cLng },
+                            radiusLat: (Math.max(...rLats) - Math.min(...rLats)) / 2,
+                            radiusLng: (Math.max(...rLngs) - Math.min(...rLngs)) / 2,
+                        };
+                        if (markersRef.current.length === 1) {
+                            markersRef.current[0].setLngLat([cLng, cLat]);
+                        }
+                    } else {
+                        resized.forEach((v, i) => {
+                            if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
+                        });
+                    }
                     // Reposition all handles to final bbox
                     const newBBox = buildBBox(resized);
                     const newPositions = computeHandles(newBBox);
@@ -707,7 +763,41 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 }));
                 setVertices(rounded);
                 updatePolygonOnMap(rounded);
-                rebuildMarkers(rounded);
+                // For circle/dot: store metadata and show only a center marker
+                const placedShape = shape;
+                if (placedShape === 'circle' || placedShape === 'dot') {
+                    // Compute circle metadata from the placed vertices
+                    const lats = rounded.map(v => v.lat);
+                    const lngs = rounded.map(v => v.lng);
+                    const cLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+                    const cLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+                    circleMetaRef.current = {
+                        center: { lat: cLat, lng: cLng },
+                        radiusLat: (Math.max(...lats) - Math.min(...lats)) / 2,
+                        radiusLng: (Math.max(...lngs) - Math.min(...lngs)) / 2,
+                        segments: rounded.length,
+                    };
+                    // Show single center marker
+                    markersRef.current.forEach(m => m.remove());
+                    markersRef.current = [];
+                    const el = document.createElement('div');
+                    el.className = 'polygon-draw-vertex-marker';
+                    const dot = document.createElement('div');
+                    dot.className = 'polygon-draw-vertex-dot';
+                    el.appendChild(dot);
+                    const label = document.createElement('span');
+                    label.className = 'polygon-draw-vertex-label';
+                    label.textContent = '\u25CF';
+                    label.style.display = 'none';
+                    el.appendChild(label);
+                    const centerMarker = new mapboxgl.Marker({ element: el, draggable: false, anchor: 'center' })
+                        .setLngLat([cLng, cLat])
+                        .addTo(window.atlasMapInstance);
+                    markersRef.current.push(centerMarker);
+                } else {
+                    circleMetaRef.current = null;
+                    rebuildMarkers(rounded);
+                }
                 setIsDrawing(false);
                 updateMarkerLabels(false);
             }
@@ -729,6 +819,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         setVertices([]);
         markersRef.current.forEach(m => m.remove());
         markersRef.current = [];
+        circleMetaRef.current = null;
         updatePolygonOnMap([]);
         setIsDrawing(true);
 
@@ -1086,6 +1177,14 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                                 <svg width="24" height="16" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="1" width="22" height="14"/></svg>
                                 <span>Rectangle</span>
                             </button>
+                            <button type="button" className="polygon-draw-dropdown-item" onClick={() => startShapePlacement('circle')}>
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="9" cy="9" r="8"/></svg>
+                                <span>Circle</span>
+                            </button>
+                            <button type="button" className="polygon-draw-dropdown-item" onClick={() => startShapePlacement('dot')}>
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" stroke="none"><circle cx="9" cy="9" r="5"/></svg>
+                                <span>Dot</span>
+                            </button>
                         </div>
                     )}
                 </div>
@@ -1131,22 +1230,31 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 {vertices.length === 0 && (
                     <div className="polygon-draw-modal-empty">No points yet</div>
                 )}
-                {vertices.map((v, i) => (
-                    <div key={i} className="polygon-draw-modal-vertex-row">
-                        <span className="polygon-draw-modal-vertex-num">{i + 1}</span>
+                {circleMetaRef.current ? (
+                    <div className="polygon-draw-modal-vertex-row">
+                        <span className="polygon-draw-modal-vertex-num">\u25CF</span>
                         <span className="polygon-draw-modal-vertex-coords">
-                            {v.lat.toFixed(4)}, {v.lng.toFixed(4)}
+                            Center: {circleMetaRef.current.center.lat.toFixed(4)}, {circleMetaRef.current.center.lng.toFixed(4)}
                         </span>
-                        <button
-                            type="button"
-                            className="polygon-draw-modal-vertex-remove"
-                            onClick={() => handleRemoveVertex(i)}
-                            title="Remove"
-                        >
-                            &times;
-                        </button>
                     </div>
-                ))}
+                ) : (
+                    vertices.map((v, i) => (
+                        <div key={i} className="polygon-draw-modal-vertex-row">
+                            <span className="polygon-draw-modal-vertex-num">{i + 1}</span>
+                            <span className="polygon-draw-modal-vertex-coords">
+                                {v.lat.toFixed(4)}, {v.lng.toFixed(4)}
+                            </span>
+                            <button
+                                type="button"
+                                className="polygon-draw-modal-vertex-remove"
+                                onClick={() => handleRemoveVertex(i)}
+                                title="Remove"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                    ))
+                )}
             </div>
 
             <div className="polygon-draw-modal-actions">
