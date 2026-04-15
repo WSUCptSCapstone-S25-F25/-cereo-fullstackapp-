@@ -106,7 +106,7 @@ function ArcgisRenameItem({
         <span
             className={`arcgis-rename-text ${className} ${disabled ? 'disabled' : ''}`}
             onDoubleClick={handleDoubleClick}
-            title={disabled ? '' : 'Double-click to rename'}
+            title={displayValue !== undefined ? displayValue : value}
         >
             {displayValue !== undefined ? displayValue : value}
         </span>

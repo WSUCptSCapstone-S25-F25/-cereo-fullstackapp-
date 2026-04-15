@@ -1418,7 +1418,7 @@ function ArcgisUploadPanel({
                         <span style={{ color: '#666', userSelect: 'none', marginRight: 4 }}>
                             {isExpanded ? "▼" : "►"}
                         </span>
-                        <span style={{ flex: 1, fontWeight: (searchResult?.matchedLayerIds?.[service.key]?.has(node.id) || (searchResult?.keyword && node.name && node.name.toLowerCase().includes(searchResult.keyword))) ? 'bold' : 'normal' }}>{node.name}</span>
+                        <span className="upload-layer-name" title={node.name} style={{ flex: 1, fontWeight: (searchResult?.matchedLayerIds?.[service.key]?.has(node.id) || (searchResult?.keyword && node.name && node.name.toLowerCase().includes(searchResult.keyword))) ? 'bold' : 'normal' }}>{node.name}</span>
                         {descendantIds.length > 0 && (
                             <span style={{ color: '#999', fontSize: '10px', marginLeft: 4 }}>
                                 ({checkedCount}/{descendantIds.length})
@@ -1450,7 +1450,7 @@ function ArcgisUploadPanel({
             <li key={node.id} className="upload-layer-row tree-node" style={{
                 flexDirection: 'column',
                 alignItems: 'flex-start',
-                marginBottom: hasMultipleLegends ? 8 : 2
+                marginBottom: 2
             }}>
                 <div
                     style={{
@@ -1480,7 +1480,7 @@ function ArcgisUploadPanel({
                             className="legend-img"
                         />
                     )}
-                    <span style={{ flex: 1, fontWeight: (searchResult?.matchedLayerIds?.[service.key]?.has(node.id) || (searchResult?.keyword && node.name && node.name.toLowerCase().includes(searchResult.keyword))) ? 'bold' : 'normal' }}>{node.name}</span>
+                    <span className="upload-layer-name" title={node.name} style={{ flex: 1, fontWeight: (searchResult?.matchedLayerIds?.[service.key]?.has(node.id) || (searchResult?.keyword && node.name && node.name.toLowerCase().includes(searchResult.keyword))) ? 'bold' : 'normal' }}>{node.name}</span>
                     {hasMultipleLegends && (
                         <span style={{ color: '#888', marginLeft: 8 }}>
                             ({checkedSublayers.length}/{legendItems.length})
@@ -1511,7 +1511,7 @@ function ArcgisUploadPanel({
                                     className="legend-img"
                                     style={{ width: '14px', height: '14px', marginRight: '6px' }}
                                 />
-                                <span title={legendItem.label} style={{ fontWeight: (searchResult?.keyword && legendItem.label && legendItem.label.toLowerCase().includes(searchResult.keyword)) ? 'bold' : 'normal' }}>{legendItem.label}</span>
+                                <span className="upload-layer-name" title={legendItem.label} style={{ fontWeight: (searchResult?.keyword && legendItem.label && legendItem.label.toLowerCase().includes(searchResult.keyword)) ? 'bold' : 'normal' }}>{legendItem.label}</span>
                             </div>
                         ))}
                     </div>
@@ -2040,7 +2040,7 @@ function ArcgisUploadPanel({
                                                 onClick={() => handleServiceClick(service.key)}
                                                 onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                             >
-                                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', minWidth: 0, flex: 1 }}>
                                                     <input
                                                         type="checkbox"
                                                         checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length}
@@ -2052,7 +2052,7 @@ function ArcgisUploadPanel({
                                                             handleSelectAll(service, allFeatureLayers);
                                                         }}
                                                         onClick={(e) => e.stopPropagation()}
-                                                        style={{ marginRight: 4 }}
+                                                        style={{ marginRight: 4, flexShrink: 0 }}
                                                     />
                                                     {expandedServices.has(service.key) ? "▼" : "►"} 
                                                     <ArcgisRenameItem

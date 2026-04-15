@@ -943,15 +943,15 @@ const Content1 = (props) => {
 
   // Compute styles for outer map container to respond to card panel state
   const leftSidebarWidth = props.isSidebarOpen ? 300 : 60;
-  const leftPanelWidth = (props.isUploadPanelOpen || props.isRemovedPanelOpen)
-    ? 420
-    : 0;
+  const hasLeftPanel = props.isUploadPanelOpen || props.isRemovedPanelOpen;
   const cardPanelW = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
   const cardOnLeft = props.cardPanelSide === 'left';
-  const bothOnLeft = cardOnLeft && !props.isCollapsed && (props.isUploadPanelOpen || props.isRemovedPanelOpen);
+  const bothOnLeft = cardOnLeft && !props.isCollapsed && hasLeftPanel;
   // When both card panel and upload panel are on left, they stack vertically in same column
   const cardLeftExtra = (cardOnLeft && !bothOnLeft) ? cardPanelW : 0;
-  const mapContainerLeft = leftSidebarWidth + leftPanelWidth + cardLeftExtra;
+  const mapContainerLeft = hasLeftPanel
+    ? `calc(${leftSidebarWidth + cardLeftExtra}px + 25vw)`
+    : `${leftSidebarWidth + cardLeftExtra}px`;
   const mapContainerRight = cardOnLeft ? 0 : cardPanelW;
 
   return (
@@ -959,7 +959,7 @@ const Content1 = (props) => {
       className="AtlasMap" 
       ref={atlasMapRef}
       style={{
-        left: `${mapContainerLeft}px`,
+        left: mapContainerLeft,
         right: `${mapContainerRight}px`
       }}
     >

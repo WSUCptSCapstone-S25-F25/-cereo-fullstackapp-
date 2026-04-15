@@ -3,17 +3,17 @@
     top: 65px;
     left: 60px;
     height: calc(100vh - 65px);
-    width: 420px;
-    background: #f7f7f7;
-    border: 1px solid #222;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.07);
+    width: 25vw;
+    background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
+    border: 1px solid #d8e1ea;
+    box-shadow: 10px 0 24px rgba(16, 33, 54, 0.18);
     z-index: 1200;
     padding: 0 8px 8px 8px;
     font-size: 13px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    color: #222;
+    color: #223244;
 }
 
 /* When card panel is also on left, upload panel takes bottom half */
@@ -23,7 +23,7 @@
 }
 
 .upload-panel * {
-    color: #222 !important;
+    color: #223244 !important;
 }
 
 .upload-panel-close-btn {
@@ -33,22 +33,23 @@
     width: 32px;
     height: 32px;
     background: #fff;
-    border: 1px solid #ddd;
-    color: #1976d2 !important;
+    border: 1px solid #bfd0e2;
+    color: #27425d !important;
     font-size: 22px;
     cursor: pointer;
     z-index: 1201;
-    border-radius: 50%;
+    border-radius: 8px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-top: 0px;
 }
 .upload-panel-close-btn:hover {
-    background: #e3f2fd;
-    color: #1565c0 !important;
+    border-color: #8eabc8;
+    background: #f2f7fc;
+    color: #27425d !important;
     box-shadow: 0 4px 12px rgba(25,118,210,0.12);
 }
 
@@ -60,19 +61,19 @@
     padding: 9px 12px;
     border-radius: 0;
     background: #fff;
-    color: #222;
+    color: #223244;
     font-size: 13.5px;
     display: flex;
     align-items: center;
     gap: 8px;
     transition: background 0.15s;
     letter-spacing: 0.2px;
-    border: 1px solid #bbb;
+    border: 1px solid #d8e1ea;
     border-bottom: none;
 }
 
 .upload-state-folder:last-of-type {
-    border-bottom: 1px solid #bbb;
+    border-bottom: 1px solid #d8e1ea;
 }
 
 .upload-state-folder:hover {
@@ -80,20 +81,20 @@
 }
 
 .upload-state-folder-content {
-    border-left: 1px solid #bbb;
-    border-right: 1px solid #bbb;
-    border-bottom: 1px solid #bbb;
+    border-left: 1px solid #d8e1ea;
+    border-right: 1px solid #d8e1ea;
+    border-bottom: 1px solid #d8e1ea;
     padding: 6px 8px;
     margin-bottom: 0;
-    background: #fafafa;
+    background: #fafbfd;
 }
 
 .upload-panel-folder-area {
-    border: 1px solid #aaa;
-    border-radius: 4px;
+    border: 1px solid #d8e1ea;
+    border-radius: 8px;
     padding: 4px;
     margin: 4px 0;
-    background: #f9f9f9;
+    background: #fafbfd;
     flex: 1;
     overflow-y: auto;
     min-height: 0;
@@ -104,10 +105,11 @@
     font-weight: normal;
     margin: 8px 0 4px 0;
     padding: 4px 6px 4px 4px;
-    border-radius: 4px;
-    background: #ececec;
-    transition: background 0.2s;
-    color: #222 !important;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #d8e1ea;
+    transition: background 0.2s, border-color 0.2s;
+    color: #223244 !important;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -116,7 +118,8 @@
 }
 
 .upload-folder:hover {
-    background: #dfe7f2;
+    background: #f2f7fc;
+    border-color: #8eabc8;
 }
 
 .upload-folder-actions {
@@ -133,10 +136,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-radius: 4px;
-    background: #ececec;
-    transition: background 0.2s;
-    color: #222 !important;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #e8edf3;
+    transition: background 0.2s, border-color 0.2s;
+    color: #223244 !important;
     min-height: 24px;
     font-size: 11px !important;
     padding: 2px 0 2px 4px;
@@ -144,7 +148,8 @@
 }
 
 .upload-item:hover {
-    background: #e0e0e0;
+    background: #f2f7fc;
+    border-color: #bfd0e2;
 }
 
 .upload-item > span {
@@ -296,35 +301,37 @@
     font-size: 12px;
     padding: 0 8px;
     margin-left: 8px;
-    border-radius: 4px;
-    border: none;
+    border-radius: 8px;
+    border: 1px solid #bfd0e2;
+    background: #fff;
+    color: #27425d;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .upload-panel .add-btn {
-    background: #28a745;
-    color: white;
+    border-color: #88c999;
+    background: #f0faf3;
+    color: #1a6b2a;
 }
 
 .upload-panel .add-btn:hover {
-    background: #218838;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    border-color: #5cb870;
+    background: #e2f5e8;
 }
 
 .upload-panel .remove-btn {
-    background: #dc3545;
-    color: white;
+    border-color: #e0a0a7;
+    background: #fdf2f3;
+    color: #8b2131;
 }
 
 .upload-panel .remove-btn:hover {
-    background: #c82333;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+    border-color: #d07080;
+    background: #fbe5e8;
 }
 
 .upload-panel .learn-more-btn {
@@ -333,21 +340,20 @@
     font-size: 12px;
     padding: 0 8px;
     margin-left: 0;
-    border-radius: 4px;
-    border: none;
-    background: #007bff;
-    color: white;
+    border-radius: 8px;
+    border: 1px solid #bfd0e2;
+    background: #fff;
+    color: #27425d;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .upload-panel .learn-more-btn:hover {
-    background: #0056b3;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    border-color: #8eabc8;
+    background: #f2f7fc;
 }
 
 .upload-panel .ban-service-btn {
@@ -356,80 +362,96 @@
     font-size: 12px;
     padding: 0 8px;
     margin-left: 0;
-    border-radius: 4px;
-    border: none;
-    background: #dc3545;
-    color: white;
+    border-radius: 8px;
+    border: 1px solid #e0a0a7;
+    background: #fdf2f3;
+    color: #8b2131;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .upload-panel .ban-service-btn:hover {
-    background: #c82333;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+    border-color: #d07080;
+    background: #fbe5e8;
 }
 
 .upload-panel-searchbar {
     display: flex;
     align-items: center;
+    gap: 6px;
     margin-bottom: 8px;
     margin-top: 0;
 }
 
 .upload-panel-searchbar input[type="text"] {
     flex: 1;
-    padding: 4px 8px;
-    font-size: 14px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
+    min-width: 0;
+    padding: 5px 10px;
+    font-size: 13px;
+    border-radius: 8px;
+    border: 1px solid #bfd0e2;
     height: 32px;
     margin-top: 0;
+    background: #fff;
+    color: #27425d;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
 }
 
 .upload-panel-searchbar-dropdown {
-    margin-left: 8px;
-    padding: 4px;
-    font-size: 14px;
-    border-radius: 4px;
+    margin-left: 0;
+    padding: 5px 10px;
+    font-size: 13px;
+    border-radius: 8px;
+    border: 1px solid #bfd0e2;
     height: 32px;
     margin-top: 0;
+    background: #fff;
+    color: #27425d;
+    box-sizing: border-box;
 }
 
 .upload-panel-searchbar-btn {
-    margin-left: 8px;
+    margin-left: 0;
     width: 32px;
     height: 32px;
-    border-radius: 4px;
-    border: none;
+    border-radius: 8px;
+    border: 1px solid #bfd0e2;
+    background: #fff;
+    color: #27425d;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    transition: background 0.2s;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
     margin-top: 0;
+    padding: 0;
+}
+
+.upload-panel-searchbar-btn:hover {
+    border-color: #8eabc8;
+    background: #f2f7fc;
 }
 
 .upload-panel-searchbar-btn.search {
-    background: #007bff;
-    color: white;
+    color: #27425d;
 }
 
 .upload-panel-searchbar-btn.search:hover {
-    background: #0056b3;
+    background: #f2f7fc;
 }
 
 .upload-panel-searchbar-btn.clear {
-    background: #dc3545;
-    color: white;
+    color: #27425d;
 }
 
 .upload-panel-searchbar-btn.clear:hover {
-    background: #c82333;
+    background: #f2f7fc;
 }
 
 .upload-panel-attribution {
@@ -530,7 +552,9 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    background: #f7f7f7;
+    background: rgba(248, 250, 252, 0.94);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid #d8e1ea;
     padding-top: 6px;
     padding-bottom: 4px;
     margin: 0 -18px;
@@ -556,11 +580,11 @@
     gap: 8px;
     margin: 6px 0 2px 0;
     font-size: 13px;
-    color: #555;
+    color: #5c6f82;
 }
 
 .upload-panel-opacity-slider-row label {
-    color: #555 !important;
+    color: #5c6f82 !important;
     white-space: nowrap;
     font-weight: 500;
     min-width: fit-content;
@@ -571,7 +595,7 @@
     height: 6px;
     -webkit-appearance: none;
     appearance: none;
-    background: linear-gradient(to right, #1976d2 var(--slider-pct, 70%), #d0d0d0 var(--slider-pct, 70%));
+    background: linear-gradient(to right, #27425d var(--slider-pct, 70%), #d8e1ea var(--slider-pct, 70%));
     border-radius: 3px;
     outline: none;
     cursor: pointer;
@@ -584,7 +608,7 @@
     height: 16px;
     border-radius: 50%;
     background: #fff;
-    border: 2px solid #1976d2;
+    border: 2px solid #27425d;
     cursor: pointer;
     box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
@@ -594,7 +618,7 @@
     height: 16px;
     border-radius: 50%;
     background: #fff;
-    border: 2px solid #1976d2;
+    border: 2px solid #27425d;
     cursor: pointer;
     box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
@@ -603,7 +627,7 @@
     min-width: 36px;
     text-align: right;
     font-weight: 600;
-    color: #1976d2 !important;
+    color: #27425d !important;
     font-size: 13px;
 }
 
@@ -611,7 +635,7 @@
     margin-top: 200px;
     position: fixed;
     top: 65px;
-    left: calc(60px + 420px + 12px);
+    left: calc(60px + 25vw + 12px);
     width: 380px;
     max-height: calc(100vh - 80px);
     overflow: auto;
@@ -673,25 +697,26 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #007bff;
-    color: #fff !important;
-    border: none;
-    border-radius: 4px;
+    background: #fff;
+    color: #27425d !important;
+    border: 1px solid #bfd0e2;
+    border-radius: 8px;
     width: 28px;
     height: 28px;
     padding: 0;
     font-size: 13px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
     flex-shrink: 0;
 }
 
 .upload-panel-update-btn:hover {
-    background: #0056b3;
+    border-color: #8eabc8;
+    background: #f2f7fc;
 }
 
 .upload-panel-update-btn:active {
-    background: #004494;
+    background: #e8f0f8;
 }
 
 .upload-panel-update-btn svg {
@@ -699,12 +724,14 @@
 }
 
 .upload-panel-update-btn:disabled {
-    background: #6c757d;
+    background: #f0f2f5;
+    border-color: #d8e1ea;
+    color: #a0adb8 !important;
     cursor: not-allowed;
 }
 
 .upload-panel-update-btn:disabled:hover {
-    background: #6c757d;
+    background: #f0f2f5;
 }
 
 /* Controls row: datasource switch + update button */
@@ -822,7 +849,7 @@
     top: 0;
     bottom: 0;
     width: 0;
-    border-left: 1px solid #bbb;
+    border-left: 1px solid #d8e1ea;
 }
 
 .tree-node {
@@ -864,6 +891,22 @@
 
 .tree-children::before {
     display: none;
+}
+
+/* Truncate long layer/sublayer names with ellipsis */
+.upload-layer-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.upload-panel .arcgis-rename-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .upload-layer-sublayer.tree-node::before {

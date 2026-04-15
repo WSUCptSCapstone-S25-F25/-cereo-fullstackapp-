@@ -45,7 +45,7 @@
 /* Split layout: card container takes top half when upload panel is also open on left */
 #content-2.content-2--split-top {
   height: calc(50vh - 65px);
-  width: 420px !important;
+  width: 25vw !important;
 }
 
 .collapse-toggle {
@@ -189,8 +189,12 @@
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
-  gap: 2px 6px;
+  gap: 3px 6px;
   padding: 0;
+}
+
+.card-panel-toolbar button {
+  margin: 0 !important;
 }
 
 .card-panel-toolbar-title {
@@ -226,6 +230,7 @@
 .card-panel-toolbar .sort-dropdown-trigger {
   height: auto !important;
   padding: 7px 10px !important;
+  margin: 0 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   border-radius: 8px !important;
@@ -240,6 +245,7 @@
   gap: 8px;
   height: 32px;
   padding: 0 10px;
+  margin: 0;
   border-radius: 8px;
   border: 1px solid #bfd0e2;
   background: #ffffff;
