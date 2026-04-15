@@ -787,7 +787,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     el.appendChild(dot);
                     const label = document.createElement('span');
                     label.className = 'polygon-draw-vertex-label';
-                    label.textContent = '\u25CF';
+                    label.textContent = '●';
                     label.style.display = 'none';
                     el.appendChild(label);
                     const centerMarker = new mapboxgl.Marker({ element: el, draggable: false, anchor: 'center' })
@@ -1232,18 +1232,94 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 )}
                 {circleMetaRef.current ? (
                     <div className="polygon-draw-modal-vertex-row">
-                        <span className="polygon-draw-modal-vertex-num">\u25CF</span>
-                        <span className="polygon-draw-modal-vertex-coords">
-                            Center: {circleMetaRef.current.center.lat.toFixed(4)}, {circleMetaRef.current.center.lng.toFixed(4)}
-                        </span>
+                        <span className="polygon-draw-modal-vertex-num">●</span>
+                        <div className="polygon-draw-modal-vertex-coords polygon-draw-modal-vertex-inputs">
+                            <input
+                                type="number"
+                                step="any"
+                                className="polygon-draw-vertex-input"
+                                value={circleMetaRef.current.center.lat}
+                                onChange={(e) => {
+                                    const newLat = parseFloat(e.target.value);
+                                    if (isNaN(newLat)) return;
+                                    const meta = circleMetaRef.current;
+                                    const dLat = newLat - meta.center.lat;
+                                    setVertices(prev => {
+                                        const updated = prev.map(v => ({ ...v, lat: parseFloat((v.lat + dLat).toFixed(6)) }));
+                                        updatePolygonOnMap(updated);
+                                        return updated;
+                                    });
+                                    circleMetaRef.current = { ...meta, center: { ...meta.center, lat: newLat } };
+                                    if (markersRef.current[0]) markersRef.current[0].setLngLat([meta.center.lng, newLat]);
+                                }}
+                                title="Latitude"
+                            />
+                            <span className="polygon-draw-vertex-comma">,</span>
+                            <input
+                                type="number"
+                                step="any"
+                                className="polygon-draw-vertex-input"
+                                value={circleMetaRef.current.center.lng}
+                                onChange={(e) => {
+                                    const newLng = parseFloat(e.target.value);
+                                    if (isNaN(newLng)) return;
+                                    const meta = circleMetaRef.current;
+                                    const dLng = newLng - meta.center.lng;
+                                    setVertices(prev => {
+                                        const updated = prev.map(v => ({ ...v, lng: parseFloat((v.lng + dLng).toFixed(6)) }));
+                                        updatePolygonOnMap(updated);
+                                        return updated;
+                                    });
+                                    circleMetaRef.current = { ...meta, center: { ...meta.center, lng: newLng } };
+                                    if (markersRef.current[0]) markersRef.current[0].setLngLat([newLng, meta.center.lat]);
+                                }}
+                                title="Longitude"
+                            />
+                        </div>
                     </div>
                 ) : (
                     vertices.map((v, i) => (
                         <div key={i} className="polygon-draw-modal-vertex-row">
                             <span className="polygon-draw-modal-vertex-num">{i + 1}</span>
-                            <span className="polygon-draw-modal-vertex-coords">
-                                {v.lat.toFixed(4)}, {v.lng.toFixed(4)}
-                            </span>
+                            <div className="polygon-draw-modal-vertex-coords polygon-draw-modal-vertex-inputs">
+                                <input
+                                    type="number"
+                                    step="any"
+                                    className="polygon-draw-vertex-input"
+                                    value={v.lat}
+                                    onChange={(e) => {
+                                        const newLat = parseFloat(e.target.value);
+                                        if (isNaN(newLat)) return;
+                                        setVertices(prev => {
+                                            const updated = [...prev];
+                                            updated[i] = { ...updated[i], lat: parseFloat(newLat.toFixed(6)) };
+                                            updatePolygonOnMap(updated);
+                                            if (markersRef.current[i]) markersRef.current[i].setLngLat([updated[i].lng, updated[i].lat]);
+                                            return updated;
+                                        });
+                                    }}
+                                    title="Latitude"
+                                />
+                                <span className="polygon-draw-vertex-comma">,</span>
+                                <input
+                                    type="number"
+                                    step="any"
+                                    className="polygon-draw-vertex-input"
+                                    value={v.lng}
+                                    onChange={(e) => {
+                                        const newLng = parseFloat(e.target.value);
+                                        if (isNaN(newLng)) return;
+                                        setVertices(prev => {
+                                            const updated = [...prev];
+                                            updated[i] = { ...updated[i], lng: parseFloat(newLng.toFixed(6)) };
+                                            updatePolygonOnMap(updated);
+                                            if (markersRef.current[i]) markersRef.current[i].setLngLat([updated[i].lng, updated[i].lat]);
+                                            return updated;
+                                        });
+                                    }}
+                                    title="Longitude"
+                                />
+                            </div>
                             <button
                                 type="button"
                                 className="polygon-draw-modal-vertex-remove"

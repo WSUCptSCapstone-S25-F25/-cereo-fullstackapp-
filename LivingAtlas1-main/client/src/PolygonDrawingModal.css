@@ -241,6 +241,39 @@
     font-size: 10px;
 }
 
+.polygon-draw-modal-vertex-inputs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.polygon-draw-vertex-input {
+    width: 70px;
+    padding: 1px 3px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: #333;
+    background: #fafafa;
+    outline: none;
+    -moz-appearance: textfield;
+}
+.polygon-draw-vertex-input::-webkit-inner-spin-button,
+.polygon-draw-vertex-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.polygon-draw-vertex-input:focus {
+    border-color: #2563eb;
+    background: #fff;
+}
+
+.polygon-draw-vertex-comma {
+    color: #999;
+    font-size: 10px;
+}
+
 .polygon-draw-modal-vertex-remove {
     background: none;
     border: none;
