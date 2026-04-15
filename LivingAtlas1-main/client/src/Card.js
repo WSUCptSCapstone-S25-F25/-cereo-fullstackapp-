@@ -982,7 +982,8 @@ function Card(props) {
             })
             .slice(0, 2)
     );
-    const learnMoreGalleryImages = imageList.slice(0, 5);
+    const isDefaultFallbackImage = (img) => !img?.imageID && (img?.url === '/CEREO-logo.png' || img?.url === cardThumbnailSrc);
+    const learnMoreGalleryImages = imageList.filter(img => !isDefaultFallbackImage(img)).slice(0, 5);
     const learnMoreGallerySlots = Array.from({ length: 5 }, (_, index) => learnMoreGalleryImages[index] || null);
 
     const goToPrevImage = (e) => {
@@ -1272,7 +1273,7 @@ function Card(props) {
                     <div className="learn-more-gallery">
                         <button
                             type="button"
-                            className="learn-more-gallery-tile learn-more-gallery-tile--primary"
+                            className={`learn-more-gallery-tile learn-more-gallery-tile--primary${!learnMoreGallerySlots[0] ? ` learn-more-gallery-tile--placeholder${isLearnMoreEditMode ? ' learn-more-gallery-tile--placeholder-editable' : ''}` : ''}`}
                             onClick={(e) => handleLearnMoreGalleryTileClick(e, learnMoreGallerySlots[0], 0)}
                             title={learnMoreGallerySlots[0] ? 'Open image preview' : (isLearnMoreEditMode ? 'Click to add image' : 'No image available')}
                         >
@@ -1568,9 +1569,15 @@ function Card(props) {
             <Modal
                 isOpen={isImagePreviewOpen}
                 onRequestClose={() => setIsImagePreviewOpen(false)}
+                shouldCloseOnOverlayClick={false}
                 className="Modal Modal--image-preview"
                 overlayClassName="ModalOverlay ModalOverlay--image-preview"
             >
+              <div
+                className="image-preview-shell"
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
                 <button
                     className="image-preview-close"
                     onClick={(e) => {
@@ -1600,6 +1607,7 @@ function Card(props) {
                         ))}
                     </div>
                 )}
+              </div>
             </Modal>
 
             {/* Edit/Create Modal */}
