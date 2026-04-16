@@ -45,11 +45,11 @@ function Home(props) {
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v10');
+        return !localStorage.getItem('changelog_seen_v11');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v10', 'true');
+        localStorage.setItem('changelog_seen_v11', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -469,6 +469,14 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/15/2026</h3>
+                    <p>Added a new <strong>Custom Layers Panel</strong> in the left sidebar (star icon). This panel lets you save frequently used GIS layers from the Upload Panel into a personal collection for quick access.</p>
+                    <p>To add a layer: right-click any service or layer in the GIS Services panel and select "Save to Custom Layers". Your saved layers appear in the Custom Layers Panel, where you can toggle them on/off, search, rename, pin (auto-load), view layer info, or remove them.</p>
+                    <p>The panel shares the same tree-style layout, context menu, opacity slider, and search/filter toolbar as the GIS Services panel for a consistent experience.</p>
+                    <p>More features for the Custom Layers Panel are in development — stay tuned for future updates.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/14/2026</h3>
                     <p>Added a "Change to Polygon" button in the Learn More modal, allowing you to convert a marker-based card into a polygon area directly from the card detail view.</p>
                     <p>Shape coordinates in the Draw Polygons modal can now be edited manually in real time. Additional shape presets have also been added to the modal.</p>
