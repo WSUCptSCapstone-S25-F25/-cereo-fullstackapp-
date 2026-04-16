@@ -727,3 +727,124 @@ def load_selections(
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to load selections: {str(e)}")
+
+
+# --- Custom Layers (per-user saved layers) ---
+
+class SaveCustomLayerRequest(BaseModel):
+    user_email: str
+    service_key: str
+    label: str
+    url: str
+    folder: str = 'Root'
+    type: str = 'MapServer'
+    state: str = ''
+
+class DeleteCustomLayerRequest(BaseModel):
+    user_email: str
+    service_key: str
+
+def _ensure_custom_layers_table():
+    """Create the user_custom_layers table if it does not exist."""
+    if not cur or not conn:
+        return
+    try:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_custom_layers (
+                id SERIAL PRIMARY KEY,
+                user_email VARCHAR(255) NOT NULL,
+                service_key VARCHAR(255) NOT NULL,
+                label VARCHAR(255) NOT NULL,
+                url TEXT NOT NULL,
+                folder VARCHAR(255) DEFAULT 'Root',
+                type VARCHAR(50) NOT NULL DEFAULT 'MapServer',
+                state VARCHAR(50) DEFAULT '',
+                saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT unique_user_custom_layer UNIQUE (user_email, service_key)
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"[WARNING] Custom layers table creation failed: {e}")
+
+@arcgis_router.post("/custom-layers/save")
+def save_custom_layer(request: SaveCustomLayerRequest):
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    if not request.user_email or not request.user_email.strip():
+        raise HTTPException(status_code=400, detail="user_email is required")
+    if not request.service_key or not request.service_key.strip():
+        raise HTTPException(status_code=400, detail="service_key is required")
+
+    _ensure_custom_layers_table()
+    try:
+        cur.execute("""
+            INSERT INTO user_custom_layers (user_email, service_key, label, url, folder, type, state, saved_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_email, service_key)
+            DO UPDATE SET label = EXCLUDED.label, url = EXCLUDED.url, folder = EXCLUDED.folder,
+                          type = EXCLUDED.type, state = EXCLUDED.state, saved_at = CURRENT_TIMESTAMP
+        """, (
+            request.user_email.strip(),
+            request.service_key.strip(),
+            request.label.strip(),
+            request.url.strip(),
+            request.folder.strip(),
+            request.type.strip(),
+            request.state.strip(),
+        ))
+        conn.commit()
+        return {"success": True, "message": f"Layer '{request.label}' saved to custom layers"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save custom layer: {str(e)}")
+
+@arcgis_router.get("/custom-layers")
+def get_custom_layers(
+    user_email: str = Query(..., description="User email"),
+):
+    if cur is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    if not user_email or not user_email.strip():
+        raise HTTPException(status_code=400, detail="user_email is required")
+
+    _ensure_custom_layers_table()
+    try:
+        cur.execute("""
+            SELECT service_key AS key, label, url, folder, type, state, saved_at
+            FROM user_custom_layers
+            WHERE user_email = %s
+            ORDER BY folder, label
+        """, (user_email.strip(),))
+        rows = cur.fetchall()
+        columns = ["key", "label", "url", "folder", "type", "state", "saved_at"]
+        data = [dict(zip(columns, row)) for row in rows]
+        return data
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to load custom layers: {str(e)}")
+
+@arcgis_router.delete("/custom-layers")
+def delete_custom_layer(request: DeleteCustomLayerRequest):
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    if not request.user_email or not request.user_email.strip():
+        raise HTTPException(status_code=400, detail="user_email is required")
+
+    _ensure_custom_layers_table()
+    try:
+        cur.execute("""
+            DELETE FROM user_custom_layers
+            WHERE user_email = %s AND service_key = %s
+        """, (request.user_email.strip(), request.service_key.strip()))
+        deleted = cur.rowcount
+        conn.commit()
+        if deleted == 0:
+            raise HTTPException(status_code=404, detail="Custom layer not found")
+        return {"success": True, "message": "Custom layer removed"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete custom layer: {str(e)}")
