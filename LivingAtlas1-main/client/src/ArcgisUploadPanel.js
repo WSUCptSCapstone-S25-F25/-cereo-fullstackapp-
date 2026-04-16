@@ -26,6 +26,7 @@ import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
 import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './sharedLayerUtils';
+import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -223,8 +224,6 @@ function ArcgisUploadPanel({
     // Add new state for sublayer checkboxes (add this near other state declarations)
     const [checkedSublayerIds, setCheckedSublayerIds] = useState({});
 
-    // Context menu state
-    const [contextMenu, setContextMenu] = useState(null); // { x, y, type, data }
     const [renamingItem, setRenamingItem] = useState(null); // { type, key } to trigger rename externally
 
     // Update functionality state
@@ -460,46 +459,14 @@ function ArcgisUploadPanel({
         savePinnedItems(pinnedItems);
     }, [pinnedItems]);
 
-    const isPinned = (serviceKey, layerId, sublayerIndex) => {
-        return pinnedItems.some(p =>
-            p.serviceKey === serviceKey &&
-            p.layerId === (layerId ?? null) &&
-            p.sublayerIndex === (sublayerIndex ?? null)
-        );
-    };
-
-    const handleTogglePin = () => {
-        if (!contextMenu) return;
-        const { type, data } = contextMenu;
-        let pinEntry;
-        if (type === 'service') {
-            pinEntry = { serviceKey: data.service.key, layerId: null, sublayerIndex: null };
-        } else if (type === 'layer') {
-            pinEntry = { serviceKey: data.service.key, layerId: data.layer.id, sublayerIndex: null };
-        } else if (type === 'sublayer') {
-            pinEntry = { serviceKey: data.service.key, layerId: data.layerId, sublayerIndex: data.sublayerIndex };
-        } else {
-            closeContextMenu();
-            return;
-        }
-        setPinnedItems(prev => {
-            const exists = prev.some(p =>
-                p.serviceKey === pinEntry.serviceKey &&
-                p.layerId === pinEntry.layerId &&
-                p.sublayerIndex === pinEntry.sublayerIndex
-            );
-            if (exists) {
-                return prev.filter(p =>
-                    !(p.serviceKey === pinEntry.serviceKey &&
-                      p.layerId === pinEntry.layerId &&
-                      p.sublayerIndex === pinEntry.sublayerIndex)
-                );
-            } else {
-                return [...prev, pinEntry];
-            }
-        });
-        closeContextMenu();
-    };
+    // Context menu hook (state, outside-click, pin/unpin)
+    const {
+        contextMenu,
+        handleContextMenu,
+        closeContextMenu,
+        isPinned,
+        handleTogglePin,
+    } = useLayerContextMenu({ pinnedItems, setPinnedItems });
 
     // Auto-load pinned items once services are loaded
     useEffect(() => {
@@ -1599,15 +1566,7 @@ function ArcgisUploadPanel({
         </div>
     );
 
-    // Context menu handlers
-    const handleContextMenu = (e, type, data) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setContextMenu({ x: e.clientX, y: e.clientY, type, data });
-    };
-
-    const closeContextMenu = () => setContextMenu(null);
-
+    // Context menu handlers (panel-specific; state + pin from hook)
     const handleContextRename = () => {
         if (!contextMenu) return;
         if (!isAdmin) {
@@ -1668,14 +1627,6 @@ function ArcgisUploadPanel({
             alert(`Failed to save: ${err.message}`);
         }
     };
-
-    // Close context menu on outside click
-    useEffect(() => {
-        if (!contextMenu) return;
-        const handler = () => closeContextMenu();
-        window.addEventListener('click', handler);
-        return () => window.removeEventListener('click', handler);
-    }, [contextMenu]);
 
     // Open service info modal (fetch & cache)
     const openServiceInfo = async (service) => {
@@ -1954,43 +1905,17 @@ function ArcgisUploadPanel({
                         </div>
                 
                 {/* Context Menu */}
-                {contextMenu && (
-                    <div
-                        className="upload-context-menu"
-                        style={{ top: contextMenu.y, left: contextMenu.x }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {contextMenu.type === 'folder' && (
-                            <button onClick={handleContextRename}>Rename</button>
-                        )}
-                        {contextMenu.type === 'service' && (
-                            <>
-                                <button onClick={handleContextRename}>Rename</button>
-                                <button onClick={handleContextLearnMore}>Learn More</button>
-                                {dataSource === 'database' && (
-                                    <button onClick={handleContextDelete}>Delete</button>
-                                )}
-                                <button onClick={handleTogglePin}>
-                                    {isPinned(contextMenu.data.service.key) ? 'Unpin' : 'Pin (Auto-load)'}
-                                </button>
-                                <button onClick={handleSaveToCustomLayers}>Save to Custom Layers</button>
-                            </>
-                        )}
-                        {contextMenu.type === 'layer' && (
-                            <>
-                                <button onClick={handleContextLearnMore}>Learn More</button>
-                                <button onClick={handleTogglePin}>
-                                    {isPinned(contextMenu.data.service.key, contextMenu.data.layer.id) ? 'Unpin' : 'Pin (Auto-load)'}
-                                </button>
-                            </>
-                        )}
-                        {contextMenu.type === 'sublayer' && (
-                            <button onClick={handleTogglePin}>
-                                {isPinned(contextMenu.data.service.key, contextMenu.data.layerId, contextMenu.data.sublayerIndex) ? 'Unpin' : 'Pin (Auto-load)'}
-                            </button>
-                        )}
-                    </div>
-                )}
+                <LayerContextMenuPopup
+                    contextMenu={contextMenu}
+                    isPinned={isPinned}
+                    onRename={handleContextRename}
+                    onLearnMore={handleContextLearnMore}
+                    onTogglePin={handleTogglePin}
+                    extraServiceItems={[
+                        ...(dataSource === 'database' ? [{ label: 'Delete', onClick: handleContextDelete }] : []),
+                        { label: 'Save to Custom Layers', onClick: handleSaveToCustomLayers },
+                    ]}
+                />
 
 
                 

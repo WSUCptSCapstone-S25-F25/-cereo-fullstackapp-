@@ -13,6 +13,7 @@ import { fetchCustomLayers, deleteCustomLayer } from './arcgisServicesDb';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './sharedLayerUtils';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import ArcgisRenameItem from './ArcgisRenameItem';
+import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faSearch } from '@fortawesome/free-solid-svg-icons';
@@ -40,7 +41,6 @@ function CustomLayersPanel({
     const [expandedLayers, setExpandedLayers] = useState(new Set());
 
     const [layerOpacity, setLayerOpacity] = useState(0.7);
-    const [contextMenu, setContextMenu] = useState(null);
     const [statusMsg, setStatusMsg] = useState(null);
 
     // Search & filter state
@@ -71,6 +71,15 @@ function CustomLayersPanel({
     useEffect(() => {
         savePinnedItems(pinnedItems);
     }, [pinnedItems]);
+
+    // Context menu hook (state, outside-click, pin/unpin)
+    const {
+        contextMenu,
+        handleContextMenu,
+        closeContextMenu,
+        isPinned,
+        handleTogglePin,
+    } = useLayerContextMenu({ pinnedItems, setPinnedItems });
 
     // Service info modal state
     const [serviceInfoOpenKey, setServiceInfoOpenKey] = useState(null);
@@ -539,22 +548,7 @@ function CustomLayersPanel({
         ));
     };
 
-    // Context menu
-    const handleContextMenu = (e, type, data) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setContextMenu({ x: e.clientX, y: e.clientY, type, data });
-    };
-
-    const closeContextMenu = () => setContextMenu(null);
-
-    useEffect(() => {
-        if (!contextMenu) return;
-        const handler = () => closeContextMenu();
-        window.addEventListener('click', handler);
-        return () => window.removeEventListener('click', handler);
-    }, [contextMenu]);
-
+    // Context menu handlers (panel-specific; state + pin from hook)
     const handleRemoveCustomLayer = async () => {
         if (!contextMenu || contextMenu.type !== 'service') return;
         const service = contextMenu.data.service;
@@ -572,7 +566,6 @@ function CustomLayersPanel({
         }
     };
 
-    // Rename handler
     const handleContextRename = () => {
         if (!contextMenu) return;
         const { type, data } = contextMenu;
@@ -580,6 +573,17 @@ function CustomLayersPanel({
             setRenamingItem({ type: 'folder', key: data.folder });
         } else if (type === 'service') {
             setRenamingItem({ type: 'service', key: data.service.key });
+        }
+        closeContextMenu();
+    };
+
+    const handleContextLearnMore = () => {
+        if (!contextMenu) return;
+        const { type, data } = contextMenu;
+        if (type === 'service') {
+            openServiceInfo(data.service);
+        } else if (type === 'layer') {
+            openLayerInfo(data.service, data.layer);
         }
         closeContextMenu();
     };
@@ -617,59 +621,6 @@ function CustomLayersPanel({
         }
     };
     const closeLayerInfo = () => setLayerInfoOpen(null);
-
-    const handleContextLearnMore = () => {
-        if (!contextMenu) return;
-        const { type, data } = contextMenu;
-        if (type === 'service') {
-            openServiceInfo(data.service);
-        } else if (type === 'layer') {
-            openLayerInfo(data.service, data.layer);
-        }
-        closeContextMenu();
-    };
-
-    // Pin/Unpin
-    const isPinned = (serviceKey, layerId, sublayerIndex) => {
-        return pinnedItems.some(p =>
-            p.serviceKey === serviceKey &&
-            p.layerId === (layerId ?? null) &&
-            p.sublayerIndex === (sublayerIndex ?? null)
-        );
-    };
-
-    const handleTogglePin = () => {
-        if (!contextMenu) return;
-        const { type, data } = contextMenu;
-        let pinEntry;
-        if (type === 'service') {
-            pinEntry = { serviceKey: data.service.key, layerId: null, sublayerIndex: null };
-        } else if (type === 'layer') {
-            pinEntry = { serviceKey: data.service.key, layerId: data.layer.id, sublayerIndex: null };
-        } else if (type === 'sublayer') {
-            pinEntry = { serviceKey: data.service.key, layerId: data.layerId, sublayerIndex: data.sublayerIndex };
-        } else {
-            closeContextMenu();
-            return;
-        }
-        setPinnedItems(prev => {
-            const exists = prev.some(p =>
-                p.serviceKey === pinEntry.serviceKey &&
-                p.layerId === pinEntry.layerId &&
-                p.sublayerIndex === pinEntry.sublayerIndex
-            );
-            if (exists) {
-                return prev.filter(p =>
-                    !(p.serviceKey === pinEntry.serviceKey &&
-                      p.layerId === pinEntry.layerId &&
-                      p.sublayerIndex === pinEntry.sublayerIndex)
-                );
-            } else {
-                return [...prev, pinEntry];
-            }
-        });
-        closeContextMenu();
-    };
 
     // Helper: convert HTML to plain text
     function toPlainText(html) {
@@ -925,40 +876,16 @@ function CustomLayersPanel({
             )}
 
             {/* Context Menu */}
-            {contextMenu && (
-                <div
-                    className="custom-layers-context-menu"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {contextMenu.type === 'folder' && (
-                        <button onClick={handleContextRename}>Rename</button>
-                    )}
-                    {contextMenu.type === 'service' && (
-                        <>
-                            <button onClick={handleContextRename}>Rename</button>
-                            <button onClick={handleContextLearnMore}>Learn More</button>
-                            <button onClick={handleRemoveCustomLayer}>Remove from Custom Layers</button>
-                            <button onClick={handleTogglePin}>
-                                {isPinned(contextMenu.data.service.key) ? 'Unpin' : 'Pin (Auto-load)'}
-                            </button>
-                        </>
-                    )}
-                    {contextMenu.type === 'layer' && (
-                        <>
-                            <button onClick={handleContextLearnMore}>Learn More</button>
-                            <button onClick={handleTogglePin}>
-                                {isPinned(contextMenu.data.service.key, contextMenu.data.layer.id) ? 'Unpin' : 'Pin (Auto-load)'}
-                            </button>
-                        </>
-                    )}
-                    {contextMenu.type === 'sublayer' && (
-                        <button onClick={handleTogglePin}>
-                            {isPinned(contextMenu.data.service.key, contextMenu.data.layerId, contextMenu.data.sublayerIndex) ? 'Unpin' : 'Pin (Auto-load)'}
-                        </button>
-                    )}
-                </div>
-            )}
+            <LayerContextMenuPopup
+                contextMenu={contextMenu}
+                isPinned={isPinned}
+                onRename={handleContextRename}
+                onLearnMore={handleContextLearnMore}
+                onTogglePin={handleTogglePin}
+                extraServiceItems={[
+                    { label: 'Remove from Custom Layers', onClick: handleRemoveCustomLayer },
+                ]}
+            />
 
             {/* Status messages */}
             {statusMsg && (
