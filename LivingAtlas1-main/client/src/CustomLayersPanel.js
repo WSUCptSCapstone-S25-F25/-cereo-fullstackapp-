@@ -6,10 +6,13 @@ import {
     fetchArcgisLayers,
     fetchArcgisLegend,
     getArcgisTileUrl,
+    fetchArcgisServiceInfo,
+    fetchArcgisLayerInfo,
 } from './arcgisDataUtils';
 import { fetchCustomLayers, deleteCustomLayer } from './arcgisServicesDb';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './sharedLayerUtils';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
+import ArcgisRenameItem from './ArcgisRenameItem';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faSearch } from '@fortawesome/free-solid-svg-icons';
@@ -48,6 +51,36 @@ function CustomLayersPanel({
     const statusTimer = useRef(null);
 
     const prevCheckedLayerIds = useRef({});
+
+    // Rename state
+    const [renamingItem, setRenamingItem] = useState(null);
+
+    // Pin state (separate storage key from upload panel)
+    const PINNED_STORAGE_KEY = 'custom_layers_pinned_items';
+    const loadPinnedItems = () => {
+        try {
+            const raw = localStorage.getItem(PINNED_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch { return []; }
+    };
+    const savePinnedItems = (items) => {
+        localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(items));
+    };
+    const [pinnedItems, setPinnedItems] = useState(() => loadPinnedItems());
+
+    useEffect(() => {
+        savePinnedItems(pinnedItems);
+    }, [pinnedItems]);
+
+    // Service info modal state
+    const [serviceInfoOpenKey, setServiceInfoOpenKey] = useState(null);
+    const [serviceInfoCache, setServiceInfoCache] = useState({});
+    const [serviceInfoLoading, setServiceInfoLoading] = useState(false);
+
+    // Layer info modal state
+    const [layerInfoOpen, setLayerInfoOpen] = useState(null);
+    const [layerInfoCache, setLayerInfoCache] = useState({});
+    const [layerInfoLoading, setLayerInfoLoading] = useState(false);
 
     const showStatus = (msg) => {
         setStatusMsg(msg);
@@ -486,6 +519,26 @@ function CustomLayersPanel({
         });
     };
 
+    // Rename handlers (local state update)
+    const handleFolderRename = (oldName, newName) => {
+        if (!newName || newName.trim() === '' || oldName === newName) return;
+        setCustomServices(prev => prev.map(s =>
+            s.folder === oldName ? { ...s, folder: newName } : s
+        ));
+        setExpandedFolders(prev => {
+            const next = new Set(prev);
+            if (next.has(oldName)) { next.delete(oldName); next.add(newName); }
+            return next;
+        });
+    };
+
+    const handleServiceRename = (serviceKey, newLabel) => {
+        if (!newLabel || newLabel.trim() === '') return;
+        setCustomServices(prev => prev.map(s =>
+            s.key === serviceKey ? { ...s, label: newLabel } : s
+        ));
+    };
+
     // Context menu
     const handleContextMenu = (e, type, data) => {
         e.preventDefault();
@@ -518,6 +571,114 @@ function CustomLayersPanel({
             showStatus(`Failed to remove: ${err.message}`);
         }
     };
+
+    // Rename handler
+    const handleContextRename = () => {
+        if (!contextMenu) return;
+        const { type, data } = contextMenu;
+        if (type === 'folder') {
+            setRenamingItem({ type: 'folder', key: data.folder });
+        } else if (type === 'service') {
+            setRenamingItem({ type: 'service', key: data.service.key });
+        }
+        closeContextMenu();
+    };
+
+    // Learn More handlers
+    const openServiceInfo = async (service) => {
+        setServiceInfoOpenKey(service.key);
+        if (serviceInfoCache[service.key]) return;
+        setServiceInfoLoading(true);
+        try {
+            const info = await fetchArcgisServiceInfo(service.url);
+            setServiceInfoCache(prev => ({ ...prev, [service.key]: info || {} }));
+        } finally {
+            setServiceInfoLoading(false);
+        }
+    };
+    const closeServiceInfo = () => setServiceInfoOpenKey(null);
+
+    const openLayerInfo = async (service, layer) => {
+        const layerData = {
+            serviceKey: service.key,
+            layerId: layer.id,
+            layerName: layer.name,
+            serviceUrl: service.url,
+        };
+        setLayerInfoOpen(layerData);
+        const cacheKey = `${service.key}-${layer.id}`;
+        if (layerInfoCache[cacheKey]) return;
+        setLayerInfoLoading(true);
+        try {
+            const info = await fetchArcgisLayerInfo(service.url, layer.id);
+            setLayerInfoCache(prev => ({ ...prev, [cacheKey]: info || {} }));
+        } finally {
+            setLayerInfoLoading(false);
+        }
+    };
+    const closeLayerInfo = () => setLayerInfoOpen(null);
+
+    const handleContextLearnMore = () => {
+        if (!contextMenu) return;
+        const { type, data } = contextMenu;
+        if (type === 'service') {
+            openServiceInfo(data.service);
+        } else if (type === 'layer') {
+            openLayerInfo(data.service, data.layer);
+        }
+        closeContextMenu();
+    };
+
+    // Pin/Unpin
+    const isPinned = (serviceKey, layerId, sublayerIndex) => {
+        return pinnedItems.some(p =>
+            p.serviceKey === serviceKey &&
+            p.layerId === (layerId ?? null) &&
+            p.sublayerIndex === (sublayerIndex ?? null)
+        );
+    };
+
+    const handleTogglePin = () => {
+        if (!contextMenu) return;
+        const { type, data } = contextMenu;
+        let pinEntry;
+        if (type === 'service') {
+            pinEntry = { serviceKey: data.service.key, layerId: null, sublayerIndex: null };
+        } else if (type === 'layer') {
+            pinEntry = { serviceKey: data.service.key, layerId: data.layer.id, sublayerIndex: null };
+        } else if (type === 'sublayer') {
+            pinEntry = { serviceKey: data.service.key, layerId: data.layerId, sublayerIndex: data.sublayerIndex };
+        } else {
+            closeContextMenu();
+            return;
+        }
+        setPinnedItems(prev => {
+            const exists = prev.some(p =>
+                p.serviceKey === pinEntry.serviceKey &&
+                p.layerId === pinEntry.layerId &&
+                p.sublayerIndex === pinEntry.sublayerIndex
+            );
+            if (exists) {
+                return prev.filter(p =>
+                    !(p.serviceKey === pinEntry.serviceKey &&
+                      p.layerId === pinEntry.layerId &&
+                      p.sublayerIndex === pinEntry.sublayerIndex)
+                );
+            } else {
+                return [...prev, pinEntry];
+            }
+        });
+        closeContextMenu();
+    };
+
+    // Helper: convert HTML to plain text
+    function toPlainText(html) {
+        if (!html) return '';
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        const text = tmp.textContent || tmp.innerText || '';
+        return text.replace(/\u00A0/g, ' ').trim();
+    }
 
     // Render a layer tree node using the shared component
     const renderLayerNode = (node, service, checkedIds, allFeatureLayers, depth = 0) => (
@@ -679,8 +840,17 @@ function CustomLayersPanel({
                                 <div
                                     className="custom-layers-folder"
                                     onClick={() => handleFolderClick(folder)}
+                                    onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
                                 >
-                                    <span>{isFolderExpanded ? "▼" : "►"} {folder}</span>
+                                    <ArcgisRenameItem
+                                        value={folder}
+                                        displayValue={`${isFolderExpanded ? '▼' : '►'} ${folder}`}
+                                        onSave={(newName) => handleFolderRename(folder, newName)}
+                                        placeholder="Enter folder name..."
+                                        isFolder={true}
+                                        startEditing={renamingItem?.type === 'folder' && renamingItem?.key === folder}
+                                        onEditingDone={() => setRenamingItem(null)}
+                                    />
                                     <span style={{ color: '#999', fontSize: '10px', marginLeft: 'auto' }}>
                                         ({services.length})
                                     </span>
@@ -700,7 +870,7 @@ function CustomLayersPanel({
                                                     <div
                                                         className="custom-layers-item"
                                                         onClick={() => handleServiceClick(service.key)}
-                                                        onContextMenu={(e) => handleContextMenu(e, 'service', { service })}
+                                                        onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                                     >
                                                         <input
                                                             type="checkbox"
@@ -716,9 +886,15 @@ function CustomLayersPanel({
                                                             style={{ marginRight: 4, flexShrink: 0 }}
                                                         />
                                                         {isServiceExpanded ? "▼" : "►"}
-                                                        <span className="custom-layers-item-label" title={service.label}>
-                                                            {service.label}
-                                                        </span>
+                                                        <ArcgisRenameItem
+                                                            value={service.label}
+                                                            displayValue={service.label}
+                                                            onSave={(newLabel) => handleServiceRename(service.key, newLabel)}
+                                                            placeholder="Enter service name..."
+                                                            isFolder={false}
+                                                            startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key}
+                                                            onEditingDone={() => setRenamingItem(null)}
+                                                        />
                                                         {service.state && (
                                                             <span style={{ color: '#999', fontSize: '10px', marginLeft: 'auto' }}>
                                                                 {service.state.substring(0, 2).toUpperCase()}
@@ -755,8 +931,31 @@ function CustomLayersPanel({
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                     onClick={(e) => e.stopPropagation()}
                 >
+                    {contextMenu.type === 'folder' && (
+                        <button onClick={handleContextRename}>Rename</button>
+                    )}
                     {contextMenu.type === 'service' && (
-                        <button onClick={handleRemoveCustomLayer}>Remove from Custom Layers</button>
+                        <>
+                            <button onClick={handleContextRename}>Rename</button>
+                            <button onClick={handleContextLearnMore}>Learn More</button>
+                            <button onClick={handleRemoveCustomLayer}>Remove from Custom Layers</button>
+                            <button onClick={handleTogglePin}>
+                                {isPinned(contextMenu.data.service.key) ? 'Unpin' : 'Pin (Auto-load)'}
+                            </button>
+                        </>
+                    )}
+                    {contextMenu.type === 'layer' && (
+                        <>
+                            <button onClick={handleContextLearnMore}>Learn More</button>
+                            <button onClick={handleTogglePin}>
+                                {isPinned(contextMenu.data.service.key, contextMenu.data.layer.id) ? 'Unpin' : 'Pin (Auto-load)'}
+                            </button>
+                        </>
+                    )}
+                    {contextMenu.type === 'sublayer' && (
+                        <button onClick={handleTogglePin}>
+                            {isPinned(contextMenu.data.service.key, contextMenu.data.layerId, contextMenu.data.sublayerIndex) ? 'Unpin' : 'Pin (Auto-load)'}
+                        </button>
                     )}
                 </div>
             )}
@@ -765,6 +964,177 @@ function CustomLayersPanel({
             {statusMsg && (
                 <div className="custom-layers-loading-messages">
                     <div className="custom-layers-loading-message">{statusMsg}</div>
+                </div>
+            )}
+
+            {/* Service Info Modal */}
+            {serviceInfoOpenKey && (
+                <div className="arcgis-service-info-modal">
+                    <div className="arcgis-service-info-modal-header">
+                        <strong>Service info</strong>
+                        <button
+                            className="arcgis-service-info-modal-close"
+                            onClick={closeServiceInfo}
+                            aria-label="Close"
+                        >
+                            &times;
+                        </button>
+                    </div>
+                    <div className="arcgis-service-info-modal-content">
+                        {serviceInfoLoading && <div>Loading service info…</div>}
+                        {!serviceInfoLoading && (() => {
+                            const info = serviceInfoCache[serviceInfoOpenKey] || {};
+                            const currentService = customServices.find(s => s.key === serviceInfoOpenKey);
+                            if (!info || Object.keys(info).length === 0) {
+                                return (
+                                    <div>
+                                        <div className="arcgis-service-info-empty">No information available.</div>
+                                        {currentService && currentService.url && (
+                                            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                                <a href={currentService.url} target="_blank" rel="noopener noreferrer"
+                                                    style={{ color: '#1976d2', textDecoration: 'none' }}>
+                                                    View ArcGIS Service Page →
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+                            const sr = info.spatialReference || {};
+                            const srText = sr.latestWkid
+                                ? `WKID ${sr.latestWkid}`
+                                : (sr.wkid ? `WKID ${sr.wkid}` : (sr.wkt ? 'WKT' : '—'));
+                            return (
+                                <div>
+                                    {info.serviceDescription || info.description ? (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Service Description:</strong>
+                                            <div className="arcgis-service-info-description">
+                                                {toPlainText(info.serviceDescription || info.description)}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                    <div className="arcgis-service-info-row">
+                                        <strong>Service Item Id:</strong> {info.serviceItemId || info.itemId || '—'}
+                                    </div>
+                                    <div className="arcgis-service-info-row">
+                                        <strong>Copyright Text:</strong> {toPlainText(info.copyrightText) || '—'}
+                                    </div>
+                                    <div className="arcgis-service-info-row">
+                                        <strong>Spatial Reference:</strong> {srText}
+                                    </div>
+                                    {currentService && currentService.url && (
+                                        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                            <a href={currentService.url} target="_blank" rel="noopener noreferrer"
+                                                style={{ color: '#1976d2', textDecoration: 'none' }}>
+                                                View ArcGIS Service Page →
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
+
+            {/* Layer Info Modal */}
+            {layerInfoOpen && (
+                <div className="arcgis-service-info-modal">
+                    <div className="arcgis-service-info-modal-header">
+                        <strong>Layer Info: {layerInfoOpen.layerName}</strong>
+                        <button
+                            className="arcgis-service-info-modal-close"
+                            onClick={closeLayerInfo}
+                            aria-label="Close"
+                        >
+                            &times;
+                        </button>
+                    </div>
+                    <div className="arcgis-service-info-modal-content">
+                        {layerInfoLoading && <div>Loading layer info…</div>}
+                        {!layerInfoLoading && (() => {
+                            const cacheKey = `${layerInfoOpen.serviceKey}-${layerInfoOpen.layerId}`;
+                            const info = layerInfoCache[cacheKey];
+                            if (!info || Object.keys(info).length === 0) {
+                                return (
+                                    <div>
+                                        <div className="arcgis-service-info-empty">No layer information available.</div>
+                                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                            <a href={`${layerInfoOpen.serviceUrl}/${layerInfoOpen.layerId}`}
+                                                target="_blank" rel="noopener noreferrer"
+                                                style={{ color: '#1976d2', textDecoration: 'none' }}>
+                                                View ArcGIS Layer Page →
+                                            </a>
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            return (
+                                <div>
+                                    {info.description && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Description:</strong>
+                                            <div className="arcgis-service-info-description">
+                                                {toPlainText(info.description)}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {info.name && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Layer Name:</strong> {info.name}
+                                        </div>
+                                    )}
+                                    {info.type && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Geometry Type:</strong> {info.type}
+                                        </div>
+                                    )}
+                                    {info.copyrightText && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Copyright Text:</strong> {toPlainText(info.copyrightText)}
+                                        </div>
+                                    )}
+                                    {info.minScale && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Min Scale:</strong> {info.minScale.toLocaleString()}
+                                        </div>
+                                    )}
+                                    {info.maxScale && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Max Scale:</strong> {info.maxScale.toLocaleString()}
+                                        </div>
+                                    )}
+                                    {info.defaultVisibility !== undefined && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Default Visibility:</strong> {info.defaultVisibility ? 'Visible' : 'Hidden'}
+                                        </div>
+                                    )}
+                                    {info.hasAttachments !== undefined && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Has Attachments:</strong> {info.hasAttachments ? 'Yes' : 'No'}
+                                        </div>
+                                    )}
+                                    {info.fields && info.fields.length > 0 && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Fields:</strong> {info.fields.length} field(s)
+                                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                                {info.fields.slice(0, 5).map(field => field.name).join(', ')}
+                                                {info.fields.length > 5 && '...'}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                        <a href={`${layerInfoOpen.serviceUrl}/${layerInfoOpen.layerId}`}
+                                            target="_blank" rel="noopener noreferrer"
+                                            style={{ color: '#1976d2', textDecoration: 'none' }}>
+                                            View ArcGIS Layer Page →
+                                        </a>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
                 </div>
             )}
         </div>
