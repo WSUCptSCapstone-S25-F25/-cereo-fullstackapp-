@@ -10,7 +10,7 @@ import {
     fetchArcgisLayerInfo,
 } from './arcgisDataUtils';
 import { fetchCustomLayers, deleteCustomLayer } from './arcgisServicesDb';
-import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './sharedLayerUtils';
+import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './LayerTree';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import ArcgisRenameItem from './ArcgisRenameItem';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';

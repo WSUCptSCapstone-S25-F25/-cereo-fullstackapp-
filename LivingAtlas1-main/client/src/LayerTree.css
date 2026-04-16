@@ -1,0 +1,156 @@
+/* --- LayerTree base styles --- */
+
+.tree-children {
+    position: relative;
+    padding-left: 16px;
+    margin-left: 6px;
+}
+
+.tree-children::before {
+    display: none;
+}
+
+.tree-node {
+    position: relative;
+}
+
+.tree-node::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 13px;
+    width: 10px;
+    height: 0;
+    border-top: 1px solid #bbb;
+}
+
+.tree-node::after {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 1px solid #bbb;
+}
+
+.tree-children > .tree-node:first-child::after {
+    top: 13px;
+}
+
+.tree-children > .tree-node:last-child::after {
+    bottom: auto;
+    height: 13px;
+}
+
+.tree-children > .tree-node:only-child::after {
+    display: none;
+}
+
+/* Layer row */
+.upload-layer-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+    font-size: 11px !important;
+    gap: 3px;
+    min-height: 18px;
+}
+
+.upload-layer-row input[type="checkbox"] {
+    margin-right: 4px;
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+/* Sublayer */
+.upload-layer-sublayer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 3px;
+    font-size: 12px;
+    color: #666;
+    padding-left: 4px;
+    min-height: 18px;
+    transition: background-color 0.2s;
+}
+
+.upload-layer-sublayer:hover {
+    background-color: rgba(25, 118, 210, 0.05);
+    border-radius: 3px;
+}
+
+.upload-layer-sublayer input[type="checkbox"] {
+    width: 12px !important;
+    height: 12px !important;
+    margin-right: 6px !important;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.upload-layer-sublayer img {
+    width: 14px !important;
+    height: 14px !important;
+    margin-right: 6px !important;
+    flex-shrink: 0;
+}
+
+.upload-layer-sublayer span {
+    line-height: 1.2;
+    word-break: break-word;
+    cursor: default;
+}
+
+.upload-layer-sublayer.tree-node::before {
+    top: 10px;
+}
+.upload-layer-sublayer.tree-node::after {
+    top: 0;
+}
+.tree-children > .upload-layer-sublayer.tree-node:first-child::after {
+    top: 10px;
+}
+.tree-children > .upload-layer-sublayer.tree-node:last-child::after {
+    height: 10px;
+}
+
+/* Group layer */
+.upload-layer-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 11px;
+    padding: 2px 0;
+    min-height: 22px;
+    color: #444 !important;
+    border-radius: 3px;
+    transition: background 0.15s;
+}
+
+.upload-layer-group:hover {
+    background: #e8e8e8;
+}
+
+/* Layer name truncation */
+.upload-layer-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+/* Legend icon */
+.legend-img {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+    flex-shrink: 0;
+}

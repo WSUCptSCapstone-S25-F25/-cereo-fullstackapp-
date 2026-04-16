@@ -196,76 +196,13 @@
     padding-left: 2px;
 }
 
-.upload-layer-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0;
-    font-size: 11px !important;
-    gap: 3px;
-    min-height: 18px;
-}
-
-.upload-layer-row input[type="checkbox"] {
-    margin-right: 4px;
-    width: 13px;
-    height: 13px;
-    flex-shrink: 0;
-}
-
-.upload-layer-sublayer {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 3px;
-    font-size: 12px;
-    color: #666;
-    padding-left: 4px;
-    min-height: 18px;
-    transition: background-color 0.2s;
-}
-
-.upload-layer-sublayer:hover {
-    background-color: rgba(25, 118, 210, 0.05);
-    border-radius: 3px;
-}
-
-.upload-layer-sublayer input[type="checkbox"] {
-    width: 12px !important;
-    height: 12px !important;
-    margin-right: 6px !important;
-    flex-shrink: 0;
-    cursor: pointer;
-}
-
-.upload-layer-sublayer img {
-    width: 14px !important;
-    height: 14px !important;
-    margin-right: 6px !important;
-    flex-shrink: 0;
-}
-
-.upload-layer-sublayer span {
-    line-height: 1.2;
-    word-break: break-word;
-    cursor: default;
-}
+/* Layer row/sublayer/legend base styles are now in LayerTree.css */
 
 .upload-layer-row .layer-counter {
     font-size: 11px;
     color: #888;
     margin-left: 8px;
     font-weight: normal;
-}
-
-.upload-panel .legend-img {
-    width: 16px;
-    height: 16px;
-    margin-right: 4px;
-    vertical-align: middle;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    background: #fff;
-    flex-shrink: 0;
 }
 
 .upload-panel .select-all-label {
@@ -836,70 +773,7 @@
     border: 1px solid #e9ecef;
 }
 
-.tree-children {
-    position: relative;
-    padding-left: 16px;
-    margin-left: 6px;
-}
-
-.tree-children::before {
-    content: '';
-    position: absolute;
-    left: 6px;
-    top: 0;
-    bottom: 0;
-    width: 0;
-    border-left: 1px solid #d8e1ea;
-}
-
-.tree-node {
-    position: relative;
-}
-
-.tree-node::before {
-    content: '';
-    position: absolute;
-    left: -10px;
-    top: 13px;
-    width: 10px;
-    height: 0;
-    border-top: 1px solid #bbb;
-}
-
-.tree-node::after {
-    content: '';
-    position: absolute;
-    left: -10px;
-    top: 0;
-    bottom: 0;
-    width: 0;
-    border-left: 1px solid #bbb;
-}
-
-.tree-children > .tree-node:first-child::after {
-    top: 13px;
-}
-
-.tree-children > .tree-node:last-child::after {
-    bottom: auto;
-    height: 13px;
-}
-
-.tree-children > .tree-node:only-child::after {
-    display: none;
-}
-
-.tree-children::before {
-    display: none;
-}
-
-/* Truncate long layer/sublayer names with ellipsis */
-.upload-layer-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-width: 0;
-}
+/* tree-children/tree-node/upload-layer-name base styles are now in LayerTree.css */
 
 .upload-panel .arcgis-rename-text {
     overflow: hidden;
@@ -909,37 +783,7 @@
     max-width: 100%;
 }
 
-.upload-layer-sublayer.tree-node::before {
-    top: 10px;
-}
-.upload-layer-sublayer.tree-node::after {
-    top: 0;
-}
-.tree-children > .upload-layer-sublayer.tree-node:first-child::after {
-    top: 10px;
-}
-.tree-children > .upload-layer-sublayer.tree-node:last-child::after {
-    height: 10px;
-}
-
-/* Group Layer (expandable container in hierarchy) */
-.upload-layer-group {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 11px;
-    padding: 2px 0;
-    min-height: 22px;
-    color: #444 !important;
-    border-radius: 3px;
-    transition: background 0.15s;
-}
-
-.upload-layer-group:hover {
-    background: #e8e8e8;
-}
+/* Sublayer/group/tree base styles are now in LayerTree.css */
 
 .upload-panel input[type="checkbox"] {
     -webkit-appearance: none;
@@ -1016,32 +860,4 @@
     font-size: 13px;
 }
 
-.upload-context-menu {
-    position: fixed;
-    z-index: 9999;
-    background: #fff;
-    border: 1px solid #d0d0d0;
-    border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.08);
-    padding: 4px 0;
-    min-width: 140px;
-}
-
-.upload-context-menu button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 7px 16px;
-    border: none;
-    background: none;
-    font-size: 12.5px;
-    color: #222 !important;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.12s, color 0.12s;
-}
-
-.upload-context-menu button:hover {
-    background: #e8f0fe;
-    color: #1a73e8 !important;
-}
+/* Context menu styles are now in LayerContextMenu.css */

@@ -25,7 +25,7 @@ import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
 import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
 import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
-import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './sharedLayerUtils';
+import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './LayerTree';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';

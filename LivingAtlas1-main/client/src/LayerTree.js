@@ -1,4 +1,5 @@
 import React from 'react';
+import './LayerTree.css';
 
 // --- Layer tree helpers (shared between ArcgisUploadPanel and CustomLayersPanel) ---
 
