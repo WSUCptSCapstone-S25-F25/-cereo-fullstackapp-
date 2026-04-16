@@ -380,3 +380,60 @@ export async function clearAllRemovedServices() {
         throw error;
     }
 }
+
+// --- Custom Layers (per-user) ---
+
+// Save a layer to user's custom layers
+export async function saveCustomLayer(userEmail, service) {
+    try {
+        console.log(`[arcgisServicesDb] Saving custom layer ${service.key} for ${userEmail}...`);
+        const response = await api.post('/arcgis/custom-layers/save', {
+            user_email: userEmail,
+            service_key: service.key,
+            label: service.label,
+            url: service.url,
+            folder: service.folder || 'Root',
+            type: service.type || 'MapServer',
+            state: service.state || '',
+        });
+        console.log(`[arcgisServicesDb] Successfully saved custom layer ${service.key}`);
+        return response.data;
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to save custom layer:`, error);
+        throw error;
+    }
+}
+
+// Fetch user's custom layers
+export async function fetchCustomLayers(userEmail) {
+    try {
+        console.log(`[arcgisServicesDb] Fetching custom layers for ${userEmail}...`);
+        const response = await api.get('/arcgis/custom-layers', {
+            params: { user_email: userEmail },
+        });
+        const raw = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        console.log(`[arcgisServicesDb] Loaded ${raw.length} custom layers`);
+        return adaptServices(raw);
+    } catch (error) {
+        console.warn(`[arcgisServicesDb] Failed to fetch custom layers:`, error?.message || error);
+        return [];
+    }
+}
+
+// Delete a layer from user's custom layers
+export async function deleteCustomLayer(userEmail, serviceKey) {
+    try {
+        console.log(`[arcgisServicesDb] Deleting custom layer ${serviceKey} for ${userEmail}...`);
+        const response = await api.delete('/arcgis/custom-layers', {
+            data: {
+                user_email: userEmail,
+                service_key: serviceKey,
+            },
+        });
+        console.log(`[arcgisServicesDb] Successfully deleted custom layer ${serviceKey}`);
+        return response.data;
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to delete custom layer:`, error);
+        throw error;
+    }
+}
