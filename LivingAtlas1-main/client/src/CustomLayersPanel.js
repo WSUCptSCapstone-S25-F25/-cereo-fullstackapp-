@@ -8,48 +8,11 @@ import {
     getArcgisTileUrl,
 } from './arcgisDataUtils';
 import { fetchCustomLayers, deleteCustomLayer } from './arcgisServicesDb';
+import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './sharedLayerUtils';
+import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes } from '@fortawesome/free-solid-svg-icons';
-
-// Reuse from ArcgisUploadPanel
-function buildLayerTree(flatLayers) {
-    const filtered = flatLayers.filter(l =>
-        !(typeof l.name === 'string' && l.name.trim().toLowerCase() === 'placeholder')
-    );
-    const layerMap = {};
-    filtered.forEach(l => { layerMap[l.id] = { ...l, children: [] }; });
-    const roots = [];
-    filtered.forEach(l => {
-        const pid = l.parentLayer ? l.parentLayer.id : (l.parentLayerId !== undefined ? l.parentLayerId : -1);
-        if (pid === -1 || pid === null || pid === undefined || !layerMap[pid]) {
-            roots.push(layerMap[l.id]);
-        } else {
-            layerMap[pid].children.push(layerMap[l.id]);
-        }
-    });
-    return roots;
-}
-
-function getAllLeafLayers(nodes) {
-    const result = [];
-    function collect(node) {
-        if (node.type !== 'Group Layer') result.push(node);
-        if (node.children) node.children.forEach(collect);
-    }
-    nodes.forEach(collect);
-    return result;
-}
-
-function getDescendantLeafLayers(node) {
-    const result = [];
-    function collect(n) {
-        if (n.type !== 'Group Layer') result.push(n);
-        if (n.children) n.children.forEach(collect);
-    }
-    if (node.children) node.children.forEach(collect);
-    return result;
-}
+import { faTimes, faSearch } from '@fortawesome/free-solid-svg-icons';
 
 function CustomLayersPanel({
     isOpen,
@@ -76,6 +39,12 @@ function CustomLayersPanel({
     const [layerOpacity, setLayerOpacity] = useState(0.7);
     const [contextMenu, setContextMenu] = useState(null);
     const [statusMsg, setStatusMsg] = useState(null);
+
+    // Search & filter state
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [searchType, setSearchType] = useState('any');
+    const [searchResult, setSearchResult] = useState(null);
+    const [showAddedOnly, setShowAddedOnly] = useState(false);
     const statusTimer = useRef(null);
 
     const prevCheckedLayerIds = useRef({});
@@ -113,6 +82,53 @@ function CustomLayersPanel({
     });
     const folderNames = Object.keys(servicesByFolder).sort();
 
+    // --- Search handler ---
+    const doSearch = () => {
+        if (!searchKeyword) {
+            setSearchResult(null);
+            setExpandedFolders(new Set());
+            setExpandedServices(new Set());
+            setExpandedLayers(new Set());
+            return;
+        }
+        const result = filterUploadPanelData({
+            services: customServices,
+            serviceLayers,
+            searchType,
+            keyword: searchKeyword,
+        });
+        setSearchResult(result);
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+    };
+
+    const clearSearch = () => {
+        setSearchKeyword('');
+        setSearchResult(null);
+        setExpandedFolders(new Set());
+        setExpandedServices(new Set());
+        setExpandedLayers(new Set());
+    };
+
+    // --- Compute display folders/services with search + showAddedOnly ---
+    let foldersToShow = searchResult ? Object.keys(searchResult.filteredFolders) : folderNames;
+    let servicesByFolderToShow = searchResult ? searchResult.filteredFolders : servicesByFolder;
+
+    if (showAddedOnly) {
+        const filteredFolders = {};
+        foldersToShow.forEach(folder => {
+            const filteredServices = (servicesByFolderToShow[folder] || []).filter(service =>
+                (checkedLayerIds[service.key] || []).length > 0
+            );
+            if (filteredServices.length > 0) {
+                filteredFolders[folder] = filteredServices;
+            }
+        });
+        foldersToShow = Object.keys(filteredFolders);
+        servicesByFolderToShow = filteredFolders;
+    }
+
     // Lazy-load layers/legends when a service is expanded
     useEffect(() => {
         if (!isOpen) return;
@@ -133,58 +149,139 @@ function CustomLayersPanel({
         });
     }, [isOpen, customServices, expandedServices]);
 
-    // --- Map interaction: add/remove raster layers ---
-    const addRasterLayer = useCallback((service, layerIds) => {
-        const map = mapInstance && mapInstance();
-        if (!map) return;
-        const sourceId = `custom-raster-${service.key}`;
-        const layerId = `custom-raster-layer-${service.key}`;
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
-        if (!layerIds || layerIds.length === 0) return;
-
-        const tileUrl = getArcgisTileUrl(service.url, layerIds);
-        map.addSource(sourceId, {
-            type: 'raster',
-            tiles: [tileUrl],
-            tileSize: 256,
-        });
-        map.addLayer({
-            id: layerId,
-            type: 'raster',
-            source: sourceId,
-            paint: { 'raster-opacity': layerOpacity },
-        });
-    }, [mapInstance, layerOpacity]);
-
-    const removeRasterLayer = useCallback((service) => {
-        const map = mapInstance && mapInstance();
-        if (!map) return;
-        const sourceId = `custom-raster-${service.key}`;
-        const layerIdStr = `custom-raster-layer-${service.key}`;
-        if (map.getLayer(layerIdStr)) map.removeLayer(layerIdStr);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
-    }, [mapInstance]);
-
-    // Update map whenever checked layers change
+    // --- Map interaction: add/remove raster + vector layers per layer (matches ArcgisUploadPanel) ---
     useEffect(() => {
+        const map = mapInstance && mapInstance();
+        if (!map) return;
+
         customServices.forEach(service => {
-            const checked = checkedLayerIds[service.key] || [];
+            const layers = serviceLayers[service.key] || [];
             const prevChecked = prevCheckedLayerIds.current[service.key] || [];
-            if (JSON.stringify(checked) === JSON.stringify(prevChecked)) return;
+            const currChecked = checkedLayerIds[service.key] || [];
+            const serviceSublayers = checkedSublayerIds[service.key] || {};
+            const prevSublayers = prevCheckedLayerIds.current[`${service.key}_sublayers`] || {};
 
-            if (checked.length > 0) {
-                addRasterLayer(service, checked);
-                setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
-            } else {
-                removeRasterLayer(service);
-                setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
-            }
+            // --- VECTOR LAYERS ---
+            const toRemove = prevChecked.filter(id => !currChecked.includes(id));
+            const toAdd = currChecked.filter(id => !prevChecked.includes(id));
+
+            toRemove.forEach(id => {
+                const baseId = `arcgis-vector-layer-custom-${service.key}-${id}`;
+                const fillId = baseId;
+                const lineId = `${baseId}-outline`;
+                const circleId = `${baseId}-circle`;
+                const sourceId = `arcgis-vector-source-custom-${service.key}-${id}`;
+                [fillId, lineId, circleId].forEach(lid => {
+                    if (map.getLayer(lid)) map.removeLayer(lid);
+                });
+                if (map.getSource(sourceId)) map.removeSource(sourceId);
+            });
+
+            toAdd.forEach(id => {
+                const layer = layers.find(l => l.id === id);
+                if (layer) {
+                    addArcgisVectorLayer(
+                        map,
+                        { ...layer, serviceKey: `custom-${service.key}`, serviceUrl: service.url },
+                        showArcgisPopup,
+                        { minzoom: 6, maxzoom: 12 }
+                    );
+                }
+            });
+
+            // --- RASTER LAYERS ---
+            // Remove rasters for completely unchecked layers
+            toRemove.forEach(layerId => {
+                const layerRasterPrefix = `arcgis-raster-layer-custom-${service.key}-${layerId}`;
+                const style = map.getStyle();
+                if (style?.layers) {
+                    style.layers
+                        .filter(l => l.id.startsWith(layerRasterPrefix))
+                        .forEach(l => { if (map.getLayer(l.id)) map.removeLayer(l.id); });
+                }
+                if (style?.sources) {
+                    Object.keys(style.sources)
+                        .filter(id => id.startsWith(`arcgis-raster-custom-${service.key}-${layerId}`))
+                        .forEach(id => { if (map.getSource(id)) map.removeSource(id); });
+                }
+            });
+
+            // Handle sublayer changes for currently checked layers
+            currChecked.forEach(layerId => {
+                const layer = layers.find(l => l.id === layerId);
+                if (!layer) return;
+
+                const legend = serviceLegends[service.key];
+                const legendLayer = legend?.layers?.find(l => l.layerId === layerId);
+                const legendItems = legendLayer?.legend || [];
+                const checkedSublayers = serviceSublayers[layerId] || [];
+                const prevCheckedSublayers = prevSublayers[layerId] || [];
+                const sublayersChanged = JSON.stringify([...checkedSublayers].sort()) !== JSON.stringify([...prevCheckedSublayers].sort());
+
+                if (legendItems.length > 1) {
+                    if (sublayersChanged || toAdd.includes(layerId)) {
+                        // Remove existing rasters for this layer
+                        const layerRasterPrefix = `arcgis-raster-layer-custom-${service.key}-${layerId}`;
+                        const style = map.getStyle();
+                        if (style?.layers) {
+                            style.layers
+                                .filter(l => l.id.startsWith(layerRasterPrefix))
+                                .forEach(l => { if (map.getLayer(l.id)) map.removeLayer(l.id); });
+                        }
+                        if (style?.sources) {
+                            Object.keys(style.sources)
+                                .filter(id => id.startsWith(`arcgis-raster-custom-${service.key}-${layerId}`))
+                                .forEach(id => { if (map.getSource(id)) map.removeSource(id); });
+                        }
+                        // Add rasters for checked sublayers
+                        if (checkedSublayers.length > 0) {
+                            checkedSublayers.forEach(sublayerIndex => {
+                                const sublayerSourceId = `arcgis-raster-custom-${service.key}-${layerId}-sub-${sublayerIndex}`;
+                                const sublayerLayerId = `arcgis-raster-layer-custom-${service.key}-${layerId}-sub-${sublayerIndex}`;
+                                map.addSource(sublayerSourceId, {
+                                    type: 'raster',
+                                    tiles: [getArcgisTileUrl(service.url, [layerId])],
+                                    tileSize: 256,
+                                    minzoom: 6,
+                                    maxzoom: 12
+                                });
+                                map.addLayer({
+                                    id: sublayerLayerId,
+                                    type: 'raster',
+                                    source: sublayerSourceId,
+                                    paint: { 'raster-opacity': layerOpacity }
+                                });
+                            });
+                        }
+                    }
+                } else if (toAdd.includes(layerId)) {
+                    const rasterSourceId = `arcgis-raster-custom-${service.key}-${layerId}`;
+                    const rasterLayerId = `arcgis-raster-layer-custom-${service.key}-${layerId}`;
+                    if (map.getLayer(rasterLayerId)) map.removeLayer(rasterLayerId);
+                    if (map.getSource(rasterSourceId)) map.removeSource(rasterSourceId);
+                    map.addSource(rasterSourceId, {
+                        type: 'raster',
+                        tiles: [getArcgisTileUrl(service.url, [layerId])],
+                        tileSize: 256,
+                        minzoom: 6,
+                        maxzoom: 12
+                    });
+                    map.addLayer({
+                        id: rasterLayerId,
+                        type: 'raster',
+                        source: rasterSourceId,
+                        paint: { 'raster-opacity': layerOpacity }
+                    });
+                }
+            });
+
+            prevCheckedLayerIds.current[service.key] = currChecked;
+            prevCheckedLayerIds.current[`${service.key}_sublayers`] = JSON.parse(JSON.stringify(serviceSublayers));
         });
-        prevCheckedLayerIds.current = { ...checkedLayerIds };
-    }, [checkedLayerIds, customServices, addRasterLayer, removeRasterLayer]);
+        // eslint-disable-next-line
+    }, [checkedLayerIds, serviceLayers, checkedSublayerIds]);
 
-    // Opacity change handler
+    // Opacity change handler — update all custom raster + vector layers
     const handleOpacityChange = (newOpacity) => {
         setLayerOpacity(newOpacity);
         const map = mapInstance && mapInstance();
@@ -192,11 +289,47 @@ function CustomLayersPanel({
         const style = map.getStyle();
         if (!style || !Array.isArray(style.layers)) return;
         style.layers.forEach(l => {
-            if (l.id.startsWith('custom-raster-layer-')) {
+            if (l.id.startsWith('arcgis-raster-layer-custom-')) {
                 map.setPaintProperty(l.id, 'raster-opacity', newOpacity);
+            } else if (l.id.startsWith('arcgis-vector-layer-custom-')) {
+                if (l.type === 'fill') {
+                    map.setPaintProperty(l.id, 'fill-opacity', newOpacity);
+                } else if (l.type === 'line') {
+                    map.setPaintProperty(l.id, 'line-opacity', newOpacity);
+                } else if (l.type === 'circle') {
+                    map.setPaintProperty(l.id, 'circle-opacity', newOpacity);
+                }
             }
         });
     };
+
+    // Helper to remove all map layers for a service
+    const removeAllMapLayers = useCallback((service) => {
+        const map = mapInstance && mapInstance();
+        if (!map) return;
+        const layers = serviceLayers[service.key] || [];
+        layers.forEach(layer => {
+            // Vector
+            const baseId = `arcgis-vector-layer-custom-${service.key}-${layer.id}`;
+            [baseId, `${baseId}-outline`, `${baseId}-circle`].forEach(lid => {
+                if (map.getLayer(lid)) map.removeLayer(lid);
+            });
+            const vecSrc = `arcgis-vector-source-custom-${service.key}-${layer.id}`;
+            if (map.getSource(vecSrc)) map.removeSource(vecSrc);
+            // Raster
+            const style = map.getStyle();
+            if (style?.layers) {
+                style.layers
+                    .filter(l => l.id.startsWith(`arcgis-raster-layer-custom-${service.key}-${layer.id}`))
+                    .forEach(l => { if (map.getLayer(l.id)) map.removeLayer(l.id); });
+            }
+            if (style?.sources) {
+                Object.keys(style.sources)
+                    .filter(id => id.startsWith(`arcgis-raster-custom-${service.key}-${layer.id}`))
+                    .forEach(id => { if (map.getSource(id)) map.removeSource(id); });
+            }
+        });
+    }, [mapInstance, serviceLayers]);
 
     // Handlers
     const handleFolderClick = (folder) => {
@@ -226,58 +359,130 @@ function CustomLayersPanel({
 
     const handleLayerCheckbox = (service, layerId, allFeatureLayers) => {
         setCheckedLayerIds(prev => {
-            const current = prev[service.key] || [];
-            const newChecked = current.includes(layerId)
-                ? current.filter(id => id !== layerId)
-                : [...current, layerId];
+            const prevChecked = prev[service.key] || [];
+            let newChecked;
+            if (prevChecked.includes(layerId)) {
+                newChecked = prevChecked.filter(id => id !== layerId);
+                // Uncheck sublayers
+                setCheckedSublayerIds(prevSub => ({
+                    ...prevSub,
+                    [service.key]: { ...prevSub[service.key], [layerId]: [] }
+                }));
+            } else {
+                newChecked = [...prevChecked, layerId];
+                // Check all sublayers
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layerId);
+                    if (legendLayer && legendLayer.legend) {
+                        setCheckedSublayerIds(prevSub => ({
+                            ...prevSub,
+                            [service.key]: {
+                                ...prevSub[service.key],
+                                [layerId]: legendLayer.legend.map((_, i) => i)
+                            }
+                        }));
+                    }
+                }
+            }
+            setServiceLayerAdded(prevAdded => ({ ...prevAdded, [service.key]: newChecked.length > 0 }));
             return { ...prev, [service.key]: newChecked };
         });
     };
 
     const handleSelectAll = (service, allFeatureLayers) => {
-        setCheckedLayerIds(prev => {
-            const current = prev[service.key] || [];
-            const allIds = allFeatureLayers.map(l => l.id);
-            const newChecked = current.length === allIds.length ? [] : allIds;
-            return { ...prev, [service.key]: newChecked };
-        });
+        const allIds = allFeatureLayers.map(l => l.id);
+        const isAllChecked = (checkedLayerIds[service.key] || []).length === allIds.length;
+        if (isAllChecked) {
+            setCheckedLayerIds(prev => ({ ...prev, [service.key]: [] }));
+            setServiceLayerAdded(prev => ({ ...prev, [service.key]: false }));
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: {} }));
+        } else {
+            setCheckedLayerIds(prev => ({ ...prev, [service.key]: allIds }));
+            setServiceLayerAdded(prev => ({ ...prev, [service.key]: true }));
+            const newSublayerIds = {};
+            allFeatureLayers.forEach(layer => {
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                    if (legendLayer && legendLayer.legend && legendLayer.legend.length > 1) {
+                        newSublayerIds[layer.id] = legendLayer.legend.map((_, i) => i);
+                    }
+                }
+            });
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: newSublayerIds }));
+        }
     };
 
     const handleGroupLayerCheckbox = (service, node, allChecked) => {
         const descendantLeaves = getDescendantLeafLayers(node);
         const descendantIds = descendantLeaves.map(l => l.id);
-        setCheckedLayerIds(prev => {
-            const current = prev[service.key] || [];
-            let newChecked;
-            if (allChecked) {
-                newChecked = current.filter(id => !descendantIds.includes(id));
-            } else {
-                const combined = new Set([...current, ...descendantIds]);
-                newChecked = Array.from(combined);
-            }
-            return { ...prev, [service.key]: newChecked };
-        });
+        if (descendantIds.length === 0) return;
+        if (allChecked) {
+            setCheckedLayerIds(prev => ({
+                ...prev,
+                [service.key]: (prev[service.key] || []).filter(id => !descendantIds.includes(id))
+            }));
+            setCheckedSublayerIds(prev => {
+                const updated = { ...prev[service.key] };
+                descendantIds.forEach(id => { updated[id] = []; });
+                return { ...prev, [service.key]: updated };
+            });
+        } else {
+            setCheckedLayerIds(prev => {
+                const current = prev[service.key] || [];
+                return { ...prev, [service.key]: [...new Set([...current, ...descendantIds])] };
+            });
+            const newSublayerIds = { ...(checkedSublayerIds[service.key] || {}) };
+            descendantLeaves.forEach(layer => {
+                const legend = serviceLegends[service.key];
+                if (legend && legend.layers) {
+                    const legendLayer = legend.layers.find(l => l.layerId === layer.id);
+                    if (legendLayer && legendLayer.legend && legendLayer.legend.length > 1) {
+                        newSublayerIds[layer.id] = legendLayer.legend.map((_, i) => i);
+                    }
+                }
+            });
+            setCheckedSublayerIds(prev => ({ ...prev, [service.key]: newSublayerIds }));
+        }
+        setServiceLayerAdded(prev => ({ ...prev, [service.key]: !allChecked }));
     };
 
     const handleSublayerCheckbox = (service, layerId, sublayerIndex, allFeatureLayers) => {
         setCheckedSublayerIds(prev => {
-            const serviceSublayers = prev[service.key] || {};
-            const layerSublayers = serviceSublayers[layerId] || [];
-            const newSublayers = layerSublayers.includes(sublayerIndex)
-                ? layerSublayers.filter(i => i !== sublayerIndex)
-                : [...layerSublayers, sublayerIndex];
-            return {
-                ...prev,
-                [service.key]: { ...serviceSublayers, [layerId]: newSublayers }
-            };
-        });
-        // Also check the parent layer if not checked
-        setCheckedLayerIds(prev => {
-            const current = prev[service.key] || [];
-            if (!current.includes(layerId)) {
-                return { ...prev, [service.key]: [...current, layerId] };
+            const serviceSubIds = prev[service.key] || {};
+            const layerSubIds = serviceSubIds[layerId] || [];
+            let newLayerSubIds;
+            if (layerSubIds.includes(sublayerIndex)) {
+                newLayerSubIds = layerSubIds.filter(id => id !== sublayerIndex);
+            } else {
+                newLayerSubIds = [...layerSubIds, sublayerIndex];
             }
-            return prev;
+            // If no sublayers checked, uncheck parent layer
+            if (newLayerSubIds.length === 0) {
+                setCheckedLayerIds(prevChecked => ({
+                    ...prevChecked,
+                    [service.key]: (prevChecked[service.key] || []).filter(id => id !== layerId)
+                }));
+            } else {
+                // If at least one sublayer, check parent layer
+                setCheckedLayerIds(prevChecked => {
+                    const currentChecked = prevChecked[service.key] || [];
+                    if (!currentChecked.includes(layerId)) {
+                        return { ...prevChecked, [service.key]: [...currentChecked, layerId] };
+                    }
+                    return prevChecked;
+                });
+            }
+            setServiceLayerAdded(prevAdded => {
+                const allCheckedLayers = Object.keys({ ...serviceSubIds, [layerId]: newLayerSubIds })
+                    .filter(lid => {
+                        const subIds = String(lid) === String(layerId) ? newLayerSubIds : serviceSubIds[lid] || [];
+                        return subIds.length > 0;
+                    });
+                return { ...prevAdded, [service.key]: allCheckedLayers.length > 0 };
+            });
+            return { ...prev, [service.key]: { ...serviceSubIds, [layerId]: newLayerSubIds } };
         });
     };
 
@@ -303,148 +508,37 @@ function CustomLayersPanel({
         closeContextMenu();
         try {
             await deleteCustomLayer(userEmail, service.key);
-            // Remove from map
-            removeRasterLayer(service);
-            // Remove from local state
+            removeAllMapLayers(service);
             setCustomServices(prev => prev.filter(s => s.key !== service.key));
             setServiceLayerAdded(prev => { const n = { ...prev }; delete n[service.key]; return n; });
             setCheckedLayerIds(prev => { const n = { ...prev }; delete n[service.key]; return n; });
+            setCheckedSublayerIds(prev => { const n = { ...prev }; delete n[service.key]; return n; });
             showStatus(`Removed "${service.label}" from custom layers`);
         } catch (err) {
             showStatus(`Failed to remove: ${err.message}`);
         }
     };
 
-    // Recursive layer node renderer (simplified from ArcgisUploadPanel)
-    const renderLayerNode = (node, service, checkedIds, allFeatureLayers, depth = 0) => {
-        const isGroupLayer = node.type === 'Group Layer';
-        const expandKey = `${service.key}-${node.id}`;
-        const isExpanded = expandedLayers.has(expandKey);
-
-        if (isGroupLayer) {
-            const descendantLeaves = getDescendantLeafLayers(node);
-            const descendantIds = descendantLeaves.map(l => l.id);
-            const checkedCount = descendantIds.filter(id => checkedIds.includes(id)).length;
-            const allChecked = descendantIds.length > 0 && checkedCount === descendantIds.length;
-            const someChecked = checkedCount > 0 && !allChecked;
-
-            return (
-                <div key={node.id} className="tree-node">
-                    <div
-                        className="upload-layer-group"
-                        onClick={() => handleLayerClick(service.key, node.id)}
-                    >
-                        <input
-                            type="checkbox"
-                            checked={allChecked}
-                            ref={el => { if (el) el.indeterminate = someChecked; }}
-                            onChange={(e) => {
-                                e.stopPropagation();
-                                handleGroupLayerCheckbox(service, node, allChecked);
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{ marginRight: 4 }}
-                        />
-                        <span style={{ color: '#666', userSelect: 'none', marginRight: 4 }}>
-                            {isExpanded ? "▼" : "►"}
-                        </span>
-                        <span className="upload-layer-name" title={node.name} style={{ flex: 1 }}>{node.name}</span>
-                        {descendantIds.length > 0 && (
-                            <span style={{ color: '#999', fontSize: '10px', marginLeft: 4 }}>
-                                ({checkedCount}/{descendantIds.length})
-                            </span>
-                        )}
-                    </div>
-                    {isExpanded && node.children.length > 0 && (
-                        <div className="tree-children">
-                            {node.children.map(child =>
-                                renderLayerNode(child, service, checkedIds, allFeatureLayers, depth + 1)
-                            )}
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        // Feature/Raster layer node
-        let legendItems = [];
-        const legend = serviceLegends[service.key];
-        if (legend && legend.layers) {
-            const legendLayer = legend.layers.find(l => l.layerId === node.id);
-            if (legendLayer) legendItems = legendLayer.legend || [];
-        }
-        const hasMultipleLegends = legendItems.length > 1;
-        const checkedSublayers = checkedSublayerIds[service.key]?.[node.id] || [];
-
-        return (
-            <li key={node.id} className="upload-layer-row tree-node" style={{
-                flexDirection: 'column', alignItems: 'flex-start', marginBottom: 2
-            }}>
-                <div
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: 4,
-                        minHeight: 20, width: '100%',
-                        cursor: hasMultipleLegends ? 'pointer' : 'default'
-                    }}
-                    onClick={hasMultipleLegends ? () => handleLayerClick(service.key, node.id) : undefined}
-                >
-                    <input
-                        type="checkbox"
-                        checked={checkedIds.includes(node.id)}
-                        onChange={() => handleLayerCheckbox(service, node.id, allFeatureLayers)}
-                        style={{ marginRight: 8 }}
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                    {hasMultipleLegends && (
-                        <span style={{ color: '#666', marginRight: 4, userSelect: 'none' }}>
-                            {expandedLayers.has(`${service.key}-${node.id}`) ? "▼" : "►"}
-                        </span>
-                    )}
-                    {legendItems.length === 1 && (
-                        <img
-                            src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
-                            alt={legendItems[0].label}
-                            className="legend-img"
-                        />
-                    )}
-                    <span className="upload-layer-name" title={node.name} style={{ flex: 1 }}>{node.name}</span>
-                    {hasMultipleLegends && (
-                        <span style={{ color: '#888', marginLeft: 8 }}>
-                            ({checkedSublayers.length}/{legendItems.length})
-                        </span>
-                    )}
-                </div>
-                {hasMultipleLegends && expandedLayers.has(`${service.key}-${node.id}`) && (
-                    <div className="tree-children" style={{ marginTop: 4 }}>
-                        {legendItems.map((legendItem, index) => (
-                            <div
-                                key={index}
-                                className="upload-layer-sublayer tree-node"
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 4,
-                                    marginBottom: 3, color: '#666', minHeight: '18px'
-                                }}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={checkedSublayers.includes(index)}
-                                    onChange={() => handleSublayerCheckbox(service, node.id, index, allFeatureLayers)}
-                                    style={{ marginRight: 6, width: '12px', height: '12px', flexShrink: 0 }}
-                                />
-                                <img
-                                    src={`data:${legendItem.contentType};base64,${legendItem.imageData}`}
-                                    alt={legendItem.label}
-                                    className="legend-img"
-                                    style={{ width: '14px', height: '14px', marginRight: '6px' }}
-                                />
-                                <span className="upload-layer-name" title={legendItem.label}>{legendItem.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </li>
-        );
-    };
+    // Render a layer tree node using the shared component
+    const renderLayerNode = (node, service, checkedIds, allFeatureLayers, depth = 0) => (
+        <LayerTreeNode
+            key={node.id}
+            node={node}
+            service={service}
+            checkedIds={checkedIds}
+            allFeatureLayers={allFeatureLayers}
+            serviceLegends={serviceLegends}
+            checkedSublayerIds={checkedSublayerIds}
+            expandedLayers={expandedLayers}
+            searchResult={searchResult}
+            onLayerClick={handleLayerClick}
+            onLayerCheckbox={handleLayerCheckbox}
+            onGroupCheckbox={handleGroupLayerCheckbox}
+            onSublayerCheckbox={handleSublayerCheckbox}
+            onContextMenu={handleContextMenu}
+            depth={depth}
+        />
+    );
 
     if (!isOpen) return null;
 
@@ -474,20 +568,94 @@ function CustomLayersPanel({
                 </button>
             </div>
 
-            {/* Opacity slider */}
-            <div className="custom-layers-panel-opacity-slider-row">
-                <label>Layer Opacity:</label>
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={layerOpacity}
-                    onChange={e => handleOpacityChange(parseFloat(e.target.value))}
-                    className="custom-layers-panel-opacity-slider"
-                    style={{ background: `linear-gradient(to right, #1976d2 ${layerOpacity * 100}%, #d0d0d0 ${layerOpacity * 100}%)` }}
-                />
-                <span className="custom-layers-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
+            {/* Sticky toolbar: search bar, opacity, show-added-only */}
+            <div className="custom-layers-panel-sticky-toolbar">
+                {/* Search bar */}
+                <div className="upload-panel-searchbar">
+                    <input
+                        type="text"
+                        value={searchKeyword}
+                        onChange={e => setSearchKeyword(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') doSearch(); }}
+                        placeholder="Search folders, services, or layers..."
+                    />
+                    <select
+                        value={searchType}
+                        onChange={e => setSearchType(e.target.value)}
+                        className="upload-panel-searchbar-dropdown"
+                    >
+                        <option value="any">Any</option>
+                        <option value="folder">Folder</option>
+                        <option value="service">Service</option>
+                        <option value="layer">Layer</option>
+                    </select>
+                    <button
+                        className="search-btn upload-panel-searchbar-btn search"
+                        title="Search"
+                        onClick={doSearch}
+                    >
+                        <FontAwesomeIcon icon={faSearch} />
+                    </button>
+                    <button
+                        className="clear-btn upload-panel-searchbar-btn clear"
+                        title="Clear Search"
+                        onClick={clearSearch}
+                    >
+                        <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                </div>
+
+                {/* Opacity slider */}
+                <div className="upload-panel-opacity-slider-row">
+                    <label>Layer Opacity:</label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={layerOpacity}
+                        onChange={e => handleOpacityChange(parseFloat(e.target.value))}
+                        className="upload-panel-opacity-slider"
+                        style={{ '--slider-pct': `${layerOpacity * 100}%` }}
+                    />
+                    <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
+                </div>
+
+                {/* Show only added to map */}
+                <div className="upload-panel-added-checkbox-row">
+                    <label>
+                        <input
+                            type="checkbox"
+                            checked={showAddedOnly}
+                            onChange={e => {
+                                setShowAddedOnly(e.target.checked);
+                                if (e.target.checked) {
+                                    const foldersWithAdded = [];
+                                    const servicesWithAdded = [];
+                                    folderNames.forEach(folder => {
+                                        const hasAdded = servicesByFolder[folder].some(service =>
+                                            (checkedLayerIds[service.key] || []).length > 0
+                                        );
+                                        if (hasAdded) foldersWithAdded.push(folder);
+                                        servicesByFolder[folder].forEach(service => {
+                                            if ((checkedLayerIds[service.key] || []).length > 0) {
+                                                servicesWithAdded.push(service.key);
+                                            }
+                                        });
+                                    });
+                                    setExpandedFolders(new Set(foldersWithAdded));
+                                    setExpandedServices(new Set(servicesWithAdded));
+                                } else {
+                                    setExpandedFolders(new Set());
+                                    setExpandedServices(new Set());
+                                    setExpandedLayers(new Set());
+                                }
+                            }}
+                            style={{ marginRight: 8 }}
+                        />
+                        Show only services added to map
+                    </label>
+                </div>
             </div>
 
             {isLoading && (
@@ -503,8 +671,8 @@ function CustomLayersPanel({
 
             {!isLoading && customServices.length > 0 && (
                 <div className="custom-layers-panel-folder-area">
-                    {folderNames.map(folder => {
-                        const services = servicesByFolder[folder];
+                    {foldersToShow.map(folder => {
+                        const services = servicesByFolderToShow[folder] || [];
                         const isFolderExpanded = expandedFolders.has(folder);
                         return (
                             <div key={folder}>
