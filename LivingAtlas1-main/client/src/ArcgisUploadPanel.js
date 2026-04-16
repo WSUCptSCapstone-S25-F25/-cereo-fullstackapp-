@@ -15,7 +15,8 @@ import {
     renameFolderServices, 
     renameService,
     saveLayerSelections,
-    loadLayerSelections
+    loadLayerSelections,
+    saveCustomLayer
 } from './arcgisServicesDb'; // Fetch from DB
 import { updateCurrentStateServices } from './arcgisUpdateServices';
 import ArcgisRenameItem from './ArcgisRenameItem';
@@ -1810,6 +1811,26 @@ function ArcgisUploadPanel({
         closeContextMenu();
     };
 
+    // Save a service to custom layers (only first-level layers under folders)
+    const handleSaveToCustomLayers = async () => {
+        if (!contextMenu) return;
+        const { type, data } = contextMenu;
+        closeContextMenu();
+
+        if (type !== 'service') return;
+        const email = localStorage.getItem('email') || '';
+        if (!email) {
+            alert('Please log in to save custom layers.');
+            return;
+        }
+        try {
+            await saveCustomLayer(email, data.service);
+            showFinishedMessage(`Saved "${data.service.label}" to Custom Layers`);
+        } catch (err) {
+            alert(`Failed to save: ${err.message}`);
+        }
+    };
+
     // Close context menu on outside click
     useEffect(() => {
         if (!contextMenu) return;
@@ -2114,6 +2135,7 @@ function ArcgisUploadPanel({
                                 <button onClick={handleTogglePin}>
                                     {isPinned(contextMenu.data.service.key) ? 'Unpin' : 'Pin (Auto-load)'}
                                 </button>
+                                <button onClick={handleSaveToCustomLayers}>Save to Custom Layers</button>
                             </>
                         )}
                         {contextMenu.type === 'layer' && (

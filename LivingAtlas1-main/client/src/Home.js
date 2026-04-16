@@ -10,11 +10,12 @@ import { faClone } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
 import './Sidebars.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
+import CustomLayersPanel from './CustomLayersPanel';
 import RemovedServicesPanel from './RemovedServicesPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
 import { faLayerGroup, faTrash } from '@fortawesome/free-solid-svg-icons';
-import { faBell, faMap } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faMap, faStar } from '@fortawesome/free-solid-svg-icons';
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
 
@@ -36,6 +37,7 @@ function Home(props) {
     );
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);
+    const [isCustomLayerPanelOpen, setIsCustomLayerPanelOpen] = useState(false);
     const [cardPanelSide, setCardPanelSide] = useState('right');
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
@@ -302,6 +304,23 @@ function Home(props) {
                     setArcgisLayerAdded={setArcgisLayerAdded}
                     areaVisibility={areaVisibility}
                     handleAreaCheckbox={handleAreaCheckbox}
+                />
+
+                {/* Custom Layers Button */}
+                <button
+                    className="left-sidebar-customlayers-button"
+                    onClick={() => setIsCustomLayerPanelOpen(v => !v)}
+                    title="Custom Layers"
+                >
+                    <FontAwesomeIcon icon={faStar} />
+                </button>
+
+                {/* Custom Layers Panel */}
+                <CustomLayersPanel
+                    isOpen={isCustomLayerPanelOpen}
+                    onClose={() => setIsCustomLayerPanelOpen(false)}
+                    splitBottom={cardPanelSide === 'left' && !isCollapsed}
+                    mapInstance={getMapboxMap}
                 />
 
                 {/* Basemap Switcher Button */}
