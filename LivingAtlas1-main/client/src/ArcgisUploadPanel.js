@@ -1567,22 +1567,6 @@ function ArcgisUploadPanel({
     );
 
     // Context menu handlers (panel-specific; state + pin from hook)
-    const handleContextRename = () => {
-        if (!contextMenu) return;
-        if (!isAdmin) {
-            alert('Please log in to rename items.');
-            closeContextMenu();
-            return;
-        }
-        const { type, data } = contextMenu;
-        if (type === 'folder') {
-            setRenamingItem({ type: 'folder', key: data.folder });
-        } else if (type === 'service') {
-            setRenamingItem({ type: 'service', key: data.service.key });
-        }
-        closeContextMenu();
-    };
-
     const handleContextLearnMore = () => {
         if (!contextMenu) return;
         const { type, data } = contextMenu;
@@ -1590,20 +1574,6 @@ function ArcgisUploadPanel({
             openServiceInfo(data.service);
         } else if (type === 'layer') {
             openLayerInfo(data.service, data.layer);
-        }
-        closeContextMenu();
-    };
-
-    const handleContextDelete = () => {
-        if (!contextMenu) return;
-        if (!isAdmin) {
-            alert('Please log in to delete items.');
-            closeContextMenu();
-            return;
-        }
-        const { type, data } = contextMenu;
-        if (type === 'service') {
-            handleRemoveService(data.service);
         }
         closeContextMenu();
     };
@@ -1908,11 +1878,9 @@ function ArcgisUploadPanel({
                 <LayerContextMenuPopup
                     contextMenu={contextMenu}
                     isPinned={isPinned}
-                    onRename={handleContextRename}
                     onLearnMore={handleContextLearnMore}
                     onTogglePin={handleTogglePin}
                     extraServiceItems={[
-                        ...(dataSource === 'database' ? [{ label: 'Delete', onClick: handleContextDelete }] : []),
                         { label: 'Save to Custom Layers', onClick: handleSaveToCustomLayers },
                     ]}
                 />
