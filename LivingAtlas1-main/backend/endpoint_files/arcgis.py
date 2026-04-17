@@ -940,3 +940,130 @@ def save_layer_order(request: SaveLayerOrderRequest):
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to save layer order: {str(e)}")
+
+# --- Custom Folders (user-created empty folders) ---
+
+def _ensure_custom_folders_table():
+    if not cur or not conn:
+        return
+    try:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_custom_folders (
+                id SERIAL PRIMARY KEY,
+                user_email VARCHAR(255) NOT NULL,
+                folder_name VARCHAR(255) NOT NULL,
+                sort_order INTEGER DEFAULT 0,
+                CONSTRAINT unique_user_folder UNIQUE (user_email, folder_name)
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"[WARNING] Custom folders table creation failed: {e}")
+
+class CreateFolderRequest(BaseModel):
+    user_email: str
+    folder_name: str
+
+class DeleteFolderRequest(BaseModel):
+    user_email: str
+    folder_name: str
+
+class RenameFolderRequest(BaseModel):
+    user_email: str
+    old_name: str
+    new_name: str
+
+@arcgis_router.get("/custom-folders")
+def get_custom_folders(user_email: str = Query(..., description="User email")):
+    if cur is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    if not user_email or not user_email.strip():
+        raise HTTPException(status_code=400, detail="user_email is required")
+    _ensure_custom_folders_table()
+    try:
+        cur.execute("""
+            SELECT folder_name, sort_order FROM user_custom_folders
+            WHERE user_email = %s ORDER BY sort_order
+        """, (user_email.strip(),))
+        rows = cur.fetchall()
+        return [{"folder_name": r[0], "sort_order": r[1]} for r in rows]
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to load custom folders: {str(e)}")
+
+@arcgis_router.post("/custom-folders")
+def create_custom_folder(request: CreateFolderRequest):
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    if not request.user_email or not request.user_email.strip():
+        raise HTTPException(status_code=400, detail="user_email is required")
+    if not request.folder_name or not request.folder_name.strip():
+        raise HTTPException(status_code=400, detail="folder_name is required")
+    _ensure_custom_folders_table()
+    try:
+        cur.execute("""
+            SELECT COALESCE(MAX(sort_order), -1) + 1 FROM user_custom_folders WHERE user_email = %s
+        """, (request.user_email.strip(),))
+        next_order = cur.fetchone()[0]
+        cur.execute("""
+            INSERT INTO user_custom_folders (user_email, folder_name, sort_order)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (user_email, folder_name) DO NOTHING
+        """, (request.user_email.strip(), request.folder_name.strip(), next_order))
+        conn.commit()
+        return {"success": True, "folder_name": request.folder_name.strip(), "sort_order": next_order}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create folder: {str(e)}")
+
+@arcgis_router.delete("/custom-folders")
+def delete_custom_folder(request: DeleteFolderRequest):
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    if not request.user_email or not request.user_email.strip():
+        raise HTTPException(status_code=400, detail="user_email is required")
+    _ensure_custom_folders_table()
+    _ensure_custom_layers_table()
+    try:
+        # Move services in this folder back to Root
+        cur.execute("""
+            UPDATE user_custom_layers SET folder = 'Root'
+            WHERE user_email = %s AND folder = %s
+        """, (request.user_email.strip(), request.folder_name.strip()))
+        cur.execute("""
+            DELETE FROM user_custom_folders
+            WHERE user_email = %s AND folder_name = %s
+        """, (request.user_email.strip(), request.folder_name.strip()))
+        conn.commit()
+        return {"success": True, "message": f"Folder '{request.folder_name}' deleted"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete folder: {str(e)}")
+
+@arcgis_router.put("/custom-folders/rename")
+def rename_custom_folder(request: RenameFolderRequest):
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    if not request.user_email or not request.user_email.strip():
+        raise HTTPException(status_code=400, detail="user_email is required")
+    if not request.new_name or not request.new_name.strip():
+        raise HTTPException(status_code=400, detail="new_name is required")
+    _ensure_custom_folders_table()
+    _ensure_custom_layers_table()
+    try:
+        # Rename in custom_folders table
+        cur.execute("""
+            UPDATE user_custom_folders SET folder_name = %s
+            WHERE user_email = %s AND folder_name = %s
+        """, (request.new_name.strip(), request.user_email.strip(), request.old_name.strip()))
+        # Also update all services in this folder
+        cur.execute("""
+            UPDATE user_custom_layers SET folder = %s
+            WHERE user_email = %s AND folder = %s
+        """, (request.new_name.strip(), request.user_email.strip(), request.old_name.strip()))
+        conn.commit()
+        return {"success": True, "message": f"Folder renamed to '{request.new_name}'"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to rename folder: {str(e)}")

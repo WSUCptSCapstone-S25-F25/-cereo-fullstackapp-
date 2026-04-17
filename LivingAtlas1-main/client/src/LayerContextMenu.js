@@ -98,6 +98,7 @@ export function LayerContextMenuPopup({
     onLearnMore,
     onTogglePin,
     extraServiceItems = [],
+    extraFolderItems = [],
     className = '',
 }) {
     if (!contextMenu) return null;
@@ -109,7 +110,12 @@ export function LayerContextMenuPopup({
             onClick={(e) => e.stopPropagation()}
         >
             {contextMenu.type === 'folder' && (
-                <button onClick={onRename}>Rename</button>
+                <>
+                    <button onClick={onRename}>Rename</button>
+                    {extraFolderItems.map((item, i) => (
+                        <button key={i} onClick={item.onClick}>{item.label}</button>
+                    ))}
+                </>
             )}
             {contextMenu.type === 'service' && (
                 <>

@@ -483,3 +483,41 @@ export async function saveLayerOrder(userEmail, serviceKey, layerOrder) {
         throw error;
     }
 }
+
+// --- Custom Folders ---
+
+export async function fetchCustomFolders(userEmail) {
+    try {
+        const response = await api.get('/arcgis/custom-folders', {
+            params: { user_email: userEmail },
+        });
+        return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+        console.warn(`[arcgisServicesDb] Failed to fetch custom folders:`, error?.message || error);
+        return [];
+    }
+}
+
+export async function createCustomFolder(userEmail, folderName) {
+    const response = await api.post('/arcgis/custom-folders', {
+        user_email: userEmail,
+        folder_name: folderName,
+    });
+    return response.data;
+}
+
+export async function deleteCustomFolder(userEmail, folderName) {
+    const response = await api.delete('/arcgis/custom-folders', {
+        data: { user_email: userEmail, folder_name: folderName },
+    });
+    return response.data;
+}
+
+export async function renameCustomFolder(userEmail, oldName, newName) {
+    const response = await api.put('/arcgis/custom-folders/rename', {
+        user_email: userEmail,
+        old_name: oldName,
+        new_name: newName,
+    });
+    return response.data;
+}

@@ -9,14 +9,14 @@ import {
     fetchArcgisServiceInfo,
     fetchArcgisLayerInfo,
 } from './arcgisDataUtils';
-import { fetchCustomLayers, deleteCustomLayer, reorderCustomLayers, saveLayerOrder } from './arcgisServicesDb';
+import { fetchCustomLayers, deleteCustomLayer, reorderCustomLayers, saveLayerOrder, fetchCustomFolders, createCustomFolder, deleteCustomFolder, renameCustomFolder } from './arcgisServicesDb';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './LayerTree';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import ArcgisRenameItem from './ArcgisRenameItem';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faSearch, faFolderPlus } from '@fortawesome/free-solid-svg-icons';
 
 function CustomLayersPanel({
     isOpen,
@@ -28,6 +28,7 @@ function CustomLayersPanel({
 
     const [customServices, setCustomServices] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [dbFolders, setDbFolders] = useState([]); // user-created folders from DB
 
     // Per-service state
     const [serviceLayers, setServiceLayers] = useState({});
@@ -97,15 +98,21 @@ function CustomLayersPanel({
         statusTimer.current = setTimeout(() => setStatusMsg(null), 3000);
     };
 
-    // Load custom layers from backend when panel opens
+    // Load custom layers + folders from backend when panel opens
     useEffect(() => {
         if (!isOpen || !userEmail) return;
         let active = true;
         (async () => {
             setIsLoading(true);
             try {
-                const layers = await fetchCustomLayers(userEmail);
-                if (active) setCustomServices(layers);
+                const [layers, folders] = await Promise.all([
+                    fetchCustomLayers(userEmail),
+                    fetchCustomFolders(userEmail),
+                ]);
+                if (active) {
+                    setCustomServices(layers);
+                    setDbFolders(folders);
+                }
             } catch (err) {
                 console.warn('[CustomLayersPanel] Failed to load custom layers:', err);
             } finally {
@@ -118,6 +125,11 @@ function CustomLayersPanel({
     // Group services by folder (preserving sort_order from DB)
     const servicesByFolder = {};
     const folderFirstOrder = {};
+    // Include user-created folders (even if empty)
+    dbFolders.forEach(f => {
+        if (!servicesByFolder[f.folder_name]) servicesByFolder[f.folder_name] = [];
+        if (folderFirstOrder[f.folder_name] === undefined) folderFirstOrder[f.folder_name] = f.sort_order ?? 999;
+    });
     customServices.forEach(service => {
         const folder = service.folder || 'Root';
         if (!servicesByFolder[folder]) servicesByFolder[folder] = [];
@@ -533,17 +545,23 @@ function CustomLayersPanel({
         });
     };
 
-    // Rename handlers (local state update)
+    // Rename handlers (local state update + persist)
     const handleFolderRename = (oldName, newName) => {
         if (!newName || newName.trim() === '' || oldName === newName) return;
         setCustomServices(prev => prev.map(s =>
             s.folder === oldName ? { ...s, folder: newName } : s
+        ));
+        setDbFolders(prev => prev.map(f =>
+            f.folder_name === oldName ? { ...f, folder_name: newName } : f
         ));
         setExpandedFolders(prev => {
             const next = new Set(prev);
             if (next.has(oldName)) { next.delete(oldName); next.add(newName); }
             return next;
         });
+        renameCustomFolder(userEmail, oldName, newName).catch(err =>
+            console.warn('[CustomLayersPanel] Failed to rename folder:', err)
+        );
     };
 
     const handleServiceRename = (serviceKey, newLabel) => {
@@ -586,7 +604,28 @@ function CustomLayersPanel({
 
     const handleFolderDrop = (e, targetFolder) => {
         e.preventDefault();
-        if (!dragItem || dragItem.type !== 'folder' || dragItem.key === targetFolder) {
+        if (!dragItem) {
+            handleDragEnd();
+            return;
+        }
+        // Service dragged onto a folder header → move it into that folder
+        if (dragItem.type === 'service') {
+            if (dragItem.folder === targetFolder) {
+                handleDragEnd();
+                return;
+            }
+            setCustomServices(prev => {
+                const updated = prev.map(s =>
+                    s.key === dragItem.key ? { ...s, folder: targetFolder } : s
+                ).map((s, i) => ({ ...s, sort_order: i }));
+                persistOrder(updated);
+                return updated;
+            });
+            handleDragEnd();
+            return;
+        }
+        // Folder-to-folder reorder
+        if (dragItem.type !== 'folder' || dragItem.key === targetFolder) {
             handleDragEnd();
             return;
         }
@@ -684,6 +723,49 @@ function CustomLayersPanel({
         );
         handleLayerDragEnd();
     }, [dragLayerItem, serviceLayers, layerOrder, userEmail, handleLayerDragEnd]);
+
+    // --- Folder management ---
+    const handleCreateFolder = async () => {
+        const name = prompt('Enter new folder name:');
+        if (!name || !name.trim()) return;
+        const trimmed = name.trim();
+        // Check if folder already exists
+        if (folderNames.includes(trimmed)) {
+            alert('A folder with this name already exists.');
+            return;
+        }
+        try {
+            const result = await createCustomFolder(userEmail, trimmed);
+            setDbFolders(prev => [...prev, { folder_name: trimmed, sort_order: result.sort_order ?? prev.length }]);
+            setExpandedFolders(prev => new Set(prev).add(trimmed));
+        } catch (err) {
+            console.warn('[CustomLayersPanel] Failed to create folder:', err);
+        }
+    };
+
+    const handleDeleteFolder = async (folderName) => {
+        if (!folderName) return;
+        const services = servicesByFolder[folderName] || [];
+        const msg = services.length > 0
+            ? `Delete folder "${folderName}"? Its ${services.length} service(s) will be moved to Root.`
+            : `Delete empty folder "${folderName}"?`;
+        if (!window.confirm(msg)) return;
+        try {
+            await deleteCustomFolder(userEmail, folderName);
+            // Move local services to Root
+            setCustomServices(prev => prev.map(s =>
+                s.folder === folderName ? { ...s, folder: 'Root' } : s
+            ));
+            setDbFolders(prev => prev.filter(f => f.folder_name !== folderName));
+            setExpandedFolders(prev => {
+                const next = new Set(prev);
+                next.delete(folderName);
+                return next;
+            });
+        } catch (err) {
+            console.warn('[CustomLayersPanel] Failed to delete folder:', err);
+        }
+    };
 
     // Context menu handlers (panel-specific; state + pin from hook)
     const handleRemoveCustomLayer = async () => {
@@ -818,6 +900,13 @@ function CustomLayersPanel({
              onContextMenu={e => e.preventDefault()}>
             <div className="custom-layers-panel-header">
                 <h3>Custom Layers</h3>
+                <button
+                    className="custom-layers-panel-new-folder-btn"
+                    onClick={handleCreateFolder}
+                    title="New Folder"
+                >
+                    <FontAwesomeIcon icon={faFolderPlus} />
+                </button>
                 <button className="custom-layers-panel-close-btn" onClick={onClose}>
                     <FontAwesomeIcon icon={faTimes} />
                 </button>
@@ -930,7 +1019,7 @@ function CustomLayersPanel({
                         const services = servicesByFolderToShow[folder] || [];
                         const isFolderExpanded = expandedFolders.has(folder);
                         const isFolderDragging = dragItem?.type === 'folder' && dragItem?.key === folder;
-                        const isFolderDragOver = dragOverItem?.type === 'folder' && dragOverItem?.key === folder && dragItem?.type === 'folder';
+                        const isFolderDragOver = dragOverItem?.type === 'folder' && dragOverItem?.key === folder && (dragItem?.type === 'folder' || dragItem?.type === 'service');
                         return (
                             <div key={folder}
                                 style={{ opacity: isFolderDragging ? 0.4 : 1 }}
@@ -1064,6 +1153,15 @@ function CustomLayersPanel({
                 onTogglePin={handleTogglePin}
                 extraServiceItems={[
                     { label: 'Remove from Custom Layers', onClick: handleRemoveCustomLayer },
+                ]}
+                extraFolderItems={[
+                    { label: 'Delete Folder', onClick: () => {
+                        if (contextMenu?.type === 'folder') {
+                            const folderName = contextMenu.data.folder;
+                            closeContextMenu();
+                            handleDeleteFolder(folderName);
+                        }
+                    }},
                 ]}
             />
 

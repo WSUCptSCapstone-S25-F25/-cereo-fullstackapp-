@@ -26,9 +26,9 @@ function ArcgisRenameItem({
         setEditValue(value);
     }, [value]);
 
-    // Trigger edit mode from outside via startEditing prop
+    // Trigger edit mode from outside via startEditing prop (overrides disabled)
     useEffect(() => {
-        if (startEditing && !disabled) {
+        if (startEditing) {
             setIsEditing(true);
             setEditValue(value);
         }
