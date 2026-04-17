@@ -478,7 +478,7 @@ function Home(props) {
                     <hr />
 
                     <h3>Update Date: 4/15/2026</h3>
-                    <p>Added a new Custom Layers Panel in the left sidebar (star icon), allowing you to save frequently used GIS layers from the GIS Services panel into a personal collection for quick access.</p>
+                    <p>Added a new Custom Layers Panel in the left sidebar (faObjectGroup icon), allowing you to save frequently used GIS layers from the GIS Services panel into a personal collection for quick access.</p>
                     <p>Right-click any service or layer in the GIS Services panel and select "Save to Custom Layers" to add it. Saved layers can be toggled on/off, searched, renamed, pinned (auto-load), and removed from within the Custom Layers Panel.</p>
                     <p>The panel shares the same tree-style layout, right-click context menu, opacity slider, and search/filter toolbar as the GIS Services panel.</p>
                     <p>More features for the Custom Layers Panel are currently in development.</p>
