@@ -9,7 +9,7 @@ import {
     fetchArcgisServiceInfo,
     fetchArcgisLayerInfo,
 } from './arcgisDataUtils';
-import { fetchCustomLayers, deleteCustomLayer, reorderCustomLayers } from './arcgisServicesDb';
+import { fetchCustomLayers, deleteCustomLayer, reorderCustomLayers, saveLayerOrder } from './arcgisServicesDb';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './LayerTree';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import ArcgisRenameItem from './ArcgisRenameItem';
@@ -627,6 +627,64 @@ function CustomLayersPanel({
         handleDragEnd();
     };
 
+    // --- Layer-level drag-and-drop reorder (within a service) ---
+    const [layerOrder, setLayerOrder] = useState({}); // { [serviceKey]: [layerId, ...] }
+    const [dragLayerItem, setDragLayerItem] = useState(null); // { serviceKey, layerId }
+    const [dragOverLayerItem, setDragOverLayerItem] = useState(null);
+
+    // Initialize layerOrder from fetched customServices (layer_order field)
+    useEffect(() => {
+        const newOrder = {};
+        customServices.forEach(s => {
+            if (s.layer_order && Array.isArray(s.layer_order)) {
+                newOrder[s.key] = s.layer_order;
+            }
+        });
+        setLayerOrder(prev => ({ ...prev, ...newOrder }));
+    }, [customServices]);
+
+    const handleLayerDragStart = useCallback((e, serviceKey, layerId) => {
+        setDragLayerItem({ serviceKey, layerId });
+        e.dataTransfer.effectAllowed = 'move';
+    }, []);
+
+    const handleLayerDragOver = useCallback((e, serviceKey, layerId) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverLayerItem({ serviceKey, layerId });
+    }, []);
+
+    const handleLayerDragEnd = useCallback(() => {
+        setDragLayerItem(null);
+        setDragOverLayerItem(null);
+    }, []);
+
+    const handleLayerDrop = useCallback((e, serviceKey, targetLayerId) => {
+        e.preventDefault();
+        if (!dragLayerItem || dragLayerItem.serviceKey !== serviceKey || dragLayerItem.layerId === targetLayerId) {
+            handleLayerDragEnd();
+            return;
+        }
+        // Build current order from layerTree roots
+        const rawLayers = serviceLayers[serviceKey] || [];
+        const tree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+        const currentOrder = layerOrder[serviceKey] || tree.map(n => n.id);
+        const dragIdx = currentOrder.indexOf(dragLayerItem.layerId);
+        const targetIdx = currentOrder.indexOf(targetLayerId);
+        if (dragIdx < 0 || targetIdx < 0) {
+            handleLayerDragEnd();
+            return;
+        }
+        const newOrder = [...currentOrder];
+        newOrder.splice(dragIdx, 1);
+        newOrder.splice(targetIdx, 0, dragLayerItem.layerId);
+        setLayerOrder(prev => ({ ...prev, [serviceKey]: newOrder }));
+        saveLayerOrder(userEmail, serviceKey, newOrder).catch(err =>
+            console.warn('[CustomLayersPanel] Failed to persist layer order:', err)
+        );
+        handleLayerDragEnd();
+    }, [dragLayerItem, serviceLayers, layerOrder, userEmail, handleLayerDragEnd]);
+
     // Context menu handlers (panel-specific; state + pin from hook)
     const handleRemoveCustomLayer = async () => {
         if (!contextMenu || contextMenu.type !== 'service') return;
@@ -728,6 +786,12 @@ function CustomLayersPanel({
             onSublayerCheckbox={handleSublayerCheckbox}
             onContextMenu={handleContextMenu}
             depth={depth}
+            onLayerDragStart={handleLayerDragStart}
+            onLayerDragOver={handleLayerDragOver}
+            onLayerDrop={handleLayerDrop}
+            onLayerDragEnd={handleLayerDragEnd}
+            draggingLayerId={dragLayerItem?.layerId}
+            dragOverLayerId={dragOverLayerItem?.layerId}
         />
     );
 
@@ -906,7 +970,16 @@ function CustomLayersPanel({
                                             const layers = serviceLayers[service.key] || [];
                                             const checkedIds = checkedLayerIds[service.key] || [];
                                             const rawLayers = layers.length > 0 ? layers : [];
-                                            const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+                                            let layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+                                            // Apply saved layer order
+                                            const savedOrder = layerOrder[service.key];
+                                            if (savedOrder && savedOrder.length > 0) {
+                                                layerTree = [...layerTree].sort((a, b) => {
+                                                    const ai = savedOrder.indexOf(a.id);
+                                                    const bi = savedOrder.indexOf(b.id);
+                                                    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+                                                });
+                                            }
                                             const allFeatureLayers = getAllLeafLayers(layerTree);
                                             const isServiceExpanded = expandedServices.has(service.key);
                                             const isServiceDragging = dragItem?.type === 'service' && dragItem?.key === service.key;

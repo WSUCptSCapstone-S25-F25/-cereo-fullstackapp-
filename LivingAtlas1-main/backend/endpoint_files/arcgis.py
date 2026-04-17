@@ -775,6 +775,12 @@ def _ensure_custom_layers_table():
             conn.commit()
         except Exception:
             conn.rollback()
+        # Add layer_order column for per-service layer ordering
+        try:
+            cur.execute("ALTER TABLE user_custom_layers ADD COLUMN IF NOT EXISTS layer_order TEXT DEFAULT NULL")
+            conn.commit()
+        except Exception:
+            conn.rollback()
     except Exception as e:
         conn.rollback()
         print(f"[WARNING] Custom layers table creation failed: {e}")
@@ -829,13 +835,13 @@ def get_custom_layers(
     _ensure_custom_layers_table()
     try:
         cur.execute("""
-            SELECT service_key AS key, label, url, folder, type, state, sort_order, saved_at
+            SELECT service_key AS key, label, url, folder, type, state, sort_order, layer_order, saved_at
             FROM user_custom_layers
             WHERE user_email = %s
             ORDER BY sort_order, saved_at
         """, (user_email.strip(),))
         rows = cur.fetchall()
-        columns = ["key", "label", "url", "folder", "type", "state", "sort_order", "saved_at"]
+        columns = ["key", "label", "url", "folder", "type", "state", "sort_order", "layer_order", "saved_at"]
         data = [dict(zip(columns, row)) for row in rows]
         return data
     except Exception as e:
@@ -899,3 +905,38 @@ def reorder_custom_layers(request: ReorderCustomLayersRequest):
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to reorder custom layers: {str(e)}")
+
+class SaveLayerOrderRequest(BaseModel):
+    user_email: str
+    service_key: str
+    layer_order: List[int]  # ordered list of layer IDs
+
+@arcgis_router.put("/custom-layers/layer-order")
+def save_layer_order(request: SaveLayerOrderRequest):
+    """Save the display order of layers within a specific custom service."""
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    if not request.user_email or not request.user_email.strip():
+        raise HTTPException(status_code=400, detail="user_email is required")
+    if not request.service_key or not request.service_key.strip():
+        raise HTTPException(status_code=400, detail="service_key is required")
+
+    _ensure_custom_layers_table()
+    try:
+        import json
+        order_json = json.dumps(request.layer_order)
+        cur.execute("""
+            UPDATE user_custom_layers
+            SET layer_order = %s
+            WHERE user_email = %s AND service_key = %s
+        """, (order_json, request.user_email.strip(), request.service_key.strip()))
+        updated = cur.rowcount
+        conn.commit()
+        if updated == 0:
+            raise HTTPException(status_code=404, detail="Custom layer not found")
+        return {"success": True, "message": "Layer order saved"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save layer order: {str(e)}")

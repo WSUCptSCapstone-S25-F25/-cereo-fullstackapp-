@@ -60,6 +60,13 @@ export function LayerTreeNode({
     onSublayerCheckbox,
     onContextMenu,
     depth = 0,
+    // Optional drag-reorder props (only active at depth 0)
+    onLayerDragStart,
+    onLayerDragOver,
+    onLayerDrop,
+    onLayerDragEnd,
+    draggingLayerId,
+    dragOverLayerId,
 }) {
     const isGroupLayer = node.type === 'Group Layer';
     const expandKey = `${service.key}-${node.id}`;
@@ -78,12 +85,27 @@ export function LayerTreeNode({
         const someChecked = checkedCount > 0 && !allChecked;
 
         return (
-            <div key={node.id} className="tree-node">
+            <div key={node.id}
+                className={`tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}`}
+                style={depth === 0 && draggingLayerId === node.id ? { opacity: 0.4 } : undefined}
+                onDragOver={depth === 0 && onLayerDragOver ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onLayerDragOver(e, service.key, node.id); } : undefined}
+                onDrop={depth === 0 && onLayerDrop ? (e) => { e.preventDefault(); onLayerDrop(e, service.key, node.id); } : undefined}
+                onDragEnd={depth === 0 ? onLayerDragEnd : undefined}
+            >
                 <div
                     className="upload-layer-group"
                     onClick={() => onLayerClick(service.key, node.id)}
                     onContextMenu={onContextMenu ? (e) => onContextMenu(e, 'layer', { service, layer: node }) : undefined}
                 >
+                    {depth === 0 && onLayerDragStart && (
+                        <span
+                            className="drag-handle"
+                            draggable
+                            onDragStart={(e) => { e.stopPropagation(); onLayerDragStart(e, service.key, node.id); }}
+                            onClick={(e) => e.stopPropagation()}
+                            title="Drag to reorder"
+                        >⠿</span>
+                    )}
                     <input
                         type="checkbox"
                         checked={allChecked}
@@ -143,9 +165,14 @@ export function LayerTreeNode({
     const checkedSublayers = checkedSublayerIds[service.key]?.[node.id] || [];
 
     return (
-        <li key={node.id} className="upload-layer-row tree-node" style={{
-            flexDirection: 'column', alignItems: 'flex-start', marginBottom: 2
-        }}>
+        <li key={node.id} className={`upload-layer-row tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}`} style={{
+            flexDirection: 'column', alignItems: 'flex-start', marginBottom: 2,
+            ...(depth === 0 && draggingLayerId === node.id ? { opacity: 0.4 } : {})
+        }}
+            onDragOver={depth === 0 && onLayerDragOver ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onLayerDragOver(e, service.key, node.id); } : undefined}
+            onDrop={depth === 0 && onLayerDrop ? (e) => { e.preventDefault(); onLayerDrop(e, service.key, node.id); } : undefined}
+            onDragEnd={depth === 0 ? onLayerDragEnd : undefined}
+        >
             <div
                 style={{
                     display: 'flex', alignItems: 'center', gap: 4,
@@ -155,6 +182,15 @@ export function LayerTreeNode({
                 onClick={hasMultipleLegends ? () => onLayerClick(service.key, node.id) : undefined}
                 onContextMenu={onContextMenu ? (e) => onContextMenu(e, 'layer', { service, layer: node }) : undefined}
             >
+                {depth === 0 && onLayerDragStart && (
+                    <span
+                        className="drag-handle"
+                        draggable
+                        onDragStart={(e) => { e.stopPropagation(); onLayerDragStart(e, service.key, node.id); }}
+                        onClick={(e) => e.stopPropagation()}
+                        title="Drag to reorder"
+                    >⠿</span>
+                )}
                 <input
                     type="checkbox"
                     checked={checkedIds.includes(node.id)}

@@ -413,7 +413,24 @@ export async function fetchCustomLayers(userEmail) {
         });
         const raw = Array.isArray(response.data) ? response.data : response.data?.data || [];
         console.log(`[arcgisServicesDb] Loaded ${raw.length} custom layers`);
-        return adaptServices(raw).sort((a, b) => a.sort_order - b.sort_order);
+        // Preserve layer_order (JSON array of layer IDs) on each service
+        const adapted = adaptServices(raw).sort((a, b) => a.sort_order - b.sort_order);
+        // Attach layer_order from raw data (not in adaptServices since it's shared)
+        const rawMap = {};
+        raw.forEach(r => { if (r.key) rawMap[r.key] = r; });
+        adapted.forEach(s => {
+            const rawItem = rawMap[s.key];
+            if (rawItem && rawItem.layer_order) {
+                try {
+                    s.layer_order = typeof rawItem.layer_order === 'string'
+                        ? JSON.parse(rawItem.layer_order)
+                        : rawItem.layer_order;
+                } catch { s.layer_order = null; }
+            } else {
+                s.layer_order = null;
+            }
+        });
+        return adapted;
     } catch (error) {
         console.warn(`[arcgisServicesDb] Failed to fetch custom layers:`, error?.message || error);
         return [];
@@ -448,6 +465,21 @@ export async function reorderCustomLayers(userEmail, order) {
         return response.data;
     } catch (error) {
         console.error(`[arcgisServicesDb] Failed to reorder custom layers:`, error);
+        throw error;
+    }
+}
+
+// Save layer display order within a custom service
+export async function saveLayerOrder(userEmail, serviceKey, layerOrder) {
+    try {
+        const response = await api.put('/arcgis/custom-layers/layer-order', {
+            user_email: userEmail,
+            service_key: serviceKey,
+            layer_order: layerOrder,
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to save layer order:`, error);
         throw error;
     }
 }
