@@ -45,11 +45,11 @@ function Home(props) {
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v11');
+        return !localStorage.getItem('changelog_seen_v12');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v11', 'true');
+        localStorage.setItem('changelog_seen_v12', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -469,6 +469,14 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/16/2026</h3>
+                    <p>Removed the Rename and Remove options from layer items in the GIS Services panel. These actions are now exclusively available in the Custom Layers Panel.</p>
+                    <p>Fixed a display issue with expandable second-level layers in the Custom Layers Panel.</p>
+                    <p>Folders and first/second-level layers in the Custom Layers Panel can now be reordered via drag-and-drop, with changes saved to the database.</p>
+                    <p>Added support for creating custom folders in the Custom Layers Panel. You can drag any layer into a folder, rename or delete folders via right-click, and all folder data is persisted in the database.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/15/2026</h3>
                     <p>Added a new Custom Layers Panel in the left sidebar (star icon), allowing you to save frequently used GIS layers from the GIS Services panel into a personal collection for quick access.</p>
                     <p>Right-click any service or layer in the GIS Services panel and select "Save to Custom Layers" to add it. Saved layers can be toggled on/off, searched, renamed, pinned (auto-load), and removed from within the Custom Layers Panel.</p>
