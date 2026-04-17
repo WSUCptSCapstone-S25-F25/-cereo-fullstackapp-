@@ -207,3 +207,28 @@
 .custom-layers-panel .upload-layer-row:hover {
     background: #e3eef9;
 }
+
+/* Drag-and-drop indicators */
+.custom-layers-folder.drag-over,
+.custom-layers-item.drag-over {
+    border-top: 2px solid #1976d2;
+}
+
+/* Drag handle */
+.drag-handle {
+    cursor: grab;
+    user-select: none;
+    font-size: 12px;
+    color: #999;
+    padding: 0 4px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.drag-handle:hover {
+    color: #1976d2;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}

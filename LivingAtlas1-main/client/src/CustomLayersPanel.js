@@ -9,7 +9,7 @@ import {
     fetchArcgisServiceInfo,
     fetchArcgisLayerInfo,
 } from './arcgisDataUtils';
-import { fetchCustomLayers, deleteCustomLayer } from './arcgisServicesDb';
+import { fetchCustomLayers, deleteCustomLayer, reorderCustomLayers } from './arcgisServicesDb';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './LayerTree';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import ArcgisRenameItem from './ArcgisRenameItem';
@@ -115,14 +115,19 @@ function CustomLayersPanel({
         return () => { active = false; };
     }, [isOpen, userEmail]);
 
-    // Group services by folder
+    // Group services by folder (preserving sort_order from DB)
     const servicesByFolder = {};
+    const folderFirstOrder = {};
     customServices.forEach(service => {
         const folder = service.folder || 'Root';
         if (!servicesByFolder[folder]) servicesByFolder[folder] = [];
         servicesByFolder[folder].push(service);
+        // Track the minimum sort_order in each folder (for folder ordering)
+        if (folderFirstOrder[folder] === undefined || service.sort_order < folderFirstOrder[folder]) {
+            folderFirstOrder[folder] = service.sort_order;
+        }
     });
-    const folderNames = Object.keys(servicesByFolder).sort();
+    const folderNames = Object.keys(servicesByFolder).sort((a, b) => (folderFirstOrder[a] ?? 0) - (folderFirstOrder[b] ?? 0));
 
     // --- Search handler ---
     const doSearch = () => {
@@ -548,6 +553,80 @@ function CustomLayersPanel({
         ));
     };
 
+    // --- Drag-and-drop reorder ---
+    const [dragItem, setDragItem] = useState(null); // { type: 'folder'|'service', key, folder? }
+    const [dragOverItem, setDragOverItem] = useState(null); // same shape
+
+    const persistOrder = useCallback((services) => {
+        const order = services.map((s, i) => ({
+            service_key: s.key,
+            folder: s.folder,
+            sort_order: i,
+        }));
+        reorderCustomLayers(userEmail, order).catch(err =>
+            console.warn('[CustomLayersPanel] Failed to persist reorder:', err)
+        );
+    }, [userEmail]);
+
+    const handleDragStart = (e, type, key, folder) => {
+        setDragItem({ type, key, folder });
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e, type, key, folder) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverItem({ type, key, folder });
+    };
+
+    const handleDragEnd = () => {
+        setDragItem(null);
+        setDragOverItem(null);
+    };
+
+    const handleFolderDrop = (e, targetFolder) => {
+        e.preventDefault();
+        if (!dragItem || dragItem.type !== 'folder' || dragItem.key === targetFolder) {
+            handleDragEnd();
+            return;
+        }
+        // Reorder folders by moving all services of dragItem.key folder before targetFolder
+        setCustomServices(prev => {
+            const dragServices = prev.filter(s => (s.folder || 'Root') === dragItem.key);
+            const rest = prev.filter(s => (s.folder || 'Root') !== dragItem.key);
+            // Find the index of first service of target folder
+            const targetIdx = rest.findIndex(s => (s.folder || 'Root') === targetFolder);
+            const result = [...rest];
+            result.splice(targetIdx >= 0 ? targetIdx : result.length, 0, ...dragServices);
+            // Reassign sort_order
+            const updated = result.map((s, i) => ({ ...s, sort_order: i }));
+            persistOrder(updated);
+            return updated;
+        });
+        handleDragEnd();
+    };
+
+    const handleServiceDrop = (e, targetServiceKey, targetFolder) => {
+        e.preventDefault();
+        if (!dragItem || dragItem.type !== 'service' || dragItem.key === targetServiceKey) {
+            handleDragEnd();
+            return;
+        }
+        setCustomServices(prev => {
+            const dragIdx = prev.findIndex(s => s.key === dragItem.key);
+            if (dragIdx < 0) return prev;
+            const draggedService = { ...prev[dragIdx], folder: targetFolder };
+            const rest = prev.filter((_, i) => i !== dragIdx);
+            const targetIdx = rest.findIndex(s => s.key === targetServiceKey);
+            const result = [...rest];
+            result.splice(targetIdx >= 0 ? targetIdx : result.length, 0, draggedService);
+            const updated = result.map((s, i) => ({ ...s, sort_order: i }));
+            persistOrder(updated);
+            return updated;
+        });
+        handleDragEnd();
+    };
+
     // Context menu handlers (panel-specific; state + pin from hook)
     const handleRemoveCustomLayer = async () => {
         if (!contextMenu || contextMenu.type !== 'service') return;
@@ -786,19 +865,34 @@ function CustomLayersPanel({
                     {foldersToShow.map(folder => {
                         const services = servicesByFolderToShow[folder] || [];
                         const isFolderExpanded = expandedFolders.has(folder);
+                        const isFolderDragging = dragItem?.type === 'folder' && dragItem?.key === folder;
+                        const isFolderDragOver = dragOverItem?.type === 'folder' && dragOverItem?.key === folder && dragItem?.type === 'folder';
                         return (
-                            <div key={folder}>
+                            <div key={folder}
+                                style={{ opacity: isFolderDragging ? 0.4 : 1 }}
+                            >
                                 <div
-                                    className="custom-layers-folder"
+                                    className={`custom-layers-folder${isFolderDragOver ? ' drag-over' : ''}`}
                                     onClick={() => handleFolderClick(folder)}
                                     onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
+                                    onDragOver={(e) => handleDragOver(e, 'folder', folder)}
+                                    onDrop={(e) => handleFolderDrop(e, folder)}
+                                    onDragEnd={handleDragEnd}
                                 >
+                                    <span
+                                        className="drag-handle"
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, 'folder', folder)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        title="Drag to reorder"
+                                    >⠿</span>
                                     <ArcgisRenameItem
                                         value={folder}
                                         displayValue={`${isFolderExpanded ? '▼' : '►'} ${folder}`}
                                         onSave={(newName) => handleFolderRename(folder, newName)}
                                         placeholder="Enter folder name..."
                                         isFolder={true}
+                                        disabled={true}
                                         startEditing={renamingItem?.type === 'folder' && renamingItem?.key === folder}
                                         onEditingDone={() => setRenamingItem(null)}
                                     />
@@ -815,14 +909,26 @@ function CustomLayersPanel({
                                             const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
                                             const allFeatureLayers = getAllLeafLayers(layerTree);
                                             const isServiceExpanded = expandedServices.has(service.key);
+                                            const isServiceDragging = dragItem?.type === 'service' && dragItem?.key === service.key;
+                                            const isServiceDragOver = dragOverItem?.type === 'service' && dragOverItem?.key === service.key && dragItem?.type === 'service';
 
                                             return (
-                                                <div key={service.key}>
+                                                <div key={service.key} style={{ opacity: isServiceDragging ? 0.4 : 1 }}>
                                                     <div
-                                                        className="custom-layers-item"
+                                                        className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}`}
                                                         onClick={() => handleServiceClick(service.key)}
                                                         onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
+                                                        onDragOver={(e) => handleDragOver(e, 'service', service.key, folder)}
+                                                        onDrop={(e) => handleServiceDrop(e, service.key, folder)}
+                                                        onDragEnd={handleDragEnd}
                                                     >
+                                                        <span
+                                                            className="drag-handle"
+                                                            draggable
+                                                            onDragStart={(e) => handleDragStart(e, 'service', service.key, folder)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            title="Drag to reorder"
+                                                        >⠿</span>
                                                         <input
                                                             type="checkbox"
                                                             checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length}
@@ -843,6 +949,7 @@ function CustomLayersPanel({
                                                             onSave={(newLabel) => handleServiceRename(service.key, newLabel)}
                                                             placeholder="Enter service name..."
                                                             isFolder={false}
+                                                            disabled={true}
                                                             startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key}
                                                             onEditingDone={() => setRenamingItem(null)}
                                                         />

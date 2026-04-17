@@ -87,6 +87,9 @@ function loadUrbanAreas(map){
               id: 'urban-areas-fill',
               type: 'fill',
               source: 'urban-areas',
+              layout: {
+                  'visibility': 'none',
+              },
               paint: {
                   'fill-color': 'red', // Set the fill color to red
                   'fill-opacity': 0.4, // Adjust the opacity if needed
@@ -98,6 +101,9 @@ function loadUrbanAreas(map){
               id: 'urban-areas-outline',
               type: 'line',
               source: 'urban-areas',
+              layout: {
+                  'visibility': 'none',
+              },
               paint: {
                   'line-color': 'white', // Set the outline color
                   'line-width': 1, 
@@ -166,6 +172,9 @@ function loadRivers(map){
             },
             // Get the source layer name from tileset on mapbox studio
             'source-layer': 'NHD_streams-6uidcp', 
+            layout: {
+              'visibility': 'none',
+            },
             paint: {
               'fill-color': 'blue', 
               'fill-opacity': 0.5, 

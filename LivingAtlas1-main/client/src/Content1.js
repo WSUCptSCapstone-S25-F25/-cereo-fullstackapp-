@@ -892,6 +892,9 @@ const Content1 = (props) => {
           url: 'mapbox://livingatlas.71vcn3c7',
         },
         'source-layer': 'NHD_streams-6qjkxa',
+        layout: {
+          'visibility': 'none',
+        },
         paint: {
           'fill-color': 'blue',
           'fill-opacity': 0.5,
@@ -906,6 +909,9 @@ const Content1 = (props) => {
           url: 'mapbox://livingatlas.78fvgfpd',
         },
         'source-layer': 'Washington_State_City_Urban_G-0e7hes',
+        layout: {
+          'visibility': 'none',
+        },
         paint: {
           'fill-color': 'red',
           'fill-opacity': 0.4,
@@ -920,6 +926,9 @@ const Content1 = (props) => {
           url: 'mapbox://phearakboth.6pnz5bgy',
         },
         'source-layer': 'Washington_State_City_Urban_G-48j9h8',
+        layout: {
+          'visibility': 'none',
+        },
         paint: {
           'line-color': 'white',
           'line-width': 1,

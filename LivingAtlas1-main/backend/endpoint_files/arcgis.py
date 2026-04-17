@@ -744,6 +744,10 @@ class DeleteCustomLayerRequest(BaseModel):
     user_email: str
     service_key: str
 
+class ReorderCustomLayersRequest(BaseModel):
+    user_email: str
+    order: List[Dict[str, Any]]  # [{ service_key, folder, sort_order }]
+
 def _ensure_custom_layers_table():
     """Create the user_custom_layers table if it does not exist."""
     if not cur or not conn:
@@ -759,11 +763,18 @@ def _ensure_custom_layers_table():
                 folder VARCHAR(255) DEFAULT 'Root',
                 type VARCHAR(50) NOT NULL DEFAULT 'MapServer',
                 state VARCHAR(50) DEFAULT '',
+                sort_order INTEGER DEFAULT 0,
                 saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT unique_user_custom_layer UNIQUE (user_email, service_key)
             )
         """)
         conn.commit()
+        # Add sort_order column if table already exists without it
+        try:
+            cur.execute("ALTER TABLE user_custom_layers ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0")
+            conn.commit()
+        except Exception:
+            conn.rollback()
     except Exception as e:
         conn.rollback()
         print(f"[WARNING] Custom layers table creation failed: {e}")
@@ -779,9 +790,14 @@ def save_custom_layer(request: SaveCustomLayerRequest):
 
     _ensure_custom_layers_table()
     try:
+        # Assign sort_order = max + 1 for new entries
         cur.execute("""
-            INSERT INTO user_custom_layers (user_email, service_key, label, url, folder, type, state, saved_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            SELECT COALESCE(MAX(sort_order), -1) + 1 FROM user_custom_layers WHERE user_email = %s
+        """, (request.user_email.strip(),))
+        next_order = cur.fetchone()[0]
+        cur.execute("""
+            INSERT INTO user_custom_layers (user_email, service_key, label, url, folder, type, state, sort_order, saved_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
             ON CONFLICT (user_email, service_key)
             DO UPDATE SET label = EXCLUDED.label, url = EXCLUDED.url, folder = EXCLUDED.folder,
                           type = EXCLUDED.type, state = EXCLUDED.state, saved_at = CURRENT_TIMESTAMP
@@ -793,6 +809,7 @@ def save_custom_layer(request: SaveCustomLayerRequest):
             request.folder.strip(),
             request.type.strip(),
             request.state.strip(),
+            next_order,
         ))
         conn.commit()
         return {"success": True, "message": f"Layer '{request.label}' saved to custom layers"}
@@ -812,13 +829,13 @@ def get_custom_layers(
     _ensure_custom_layers_table()
     try:
         cur.execute("""
-            SELECT service_key AS key, label, url, folder, type, state, saved_at
+            SELECT service_key AS key, label, url, folder, type, state, sort_order, saved_at
             FROM user_custom_layers
             WHERE user_email = %s
-            ORDER BY folder, label
+            ORDER BY sort_order, saved_at
         """, (user_email.strip(),))
         rows = cur.fetchall()
-        columns = ["key", "label", "url", "folder", "type", "state", "saved_at"]
+        columns = ["key", "label", "url", "folder", "type", "state", "sort_order", "saved_at"]
         data = [dict(zip(columns, row)) for row in rows]
         return data
     except Exception as e:
@@ -848,3 +865,37 @@ def delete_custom_layer(request: DeleteCustomLayerRequest):
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to delete custom layer: {str(e)}")
+
+@arcgis_router.put("/custom-layers/reorder")
+def reorder_custom_layers(request: ReorderCustomLayersRequest):
+    """Batch-update sort_order (and optionally folder) for a user's custom layers."""
+    if cur is None or conn is None:
+        raise HTTPException(status_code=500, detail="Database connection not available")
+    if not request.user_email or not request.user_email.strip():
+        raise HTTPException(status_code=400, detail="user_email is required")
+
+    _ensure_custom_layers_table()
+    try:
+        for item in request.order:
+            service_key = item.get("service_key", "").strip()
+            sort_order = int(item.get("sort_order", 0))
+            folder = item.get("folder")
+            if not service_key:
+                continue
+            if folder is not None:
+                cur.execute("""
+                    UPDATE user_custom_layers
+                    SET sort_order = %s, folder = %s
+                    WHERE user_email = %s AND service_key = %s
+                """, (sort_order, folder.strip(), request.user_email.strip(), service_key))
+            else:
+                cur.execute("""
+                    UPDATE user_custom_layers
+                    SET sort_order = %s
+                    WHERE user_email = %s AND service_key = %s
+                """, (sort_order, request.user_email.strip(), service_key))
+        conn.commit()
+        return {"success": True, "message": "Custom layers reordered"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to reorder custom layers: {str(e)}")

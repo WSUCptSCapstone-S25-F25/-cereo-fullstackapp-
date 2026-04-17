@@ -219,9 +219,9 @@ function Home(props) {
 
     // Colored area (vector tile) visibility state
     const [areaVisibility, setAreaVisibility] = useState({
-        River: true,
-        Watershed: true,
-        Places: true,
+        River: false,
+        Watershed: false,
+        Places: false,
     });
 
     // Helper to show/hide markers by class

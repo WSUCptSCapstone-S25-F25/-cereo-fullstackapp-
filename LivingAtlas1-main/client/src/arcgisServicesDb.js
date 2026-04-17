@@ -18,9 +18,9 @@ function adaptServices(list = []) {
       folder: s.folder || 'Root',
       type: s.type,
       state: s.state,
+      sort_order: s.sort_order ?? 0,
     }))
-    .filter(s => !!(s.key && s.label && s.url && s.type))
-    .sort((a, b) => a.folder.localeCompare(b.folder) || a.label.localeCompare(b.label));
+    .filter(s => !!(s.key && s.label && s.url && s.type));
   console.log('[arcgisServicesDb] adaptServices output length:', adapted.length, adapted.slice(0, 3));
   return adapted;
 }
@@ -413,7 +413,7 @@ export async function fetchCustomLayers(userEmail) {
         });
         const raw = Array.isArray(response.data) ? response.data : response.data?.data || [];
         console.log(`[arcgisServicesDb] Loaded ${raw.length} custom layers`);
-        return adaptServices(raw);
+        return adaptServices(raw).sort((a, b) => a.sort_order - b.sort_order);
     } catch (error) {
         console.warn(`[arcgisServicesDb] Failed to fetch custom layers:`, error?.message || error);
         return [];
@@ -434,6 +434,20 @@ export async function deleteCustomLayer(userEmail, serviceKey) {
         return response.data;
     } catch (error) {
         console.error(`[arcgisServicesDb] Failed to delete custom layer:`, error);
+        throw error;
+    }
+}
+
+// Reorder custom layers (batch update sort_order)
+export async function reorderCustomLayers(userEmail, order) {
+    try {
+        const response = await api.put('/arcgis/custom-layers/reorder', {
+            user_email: userEmail,
+            order,
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`[arcgisServicesDb] Failed to reorder custom layers:`, error);
         throw error;
     }
 }
