@@ -15,7 +15,7 @@ import RemovedServicesPanel from './RemovedServicesPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
 import { faLayerGroup, faTrash } from '@fortawesome/free-solid-svg-icons';
-import { faBell, faMap, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faMap, faObjectGroup } from '@fortawesome/free-solid-svg-icons';
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
 
@@ -312,7 +312,7 @@ function Home(props) {
                     onClick={() => setIsCustomLayerPanelOpen(v => !v)}
                     title="Custom Layers"
                 >
-                    <FontAwesomeIcon icon={faStar} />
+                    <FontAwesomeIcon icon={faObjectGroup} />
                 </button>
 
                 {/* Custom Layers Panel */}

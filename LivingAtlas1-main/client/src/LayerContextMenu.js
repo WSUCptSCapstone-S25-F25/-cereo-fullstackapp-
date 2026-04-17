@@ -111,7 +111,7 @@ export function LayerContextMenuPopup({
         >
             {contextMenu.type === 'folder' && (
                 <>
-                    <button onClick={onRename}>Rename</button>
+                    {onRename && <button onClick={onRename}>Rename</button>}
                     {extraFolderItems.map((item, i) => (
                         <button key={i} onClick={item.onClick}>{item.label}</button>
                     ))}
@@ -119,7 +119,7 @@ export function LayerContextMenuPopup({
             )}
             {contextMenu.type === 'service' && (
                 <>
-                    <button onClick={onRename}>Rename</button>
+                    {onRename && <button onClick={onRename}>Rename</button>}
                     <button onClick={onLearnMore}>Learn More</button>
                     {extraServiceItems.map((item, i) => (
                         <button key={i} onClick={item.onClick}>{item.label}</button>
