@@ -185,7 +185,6 @@
 /* Layer tree reuse from upload panel */
 .custom-layers-panel .tree-node {
     position: relative;
-    padding-left: 16px;
 }
 
 .custom-layers-panel .tree-children {
