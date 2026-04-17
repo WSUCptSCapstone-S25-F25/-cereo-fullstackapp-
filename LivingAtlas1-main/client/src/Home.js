@@ -470,10 +470,10 @@ function Home(props) {
                 </div>
                 <div className="changelog-modal-body">
                     <h3>Update Date: 4/16/2026</h3>
-                    <p>Removed the Rename and Remove options from layer items in the GIS Services panel. These actions are now exclusively available in the Custom Layers Panel.</p>
-                    <p>Fixed a display issue with expandable second-level layers in the Custom Layers Panel.</p>
                     <p>Folders and first/second-level layers in the Custom Layers Panel can now be reordered via drag-and-drop, with changes saved to the database.</p>
                     <p>Added support for creating custom folders in the Custom Layers Panel. You can drag any layer into a folder, rename or delete folders via right-click, and all folder data is persisted in the database.</p>
+                    <p>Removed the Rename and Remove options from layer items in the GIS Services panel. These actions are now exclusively available in the Custom Layers Panel.</p>
+                    <p>Fixed a display issue with expandable second-level layers in the Custom Layers Panel.</p>
 
                     <hr />
 

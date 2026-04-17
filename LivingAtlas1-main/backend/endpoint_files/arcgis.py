@@ -795,6 +795,7 @@ def save_custom_layer(request: SaveCustomLayerRequest):
         raise HTTPException(status_code=400, detail="service_key is required")
 
     _ensure_custom_layers_table()
+    _ensure_custom_folders_table()
     try:
         # Assign sort_order = max + 1 for new entries
         cur.execute("""
@@ -817,6 +818,18 @@ def save_custom_layer(request: SaveCustomLayerRequest):
             request.state.strip(),
             next_order,
         ))
+        # Auto-create the parent folder so it persists even when all services are removed
+        folder = request.folder.strip()
+        if folder and folder != 'Root':
+            cur.execute("""
+                SELECT COALESCE(MAX(sort_order), -1) + 1 FROM user_custom_folders WHERE user_email = %s
+            """, (request.user_email.strip(),))
+            folder_order = cur.fetchone()[0]
+            cur.execute("""
+                INSERT INTO user_custom_folders (user_email, folder_name, sort_order)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (user_email, folder_name) DO NOTHING
+            """, (request.user_email.strip(), folder, folder_order))
         conn.commit()
         return {"success": True, "message": f"Layer '{request.label}' saved to custom layers"}
     except Exception as e:
