@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from './api.js';
+import './Administration.css';
 
 function Administration() {
     const [users, setUsers] = useState([]);
@@ -115,18 +116,20 @@ function Administration() {
     };
 
     return (
-        <div>
-            <h2>Administration</h2>
-            <div>
-                <button onClick={toggleView}>
+        <div className="admin-page">
+            <div className="admin-header">
+                <h2 className="admin-title">Administration</h2>
+                <button className="admin-toggle-btn" onClick={toggleView}>
                     {isManagingUsers ? 'View Sign Up Requests' : 'Manage Users'}
                 </button>
             </div>
+
             {isManagingUsers ? (
-                <>
-                    <h2>User Management</h2>
-                    {error && <p>Error: {error}</p>}
-                    <table>
+                <section className="admin-card">
+                    <h3 className="admin-section-title">User Management</h3>
+                    {error && <p className="admin-error">Error: {error}</p>}
+                    <div className="admin-table-wrap">
+                    <table className="admin-table">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -141,19 +144,30 @@ function Administration() {
                                 <tr key={user.email}>
                                     <td>{user.name}</td>
                                     <td>{user.email}</td>
-                                    <td>{user.is_admin ? 'Admin' : 'Regular User'}</td>
                                     <td>
-                                        <button onClick={() => handleEditUserRole(user)}>Change Role</button>
+                                        <span className={`admin-badge ${user.is_admin ? 'admin-badge-admin' : 'admin-badge-user'}`}>
+                                            {user.is_admin ? 'Admin' : 'Regular User'}
+                                        </span>
                                     </td>
-                                    {!user.is_admin && (
+                                    <td>
+                                        <button className="admin-action-btn" onClick={() => handleEditUserRole(user)}>
+                                            Change Role
+                                        </button>
+                                    </td>
+                                    {!user.is_admin ? (
                                         <td>
-                                            <button onClick={() => handleDeleteUser(user)}>Delete</button>
+                                            <button className="admin-action-btn admin-action-btn-danger" onClick={() => handleDeleteUser(user)}>
+                                                Delete
+                                            </button>
                                         </td>
+                                    ) : (
+                                        <td className="admin-muted">-</td>
                                     )}
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                    </div>
                     {showEditForm && selectedUser && (
                         <div>
                             <h3>Edit User</h3>
@@ -162,12 +176,13 @@ function Administration() {
                             {/* Edit form goes here */}
                         </div>
                     )}
-                </>
+                </section>
             ) : (
-                <>
-                    <h2>Sign Up Requests</h2>
-                    {error && <p>Error: {error}</p>}
-                    <table>
+                <section className="admin-card">
+                    <h3 className="admin-section-title">Sign Up Requests</h3>
+                    {error && <p className="admin-error">Error: {error}</p>}
+                    <div className="admin-table-wrap">
+                    <table className="admin-table">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -183,16 +198,27 @@ function Administration() {
                                     <td>{request.name}</td>
                                     <td>{request.email}</td>
                                     <td>{request.sponsor_message}</td>
-                                    <td>{request.desired_access_level ? 'Admin' : 'Regular User'}</td>
                                     <td>
-                                        <button onClick={() => handleApproveRequest(request)}>Approve</button>
-                                        <button onClick={() => handleDenyRequest(request)}>Deny</button>
+                                        <span className={`admin-badge ${request.desired_access_level ? 'admin-badge-admin' : 'admin-badge-user'}`}>
+                                            {request.desired_access_level ? 'Admin' : 'Regular User'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div className="admin-actions-inline">
+                                            <button className="admin-action-btn admin-action-btn-approve" onClick={() => handleApproveRequest(request)}>
+                                                Approve
+                                            </button>
+                                            <button className="admin-action-btn admin-action-btn-danger" onClick={() => handleDenyRequest(request)}>
+                                                Deny
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
-                </>
+                    </div>
+                </section>
             )}
         </div>
     );
