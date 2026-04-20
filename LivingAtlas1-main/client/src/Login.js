@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { Link } from 'react-router-dom';
 import './Login.css';
 import api from './api.js';
 
@@ -114,13 +114,14 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
     };
 
     return (
-        <div>
-            <div className="login">
-                <h1>Login</h1>
-                <h2>Welcome {username} {email}</h2>
-                <form onSubmit={handleLogin}>
-                    <div>
-                        <label>Email:</label>
+        <div className="login-page">
+            <div className="login-card">
+                <h1 className="login-title">Login</h1>
+                <p className="login-welcome">Welcome {username} {email}</p>
+
+                <form className="login-form" onSubmit={handleLogin}>
+                    <div className="login-field">
+                        <label>Email</label>
                         <input
                             type="email"
                             value={submitemail}
@@ -128,8 +129,9 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
                             required
                         />
                     </div>
-                    <div>
-                        <label>Password:</label>
+
+                    <div className="login-field">
+                        <label>Password</label>
                         <input
                             type="password"
                             value={password}
@@ -137,21 +139,22 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
                             required
                         />
                     </div>
-                    <button type="submit">Login</button>
+
+                    <button className="login-primary-btn" type="submit">Login</button>
                 </form>
 
-                <button onClick={handleLogout}>Logout</button>
+                <button className="login-secondary-btn" onClick={handleLogout}>Logout</button>
 
-                <div>
-                    <button onClick={() => setShowForgotPasswordForm(!showForgotPasswordForm)}>
+                <div className="login-inline-action">
+                    <button className="login-link-btn" onClick={() => setShowForgotPasswordForm(!showForgotPasswordForm)}>
                         {isLoggedIn ? 'Change Password?' : 'Forgot Password?'}
                     </button>
                 </div>
 
                 {showForgotPasswordForm && (
-                    <form onSubmit={handleForgotPasswordSubmit}>
-                        <div>
-                            <label>Enter your email to reset password:</label>
+                    <form className="login-forgot-form" onSubmit={handleForgotPasswordSubmit}>
+                        <div className="login-field">
+                            <label>Enter your email to reset password</label>
                             <input
                                 type="email"
                                 value={forgotPasswordEmail}
@@ -159,11 +162,18 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
                                 required
                             />
                         </div>
-                        <button type="submit">Submit</button>
+                        <button className="login-primary-btn" type="submit">Submit</button>
                     </form>
                 )}
 
-                {message && <p>{message}</p>}
+                <p className="login-register-row">
+                    Don't have an account?{' '}
+                    <Link className="login-register-link" to="/signup">
+                        Register
+                    </Link>
+                </p>
+
+                {message && <p className="login-message">{message}</p>}
             </div>
         </div>
     );
