@@ -600,12 +600,11 @@ function Home(props) {
                 </div>
                 <div className="changelog-modal-body">
                     <h3>Update Date: 4/19/2026</h3>
-                    <p>Refreshed the Administration page with a cleaner, table-based layout for both User Management and Signup Requests.</p>
-                    <p>Improved admin safety for sensitive actions: Change Role and Delete now open confirmation modals and require typing "Confirm" before submission.</p>
-                    <p>Redesigned Login and Signup pages with a consistent visual style and updated account navigation links between the two pages.</p>
-                    <p>Improved left sidebar and profile dropdown interactions: larger button hit areas, clearer hover states, and full-row hover behavior in the profile menu.</p>
-                    <p>Fixed an intermittent Upload Panel issue where only part of the state folders would render after opening the panel.</p>
-                    <p>Added user-specific UI preference persistence for basemap selection, card list/grid mode, and card panel side; also added pre-login local caching with automatic merge to cloud preferences after login.</p>
+                    <p>Refined the Administration page UI for both User Management and Signup Requests, and added typed confirmation modals for sensitive actions (Change Role and Delete Account) to reduce accidental operations.</p>
+                    <p>Refreshed the Login and Signup page designs for a more consistent visual style, and polished related UI details including left sidebar controls and profile menu hover interactions.</p>
+                    <p>Fixed an intermittent Upload Panel rendering issue where one folder could fail to appear after opening the panel.</p>
+                    <p>Updated the Map Style (basemap) modal options by replacing generic entries with more practical real-world map style choices.</p>
+                    <p>Added database-backed user UI preferences for basemap selection, card container view mode (list/grid), card container size, and left/right panel placement, with local pre-login caching and merge-on-login sync behavior.</p>
 
                     <hr />
 
