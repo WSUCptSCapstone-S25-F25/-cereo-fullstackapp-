@@ -1,60 +1,74 @@
 import React, { useState } from 'react';
 import './BasemapSwitcher.css';
 
+const SF_TILE_SAMPLE = { z: 12, y: 1583, x: 6542 };
+
+function createRasterStyle(id, tileUrl, attribution = '') {
+    return {
+        version: 8,
+        name: id,
+        sources: {
+            [id]: {
+                type: 'raster',
+                tiles: [tileUrl],
+                tileSize: 256,
+                attribution,
+            },
+        },
+        layers: [
+            {
+                id: `${id}-layer`,
+                type: 'raster',
+                source: id,
+                minzoom: 0,
+                maxzoom: 22,
+            },
+        ],
+    };
+}
+
 const BASEMAPS = [
-    {
-        id: 'dark-v11',
-        label: 'dark-v11',
-        style: 'mapbox://styles/mapbox/dark-v11',
-        thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
-    },
-    {
-        id: 'light-v11',
-        label: 'light-v11',
-        style: 'mapbox://styles/mapbox/light-v11',
-        thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/light-v11/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
-    },
     {
         id: 'navigation-day-v1',
         label: 'navigation-day-v1',
         style: 'mapbox://styles/mapbox/navigation-day-v1',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/navigation-day-v1/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
     },
     {
         id: 'navigation-night-v1',
         label: 'navigation-night-v1',
         style: 'mapbox://styles/mapbox/navigation-night-v1',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
     },
     {
         id: 'outdoors-v12',
         label: 'outdoors-v12',
         style: 'mapbox://styles/mapbox/outdoors-v12',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
     },
     {
         id: 'satellite-streets-v12',
         label: 'satellite-streets-v12',
         style: 'mapbox://styles/mapbox/satellite-streets-v12',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
     },
     {
         id: 'satellite-v9',
         label: 'satellite-v9',
         style: 'mapbox://styles/mapbox/satellite-v9',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
-    },
-    {
-        id: 'standard',
-        label: 'standard',
-        style: 'mapbox://styles/mapbox/standard',
-        thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/standard/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
     },
     {
         id: 'streets-v12',
         label: 'streets-v12',
         style: 'mapbox://styles/mapbox/streets-v12',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
     },
 ];
 
@@ -156,7 +170,7 @@ export default function BasemapSwitcher({ isOpen, onClose, mapInstance }) {
                     >
                         <img
                             className="basemap-switcher-thumb"
-                            src={basemap.thumbnail + token}
+                            src={basemap.thumbnailNeedsToken ? basemap.thumbnail + token : basemap.thumbnail}
                             alt={basemap.label}
                             loading="lazy"
                         />
