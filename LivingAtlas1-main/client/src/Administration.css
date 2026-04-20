@@ -159,6 +159,93 @@
   border-color: #e8aab2;
 }
 
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(12, 23, 44, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.admin-modal {
+  width: min(460px, 100%);
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  box-shadow: 0 18px 46px rgba(11, 26, 55, 0.22);
+  padding: 1rem;
+}
+
+.admin-modal-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.admin-modal-subtitle {
+  margin: 0.35rem 0 0.95rem;
+  color: var(--admin-subtext);
+  font-size: 0.9rem;
+}
+
+.admin-role-options {
+  display: flex;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.admin-role-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid #dce4ef;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.88rem;
+  background: #f9fbff;
+}
+
+.admin-confirm-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--admin-subtext);
+  margin-bottom: 0.35rem;
+}
+
+.admin-confirm-input {
+  width: 100%;
+  border: 1px solid #d2dce9;
+  border-radius: 8px;
+  padding: 0.48rem 0.6rem;
+  font-size: 0.92rem;
+}
+
+.admin-confirm-input:focus {
+  outline: none;
+  border-color: #7ea4ff;
+  box-shadow: 0 0 0 3px rgba(36, 87, 214, 0.12);
+}
+
+.admin-modal-error {
+  margin-top: 0.55rem;
+  margin-bottom: 0;
+}
+
+.admin-modal-actions {
+  margin-top: 0.95rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.admin-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .admin-page {
     padding: 1rem;
@@ -177,5 +264,13 @@
   .admin-table td {
     padding: 0.62rem 0.5rem;
     font-size: 0.88rem;
+  }
+
+  .admin-modal-actions {
+    justify-content: stretch;
+  }
+
+  .admin-modal-actions .admin-action-btn {
+    flex: 1;
   }
 }

@@ -6,9 +6,12 @@ function Administration() {
     const [users, setUsers] = useState([]);
     const [signUpRequests, setSignUpRequests] = useState([]);
     const [error, setError] = useState(null);
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [showEditForm, setShowEditForm] = useState(false);
     const [isManagingUsers, setIsManagingUsers] = useState(true); // Default view
+    const [roleModalUser, setRoleModalUser] = useState(null);
+    const [selectedRole, setSelectedRole] = useState('regular');
+    const [roleConfirmText, setRoleConfirmText] = useState('');
+    const [roleModalError, setRoleModalError] = useState('');
+    const [isRoleUpdating, setIsRoleUpdating] = useState(false);
 
     useEffect(() => {
         if (isManagingUsers) {
@@ -58,14 +61,45 @@ function Administration() {
         }
     };
 
-    const handleEditUserRole = async (user) => {
+    const handleOpenRoleModal = (user) => {
+        setRoleModalUser(user);
+        setSelectedRole(user.is_admin ? 'admin' : 'regular');
+        setRoleConfirmText('');
+        setRoleModalError('');
+    };
+
+    const handleCloseRoleModal = () => {
+        setRoleModalUser(null);
+        setRoleConfirmText('');
+        setRoleModalError('');
+        setIsRoleUpdating(false);
+    };
+
+    const handleEditUserRole = async () => {
+        if (!roleModalUser) {
+            return;
+        }
+
+        if (roleConfirmText !== 'Confirm') {
+            setRoleModalError('Please type Confirm exactly to proceed.');
+            return;
+        }
+
         try {
-            const newRole = !user.is_admin;
-            await api.post('/edit_user_role', { email: user.email, is_admin: newRole });
+            setIsRoleUpdating(true);
+            setRoleModalError('');
+            await api.post('/edit_user_role', {
+                email: roleModalUser.email,
+                is_admin: selectedRole === 'admin'
+            });
             const response = await api.post('/list_database');
             setUsers(response.data.users);
+            handleCloseRoleModal();
         } catch (error) {
             setError(error.message);
+            setRoleModalError(error.message);
+        } finally {
+            setIsRoleUpdating(false);
         }
     };
 
@@ -150,7 +184,7 @@ function Administration() {
                                         </span>
                                     </td>
                                     <td>
-                                        <button className="admin-action-btn" onClick={() => handleEditUserRole(user)}>
+                                        <button className="admin-action-btn" onClick={() => handleOpenRoleModal(user)}>
                                             Change Role
                                         </button>
                                     </td>
@@ -168,14 +202,6 @@ function Administration() {
                         </tbody>
                     </table>
                     </div>
-                    {showEditForm && selectedUser && (
-                        <div>
-                            <h3>Edit User</h3>
-                            <p>User: {selectedUser.name}</p>
-                            <p>Email: {selectedUser.email}</p>
-                            {/* Edit form goes here */}
-                        </div>
-                    )}
                 </section>
             ) : (
                 <section className="admin-card">
@@ -219,6 +245,67 @@ function Administration() {
                     </table>
                     </div>
                 </section>
+            )}
+
+            {roleModalUser && (
+                <div className="admin-modal-overlay" onClick={handleCloseRoleModal}>
+                    <div className="admin-modal" onClick={(event) => event.stopPropagation()}>
+                        <h4 className="admin-modal-title">Change User Role</h4>
+                        <p className="admin-modal-subtitle">
+                            {roleModalUser.name} ({roleModalUser.email})
+                        </p>
+
+                        <div className="admin-role-options">
+                            <label className="admin-role-option">
+                                <input
+                                    type="radio"
+                                    name="role"
+                                    value="regular"
+                                    checked={selectedRole === 'regular'}
+                                    onChange={(event) => setSelectedRole(event.target.value)}
+                                />
+                                Regular User
+                            </label>
+                            <label className="admin-role-option">
+                                <input
+                                    type="radio"
+                                    name="role"
+                                    value="admin"
+                                    checked={selectedRole === 'admin'}
+                                    onChange={(event) => setSelectedRole(event.target.value)}
+                                />
+                                Admin
+                            </label>
+                        </div>
+
+                        <label className="admin-confirm-label" htmlFor="admin-role-confirm-input">
+                            Type <strong>Confirm</strong> to apply this role change
+                        </label>
+                        <input
+                            id="admin-role-confirm-input"
+                            className="admin-confirm-input"
+                            type="text"
+                            value={roleConfirmText}
+                            onChange={(event) => setRoleConfirmText(event.target.value)}
+                            placeholder="Confirm"
+                        />
+
+                        {roleModalError && <p className="admin-error admin-modal-error">{roleModalError}</p>}
+
+                        <div className="admin-modal-actions">
+                            <button className="admin-action-btn" onClick={handleCloseRoleModal}>
+                                Cancel
+                            </button>
+                            <button
+                                className="admin-action-btn admin-action-btn-approve"
+                                onClick={handleEditUserRole}
+                                disabled={isRoleUpdating}
+                            >
+                                {isRoleUpdating ? 'Updating...' : 'Confirm Change'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
