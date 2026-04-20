@@ -16,7 +16,7 @@ function Contact(props) {
                 <p>Pullman, WA 99164-5825</p>
                 <h2>Phone and email</h2>
                 <p>Phone:  509-335-5531</p>
-                <p>Email:  cereo@wsu.edu</p>
+                <p>Email:  <li><a href="mailto:cereo@wsu.edu">cereo@wsu.edu</a></li> <li><a href="mailto:wsu.cereoatlas26@gmail.com">wsu.cereoatlas26@gmail.com</a></li></p>
 
 
 

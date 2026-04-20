@@ -1448,41 +1448,41 @@ function ArcgisUploadPanel({
         </div>
     );
 
-    // Use either searchResult or default folders/services, filter if showAddedOnly
-    let foldersToShow = searchResult ? Object.keys(searchResult.filteredFolders) : folderNames;
-    let servicesByFolderToShow = searchResult ? searchResult.filteredFolders : servicesByFolder;
-
-    // If "Show only services added to map" is checked, filter the current display set
-    if (showAddedOnly) {
-        const filteredFolders = {};
-        foldersToShow.forEach(folder => {
-            const filteredServices = (servicesByFolderToShow[folder] || []).filter(service =>
-                (checkedLayerIds[service.key] || []).length > 0
-            );
-            if (filteredServices.length > 0) {
-                filteredFolders[folder] = filteredServices;
-            }
-        });
-        foldersToShow = Object.keys(filteredFolders);
-        servicesByFolderToShow = filteredFolders;
-    }
-
-    // Build per-state folders to show (filter by service.state, not by key membership,
-    // because keys can collide across states when folder+service names are identical)
+    // Build per-state folders to show directly from per-state grouped data.
+    // Do not re-split merged services by service.state because backend state values can be inconsistent,
+    // which may intermittently hide an entire state's folders.
     const stateFoldersToShow = {};
     STATE_CODES.forEach(code => {
-        const stateName = STATE_CODE_TO_NAME[code];
+        const baseByFolder = servicesByStateAndFolder[code]?.folders || {};
+        const baseFolders = servicesByStateAndFolder[code]?.folderNames || [];
         const folders = [];
         const byFolder = {};
-        foldersToShow.forEach(folder => {
-            const services = (servicesByFolderToShow[folder] || []).filter(s =>
-                s.state && s.state.toLowerCase() === stateName
-            );
-            if (services.length > 0) {
+
+        baseFolders.forEach(folder => {
+            let visibleServices = baseByFolder[folder] || [];
+
+            // Apply search filter by intersecting with searched services for this folder.
+            if (searchResult) {
+                const searchedServices = searchResult.filteredFolders?.[folder] || [];
+                const searchedKeys = new Set(
+                    searchedServices.map(s => `${s.key}::${s.url}`)
+                );
+                visibleServices = visibleServices.filter(s => searchedKeys.has(`${s.key}::${s.url}`));
+            }
+
+            // Apply "show added only" after search filter.
+            if (showAddedOnly) {
+                visibleServices = visibleServices.filter(service =>
+                    (checkedLayerIds[service.key] || []).length > 0
+                );
+            }
+
+            if (visibleServices.length > 0) {
                 folders.push(folder);
-                byFolder[folder] = services;
+                byFolder[folder] = visibleServices;
             }
         });
+
         stateFoldersToShow[code] = { folders, byFolder };
     });
 
