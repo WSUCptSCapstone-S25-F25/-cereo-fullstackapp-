@@ -163,6 +163,7 @@
     display: block;
     visibility: visible;
     opacity: 1;
+    overflow: hidden;
 }
 
 .profile-modal ul {
@@ -176,6 +177,9 @@
 
 .profile-modal li {
     margin: 0;
+    display: block;
+    width: 100%;
+    height: auto;
 }
 
 .profile-modal li a,
@@ -193,14 +197,17 @@
     box-sizing: border-box;
     border-radius: 0;
     transition: background-color 0.15s ease;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     float: none;
     height: auto;
+    min-height: 40px;
 }
 
 .profile-modal li button:hover,
 .profile-modal li a:hover {
-    background-color: #f3f4f6;
+    background-color: #eef2f7;
     color: #111;
     box-shadow: none;
 }
