@@ -19,6 +19,13 @@ import { faBell, faMap, faObjectGroup } from '@fortawesome/free-solid-svg-icons'
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
 import { fetchUserPreferences, saveUserPreferences } from './userPreferencesApi';
+import {
+    readPendingLocalPreferences,
+    writePendingLocalPreferences,
+    clearPendingLocalPreferences,
+    deepMergePreferences,
+    hasPreferenceValues,
+} from './userPreferencesLocalCache';
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -134,40 +141,59 @@ function Home(props) {
     const [preferredBasemapId, setPreferredBasemapId] = useState('streets-v12');
     const [cardViewModePreference, setCardViewModePreference] = useState('grid');
     const [preferencesLoaded, setPreferencesLoaded] = useState(false);
-    const preferencesOwnerEmailRef = useRef('');
+    const [localPreferencesReady, setLocalPreferencesReady] = useState(false);
+
+    const applyUiPreferences = (preferences) => {
+        const uiPrefs = preferences?.ui || {};
+        setPreferredBasemapId(
+            typeof uiPrefs.basemapId === 'string' && uiPrefs.basemapId.trim()
+                ? uiPrefs.basemapId
+                : 'streets-v12'
+        );
+        setCardViewModePreference(uiPrefs.cardViewMode === 'list' ? 'list' : 'grid');
+        setCardPanelSide(uiPrefs.cardPanelSide === 'left' ? 'left' : 'right');
+    };
 
     useEffect(() => {
         let cancelled = false;
 
         const loadPreferences = async () => {
             if (!props.isLoggedIn || !props.email) {
-                setPreferencesLoaded(false);
-                preferencesOwnerEmailRef.current = '';
+                const localPreferences = readPendingLocalPreferences();
+                if (!cancelled && hasPreferenceValues(localPreferences)) {
+                    applyUiPreferences(localPreferences);
+                }
+                if (!cancelled) {
+                    setPreferencesLoaded(false);
+                    setLocalPreferencesReady(true);
+                }
                 return;
             }
 
-            if (preferencesOwnerEmailRef.current === props.email && preferencesLoaded) {
-                return;
+            if (!cancelled) {
+                setPreferencesLoaded(false);
+                setLocalPreferencesReady(false);
             }
 
             try {
-                const preferences = await fetchUserPreferences(props.email);
+                const [cloudPreferences, localPendingPreferences] = await Promise.all([
+                    fetchUserPreferences(props.email),
+                    Promise.resolve(readPendingLocalPreferences()),
+                ]);
+
                 if (cancelled) return;
 
-                const uiPrefs = preferences?.ui || {};
+                const mergedPreferences = deepMergePreferences(cloudPreferences, localPendingPreferences);
+                applyUiPreferences(mergedPreferences);
 
-                setPreferredBasemapId(
-                    typeof uiPrefs.basemapId === 'string' && uiPrefs.basemapId.trim()
-                        ? uiPrefs.basemapId
-                        : 'streets-v12'
-                );
-                setCardViewModePreference(uiPrefs.cardViewMode === 'list' ? 'list' : 'grid');
-                setCardPanelSide(uiPrefs.cardPanelSide === 'left' ? 'left' : 'right');
+                if (hasPreferenceValues(localPendingPreferences)) {
+                    await saveUserPreferences(props.email, mergedPreferences);
+                    clearPendingLocalPreferences();
+                }
             } catch (error) {
                 console.warn('[Home] Failed to load user preferences:', error);
             } finally {
                 if (!cancelled) {
-                    preferencesOwnerEmailRef.current = props.email;
                     setPreferencesLoaded(true);
                 }
             }
@@ -178,7 +204,7 @@ function Home(props) {
         return () => {
             cancelled = true;
         };
-    }, [props.isLoggedIn, props.email, preferencesLoaded]);
+    }, [props.isLoggedIn, props.email]);
 
     useEffect(() => {
         if (!props.isLoggedIn || !props.email || !preferencesLoaded) {
@@ -202,6 +228,30 @@ function Home(props) {
         props.isLoggedIn,
         props.email,
         preferencesLoaded,
+        preferredBasemapId,
+        cardViewModePreference,
+        cardPanelSide,
+    ]);
+
+    useEffect(() => {
+        if (props.isLoggedIn || !localPreferencesReady) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            writePendingLocalPreferences({
+                ui: {
+                    basemapId: preferredBasemapId,
+                    cardViewMode: cardViewModePreference,
+                    cardPanelSide,
+                },
+            });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [
+        props.isLoggedIn,
+        localPreferencesReady,
         preferredBasemapId,
         cardViewModePreference,
         cardPanelSide,
@@ -549,6 +599,16 @@ function Home(props) {
                     <button className="changelog-modal-close" onClick={closeChangelog} aria-label="Close">x</button>
                 </div>
                 <div className="changelog-modal-body">
+                    <h3>Update Date: 4/19/2026</h3>
+                    <p>Refreshed the Administration page with a cleaner, table-based layout for both User Management and Signup Requests.</p>
+                    <p>Improved admin safety for sensitive actions: Change Role and Delete now open confirmation modals and require typing "Confirm" before submission.</p>
+                    <p>Redesigned Login and Signup pages with a consistent visual style and updated account navigation links between the two pages.</p>
+                    <p>Improved left sidebar and profile dropdown interactions: larger button hit areas, clearer hover states, and full-row hover behavior in the profile menu.</p>
+                    <p>Fixed an intermittent Upload Panel issue where only part of the state folders would render after opening the panel.</p>
+                    <p>Added user-specific UI preference persistence for basemap selection, card list/grid mode, and card panel side; also added pre-login local caching with automatic merge to cloud preferences after login.</p>
+
+                    <hr />
+
                     <h3>Update Date: 4/16/2026</h3>
                     <p>Folders and first/second-level layers in the Custom Layers Panel can now be reordered via drag-and-drop, with changes saved to the database.</p>
                     <p>Added support for creating custom folders in the Custom Layers Panel. You can drag any layer into a folder, rename or delete folders via right-click, and all folder data is persisted in the database.</p>
