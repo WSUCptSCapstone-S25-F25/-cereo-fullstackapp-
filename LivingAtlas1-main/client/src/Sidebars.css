@@ -87,17 +87,40 @@
 */
 
 
-/* Search Button */
-.left-sidebar-search-button {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 20px;
+/* Left sidebar icon buttons */
+.left-sidebar :is(
+    .left-sidebar-search-button,
+    .left-sidebar-gis-button,
+    .left-sidebar-upload-button,
+    .left-sidebar-cards-button,
+    .left-sidebar-basemap-button,
+    .left-sidebar-layers-button,
+    .left-sidebar-customlayers-button,
+    .left-sidebar-trash-button,
+    .left-sidebar-ai-button,
+    .left-sidebar-tutorial-button,
+    .left-sidebar-changelog-button
+) {
+    appearance: none;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #ffffff;
+    width: 44px;
+    height: 36px;
+    min-width: 44px;
+    min-height: 36px;
+    padding: 0;
+    margin: 12px 0 0 0;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    line-height: 1;
     cursor: pointer;
     z-index: 1001;
-    margin: 12px 0 0 0; /* Add vertical spacing */
-    position: static;    /* Remove absolute positioning */
-    display: block;
+    position: static;
+    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
 }
 
 /* Mini Search Modal – slides out from behind the left sidebar */
@@ -277,27 +300,6 @@
 }
 */
 
-.left-sidebar-gis-button,
-.left-sidebar-upload-button,
-.left-sidebar-cards-button,
-.left-sidebar-basemap-button,
-.left-sidebar-layers-button,
-.left-sidebar-customlayers-button,
-.left-sidebar-trash-button,
-.left-sidebar-ai-button,
-.left-sidebar-tutorial-button,
-.left-sidebar-changelog-button {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    margin: 12px 0 0 0;
-    display: block;
-    z-index: 1001;
-    position: static;
-}
-
 /* Spacer to push changelog bell button to bottom */
 .left-sidebar-spacer {
     flex-grow: 1;
@@ -308,20 +310,56 @@
 }
 
 /* Hover effects for all sidebar buttons */
-.left-sidebar-search-button:hover,
-.left-sidebar-gis-button:hover,
-.left-sidebar-upload-button:hover,
-.left-sidebar-cards-button:hover,
-.left-sidebar-basemap-button:hover,
-.left-sidebar-layers-button:hover,
-.left-sidebar-customlayers-button:hover,
-.left-sidebar-trash-button:hover,
-.left-sidebar-ai-button:hover,
-.left-sidebar-tutorial-button:hover,
-.left-sidebar-changelog-button:hover {
-    background-color: #444;
-    color: #e0e0e0;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+.left-sidebar :is(
+    .left-sidebar-search-button,
+    .left-sidebar-gis-button,
+    .left-sidebar-upload-button,
+    .left-sidebar-cards-button,
+    .left-sidebar-basemap-button,
+    .left-sidebar-layers-button,
+    .left-sidebar-customlayers-button,
+    .left-sidebar-trash-button,
+    .left-sidebar-ai-button,
+    .left-sidebar-tutorial-button,
+    .left-sidebar-changelog-button
+):hover {
+    background-color: #444a53;
+    color: #f5f8ff;
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+}
+
+.left-sidebar :is(
+    .left-sidebar-search-button,
+    .left-sidebar-gis-button,
+    .left-sidebar-upload-button,
+    .left-sidebar-cards-button,
+    .left-sidebar-basemap-button,
+    .left-sidebar-layers-button,
+    .left-sidebar-customlayers-button,
+    .left-sidebar-trash-button,
+    .left-sidebar-ai-button,
+    .left-sidebar-tutorial-button,
+    .left-sidebar-changelog-button
+):active {
+    transform: translateY(0);
+    background-color: #3d434c;
+}
+
+.left-sidebar :is(
+    .left-sidebar-search-button,
+    .left-sidebar-gis-button,
+    .left-sidebar-upload-button,
+    .left-sidebar-cards-button,
+    .left-sidebar-basemap-button,
+    .left-sidebar-layers-button,
+    .left-sidebar-customlayers-button,
+    .left-sidebar-trash-button,
+    .left-sidebar-ai-button,
+    .left-sidebar-tutorial-button,
+    .left-sidebar-changelog-button
+):focus-visible {
+    outline: 2px solid #8ab4ff;
+    outline-offset: 2px;
 }
 
