@@ -18,6 +18,7 @@ import { faLayerGroup, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { faBell, faMap, faObjectGroup } from '@fortawesome/free-solid-svg-icons';
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
+import { fetchUserPreferences, saveUserPreferences } from './userPreferencesApi';
 
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
@@ -130,6 +131,81 @@ function Home(props) {
 
     // Basemap switcher state
     const [isBasemapOpen, setIsBasemapOpen] = useState(false);
+    const [preferredBasemapId, setPreferredBasemapId] = useState('streets-v12');
+    const [cardViewModePreference, setCardViewModePreference] = useState('grid');
+    const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+    const preferencesOwnerEmailRef = useRef('');
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadPreferences = async () => {
+            if (!props.isLoggedIn || !props.email) {
+                setPreferencesLoaded(false);
+                preferencesOwnerEmailRef.current = '';
+                return;
+            }
+
+            if (preferencesOwnerEmailRef.current === props.email && preferencesLoaded) {
+                return;
+            }
+
+            try {
+                const preferences = await fetchUserPreferences(props.email);
+                if (cancelled) return;
+
+                const uiPrefs = preferences?.ui || {};
+
+                setPreferredBasemapId(
+                    typeof uiPrefs.basemapId === 'string' && uiPrefs.basemapId.trim()
+                        ? uiPrefs.basemapId
+                        : 'streets-v12'
+                );
+                setCardViewModePreference(uiPrefs.cardViewMode === 'list' ? 'list' : 'grid');
+                setCardPanelSide(uiPrefs.cardPanelSide === 'left' ? 'left' : 'right');
+            } catch (error) {
+                console.warn('[Home] Failed to load user preferences:', error);
+            } finally {
+                if (!cancelled) {
+                    preferencesOwnerEmailRef.current = props.email;
+                    setPreferencesLoaded(true);
+                }
+            }
+        };
+
+        loadPreferences();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [props.isLoggedIn, props.email, preferencesLoaded]);
+
+    useEffect(() => {
+        if (!props.isLoggedIn || !props.email || !preferencesLoaded) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            saveUserPreferences(props.email, {
+                ui: {
+                    basemapId: preferredBasemapId,
+                    cardViewMode: cardViewModePreference,
+                    cardPanelSide,
+                },
+            }).catch(error => {
+                console.warn('[Home] Failed to save user preferences:', error);
+            });
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [
+        props.isLoggedIn,
+        props.email,
+        preferencesLoaded,
+        preferredBasemapId,
+        cardViewModePreference,
+        cardPanelSide,
+    ]);
 
     const addArcgisLayer = (layerIds = checkedArcgisLayerIds) => {
         const map = window.atlasMapInstance;
@@ -337,6 +413,8 @@ function Home(props) {
                     isOpen={isBasemapOpen}
                     onClose={() => setIsBasemapOpen(false)}
                     mapInstance={getMapboxMap}
+                    currentBasemapId={preferredBasemapId}
+                    onBasemapChange={setPreferredBasemapId}
                 />
 
                 {/* Trash button*/}
@@ -453,6 +531,8 @@ function Home(props) {
                 setCardPanelWidth={setCardPanelWidth}
                 cardPanelSide={cardPanelSide}
                 setCardPanelSide={setCardPanelSide}
+                initialCardViewMode={cardViewModePreference}
+                onCardViewModeChange={setCardViewModePreference}
                 isUploadPanelOpen={isUploadPanelOpen}
                 onCardClick={handleCardClick}
             />

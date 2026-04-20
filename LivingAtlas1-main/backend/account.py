@@ -9,6 +9,8 @@ account
 from fastapi import APIRouter, Form, HTTPException
 from database import conn, cur
 from pydantic import BaseModel
+from typing import Dict, Any
+import json
 
 import urllib.parse
 import requests
@@ -76,6 +78,11 @@ class SignupNotificationRequest(BaseModel):
     username: str
     email: str
     desired_access_level: str
+
+
+class UserPreferencesUpsertRequest(BaseModel):
+    email: str
+    preferences: Dict[str, Any] = {}
 
 #Retrieve names and emails of all users for the administration page
 class User(BaseModel):
@@ -249,6 +256,74 @@ async def send_signup_notification_endpoint(request: SignupNotificationRequest):
         except Exception as e:
                 # Preserve signup flow even when notification email fails.
                 return {"success": False, "message": f"Signup saved but email notification failed: {str(e)}"}
+
+
+@account_router.get("/user_preferences")
+def get_user_preferences(email: str):
+    try:
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        cur.execute("SELECT preferences FROM user_preferences WHERE user_email = %s", (email,))
+        row = cur.fetchone()
+
+        if not row or row[0] is None:
+            return {"email": email, "preferences": {}}
+
+        preferences = row[0]
+        if isinstance(preferences, str):
+            preferences = json.loads(preferences)
+
+        if not isinstance(preferences, dict):
+            preferences = {}
+
+        return {"email": email, "preferences": preferences}
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@account_router.post("/user_preferences")
+async def upsert_user_preferences(payload: UserPreferencesUpsertRequest):
+    try:
+        email = (payload.email or '').strip()
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        preferences = payload.preferences or {}
+        if not isinstance(preferences, dict):
+            raise HTTPException(status_code=400, detail="preferences must be an object")
+
+        # Validate user exists
+        cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+        if cur.fetchone() is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        cur.execute(
+            """
+            INSERT INTO user_preferences (user_email, preferences, created_at, updated_at)
+            VALUES (%s, %s::jsonb, NOW(), NOW())
+            ON CONFLICT (user_email) DO UPDATE
+            SET preferences = COALESCE(user_preferences.preferences, '{}'::jsonb) || EXCLUDED.preferences,
+                updated_at = NOW()
+            RETURNING preferences
+            """,
+            (email, json.dumps(preferences))
+        )
+        row = cur.fetchone()
+        conn.commit()
+
+        merged_preferences = row[0] if row else {}
+        if isinstance(merged_preferences, str):
+            merged_preferences = json.loads(merged_preferences)
+
+        return {"success": True, "email": email, "preferences": merged_preferences}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        return {"success": False, "error": str(e)}
 
 
 # Helper function to hash the password (same as current setup)

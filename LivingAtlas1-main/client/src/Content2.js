@@ -102,7 +102,7 @@ function Content2(props) {
     const [sortMode, setSortMode] = useState((props.sortCondition || '').split(',')[0] || '');
     const [showOnlyInView, setShowOnlyInView] = useState(false);
     const [learnMoreRequest, setLearnMoreRequest] = useState(null);
-    const [isListView, setIsListView] = useState(false);
+    const [isListView, setIsListView] = useState((props.initialCardViewMode || 'grid') === 'list');
     const prevWidthBeforeList = useRef(null);
     const prevListViewBeforeBothLeft = useRef(null);
 
@@ -116,6 +116,11 @@ function Content2(props) {
             setIsListView(false);
         }
     }, [bothOnLeft]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (!props.initialCardViewMode) return;
+        setIsListView(props.initialCardViewMode === 'list');
+    }, [props.initialCardViewMode]);
     const selectedCardIdFromMap = props.selectedCardIdFromMap != null
         ? String(props.selectedCardIdFromMap)
         : null;
@@ -887,6 +892,7 @@ function Content2(props) {
                                         prevWidthBeforeList.current = null;
                                     }
                                     setIsListView(goingToList);
+                                    props.onCardViewModeChange?.(goingToList ? 'list' : 'grid');
                                 }}
                                 title={isListView ? 'Grid View' : 'List View'}
                             >

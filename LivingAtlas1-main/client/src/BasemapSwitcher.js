@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './BasemapSwitcher.css';
 
 const SF_TILE_SAMPLE = { z: 12, y: 1583, x: 6542 };
@@ -83,13 +83,13 @@ function getAccessToken() {
     }
 }
 
-export default function BasemapSwitcher({ isOpen, onClose, mapInstance }) {
-    const [currentBasemap, setCurrentBasemap] = useState('streets-v12');
+export default function BasemapSwitcher({ isOpen, onClose, mapInstance, currentBasemapId, onBasemapChange }) {
+    const [currentBasemap, setCurrentBasemap] = useState(currentBasemapId || 'streets-v12');
+    const previousControlledBasemapRef = useRef(currentBasemapId || 'streets-v12');
     const token = getAccessToken();
 
-    const handleSelect = (basemap) => {
-        const map = typeof mapInstance === 'function' ? mapInstance() : mapInstance;
-        if (!map) return;
+    const applyBasemap = (map, basemap) => {
+        if (!map || !basemap) return;
 
         // Save current map state
         const center = map.getCenter();
@@ -119,7 +119,6 @@ export default function BasemapSwitcher({ isOpen, onClose, mapInstance }) {
         }
 
         map.setStyle(basemap.style);
-        setCurrentBasemap(basemap.id);
 
         // Restore custom sources and layers after style loads
         map.once('style.load', () => {
@@ -151,6 +150,48 @@ export default function BasemapSwitcher({ isOpen, onClose, mapInstance }) {
                 }
             });
         });
+    };
+
+    useEffect(() => {
+        const controlledId = currentBasemapId || 'streets-v12';
+        if (controlledId === currentBasemap) {
+            return;
+        }
+
+        const previousId = previousControlledBasemapRef.current;
+        previousControlledBasemapRef.current = controlledId;
+        setCurrentBasemap(controlledId);
+
+        if (previousId === controlledId) {
+            return;
+        }
+
+        const target = BASEMAPS.find(item => item.id === controlledId);
+        if (!target) return;
+
+        const map = typeof mapInstance === 'function' ? mapInstance() : mapInstance;
+        if (map) {
+            applyBasemap(map, target);
+            return;
+        }
+
+        const retryTimer = window.setTimeout(() => {
+            const retryMap = typeof mapInstance === 'function' ? mapInstance() : mapInstance;
+            if (retryMap) {
+                applyBasemap(retryMap, target);
+            }
+        }, 500);
+
+        return () => window.clearTimeout(retryTimer);
+    }, [currentBasemapId, currentBasemap, mapInstance]);
+
+    const handleSelect = (basemap) => {
+        const map = typeof mapInstance === 'function' ? mapInstance() : mapInstance;
+        if (!map) return;
+        applyBasemap(map, basemap);
+        setCurrentBasemap(basemap.id);
+        previousControlledBasemapRef.current = basemap.id;
+        onBasemapChange?.(basemap.id);
     };
 
     if (!isOpen) return null;

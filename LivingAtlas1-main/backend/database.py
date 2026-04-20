@@ -88,6 +88,22 @@ def _ensure_schema():
             ALTER TABLE Cards ADD COLUMN IF NOT EXISTS PolygonLineStyle VARCHAR(20) DEFAULT 'solid';
         """)
 
+        # Migration 006 — user-specific UI preferences (extensible JSONB payload)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                user_email VARCHAR(255) PRIMARY KEY,
+                preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                CONSTRAINT fk_user_preferences_email
+                    FOREIGN KEY (user_email) REFERENCES users(email) ON DELETE CASCADE
+            );
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_user_preferences_updated_at
+            ON user_preferences(updated_at DESC);
+        """)
+
         conn.commit()
         print("[MIGRATIONS] Schema is up-to-date.")
     except Exception as e:
