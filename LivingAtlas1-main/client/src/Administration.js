@@ -12,6 +12,10 @@ function Administration() {
     const [roleConfirmText, setRoleConfirmText] = useState('');
     const [roleModalError, setRoleModalError] = useState('');
     const [isRoleUpdating, setIsRoleUpdating] = useState(false);
+    const [deleteModalUser, setDeleteModalUser] = useState(null);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [deleteModalError, setDeleteModalError] = useState('');
+    const [isDeletingUser, setIsDeletingUser] = useState(false);
 
     useEffect(() => {
         if (isManagingUsers) {
@@ -39,14 +43,42 @@ function Administration() {
         }
     };
 
-    const handleDeleteUser = async (user) => {
+    const handleDeleteUser = async () => {
+        if (!deleteModalUser) {
+            return;
+        }
+
+        if (deleteConfirmText !== 'Confirm') {
+            setDeleteModalError('Please type Confirm exactly to proceed.');
+            return;
+        }
+
         try {
-            await api.post(`/delete_user/${user.email}`);
+            setIsDeletingUser(true);
+            setDeleteModalError('');
+            await api.post(`/delete_user/${deleteModalUser.email}`);
             const response = await api.post('/list_database');
             setUsers(response.data.users);
+            handleCloseDeleteModal();
         } catch (error) {
             setError(error.message);
+            setDeleteModalError(error.message);
+        } finally {
+            setIsDeletingUser(false);
         }
+    };
+
+    const handleOpenDeleteModal = (user) => {
+        setDeleteModalUser(user);
+        setDeleteConfirmText('');
+        setDeleteModalError('');
+    };
+
+    const handleCloseDeleteModal = () => {
+        setDeleteModalUser(null);
+        setDeleteConfirmText('');
+        setDeleteModalError('');
+        setIsDeletingUser(false);
     };
     
     const handleDenyRequest = async (request) => {
@@ -190,7 +222,7 @@ function Administration() {
                                     </td>
                                     {!user.is_admin ? (
                                         <td>
-                                            <button className="admin-action-btn admin-action-btn-danger" onClick={() => handleDeleteUser(user)}>
+                                            <button className="admin-action-btn admin-action-btn-danger" onClick={() => handleOpenDeleteModal(user)}>
                                                 Delete
                                             </button>
                                         </td>
@@ -302,6 +334,44 @@ function Administration() {
                                 disabled={isRoleUpdating}
                             >
                                 {isRoleUpdating ? 'Updating...' : 'Confirm Change'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {deleteModalUser && (
+                <div className="admin-modal-overlay" onClick={handleCloseDeleteModal}>
+                    <div className="admin-modal" onClick={(event) => event.stopPropagation()}>
+                        <h4 className="admin-modal-title">Delete User</h4>
+                        <p className="admin-modal-subtitle">
+                            {deleteModalUser.name} ({deleteModalUser.email})
+                        </p>
+
+                        <label className="admin-confirm-label" htmlFor="admin-delete-confirm-input">
+                            Type <strong>Confirm</strong> to delete this user
+                        </label>
+                        <input
+                            id="admin-delete-confirm-input"
+                            className="admin-confirm-input"
+                            type="text"
+                            value={deleteConfirmText}
+                            onChange={(event) => setDeleteConfirmText(event.target.value)}
+                            placeholder="Confirm"
+                        />
+
+                        {deleteModalError && <p className="admin-error admin-modal-error">{deleteModalError}</p>}
+
+                        <div className="admin-modal-actions">
+                            <button className="admin-action-btn" onClick={handleCloseDeleteModal}>
+                                Cancel
+                            </button>
+                            <button
+                                className="admin-action-btn admin-action-btn-danger"
+                                onClick={handleDeleteUser}
+                                disabled={isDeletingUser}
+                            >
+                                {isDeletingUser ? 'Deleting...' : 'Confirm Delete'}
                             </button>
                         </div>
                     </div>
