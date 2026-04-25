@@ -180,3 +180,290 @@
   .profile-container > .collapse-toggle:hover {
     background-color: #005fa3 !important;
   }
+
+  /* === Profile Content Card === */
+  .about {
+    background: #ffffff !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.09) !important;
+    padding: 32px 36px !important;
+    max-width: 560px !important;
+    margin: 24px auto !important;
+  }
+
+  .profile-page-title {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: #1a2a3a !important;
+    margin: 0 0 24px 0 !important;
+    padding-bottom: 14px !important;
+    border-bottom: 2px solid #e9ecef !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  /* === Avatar === */
+  .profile-image-section {
+    display: flex !important;
+    justify-content: center !important;
+    margin-bottom: 24px !important;
+  }
+
+  .profile-avatar-label {
+    cursor: pointer !important;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .profile-avatar-img {
+    width: 110px !important;
+    height: 110px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 3px solid #dee2e6 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+  }
+
+  .profile-avatar-icon {
+    font-size: 110px !important;
+    color: #ced4da !important;
+  }
+
+  .profile-avatar-hint {
+    font-size: 12px !important;
+    color: #868e96 !important;
+    margin: 0 !important;
+    background: #f1f3f5 !important;
+    padding: 2px 10px !important;
+    border-radius: 20px !important;
+  }
+
+  /* === Info Rows (username / email) === */
+  .profile-info-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    margin-bottom: 24px !important;
+    padding-bottom: 20px !important;
+    border-bottom: 1px solid #e9ecef !important;
+  }
+
+  .profile-info-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  .profile-info-label {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #868e96 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    min-width: 80px !important;
+  }
+
+  .profile-info-value {
+    font-size: 15px !important;
+    color: #212529 !important;
+    font-weight: 500 !important;
+  }
+
+  .profile-field-input {
+    flex: 1 !important;
+    font-size: 15px !important;
+    padding: 7px 12px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 6px !important;
+    outline: none !important;
+    background: #f8f9fa !important;
+    color: #212529 !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  }
+
+  .profile-field-input:focus {
+    border-color: #0077cc !important;
+    box-shadow: 0 0 0 3px rgba(0, 119, 204, 0.15) !important;
+    background: #ffffff !important;
+  }
+
+  /* === Bio Section === */
+  .profile-bio-section {
+    margin-bottom: 22px !important;
+    padding-bottom: 20px !important;
+    border-bottom: 1px solid #e9ecef !important;
+  }
+
+  .profile-section-heading {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #868e96 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    margin: 0 0 10px 0 !important;
+  }
+
+  .profile-bio-text {
+    font-size: 14px !important;
+    color: #495057 !important;
+    line-height: 1.6 !important;
+    margin: 0 !important;
+    min-height: 20px !important;
+  }
+
+  .profile-bio-textarea {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 14px !important;
+    padding: 10px 12px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 6px !important;
+    resize: vertical !important;
+    outline: none !important;
+    background: #f8f9fa !important;
+    color: #212529 !important;
+    line-height: 1.5 !important;
+    font-family: inherit !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  }
+
+  .profile-bio-textarea:focus {
+    border-color: #0077cc !important;
+    box-shadow: 0 0 0 3px rgba(0, 119, 204, 0.15) !important;
+    background: #ffffff !important;
+  }
+
+  .profile-char-count {
+    font-size: 12px !important;
+    color: #adb5bd !important;
+    text-align: right !important;
+    margin: 4px 0 0 0 !important;
+  }
+
+  /* === Action Buttons Row === */
+  .profile-action-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* === Change-password / forgot-password form === */
+  .profile-form {
+    background: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 10px !important;
+    padding: 20px 24px !important;
+    margin-top: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .profile-form-field {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  .profile-form-label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #495057 !important;
+  }
+
+  .profile-form-input {
+    font-size: 14px !important;
+    padding: 9px 12px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 6px !important;
+    outline: none !important;
+    background: #ffffff !important;
+    color: #212529 !important;
+    font-family: inherit !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  }
+
+  .profile-form-input:focus {
+    border-color: #0077cc !important;
+    box-shadow: 0 0 0 3px rgba(0, 119, 204, 0.15) !important;
+  }
+
+  /* === Feedback message === */
+  .profile-message {
+    font-size: 13px !important;
+    padding: 10px 14px !important;
+    border-radius: 6px !important;
+    margin: 14px 0 0 0 !important;
+    background: #e8f4fd !important;
+    color: #0c5886 !important;
+    border-left: 4px solid #0077cc !important;
+  }
+
+  /* === Profile Action Buttons === */
+  .profile-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 18px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    margin: 6px 4px !important;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+    text-decoration: none !important;
+  }
+
+  .profile-btn-edit {
+    background-color: #0077cc !important;
+    color: #ffffff !important;
+  }
+
+  .profile-btn-edit:hover {
+    background-color: #005fa3 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  .profile-btn-invite {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
+  }
+
+  .profile-btn-invite:hover {
+    background-color: #1e7e34 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  .profile-btn-password {
+    background-color: #6c757d !important;
+    color: #ffffff !important;
+  }
+
+  .profile-btn-password:hover {
+    background-color: #545b62 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  .profile-btn-save {
+    background-color: #218838 !important;
+    color: #ffffff !important;
+  }
+
+  .profile-btn-save:hover {
+    background-color: #1a6f2e !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  .profile-btn-cancel {
+    background-color: #ffffff !important;
+    color: #495057 !important;
+    border: 1px solid #ced4da !important;
+  }
+
+  .profile-btn-cancel:hover {
+    background-color: #f1f3f5 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+  }
