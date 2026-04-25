@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import './Login.css';
 import api from './api.js';
 
@@ -17,6 +17,7 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
     const [submitemail, setsubmitEmail] = useState('');
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
     const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(false);
+    const history = useHistory();
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -45,6 +46,7 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
 
                 setIsLoggedIn(true);
                 setMessage('Successfully logged in!');
+                setTimeout(() => history.push('/'), 3000);
                 setUsername(name);
                 setEmail(email);
                 setIsAdmin(resolvedIsAdmin);
