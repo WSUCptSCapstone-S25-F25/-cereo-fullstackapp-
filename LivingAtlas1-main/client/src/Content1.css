@@ -137,8 +137,8 @@
 .marker {
   background-image: url('../public/mapbox-icon.png');
   background-size: cover;
-  width: 50px;
-  height: 50px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
   border-color:#404040;
@@ -147,8 +147,8 @@
 .blue-marker {
   background-image: url('../public/blue_marker.png');
   background-size: cover;
-  width: 50px;
-  height: 50px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
   border-color:#404040;
@@ -157,8 +157,8 @@
 .green-marker {
   background-image: url('../public/green_marker.png');
   background-size: cover;
-  width: 50px;
-  height: 50px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
 }
@@ -166,8 +166,8 @@
 .yellow-marker {
   background-image: url('../public/yellow_marker.png');
   background-size: cover;
-  width: 50px;
-  height: 50px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
 }

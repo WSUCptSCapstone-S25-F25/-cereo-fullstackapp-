@@ -4,7 +4,8 @@ import './Profile.css';
 import api from './api.js';
 import Register from './Register';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleUser } from '@fortawesome/free-solid-svg-icons';
+import { faCircleUser, faUserFriends, faKey } from '@fortawesome/free-solid-svg-icons';
+import { faEdit } from '@fortawesome/free-regular-svg-icons';
 
 function Profile(props) {
     const [showRegister, setShowRegister] = useState(false);
@@ -163,21 +164,21 @@ function Profile(props) {
             {/* LEFT SIDE */}
             <div className="profile-left expanded">
             <div className="about">
-                <h1>Profile page</h1>
+                <h1 className="profile-page-title">Profile</h1>
 
-                <div className="profile-image-section" style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <div className="profile-image-section">
                   {isEditing ? (
-                    <label style={{ cursor: 'pointer', display: 'inline-block' }}>
+                    <label className="profile-avatar-label">
                       {(imagePreview || profileImage) ? (
                         <img
                           src={imagePreview || profileImage}
                           alt="Profile"
-                          style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' }}
+                          className="profile-avatar-img"
                         />
                       ) : (
-                        <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '120px', color: '#aaa' }} />
+                        <FontAwesomeIcon icon={faCircleUser} className="profile-avatar-icon" />
                       )}
-                      <p style={{ fontSize: '0.85em', color: '#888', marginTop: '4px' }}>Click to change</p>
+                      <p className="profile-avatar-hint">Click to change</p>
                       <input
                         type="file"
                         accept="image/*"
@@ -196,32 +197,40 @@ function Profile(props) {
                       <img
                         src={profileImage}
                         alt="Profile"
-                        style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' }}
+                        className="profile-avatar-img"
                       />
                     ) : (
-                      <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '120px', color: '#aaa' }} />
+                      <FontAwesomeIcon icon={faCircleUser} className="profile-avatar-icon" />
                     )
                   )}
                 </div>
-                <h2>
-                  User Name:{' '}
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editedUsername}
-                      onChange={(e) => setEditedUsername(e.target.value)}
-                    />
-                  ) : (
-                    props.username
-                  )}
-                </h2>
-                <h2>Email: {props.email}</h2>
 
-                <div className="bio-section">
-                  <h3>Bio</h3>
+                <div className="profile-info-section">
+                  <div className="profile-info-row">
+                    <span className="profile-info-label">Username</span>
+                    {isEditing ? (
+                      <input
+                        className="profile-field-input"
+                        type="text"
+                        value={editedUsername}
+                        onChange={(e) => setEditedUsername(e.target.value)}
+                      />
+                    ) : (
+                      <span className="profile-info-value">{props.username}</span>
+                    )}
+                  </div>
+                  <div className="profile-info-row">
+                    <span className="profile-info-label">Email</span>
+                    <span className="profile-info-value">{props.email}</span>
+                  </div>
+                </div>
+
+                <div className="profile-bio-section">
+                  <h3 className="profile-section-heading">Bio</h3>
                   {isEditing ? (
                     <>
                       <textarea
+                        className="profile-bio-textarea"
                         value={editedBio}
                         onChange={(e) => {
                           if (e.target.value.length <= BIO_MAX_LENGTH) {
@@ -230,83 +239,83 @@ function Profile(props) {
                         }}
                         maxLength={BIO_MAX_LENGTH}
                         rows={4}
-                        style={{ width: '100%', resize: 'vertical' }}
                       />
-                      <p style={{ fontSize: '0.85em', color: '#888' }}>
+                      <p className="profile-char-count">
                         {editedBio.length}/{BIO_MAX_LENGTH}
                       </p>
                     </>
                   ) : (
-                    <p>{bio || 'No bio yet.'}</p>
+                    <p className="profile-bio-text">{bio || 'No bio yet.'}</p>
                   )}
                 </div>
 
-                {isEditing ? (
-                  <>
-                    <button onClick={handleSaveAll}>Save</button>
-                    <button onClick={handleCancelEdit}>Cancel</button>
-                  </>
-                ) : (
-                  <button onClick={handleEditClick}>Edit Profile</button>
-                )}
-                <p>
-                On the profile page, you're granted a comprehensive view of every
-                piece of data you've shared with our community. If you ever notice
-                any inaccuracies or wish to make updates, the edit feature is at your
-                service. And for those moments when you decide some information is
-                best kept private or removed, the delete option is there to ensure
-                your content remains exactly how you want it.
-                </p>
+                <div className="profile-action-row">
+                  {isEditing ? (
+                    <>
+                      <button className="profile-btn profile-btn-save" onClick={handleSaveAll}>Save</button>
+                      <button className="profile-btn profile-btn-cancel" onClick={handleCancelEdit}>Cancel</button>
+                    </>
+                  ) : (
+                    <button className="profile-btn profile-btn-edit" onClick={handleEditClick}>
+                      <FontAwesomeIcon icon={faEdit} /> Edit Profile
+                    </button>
+                  )}
+                  <button className="profile-btn profile-btn-invite" onClick={handleOpenRegister}>
+                    <FontAwesomeIcon icon={faUserFriends} /> Invite New User
+                  </button>
+                  <button
+                    className="profile-btn profile-btn-password"
+                    onClick={() => setShowChangePasswordForm(!showChangePasswordForm)}
+                  >
+                    <FontAwesomeIcon icon={faKey} /> Change Password
+                  </button>
+                </div>
 
-                <button onClick={handleOpenRegister}>Invite New User</button>
                 {showRegister && <Register closeRegister={handleCloseRegister} />}
 
-                <button
-                onClick={() => setShowChangePasswordForm(!showChangePasswordForm)}
-                >
-                Change Password
-                </button>
-
                 {showForgotPasswordForm && (
-                <form onSubmit={handleForgotPasswordSubmit}>
-                    <div>
-                    <label>Enter your email to reset password:</label>
-                    <input
+                  <form className="profile-form" onSubmit={handleForgotPasswordSubmit}>
+                    <div className="profile-form-field">
+                      <label className="profile-form-label">Email for password reset</label>
+                      <input
+                        className="profile-form-input"
                         type="email"
                         value={forgotPasswordEmail}
                         onChange={(e) => setForgotPasswordEmail(e.target.value)}
                         required
-                    />
+                      />
                     </div>
-                    <button type="submit">Submit</button>
-                </form>
+                    <button className="profile-btn profile-btn-save" type="submit">Submit</button>
+                  </form>
                 )}
 
                 {showChangePasswordForm && (
-                <form onSubmit={handleChangePasswordSubmit}>
-                    <div>
-                    <label>Enter New Password:</label>
-                    <input
+                  <form className="profile-form" onSubmit={handleChangePasswordSubmit}>
+                    <div className="profile-form-field">
+                      <label className="profile-form-label">New Password</label>
+                      <input
+                        className="profile-form-input"
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         required
-                    />
+                      />
                     </div>
-                    <div>
-                    <label>Confirm New Password:</label>
-                    <input
+                    <div className="profile-form-field">
+                      <label className="profile-form-label">Confirm New Password</label>
+                      <input
+                        className="profile-form-input"
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
-                    />
+                      />
                     </div>
-                    <button type="submit">Change Password</button>
-                </form>
+                    <button className="profile-btn profile-btn-save" type="submit">Change Password</button>
+                  </form>
                 )}
 
-                {message && <p>{message}</p>}
+                {message && <p className="profile-message">{message}</p>}
             </div>
             </div>
         </div>
