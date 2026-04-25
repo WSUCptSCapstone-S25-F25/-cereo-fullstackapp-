@@ -104,6 +104,14 @@ def _ensure_schema():
             ON user_preferences(updated_at DESC);
         """)
 
+        # Migration 007 — user profile: bio and profile_image columns
+        cur.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT '';
+        """)
+        cur.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image TEXT DEFAULT '';
+        """)
+
         conn.commit()
         print("[MIGRATIONS] Schema is up-to-date.")
     except Exception as e:

@@ -6,7 +6,7 @@ account
 
 """
 
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form, HTTPException, UploadFile, File
 from database import conn, cur
 from pydantic import BaseModel
 from typing import Dict, Any
@@ -83,6 +83,16 @@ class SignupNotificationRequest(BaseModel):
 class UserPreferencesUpsertRequest(BaseModel):
     email: str
     preferences: Dict[str, Any] = {}
+
+class UpdateUsernameRequest(BaseModel):
+    email: str
+    new_username: str
+
+class UpdateBioRequest(BaseModel):
+    email: str
+    bio: str
+
+BIO_MAX_LENGTH = 300
 
 #Retrieve names and emails of all users for the administration page
 class User(BaseModel):
@@ -600,6 +610,89 @@ async def signup_data(
         return {"success": False, "message": str(e)}
 
 
+
+
+@account_router.get("/getProfileImage")
+async def get_profile_image(email: str):
+    try:
+        cur.execute("SELECT profile_image FROM users WHERE email = %s", (email,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"success": True, "profile_image": row[0] or ""}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@account_router.post("/uploadProfileImage")
+async def upload_profile_image(email: str = Form(...), image: UploadFile = File(...)):
+    try:
+        cur.execute("SELECT username FROM users WHERE email = %s", (email,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        from endpoint_files.images import save_uploaded_file
+        image_url = save_uploaded_file(image, require_gcs=False)
+
+        cur.execute("UPDATE users SET profile_image = %s WHERE email = %s", (image_url, email))
+        conn.commit()
+        return {"success": True, "message": "Profile image updated.", "profile_image": image_url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@account_router.get("/getBio")
+async def get_bio(email: str):
+    try:
+        cur.execute("SELECT bio FROM users WHERE email = %s", (email,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"success": True, "bio": row[0] or ""}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@account_router.post("/updateBio")
+async def update_bio(request: UpdateBioRequest):
+    try:
+        if len(request.bio) > BIO_MAX_LENGTH:
+            raise HTTPException(status_code=400, detail=f"Bio must be {BIO_MAX_LENGTH} characters or less.")
+        cur.execute("SELECT username FROM users WHERE email = %s", (request.email,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="User not found")
+        cur.execute("UPDATE users SET bio = %s WHERE email = %s", (request.bio, request.email))
+        conn.commit()
+        return {"success": True, "message": "Bio updated successfully.", "bio": request.bio}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@account_router.post("/updateUsername")
+async def update_username(request: UpdateUsernameRequest):
+    try:
+        cur.execute("SELECT username FROM users WHERE email = %s", (request.email,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="User not found")
+        cur.execute("UPDATE users SET username = %s WHERE email = %s", (request.new_username, request.email))
+        conn.commit()
+        return {"success": True, "message": "Username updated successfully.", "username": request.new_username}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @account_router.get("/profileCards")
