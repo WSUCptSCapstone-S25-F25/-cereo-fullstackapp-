@@ -28,20 +28,44 @@
   letter-spacing: 0.01em;
 }
 
-.admin-toggle-btn {
-  border: 1px solid var(--admin-border);
-  background: var(--admin-card);
-  color: var(--admin-text);
+.admin-page .admin-nav-tabs {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-page .admin-nav-tab {
+  border: 1px solid #c8d5e5;
+  background: #f6f8fb;
+  color: #5b697b;
   border-radius: 999px;
-  padding: 0.55rem 1rem;
+  padding: 0.45rem 1.1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.admin-toggle-btn:hover {
-  border-color: #c8d2df;
-  box-shadow: 0 6px 16px rgba(17, 35, 70, 0.08);
+.admin-page .admin-nav-tab:hover {
+  border-color: #aabdd6;
+  color: #17212f;
+  background: #edf1f7;
+  box-shadow: 0 4px 12px rgba(17, 35, 70, 0.07);
+}
+
+.admin-page .admin-nav-tab.active {
+  background: #dde6f7;
+  border-color: #adc4ee;
+  color: #1a3d9e;
+}
+
+.admin-stats-placeholder,
+.admin-empty-state {
+  color: var(--admin-subtext);
+  font-size: 0.95rem;
+  margin: 0;
 }
 
 .admin-card {
@@ -251,13 +275,13 @@
     padding: 1rem;
   }
 
-  .admin-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .admin-page .admin-nav-tabs {
+    gap: 0.3rem;
   }
 
-  .admin-toggle-btn {
-    width: 100%;
+  .admin-page .admin-nav-tab {
+    flex: 1;
+    text-align: center;
   }
 
   .admin-table th,

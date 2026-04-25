@@ -6,7 +6,7 @@ function Administration() {
     const [users, setUsers] = useState([]);
     const [signUpRequests, setSignUpRequests] = useState([]);
     const [error, setError] = useState(null);
-    const [isManagingUsers, setIsManagingUsers] = useState(true); // Default view
+    const [activeTab, setActiveTab] = useState('statistics');
     const [roleModalUser, setRoleModalUser] = useState(null);
     const [selectedRole, setSelectedRole] = useState('regular');
     const [roleConfirmText, setRoleConfirmText] = useState('');
@@ -18,12 +18,12 @@ function Administration() {
     const [isDeletingUser, setIsDeletingUser] = useState(false);
 
     useEffect(() => {
-        if (isManagingUsers) {
+        if (activeTab === 'manage-users') {
             fetchUsers();
-        } else {
+        } else if (activeTab === 'sign-up-requests') {
             fetchSignUpRequests();
         }
-    }, [isManagingUsers]);
+    }, [activeTab]);
 
     const fetchUsers = async () => {
         try {
@@ -177,20 +177,41 @@ function Administration() {
 
     
 
-    const toggleView = () => {
-        setIsManagingUsers(prevState => !prevState);
-    };
-
     return (
         <div className="admin-page">
             <div className="admin-header">
                 <h2 className="admin-title">Administration</h2>
-                <button className="admin-toggle-btn" onClick={toggleView}>
-                    {isManagingUsers ? 'View Sign Up Requests' : 'Manage Users'}
-                </button>
             </div>
 
-            {isManagingUsers ? (
+            <nav className="admin-nav-tabs">
+                <button
+                    className={`admin-nav-tab${activeTab === 'statistics' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('statistics')}
+                >
+                    Statistics
+                </button>
+                <button
+                    className={`admin-nav-tab${activeTab === 'manage-users' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('manage-users')}
+                >
+                    Manage Users
+                </button>
+                <button
+                    className={`admin-nav-tab${activeTab === 'sign-up-requests' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('sign-up-requests')}
+                >
+                    Sign Up Requests
+                </button>
+            </nav>
+
+            {activeTab === 'statistics' && (
+                <section className="admin-card">
+                    <h3 className="admin-section-title">Statistics</h3>
+                    <p className="admin-stats-placeholder">Statistics will be available here in a future update.</p>
+                </section>
+            )}
+
+            {activeTab === 'manage-users' && (
                 <section className="admin-card">
                     <h3 className="admin-section-title">User Management</h3>
                     {error && <p className="admin-error">Error: {error}</p>}
@@ -235,10 +256,15 @@ function Administration() {
                     </table>
                     </div>
                 </section>
-            ) : (
+            )}
+
+            {activeTab === 'sign-up-requests' && (
                 <section className="admin-card">
                     <h3 className="admin-section-title">Sign Up Requests</h3>
                     {error && <p className="admin-error">Error: {error}</p>}
+                    {signUpRequests.length === 0 ? (
+                        <p className="admin-empty-state">No sign-up requests.</p>
+                    ) : (
                     <div className="admin-table-wrap">
                     <table className="admin-table">
                         <thead>
@@ -276,6 +302,7 @@ function Administration() {
                         </tbody>
                     </table>
                     </div>
+                    )}
                 </section>
             )}
 
