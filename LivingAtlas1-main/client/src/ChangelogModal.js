@@ -15,6 +15,15 @@ function ChangelogModal({ isOpen, onClose }) {
             </div>
             <div className="changelog-modal-body">
 
+                <h3>Update Date: 4/26/2026</h3>
+                <p>Added a feature that allows users to create links to ArcGIS services through the Learn More modal edit mode. (Bugs related to this feature still exist and will be fixed in later updates.)</p>
+                <p>Refactored the Administration page and added a nav tab to access all tabs.</p>
+                <p>Revised the login workflow so that it redirects users to the home page after login.</p>
+                <p>Improved the display of links in the link section of the Learn More modal, and allow links to display as custom text labels.</p>
+                <p>Resolved a backend deployment timeout failure caused by a missing database connection timeout and an unguarded startup call.</p>
+
+                <hr />
+
                 <h3>Update Date: 4/24/2026</h3>
                 <p>Overhauled the visual design of the Profile page — content is now presented in a clean card layout with structured info rows, a styled bio section, polished form inputs with focus states, and a feedback message banner.</p>
                 <p>Fixed a bug where saving a profile image in edit mode would always fail with an error — the backend endpoints for profile image upload, bio, and username updates were missing from the active router and have now been added, along with a database migration to create the required columns.</p>
