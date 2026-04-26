@@ -6,21 +6,22 @@ conn = None  # Ensure conn is always defined
 try:
 
     # psql "host=cereo-livingatlas-db.postgres.database.azure.com port=5432 dbname=postgres user=CereoAtlas password=LivingAtlas25$ sslmode=require"
-    
+
 
     # Azure PostgreSQL database connection
     conn = psycopg2.connect(
-        dbname="postgres", 
+        dbname="postgres",
         user="CereoAtlas",
         password="LivingAtlas25$",
         host="cereo-livingatlas-db.postgres.database.azure.com",
         port="5432",
-        sslmode="require"  # Required for Azure PostgreSQL
+        sslmode="require",  # Required for Azure PostgreSQL
+        connect_timeout=10  # Fail fast if host unreachable (prevents Render port-scan timeout)
     )
     print("Database Connection Success!")
     connectionsucceeded = True
 
-except OperationalError as e:
+except Exception as e:
     print("Unable to connect to the database")
     print(f"Error: {e}")
 

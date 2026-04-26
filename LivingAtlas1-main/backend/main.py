@@ -114,8 +114,10 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.on_event("shutdown")
 def shutdown_event():
-    cur.close()
-    conn.close()
+    if cur:
+        cur.close()
+    if conn:
+        conn.close()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))  # Render sets this PORT automatically
