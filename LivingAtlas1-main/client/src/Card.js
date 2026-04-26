@@ -1446,8 +1446,11 @@ function Card(props) {
                                 )}
                             </div>
 
-                            <p><strong>Link:</strong></p>
+                            <p><strong>Link URL:</strong></p>
                             <input className="learn-more-inline-input" type="text" name="link" value={formData.link || ''} onChange={handleInputChange} />
+
+                            <p><strong>Link Text:</strong></p>
+                            <input className="learn-more-inline-input" type="text" name="link_text" placeholder="Display text (optional)" value={formData.link_text || ''} onChange={handleInputChange} />
 
                             <p><strong>Description:</strong></p>
                             <textarea className="learn-more-inline-textarea" name="description" value={formData.description || ''} onChange={handleInputChange} />
@@ -1490,7 +1493,7 @@ function Card(props) {
                                 <strong>Link:</strong>{' '}
                                 {formData.link ? (
                                     <a href={formData.link} target="_blank" rel="noopener noreferrer">
-                                        {formData.link}
+                                        {formData.link_text || formData.link}
                                     </a>
                                 ) : (
                                     <span>N/A</span>

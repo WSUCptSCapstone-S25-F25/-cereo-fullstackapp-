@@ -330,6 +330,7 @@ def allCards():
                 c.Organization,
                 c.Funding,
                 c.Link,
+                COALESCE(c.LinkText, '') AS LinkText,
                 STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
                 c.Latitude,
                 c.Longitude,
@@ -395,7 +396,7 @@ def allCards():
 
         columns = [
             "username", "email", "name", "title", "cardID", "category", "date", "description",
-            "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link",
+            "org", "funding", "link", "link_text", "tags", "latitude", "longitude", "thumbnail_link",
             "location_type", "polygon_fill_color", "polygon_line_style", "images", "files", "polygon_vertices"
         ]
 
@@ -439,6 +440,7 @@ async def upload_form(
     funding: Optional[str] = Form(None),
     org: Optional[str] = Form(None),
     link: Optional[str] = Form(None),
+    link_text: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
     files: Optional[list[UploadFile]] = File(None),
     thumbnail: Optional[UploadFile] = File(None),
@@ -576,12 +578,12 @@ async def upload_form(
             cur.execute("""
                 UPDATE Cards
                 SET Name=%s, Latitude=%s, Longitude=%s, CategoryID=%s,
-                    Description=%s, Organization=%s, Funding=%s, Link=%s,
+                    Description=%s, Organization=%s, Funding=%s, Link=%s, LinkText=%s,
                     Thumbnail_Link=COALESCE(%s, Thumbnail_Link), UserID=%s,
                     LocationType=%s, PolygonFillColor=%s, PolygonLineStyle=%s
                 WHERE CardID=%s
             """, (name, latitude_val, longitude_val, categoryID, description, org,
-                  funding, link, thumbnail_url, userID, location_type or "point",
+                  funding, link, link_text, thumbnail_url, userID, location_type or "point",
                   polygon_fill_color or '#0077c0', polygon_line_style or 'solid', nextcardid))
             cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
             # Delete old polygon vertices on update
@@ -590,12 +592,12 @@ async def upload_form(
             cur.execute("""
                 INSERT INTO Cards
                     (CardID, UserID, Name, Title, Latitude, Longitude, CategoryID,
-                     Description, Organization, Funding, Link, Thumbnail_Link, LocationType,
+                     Description, Organization, Funding, Link, LinkText, Thumbnail_Link, LocationType,
                      PolygonFillColor, PolygonLineStyle)
                 VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (nextcardid, userID, name, title, latitude_val, longitude_val,
-                  categoryID, description, org, funding, link, thumbnail_url, location_type or "point",
+                  categoryID, description, org, funding, link, link_text, thumbnail_url, location_type or "point",
                   polygon_fill_color or '#0077c0', polygon_line_style or 'solid'))
 
         # --------------------------------------------------
