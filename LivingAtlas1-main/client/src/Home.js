@@ -45,6 +45,7 @@ function Home(props) {
         Math.max(300, Math.min(900, Math.floor(window.innerWidth * 0.41)))
     );
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
+    const [arcgisNavigateTarget, setArcgisNavigateTarget] = useState(null);
     const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);
     const [isCustomLayerPanelOpen, setIsCustomLayerPanelOpen] = useState(false);
     const [cardPanelSide, setCardPanelSide] = useState('right');
@@ -73,6 +74,16 @@ function Home(props) {
             document.body.style.overflow = previousOverflow;
             document.body.style.overscrollBehaviorY = previousOverscrollBehaviorY;
         };
+    }, []);
+
+    // Listen for card linked-ArcGIS-item clicks → open panel and navigate
+    useEffect(() => {
+        const handler = (e) => {
+            setIsUploadPanelOpen(true);
+            setArcgisNavigateTarget(e.detail);
+        };
+        window.addEventListener('open-arcgis-panel', handler);
+        return () => window.removeEventListener('open-arcgis-panel', handler);
     }, []);
 
     // Fetch layers and legend for demo folder/item
@@ -431,6 +442,8 @@ function Home(props) {
                     setArcgisLayerAdded={setArcgisLayerAdded}
                     areaVisibility={areaVisibility}
                     handleAreaCheckbox={handleAreaCheckbox}
+                    navigateToItem={arcgisNavigateTarget}
+                    onNavigateToItemDone={() => setArcgisNavigateTarget(null)}
                 />
 
                 {/* Custom Layers Button */}

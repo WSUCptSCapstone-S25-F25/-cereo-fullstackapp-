@@ -85,6 +85,8 @@ function ArcgisUploadPanel({
     isAdmin = false,
     areaVisibility = {},
     handleAreaCheckbox,
+    navigateToItem = null,
+    onNavigateToItemDone,
 }) {
     // Track selected state
     const [selectedState, setSelectedState] = useState('WA');
@@ -167,6 +169,10 @@ function ArcgisUploadPanel({
 
     // Track loading states for layers to reliably check completion
     const loadingStates = useRef({}); // { messageId: boolean }
+
+    // Navigation target tracking
+    const pendingNavigateRef = useRef(null); // { serviceKey, layerId, stateCode, folderName }
+    const folderAreaRef = useRef(null); // ref to upload-panel-folder-area for scrolling
 
     // Persistence: track whether saved selections have been loaded for current state/datasource
     const selectionsLoadedRef = useRef(false);
@@ -573,6 +579,44 @@ function ArcgisUploadPanel({
             setIsMapLayerLoading(false);
         }
     }, [isOpen]);
+
+    // When a navigateToItem target arrives, expand tree and store pending navigation
+    useEffect(() => {
+        if (!navigateToItem || !isOpen) return;
+        const { serviceKey, stateCode, folderName } = navigateToItem;
+        pendingNavigateRef.current = navigateToItem;
+        setExpandedStates(prev => new Set([...prev, stateCode]));
+        setExpandedFolders(prev => new Set([...prev, folderName]));
+        setExpandedServices(prev => new Set([...prev, serviceKey]));
+    }, [navigateToItem, isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Once layers for the target service are loaded, apply checkbox and scroll
+    useEffect(() => {
+        const target = pendingNavigateRef.current;
+        if (!target) return;
+        const { serviceKey, layerId } = target;
+        const layers = serviceLayers[serviceKey];
+        if (!layers) return; // not yet loaded
+
+        pendingNavigateRef.current = null;
+
+        if (layerId != null) {
+            setCheckedLayerIds(prev => ({
+                ...prev,
+                [serviceKey]: [...new Set([...(prev[serviceKey] || []), layerId])],
+            }));
+        } else {
+            const allIds = layers.map(l => l.id);
+            setCheckedLayerIds(prev => ({ ...prev, [serviceKey]: allIds }));
+        }
+
+        // Scroll to the service element
+        setTimeout(() => {
+            const el = folderAreaRef.current?.querySelector(`[data-service-key="${serviceKey}"]`);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            onNavigateToItemDone?.();
+        }, 120);
+    }, [serviceLayers]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Add/Remove button logic:
     const handleAddRemove = (service, layers) => {
@@ -1729,7 +1773,7 @@ function ArcgisUploadPanel({
                                 </div>
                             )}
                         </div>
-                        <div className="upload-panel-folder-area">
+                        <div className="upload-panel-folder-area" ref={folderAreaRef}>
                         {/* Built-in Layers folder */}
                         <div>
                             <div
@@ -1813,7 +1857,7 @@ function ArcgisUploadPanel({
                                     const allFeatureLayers = getAllLeafLayers(layerTree);
 
                                     return (
-                                        <div key={service.key} className="tree-node">
+                                        <div key={service.key} className="tree-node" data-service-key={service.key}>
                                             <div
                                                 className="upload-item"
                                                 style={searchResult?.matchedServiceKeys?.has(service.key) ? { fontWeight: 'bold' } : undefined}

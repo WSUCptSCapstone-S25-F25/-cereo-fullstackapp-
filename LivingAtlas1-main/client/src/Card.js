@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
 import PolygonDrawingModal from './PolygonDrawingModal';
+import ArcGISPickerModal from './ArcGISPickerModal';
 
 const CARD_CATEGORIES = ['River', 'Watershed', 'Places', 'Other'];
 
@@ -36,6 +37,9 @@ function Card(props) {
     });
     const [loading, setLoading] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
+    const [linkedArcgisItems, setLinkedArcgisItems] = useState([]);
+    const [isArcgisPickerOpen, setIsArcgisPickerOpen] = useState(false);
+    const linkedItemsLoadedRef = useRef(null); // tracks which cardID was last loaded
     const [thumbnail, setThumbnail] = useState(null);
     const [preview, setPreview] = useState(
         formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
@@ -78,8 +82,15 @@ function Card(props) {
     useEffect(() => {
         if (props.forceOpenLearnMoreSignal) {
             setIsModalOpen(true);
+            const cardId = formData.cardID;
+            if (cardId && linkedItemsLoadedRef.current !== cardId) {
+                linkedItemsLoadedRef.current = cardId;
+                api.get(`/cardArcGISLinks?card_id=${cardId}`)
+                    .then(res => setLinkedArcgisItems(res.data.data || []))
+                    .catch(() => {});
+            }
         }
-    }, [props.forceOpenLearnMoreSignal]);
+    }, [props.forceOpenLearnMoreSignal]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Ensure username and name always have safe defaults
     // Now handled by handleEdit
@@ -101,6 +112,13 @@ function Card(props) {
         setIsAllImagesView(false);
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
+        const cardId = formData.cardID;
+        if (cardId && linkedItemsLoadedRef.current !== cardId) {
+            linkedItemsLoadedRef.current = cardId;
+            api.get(`/cardArcGISLinks?card_id=${cardId}`)
+                .then(res => setLinkedArcgisItems(res.data.data || []))
+                .catch(() => {});
+        }
     };
 
     const handleZoom = (e) => {
@@ -1554,6 +1572,88 @@ function Card(props) {
                                 </ul>
                             </div>
                         )
+                    )}
+
+                    {/* Linked ArcGIS Services/Layers Section */}
+                    <div className="learn-more-arcgis-links-section">
+                        <p><strong>Linked ArcGIS Services/Layers:</strong></p>
+                        {linkedArcgisItems.length === 0 ? (
+                            <p className="learn-more-no-arcgis-links">No linked ArcGIS items.</p>
+                        ) : (
+                            <ul className="learn-more-arcgis-links-list">
+                                {linkedArcgisItems.map(item => (
+                                    <li key={item.id} className="learn-more-arcgis-link-item">
+                                        <button
+                                            type="button"
+                                            className="learn-more-arcgis-link-btn"
+                                            onClick={() => {
+                                                window.dispatchEvent(new CustomEvent('open-arcgis-panel', {
+                                                    detail: {
+                                                        serviceKey: item.service_key,
+                                                        layerId: item.layer_id,
+                                                        stateCode: item.state_code,
+                                                        folderName: item.folder_name,
+                                                    }
+                                                }));
+                                            }}
+                                            title="Open in ArcGIS Upload Panel"
+                                        >
+                                            {item.display_name}
+                                        </button>
+                                        {isLearnMoreEditMode && (
+                                            <button
+                                                type="button"
+                                                className="learn-more-arcgis-link-delete-btn"
+                                                title="Remove link"
+                                                onClick={async () => {
+                                                    try {
+                                                        await api.delete(`/cardArcGISLinks/${item.id}`);
+                                                        setLinkedArcgisItems(prev => prev.filter(i => i.id !== item.id));
+                                                    } catch (err) {
+                                                        console.error('Failed to remove ArcGIS link:', err);
+                                                    }
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {isLearnMoreEditMode && (
+                            <button
+                                type="button"
+                                className="learn-more-add-arcgis-btn"
+                                onClick={() => setIsArcgisPickerOpen(true)}
+                            >
+                                + Add ArcGIS Item
+                            </button>
+                        )}
+                    </div>
+
+                    {/* ArcGIS Picker Modal */}
+                    {isArcgisPickerOpen && (
+                        <ArcGISPickerModal
+                            onAdd={async (links) => {
+                                const cardId = formData.cardID;
+                                if (!cardId) return;
+                                const newItems = [];
+                                for (const link of links) {
+                                    try {
+                                        const res = await api.post('/cardArcGISLinks', { card_id: cardId, ...link });
+                                        newItems.push({ id: res.data.id, card_id: cardId, ...link });
+                                    } catch (err) {
+                                        console.error('Failed to add ArcGIS link:', err);
+                                    }
+                                }
+                                if (newItems.length > 0) {
+                                    setLinkedArcgisItems(prev => [...prev, ...newItems]);
+                                }
+                                setIsArcgisPickerOpen(false);
+                            }}
+                            onClose={() => setIsArcgisPickerOpen(false)}
+                        />
                     )}
                         </>
                     )}
