@@ -112,6 +112,11 @@ def _ensure_schema():
             ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image TEXT DEFAULT '';
         """)
 
+        # Migration 008 — LinkText column for custom link display labels
+        cur.execute("""
+            ALTER TABLE Cards ADD COLUMN IF NOT EXISTS LinkText VARCHAR(255);
+        """)
+
         conn.commit()
         print("[MIGRATIONS] Schema is up-to-date.")
     except Exception as e:

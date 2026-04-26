@@ -24,7 +24,10 @@ def _ensure_table():
         conn.commit()
 
 
-_ensure_table()
+try:
+    _ensure_table()
+except Exception as e:
+    print(f"[CardArcGISLinks] Failed to ensure table: {e}")
 
 
 class LinkCreate(BaseModel):
