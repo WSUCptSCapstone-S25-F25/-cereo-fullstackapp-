@@ -580,17 +580,20 @@ function ArcgisUploadPanel({
         }
     }, [isOpen]);
 
-    // When a navigateToItem target arrives, expand tree and store pending navigation
+    // When a navigateToItem target arrives, expand tree and store pending navigation.
+    // Also depends on ARCGIS_SERVICES.length so it re-runs after the reset effect that
+    // fires when services finish loading from DB (which clears expanded states).
     useEffect(() => {
         if (!navigateToItem || !isOpen) return;
+        if (ARCGIS_SERVICES.length === 0) return; // wait for services to load
         const { serviceKey, stateCode, folderName } = navigateToItem;
         pendingNavigateRef.current = navigateToItem;
         setExpandedStates(prev => new Set([...prev, stateCode]));
         setExpandedFolders(prev => new Set([...prev, folderName]));
         setExpandedServices(prev => new Set([...prev, serviceKey]));
-    }, [navigateToItem, isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [navigateToItem, isOpen, ARCGIS_SERVICES.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Once layers for the target service are loaded, apply checkbox and scroll
+    // Once layers for the target service are loaded, apply checkbox, show loading animation and scroll
     useEffect(() => {
         const target = pendingNavigateRef.current;
         if (!target) return;
@@ -600,14 +603,23 @@ function ArcgisUploadPanel({
 
         pendingNavigateRef.current = null;
 
+        const service = ARCGIS_SERVICES.find(s => s.key === serviceKey);
+
         if (layerId != null) {
             setCheckedLayerIds(prev => ({
                 ...prev,
                 [serviceKey]: [...new Set([...(prev[serviceKey] || []), layerId])],
             }));
+            if (service) {
+                const layer = layers.find(l => l.id === layerId);
+                if (layer) addLoadingMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer));
+            }
         } else {
             const allIds = layers.map(l => l.id);
             setCheckedLayerIds(prev => ({ ...prev, [serviceKey]: allIds }));
+            if (service) {
+                addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
+            }
         }
 
         // Scroll to the service element
