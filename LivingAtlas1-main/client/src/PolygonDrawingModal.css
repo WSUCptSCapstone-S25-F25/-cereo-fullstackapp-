@@ -394,6 +394,16 @@
     border-radius: 50%;
 }
 
+.polygon-draw-style-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.polygon-draw-clear-btn:hover:not(:disabled) {
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.08);
+}
+
 .polygon-draw-shape-dropdown {
     min-width: 110px;
 }

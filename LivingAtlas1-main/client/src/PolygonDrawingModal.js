@@ -19,6 +19,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const [isDragMode, setIsDragMode] = useState(false);
     const [isRotateMode, setIsRotateMode] = useState(false);
     const [isResizeMode, setIsResizeMode] = useState(false);
+    const [history, setHistory] = useState([]); // undo stack
+    const [future, setFuture] = useState([]); // redo stack
     const shapePlacingRef = useRef(null); // { shape, origin: {lat,lng}, active: bool }
     const dragRef = useRef(null); // { origin: {lat,lng}, startVertices: [...] }
     const dragHandlersRef = useRef(null); // store bound handlers for cleanup
@@ -32,6 +34,11 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const fillSourceAdded = useRef(false);
     const mapClickHandlerRef = useRef(null);
     const modalRef = useRef(null);
+    const verticesRef = useRef(vertices); // always-current vertices, safe for use inside stale closures
+    verticesRef.current = vertices;
+    const saveToHistoryRef = useRef(null); // updated each render to capture latest vertices
+    const handleUndoRef = useRef(null);
+    const handleRedoRef = useRef(null);
 
     const POLYGON_LINE_SOURCE = 'card-polygon-draw-line';
     const POLYGON_LINE_LAYER = 'card-polygon-draw-line-layer';
@@ -153,6 +160,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             .setLngLat([vertex.lng, vertex.lat])
             .addTo(map);
 
+        marker.on('dragstart', () => { saveToHistoryRef.current?.(); });
         marker.on('dragend', () => {
             const lngLat = marker.getLngLat();
             setVertices(prev => {
@@ -196,6 +204,54 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 label.style.display = show ? '' : 'none';
             }
         });
+    }, []);
+
+    // ── Undo / Redo ──
+    // saveToHistoryRef.current() always captures the latest vertices via verticesRef
+    saveToHistoryRef.current = () => {
+        const snap = verticesRef.current;
+        setHistory(prev => [...prev.slice(-49), snap]);
+        setFuture([]);
+    };
+
+    const handleUndo = useCallback(() => {
+        if (history.length === 0) return;
+        const prevVerts = history[history.length - 1];
+        setFuture(f => [vertices, ...f.slice(0, 49)]);
+        setHistory(h => h.slice(0, -1));
+        setVertices(prevVerts);
+        updatePolygonOnMap(prevVerts);
+        rebuildMarkers(prevVerts);
+        circleMetaRef.current = null;
+    }, [history, vertices, updatePolygonOnMap, rebuildMarkers]);
+
+    const handleRedo = useCallback(() => {
+        if (future.length === 0) return;
+        const nextVerts = future[0];
+        setHistory(h => [...h.slice(-49), vertices]);
+        setFuture(f => f.slice(1));
+        setVertices(nextVerts);
+        updatePolygonOnMap(nextVerts);
+        rebuildMarkers(nextVerts);
+        circleMetaRef.current = null;
+    }, [future, vertices, updatePolygonOnMap, rebuildMarkers]);
+
+    handleUndoRef.current = handleUndo;
+    handleRedoRef.current = handleRedo;
+
+    // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Y / Ctrl+Shift+Z = redo
+    useEffect(() => {
+        const handler = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                handleUndoRef.current?.();
+            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                handleRedoRef.current?.();
+            }
+        };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
     }, []);
 
     // ── Shape preset helpers ──
@@ -307,6 +363,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         const onMouseDown = (e) => {
             e.preventDefault();
             const { lat, lng } = e.lngLat;
+            saveToHistoryRef.current?.();
             setVertices(currentVerts => {
                 dragRef.current = { origin: { lat, lng }, startVertices: currentVerts.map(v => ({ ...v })) };
                 return currentVerts;
@@ -390,6 +447,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         const onMouseDown = (e) => {
             e.preventDefault();
             const { lat, lng } = e.lngLat;
+            saveToHistoryRef.current?.();
             setVertices(currentVerts => {
                 const cx = currentVerts.reduce((s, v) => s + v.lng, 0) / currentVerts.length;
                 const cy = currentVerts.reduce((s, v) => s + v.lat, 0) / currentVerts.length;
@@ -565,6 +623,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 marker._resizeType = h.type;
 
                 marker.on('dragstart', () => {
+                    saveToHistoryRef.current?.();
                     setVertices(currentVerts => {
                         resizeStateRef.current = {
                             handleType: h.type,
@@ -756,6 +815,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             map.off('mouseup', onMouseUp);
 
             if (finalVerts.length >= 3) {
+                saveToHistoryRef.current?.();
                 // Round vertices
                 const rounded = finalVerts.map(v => ({
                     lat: parseFloat(v.lat.toFixed(6)),
@@ -812,6 +872,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
 
     // Clear all drawn vertices and shapes
     const handleClearAll = useCallback(() => {
+        saveToHistoryRef.current?.();
         // Exit drag/rotate mode if active
         if (isDragMode) { stopDragMode(); setIsDragMode(false); }
         if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
@@ -843,20 +904,33 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         }
     }, [updatePolygonOnMap, createDraggableMarker, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode]);
 
-    // Hijack MapboxDraw trash button to clear polygon drawing
+    // Hide MapboxDraw trash button from the draw bar while the panel is open
     useEffect(() => {
-        const trashBtn = document.querySelector('.mapbox-gl-draw_trash');
-        if (!trashBtn) return;
+        const hiddenBtns = new Set();
 
-        const onTrashClick = (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            handleClearAll();
+        const hideTrash = () => {
+            document.querySelectorAll('.mapbox-gl-draw_trash').forEach(btn => {
+                if (!hiddenBtns.has(btn)) {
+                    hiddenBtns.add(btn);
+                    btn.dataset._prevDisplay = btn.style.display;
+                    btn.style.display = 'none';
+                }
+            });
         };
 
-        trashBtn.addEventListener('click', onTrashClick, true);
-        return () => trashBtn.removeEventListener('click', onTrashClick, true);
-    }, [handleClearAll]);
+        hideTrash();
+
+        const observer = new MutationObserver(hideTrash);
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+
+        return () => {
+            observer.disconnect();
+            hiddenBtns.forEach(btn => {
+                btn.style.display = btn.dataset._prevDisplay || '';
+                delete btn.dataset._prevDisplay;
+            });
+        };
+    }, []);
 
     // Position modal flush with the draw control bar
     useEffect(() => {
@@ -932,6 +1006,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             const { lat, lng } = e.lngLat;
             const newVertex = { lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)) };
 
+            saveToHistoryRef.current?.();
             setVertices(prev => {
                 const updated = [...prev, newVertex];
                 updatePolygonOnMap(updated);
@@ -1003,6 +1078,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             const { lat, lng } = e.lngLat;
             const newVertex = { lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)) };
 
+            saveToHistoryRef.current?.();
             setVertices(prev => {
                 const updated = [...prev, newVertex];
                 updatePolygonOnMap(updated);
@@ -1019,6 +1095,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     };
 
     const handleRemoveVertex = (index) => {
+        saveToHistoryRef.current?.();
         setVertices(prev => {
             const updated = prev.filter((_, i) => i !== index);
             updatePolygonOnMap(updated);
@@ -1222,6 +1299,52 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         onClick={handleToggleResizeMode}
                     >
                         <FontAwesomeIcon icon={faUpRightAndDownLeftFromCenter} style={{ fontSize: 14, width: 16, height: 16 }} />
+                    </button>
+                </div>
+                {/* Undo */}
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className="polygon-draw-style-btn"
+                        title="Undo (Ctrl+Z)"
+                        disabled={history.length === 0}
+                        onClick={handleUndo}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 6 C2 3.5 4 1.5 7 1.5 C10.5 1.5 13.5 4 13.5 8 C13.5 12 10.5 14.5 7 14.5"/>
+                            <polyline points="5,3 2,6 5,9"/>
+                        </svg>
+                    </button>
+                </div>
+                {/* Redo */}
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className="polygon-draw-style-btn"
+                        title="Redo (Ctrl+Y)"
+                        disabled={future.length === 0}
+                        onClick={handleRedo}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 6 C14 3.5 12 1.5 9 1.5 C5.5 1.5 2.5 4 2.5 8 C2.5 12 5.5 14.5 9 14.5"/>
+                            <polyline points="11,3 14,6 11,9"/>
+                        </svg>
+                    </button>
+                </div>
+                {/* Clear all (delete) */}
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className="polygon-draw-style-btn polygon-draw-clear-btn"
+                        title="Clear All"
+                        disabled={vertices.length === 0}
+                        onClick={handleClearAll}
+                    >
+                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="0.5,3.5 14.5,3.5"/>
+                            <path d="M2.5,3.5 L3,13 L12,13 L12.5,3.5"/>
+                            <path d="M5.5,3.5 L5.5,1.5 L9.5,1.5 L9.5,3.5"/>
+                        </svg>
                     </button>
                 </div>
             </div>
