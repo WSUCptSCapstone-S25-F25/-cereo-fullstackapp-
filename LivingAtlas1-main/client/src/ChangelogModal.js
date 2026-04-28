@@ -15,6 +15,14 @@ function ChangelogModal({ isOpen, onClose }) {
             </div>
             <div className="changelog-modal-body">
 
+                <h3>Update Date: 4/28/2026</h3>
+                <p>Added undo/redo support to the Draw Polygon modal. Use Ctrl+Z to undo and Ctrl+Y (or Ctrl+Shift+Z) to redo any change to polygon vertices.</p>
+                <p>Moved the Clear All (delete) button from the draw control bar into the Draw Polygon modal toolbar, so all drawing actions are managed from one place.</p>
+                <p>Removed the Teardrop shape from the polygon shape presets.</p>
+                <p>Fixed a bug where the draw bar's delete button could remain visible while the Draw Polygon modal was open — the button is now reliably hidden for the entire duration of the modal.</p>
+
+                <hr />
+
                 <h3>Update Date: 4/26/2026</h3>
                 <p>Added a feature that allows users to create links to ArcGIS services through the Learn More modal edit mode. (Bugs related to this feature still exist and will be fixed in later updates.)</p>
                 <p>Refactored the Administration page and added a nav tab to access all tabs.</p>
