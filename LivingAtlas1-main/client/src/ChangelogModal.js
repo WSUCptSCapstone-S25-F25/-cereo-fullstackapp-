@@ -17,9 +17,9 @@ function ChangelogModal({ isOpen, onClose }) {
 
                 <h3>Update Date: 4/28/2026</h3>
                 <p>Added undo/redo support to the Draw Polygon modal. Use Ctrl+Z to undo and Ctrl+Y (or Ctrl+Shift+Z) to redo any change to polygon vertices.</p>
-                <p>Moved the Clear All (delete) button from the draw control bar into the Draw Polygon modal toolbar, so all drawing actions are managed from one place.</p>
-                <p>Removed the Teardrop shape from the polygon shape presets.</p>
-                <p>Fixed a bug where the draw bar's delete button could remain visible while the Draw Polygon modal was open — the button is now reliably hidden for the entire duration of the modal.</p>
+                <p>The draw bar's delete button is now hidden while the Draw Polygon modal is open — the Clear All action is only accessible from within the modal toolbar.</p>
+                <p>Fixed a bug where clicking a linked item in the Learn More modal's "Linked ArcGIS Services/Layers" section would open the Upload Panel but fail to expand the correct folder or scroll to the target item.</p>
+                <p>Fixed a bug where opening the Upload Panel via a linked item in Learn More would not show the layer-loading animation.</p>
 
                 <hr />
 
