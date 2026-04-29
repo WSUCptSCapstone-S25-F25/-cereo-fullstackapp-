@@ -997,9 +997,8 @@ function Card(props) {
     const currentImage = imageList[currentImageIndex] || imageList[0];
     const cardCurrentImage = cardImageList[currentImageIndex] || cardImageList[0];
     const hasMultipleImages = cardImageList.length > 1;
-    const isCardCurrentImageDefault = !cardCurrentImage?.imageID && (
-        cardCurrentImage?.url === '/CEREO-logo.png' || cardCurrentImage?.url === cardThumbnailSrc
-    );
+    const isCardCurrentImageDefault = cardCurrentImage?.url === '/CEREO-logo.png' ||
+        (typeof cardCurrentImage?.url === 'string' && cardCurrentImage.url.endsWith('/CEREO-logo.png'));
     const totalIndicatorCount = cardImageList.length;
     const visibleIndicatorCount = Math.min(5, totalIndicatorCount);
     const indicatorWindowStart = Math.max(
