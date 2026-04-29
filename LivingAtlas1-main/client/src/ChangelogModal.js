@@ -17,7 +17,7 @@ function ChangelogModal({ isOpen, onClose }) {
 
                 <h3>Update Date: 4/29/2026</h3>
                 <p>Improved button icon in the Draw Polygon modal toolbar.</p>
-                <p>Added a "Curve" option to the line style menu in the Draw Polygon modal. When enabled, all polygon edges are rendered as smooth quadratic bezier curves. Each edge shows a draggable control-point handle; hovering over the curve or its handles shows a grab cursor, and dragging adjusts the curvature of that edge.</p>
+                <p>Added a "Curve" option to the line style menu in the Draw Polygon modal. When enabled, all polygon edges are rendered as smooth quadratic bezier curves. Each edge shows a draggable control-point handle and dragging adjusts the curvature of that edge.</p>
                 <p>Added pentagon and hexagon shape presets to the Draw Polygon modal's shape menu.</p>
                 <p>Added a "Reset Map View" button to the draw control bar that flies the map back to the default view.</p>
 
