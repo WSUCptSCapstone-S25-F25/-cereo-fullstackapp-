@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchServicesByStateMap } from './arcgisServicesDb';
 import { fetchArcgisLayers, fetchArcgisLegend } from './arcgisDataUtils';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers } from './LayerTree';
 import './LayerTree.css';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
+import { buildMatchList, useSearchNav } from './arcgisSearchNavUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import './ArcGISPickerModal.css';
 import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
 import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
@@ -37,15 +38,22 @@ function ArcGISPickerModal({ onAdd, onClose }) {
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchResult, setSearchResult] = useState(null);
 
-    // Build per-state service lists
-    const allServicesByState = {};
-    STATE_CODES.forEach(code => {
-        allServicesByState[code] =
-            servicesFromDb[code] && servicesFromDb[code].length > 0
-                ? servicesFromDb[code]
-                : LOCAL_SERVICES[code] || [];
-    });
+    // Build per-state service lists (memoized to stabilize matchList)
+    const allServicesByState = useMemo(() => {
+        const result = {};
+        STATE_CODES.forEach(code => {
+            result[code] = servicesFromDb[code]?.length > 0 ? servicesFromDb[code] : LOCAL_SERVICES[code] || [];
+        });
+        return result;
+    }, [servicesFromDb]); // eslint-disable-line react-hooks/exhaustive-deps
     const allServices = STATE_CODES.flatMap(code => allServicesByState[code]);
+
+    // Search navigation
+    const matchList = useMemo(
+        () => buildMatchList({ searchResult, allServicesByState, stateCodes: STATE_CODES, serviceLayers }),
+        [searchResult, allServicesByState, serviceLayers]
+    );
+    const { currentIndex, total: matchTotal, currentMatchId, goToNext, goToPrev, initNav, resetNav } = useSearchNav(matchList);
 
     // Group by state + folder
     const servicesByStateAndFolder = {};
@@ -99,24 +107,66 @@ function ArcGISPickerModal({ onAdd, onClose }) {
         });
     }, [expandedServices]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleSearch = () => {
+    const handleSearch = async () => {
         if (!searchKeyword.trim()) {
             setSearchResult(null);
             setExpandedStates(new Set());
             setExpandedFolders(new Set());
             setExpandedServices(new Set());
+            setExpandedLayers(new Set());
             return;
         }
-        const result = filterUploadPanelData({
+
+        // First pass: find which services match by name/folder (without layer data)
+        const firstPass = filterUploadPanelData({
             services: allServices,
             serviceLayers,
             searchType: 'any',
             keyword: searchKeyword,
         });
+
+        // Fetch layers for all services that don't have them yet
+        const serviceKeysToFetch = allServices
+            .filter(s => serviceLayers[s.key] === undefined)
+            .map(s => s.key);
+
+        let updatedServiceLayers = { ...serviceLayers };
+        if (serviceKeysToFetch.length > 0) {
+            await Promise.all(serviceKeysToFetch.map(async (key) => {
+                const service = allServices.find(s => s.key === key);
+                if (!service?.url) return;
+                try {
+                    const layers = await fetchArcgisLayers(service.url);
+                    updatedServiceLayers[key] = layers || [];
+                } catch {
+                    updatedServiceLayers[key] = [];
+                }
+            }));
+            setServiceLayers(prev => ({ ...prev, ...updatedServiceLayers }));
+        }
+
+        // Second pass with full layer data for accurate expandedLayerKeys
+        const result = filterUploadPanelData({
+            services: allServices,
+            serviceLayers: updatedServiceLayers,
+            searchType: 'any',
+            keyword: searchKeyword,
+        });
+
+        // Compute match list with the fresh data BEFORE React re-renders (needed for initNav count)
+        const mList = buildMatchList({
+            searchResult: result,
+            allServicesByState,
+            stateCodes: STATE_CODES,
+            serviceLayers: updatedServiceLayers,
+        });
+
         setSearchResult(result);
         setExpandedStates(new Set(STATE_CODES));
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+        initNav(mList.length);
     };
 
     const handleClear = () => {
@@ -125,6 +175,8 @@ function ArcGISPickerModal({ onAdd, onClose }) {
         setExpandedStates(new Set());
         setExpandedFolders(new Set());
         setExpandedServices(new Set());
+        setExpandedLayers(new Set());
+        resetNav();
     };
 
     const toggleSelect = (key, item) => {
@@ -149,6 +201,10 @@ function ArcGISPickerModal({ onAdd, onClose }) {
         const expandKey = `${service.key}-${node.id}`;
         const isExpanded = expandedLayers.has(expandKey);
 
+        const nodeName = node.name || node.label || `Layer ${node.id}`;
+        const isLayerNameBold = searchResult?.matchedLayerIds?.[service.key]?.has(node.id) ||
+            (searchResult?.keyword && nodeName && nodeName.toLowerCase().includes(searchResult.keyword));
+
         if (isGroupLayer || hasChildren) {
             const descendantLeaves = getDescendantLeafLayers(node);
             const checkedCount = descendantLeaves.filter(l =>
@@ -156,8 +212,13 @@ function ArcGISPickerModal({ onAdd, onClose }) {
             ).length;
             const allChecked = descendantLeaves.length > 0 && checkedCount === descendantLeaves.length;
             const someChecked = checkedCount > 0 && !allChecked;
+            const groupMatchId = isLayerNameBold ? `layer-${service.key}-${node.id}` : undefined;
             return (
-                <div key={node.id} className="tree-node">
+                <div
+                    key={node.id}
+                    className={`tree-node${currentMatchId === groupMatchId && groupMatchId ? ' search-nav-current' : ''}`}
+                    data-search-match-id={groupMatchId}
+                >
                     <div
                         className="upload-layer-group"
                         onClick={() => setExpandedLayers(prev => {
@@ -196,8 +257,8 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                         <span style={{ color: '#666', userSelect: 'none', marginRight: 4 }}>
                             {isExpanded ? '▼' : '►'}
                         </span>
-                        <span className="upload-layer-name" title={node.name || node.label || `Layer ${node.id}`} style={{ flex: 1 }}>
-                            {node.name || node.label || `Layer ${node.id}`}
+                        <span className="upload-layer-name" title={nodeName} style={{ flex: 1, fontWeight: isLayerNameBold ? 'bold' : 'normal' }}>
+                            {nodeName}
                         </span>
                         {descendantLeaves.length > 0 && (
                             <span style={{ color: '#999', fontSize: '10px', marginLeft: 4 }}>
@@ -225,9 +286,15 @@ function ArcGISPickerModal({ onAdd, onClose }) {
         }
         const hasMultipleLegends = legendItems.length > 1;
         const isLegendExpanded = expandedLayers.has(expandKey);
+        const leafMatchId = isLayerNameBold ? `layer-${service.key}-${node.id}` : undefined;
 
         return (
-            <div key={node.id} className="upload-layer-row tree-node" style={{ flexDirection: 'column', alignItems: 'flex-start', marginBottom: 2 }}>
+            <div
+                key={node.id}
+                className={`upload-layer-row tree-node${currentMatchId === leafMatchId && leafMatchId ? ' search-nav-current' : ''}`}
+                data-search-match-id={leafMatchId}
+                style={{ flexDirection: 'column', alignItems: 'flex-start', marginBottom: 2 }}
+            >
                 <div
                     style={{ display: 'flex', alignItems: 'center', gap: 4, minHeight: 20, width: '100%', cursor: hasMultipleLegends ? 'pointer' : 'default' }}
                     onClick={hasMultipleLegends ? () => setExpandedLayers(prev => {
@@ -264,8 +331,8 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                             style={{ width: 14, height: 14, flexShrink: 0 }}
                         />
                     )}
-                    <span className="upload-layer-name" title={node.name || node.label || `Layer ${node.id}`} style={{ flex: 1 }}>
-                        {node.name || node.label || `Layer ${node.id}`}
+                    <span className="upload-layer-name" title={nodeName} style={{ flex: 1, fontWeight: isLayerNameBold ? 'bold' : 'normal' }}>
+                        {nodeName}
                     </span>
                     {hasMultipleLegends && (
                         <span style={{ color: '#888', fontSize: '10px', marginLeft: 4, flexShrink: 0 }}>
@@ -351,7 +418,8 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                                 return (
                                     <div key={folder}>
                                         <div
-                                            className="arcgis-picker-folder-row"
+                                            className={`arcgis-picker-folder-row${currentMatchId === `folder-${stateCode}-${folder}` ? ' search-nav-current' : ''}`}
+                                            data-search-match-id={searchResult?.matchedFolderNames?.has(folder) ? `folder-${stateCode}-${folder}` : undefined}
                                             onClick={() => setExpandedFolders(prev => {
                                                 const n = new Set(prev);
                                                 n.has(folder) ? n.delete(folder) : n.add(folder);
@@ -385,7 +453,8 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                                                     return (
                                                         <div key={service.key} className="arcgis-picker-service-block">
                                                             <div
-                                                                className="arcgis-picker-service-row"
+                                                                className={`arcgis-picker-service-row${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
+                                                                data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                                 onClick={() => setExpandedServices(prev => {
                                                                     const n = new Set(prev);
                                                                     n.has(service.key) ? n.delete(service.key) : n.add(service.key);
@@ -494,6 +563,29 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                         >
                             <FontAwesomeIcon icon={faTimes} />
                         </button>
+                        {searchResult && (
+                            <>
+                                <span className="arcgis-picker-search-counter">
+                                    {matchTotal > 0 ? `${currentIndex + 1} / ${matchTotal}` : '0 results'}
+                                </span>
+                                <button
+                                    className="arcgis-picker-nav-btn"
+                                    title="Previous match"
+                                    onClick={goToPrev}
+                                    disabled={matchTotal === 0}
+                                >
+                                    <FontAwesomeIcon icon={faChevronUp} />
+                                </button>
+                                <button
+                                    className="arcgis-picker-nav-btn"
+                                    title="Next match"
+                                    onClick={goToNext}
+                                    disabled={matchTotal === 0}
+                                >
+                                    <FontAwesomeIcon icon={faChevronDown} />
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 

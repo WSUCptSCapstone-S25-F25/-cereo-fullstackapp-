@@ -75,6 +75,46 @@
     background: #666;
 }
 
+/* Search result counter: "3 / 15" */
+.arcgis-picker-search-counter {
+    font-size: 0.78rem;
+    color: #555;
+    white-space: nowrap;
+    min-width: 42px;
+    text-align: center;
+    user-select: none;
+}
+
+/* Prev / Next match navigation buttons */
+.arcgis-picker-nav-btn {
+    background: #f0f0f0;
+    color: #444;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 7px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    line-height: 1;
+    transition: background 0.15s;
+}
+
+.arcgis-picker-nav-btn:hover:not(:disabled) {
+    background: #ddd;
+}
+
+.arcgis-picker-nav-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* Highlight for the currently focused search match */
+.search-nav-current {
+    background: #fff3cd !important;
+    outline: 2px solid #f0c040;
+    outline-offset: -1px;
+    border-radius: 3px;
+}
+
 .arcgis-picker-close-btn {
     background: none;
     border: none;
