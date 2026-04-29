@@ -11,7 +11,7 @@ import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js
 import { allMarkers } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip, faRightLeft } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip, faRightLeft, faThumbtack } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
@@ -103,6 +103,15 @@ function Content2(props) {
     const [showOnlyInView, setShowOnlyInView] = useState(false);
     const [learnMoreRequest, setLearnMoreRequest] = useState(null);
     const [isListView, setIsListView] = useState((props.initialCardViewMode || 'grid') === 'list');
+    const [pinnedCardIDs, setPinnedCardIDs] = useState(new Set());
+    const togglePin = (cardID) => {
+        setPinnedCardIDs(prev => {
+            const next = new Set(prev);
+            if (next.has(cardID)) next.delete(cardID);
+            else next.add(cardID);
+            return next;
+        });
+    };
     const prevWidthBeforeList = useRef(null);
     const prevListViewBeforeBothLeft = useRef(null);
 
@@ -693,17 +702,18 @@ function Content2(props) {
     );
 
     const prioritizedDisplayedCards = (() => {
-        if (!selectedCardIdFromMap || props.isCollapsed) {
-            return displayedCards;
+        const pinned = displayedCards.filter(card => pinnedCardIDs.has(card.cardID));
+        const unpinned = displayedCards.filter(card => !pinnedCardIDs.has(card.cardID));
+
+        let orderedUnpinned = unpinned;
+        if (selectedCardIdFromMap && !props.isCollapsed) {
+            const sel = unpinned.filter(card => String(card.cardID) === selectedCardIdFromMap);
+            if (sel.length > 0) {
+                orderedUnpinned = [...sel, ...unpinned.filter(card => String(card.cardID) !== selectedCardIdFromMap)];
+            }
         }
 
-        const selectedCards = displayedCards.filter(card => String(card.cardID) === selectedCardIdFromMap);
-        if (selectedCards.length === 0) {
-            return displayedCards;
-        }
-
-        const nonSelectedCards = displayedCards.filter(card => String(card.cardID) !== selectedCardIdFromMap);
-        return [...selectedCards, ...nonSelectedCards];
+        return [...pinned, ...orderedUnpinned];
     })();
 
     useEffect(() => {
@@ -975,6 +985,16 @@ function Content2(props) {
                                             </span>
                                             <div className="card-list-item-actions">
                                                 <button
+                                                    className={`card-list-item-btn pin ${pinnedCardIDs.has(card.cardID) ? 'active' : ''}`}
+                                                    title={pinnedCardIDs.has(card.cardID) ? 'Unpin card' : 'Pin to top'}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        togglePin(card.cardID);
+                                                    }}
+                                                >
+                                                    <FontAwesomeIcon icon={faThumbtack} />
+                                                </button>
+                                                <button
                                                     className={`card-list-item-btn fav ${bookmarkedCardIDs.has(card.cardID) ? 'active' : ''}`}
                                                     title={bookmarkedCardIDs.has(card.cardID) ? 'Remove from favorites' : 'Add to favorites'}
                                                     onClick={(e) => {
@@ -1023,7 +1043,7 @@ function Content2(props) {
                                 }
 
                                 return (
-                                    <div key={cardKey} onClick={() => handleCardClick(card)}>
+                                    <div key={cardKey} className="card-grid-wrapper" onClick={() => handleCardClick(card)}>
                                         <Card
                                             formData={{
                                                 ...card,
@@ -1039,6 +1059,16 @@ function Content2(props) {
                                             isLoggedIn={props.isLoggedIn}
                                             onZoom={() => handleCardClick(card)}
                                         />
+                                        <button
+                                            className={`card-grid-pin-btn ${pinnedCardIDs.has(card.cardID) ? 'active' : ''}`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                togglePin(card.cardID);
+                                            }}
+                                            title={pinnedCardIDs.has(card.cardID) ? 'Unpin card' : 'Pin to top'}
+                                        >
+                                            <FontAwesomeIcon icon={faThumbtack} />
+                                        </button>
                                     </div>
                                 );
                             });
