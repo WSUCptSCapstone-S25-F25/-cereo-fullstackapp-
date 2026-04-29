@@ -189,6 +189,11 @@
     background-color: transparent;
 }
 
+.card-thumbnail-container .card-thumbnail--cover {
+    object-fit: cover;
+    object-position: center;
+}
+
 /* Navigation arrows */
 .card-image-nav {
     position: absolute;

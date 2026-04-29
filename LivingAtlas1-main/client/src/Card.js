@@ -997,6 +997,9 @@ function Card(props) {
     const currentImage = imageList[currentImageIndex] || imageList[0];
     const cardCurrentImage = cardImageList[currentImageIndex] || cardImageList[0];
     const hasMultipleImages = cardImageList.length > 1;
+    const isCardCurrentImageDefault = !cardCurrentImage?.imageID && (
+        cardCurrentImage?.url === '/CEREO-logo.png' || cardCurrentImage?.url === cardThumbnailSrc
+    );
     const totalIndicatorCount = cardImageList.length;
     const visibleIndicatorCount = Math.min(5, totalIndicatorCount);
     const indicatorWindowStart = Math.max(
@@ -1064,7 +1067,7 @@ function Card(props) {
                 <img
                     src={cardCurrentImage.url}
                     alt={cardCurrentImage.alt || "Card Thumbnail"}
-                    className="card-thumbnail"
+                    className={`card-thumbnail${isCardCurrentImageDefault ? '' : ' card-thumbnail--cover'}`}
                     onClick={handleOpenImagePreview}
                     onError={(e) => { e.target.onerror = null; e.target.src = '/CEREO-logo.png'; }}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
