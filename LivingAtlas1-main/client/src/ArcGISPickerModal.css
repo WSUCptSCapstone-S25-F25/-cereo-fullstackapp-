@@ -196,7 +196,21 @@
 }
 
 .arcgis-picker-layers-content {
-    /* layers inside an expanded service */
+    padding-left: 28px;
+    padding-right: 4px;
+}
+
+/* Override upload-layer-group font for picker context */
+.arcgis-picker-layers-content .upload-layer-group {
+    font-size: 0.82rem;
+}
+
+.arcgis-picker-layers-content .upload-layer-row {
+    font-size: 0.82rem;
+}
+
+.arcgis-picker-layers-content .upload-layer-name {
+    font-size: 0.82rem;
 }
 
 .arcgis-picker-no-layers {

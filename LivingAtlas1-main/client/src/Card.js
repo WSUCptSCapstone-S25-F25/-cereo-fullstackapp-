@@ -8,8 +8,26 @@ import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan } f
 import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import ArcGISPickerModal from './ArcGISPickerModal';
+import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
+import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
+import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 
 const CARD_CATEGORIES = ['River', 'Watershed', 'Places', 'Other'];
+
+const ARCGIS_STATE_FULL_NAMES = {
+    WA: 'Washington State ArcGIS Services',
+    ID: 'Idaho ArcGIS Services',
+    OR: 'Oregon ArcGIS Services',
+};
+
+// Build a lookup map from service_key -> service label for breadcrumb display
+const _allArcgisServices = [
+    ...(WA_ARCGIS_SERVICES || []),
+    ...(ID_ARCGIS_SERVICES || []),
+    ...(OR_ARCGIS_SERVICES || []),
+];
+const ARCGIS_SERVICE_LABEL_BY_KEY = {};
+_allArcgisServices.forEach(s => { ARCGIS_SERVICE_LABEL_BY_KEY[s.key] = s.label || s.key; });
 
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1585,44 +1603,61 @@ function Card(props) {
                             <p className="learn-more-no-arcgis-links">No linked ArcGIS items.</p>
                         ) : (
                             <ul className="learn-more-arcgis-links-list">
-                                {linkedArcgisItems.map(item => (
-                                    <li key={item.id} className="learn-more-arcgis-link-item">
-                                        <button
-                                            type="button"
-                                            className="learn-more-arcgis-link-btn"
-                                            onClick={() => {
-                                                window.dispatchEvent(new CustomEvent('open-arcgis-panel', {
-                                                    detail: {
-                                                        serviceKey: item.service_key,
-                                                        layerId: item.layer_id,
-                                                        stateCode: item.state_code,
-                                                        folderName: item.folder_name,
-                                                    }
-                                                }));
-                                            }}
-                                            title="Open in ArcGIS Upload Panel"
-                                        >
-                                            {item.display_name}
-                                        </button>
-                                        {isLearnMoreEditMode && (
-                                            <button
-                                                type="button"
-                                                className="learn-more-arcgis-link-delete-btn"
-                                                title="Remove link"
-                                                onClick={async () => {
-                                                    try {
-                                                        await api.delete(`/cardArcGISLinks/${item.id}`);
-                                                        setLinkedArcgisItems(prev => prev.filter(i => i.id !== item.id));
-                                                    } catch (err) {
-                                                        console.error('Failed to remove ArcGIS link:', err);
-                                                    }
-                                                }}
-                                            >
-                                                ×
-                                            </button>
-                                        )}
-                                    </li>
-                                ))}
+                                {linkedArcgisItems.map(item => {
+                                    const stateLabel = ARCGIS_STATE_FULL_NAMES[item.state_code] || item.state_code;
+                                    const isServiceLevel = item.item_type === 'service';
+                                    const serviceLabel = ARCGIS_SERVICE_LABEL_BY_KEY[item.service_key] || item.service_key;
+                                    return (
+                                        <li key={item.id} className="learn-more-arcgis-link-item">
+                                            <span className="learn-more-arcgis-link-breadcrumb">
+                                                <span className="learn-more-breadcrumb-text">{stateLabel}</span>
+                                                <span className="learn-more-breadcrumb-sep"> → </span>
+                                                <span className="learn-more-breadcrumb-text">{item.folder_name}</span>
+                                                {!isServiceLevel && (
+                                                    <>
+                                                        <span className="learn-more-breadcrumb-sep"> → </span>
+                                                        <span className="learn-more-breadcrumb-text">{serviceLabel}</span>
+                                                    </>
+                                                )}
+                                                <span className="learn-more-breadcrumb-sep"> → </span>
+                                                <button
+                                                    type="button"
+                                                    className="learn-more-arcgis-link-btn"
+                                                    onClick={() => {
+                                                        window.dispatchEvent(new CustomEvent('open-arcgis-panel', {
+                                                            detail: {
+                                                                serviceKey: item.service_key,
+                                                                layerId: item.layer_id,
+                                                                stateCode: item.state_code,
+                                                                folderName: item.folder_name,
+                                                            }
+                                                        }));
+                                                    }}
+                                                    title="Open in ArcGIS Upload Panel"
+                                                >
+                                                    {item.display_name}
+                                                </button>
+                                            </span>
+                                            {isLearnMoreEditMode && (
+                                                <button
+                                                    type="button"
+                                                    className="learn-more-arcgis-link-delete-btn"
+                                                    title="Remove link"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await api.delete(`/cardArcGISLinks/${item.id}`);
+                                                            setLinkedArcgisItems(prev => prev.filter(i => i.id !== item.id));
+                                                        } catch (err) {
+                                                            console.error('Failed to remove ArcGIS link:', err);
+                                                        }
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            )}
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         )}
                         {isLearnMoreEditMode && (

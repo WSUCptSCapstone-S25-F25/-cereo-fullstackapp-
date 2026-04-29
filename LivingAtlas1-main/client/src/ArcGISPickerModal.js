@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fetchServicesByStateMap } from './arcgisServicesDb';
-import { fetchArcgisLayers } from './arcgisDataUtils';
-import { buildLayerTree, getAllLeafLayers } from './LayerTree';
+import { fetchArcgisLayers, fetchArcgisLegend } from './arcgisDataUtils';
+import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers } from './LayerTree';
+import './LayerTree.css';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -9,16 +10,6 @@ import './ArcGISPickerModal.css';
 import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
 import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
 import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
-
-function getNodeLeaves(node) {
-    const leaves = [];
-    const collect = (n) => {
-        if (!n.children || n.children.length === 0) leaves.push(n);
-        else n.children.forEach(collect);
-    };
-    if (node.children) node.children.forEach(collect);
-    return leaves;
-}
 
 const STATE_CODES = ['WA', 'ID', 'OR'];
 const STATE_FULL_NAMES = {
@@ -36,6 +27,7 @@ function ArcGISPickerModal({ onAdd, onClose }) {
     const [servicesFromDb, setServicesFromDb] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [serviceLayers, setServiceLayers] = useState({});
+    const [serviceLegends, setServiceLegends] = useState({});
     const [expandedStates, setExpandedStates] = useState(new Set());
     const [expandedFolders, setExpandedFolders] = useState(new Set());
     const [expandedServices, setExpandedServices] = useState(new Set());
@@ -85,17 +77,25 @@ function ArcGISPickerModal({ onAdd, onClose }) {
         return () => { active = false; };
     }, []);
 
-    // Fetch layers when a service is expanded
+    // Fetch layers and legends when a service is expanded
     useEffect(() => {
         expandedServices.forEach(serviceKey => {
-            if (serviceLayers[serviceKey] !== undefined) return;
             const service = allServices.find(s => s.key === serviceKey);
             if (!service || !service.url) return;
-            fetchArcgisLayers(service.url).then(layers => {
-                setServiceLayers(prev => ({ ...prev, [serviceKey]: layers || [] }));
-            }).catch(() => {
-                setServiceLayers(prev => ({ ...prev, [serviceKey]: [] }));
-            });
+            if (serviceLayers[serviceKey] === undefined) {
+                fetchArcgisLayers(service.url).then(layers => {
+                    setServiceLayers(prev => ({ ...prev, [serviceKey]: layers || [] }));
+                }).catch(() => {
+                    setServiceLayers(prev => ({ ...prev, [serviceKey]: [] }));
+                });
+            }
+            if (serviceLegends[serviceKey] === undefined) {
+                fetchArcgisLegend(service.url).then(legend => {
+                    setServiceLegends(prev => ({ ...prev, [serviceKey]: legend || {} }));
+                }).catch(() => {
+                    setServiceLegends(prev => ({ ...prev, [serviceKey]: {} }));
+                });
+            }
         });
     }, [expandedServices]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -142,22 +142,24 @@ function ArcGISPickerModal({ onAdd, onClose }) {
     };
 
     // Render a single layer node (and its children recursively)
+    // Uses tree-node/tree-children/upload-layer-group/upload-layer-row for visual consistency with upload panel
     const renderLayerNode = (node, service, depth = 0) => {
+        const isGroupLayer = node.type === 'Group Layer';
         const hasChildren = node.children && node.children.length > 0;
         const expandKey = `${service.key}-${node.id}`;
         const isExpanded = expandedLayers.has(expandKey);
 
-        if (hasChildren) {
-            const descendantLeaves = getNodeLeaves(node);
+        if (isGroupLayer || hasChildren) {
+            const descendantLeaves = getDescendantLeafLayers(node);
             const checkedCount = descendantLeaves.filter(l =>
                 selectedItems.has(`layer:${service.key}:${l.id}`)
             ).length;
             const allChecked = descendantLeaves.length > 0 && checkedCount === descendantLeaves.length;
             const someChecked = checkedCount > 0 && !allChecked;
             return (
-                <div key={node.id} style={{ paddingLeft: `${depth * 14 + 24}px` }}>
+                <div key={node.id} className="tree-node">
                     <div
-                        className="arcgis-picker-layer-group-row"
+                        className="upload-layer-group"
                         onClick={() => setExpandedLayers(prev => {
                             const n = new Set(prev);
                             n.has(expandKey) ? n.delete(expandKey) : n.add(expandKey);
@@ -166,7 +168,6 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                     >
                         <input
                             type="checkbox"
-                            className="arcgis-picker-checkbox"
                             checked={allChecked}
                             ref={el => { if (el) el.indeterminate = someChecked; }}
                             onChange={(e) => {
@@ -190,15 +191,22 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                                 });
                             }}
                             onClick={(e) => e.stopPropagation()}
+                            style={{ marginRight: 4 }}
                         />
-                        <span className="arcgis-picker-arrow">{isExpanded ? '▼' : '►'}</span>
-                        <span className="arcgis-picker-layer-name">{node.name || node.label || `Layer ${node.id}`}</span>
+                        <span style={{ color: '#666', userSelect: 'none', marginRight: 4 }}>
+                            {isExpanded ? '▼' : '►'}
+                        </span>
+                        <span className="upload-layer-name" title={node.name || node.label || `Layer ${node.id}`} style={{ flex: 1 }}>
+                            {node.name || node.label || `Layer ${node.id}`}
+                        </span>
                         {descendantLeaves.length > 0 && (
-                            <span className="arcgis-picker-layer-count">({checkedCount}/{descendantLeaves.length})</span>
+                            <span style={{ color: '#999', fontSize: '10px', marginLeft: 4 }}>
+                                ({checkedCount}/{descendantLeaves.length})
+                            </span>
                         )}
                     </div>
-                    {isExpanded && (
-                        <div>
+                    {isExpanded && hasChildren && (
+                        <div className="tree-children">
                             {node.children.map(child => renderLayerNode(child, service, depth + 1))}
                         </div>
                     )}
@@ -206,12 +214,28 @@ function ArcGISPickerModal({ onAdd, onClose }) {
             );
         }
 
-        // Leaf node
+        // Leaf node — show legend icon(s)
         const layerKey = `layer:${service.key}:${node.id}`;
         const isChecked = selectedItems.has(layerKey);
+        const legend = serviceLegends[service.key];
+        let legendItems = [];
+        if (legend && legend.layers) {
+            const legendLayer = legend.layers.find(l => l.layerId === node.id);
+            if (legendLayer) legendItems = legendLayer.legend || [];
+        }
+        const hasMultipleLegends = legendItems.length > 1;
+        const isLegendExpanded = expandedLayers.has(expandKey);
+
         return (
-            <div key={node.id} className="arcgis-picker-layer-row" style={{ paddingLeft: `${depth * 14 + 24}px` }}>
-                <label className="arcgis-picker-layer-label">
+            <div key={node.id} className="upload-layer-row tree-node" style={{ flexDirection: 'column', alignItems: 'flex-start', marginBottom: 2 }}>
+                <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, minHeight: 20, width: '100%', cursor: hasMultipleLegends ? 'pointer' : 'default' }}
+                    onClick={hasMultipleLegends ? () => setExpandedLayers(prev => {
+                        const n = new Set(prev);
+                        n.has(expandKey) ? n.delete(expandKey) : n.add(expandKey);
+                        return n;
+                    }) : undefined}
+                >
                     <input
                         type="checkbox"
                         checked={isChecked}
@@ -224,9 +248,50 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                             state_code: findStateForService(service.key),
                             folder_name: service.folder || 'Root',
                         })}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ marginRight: 4 }}
                     />
-                    <span>{node.name || node.label || `Layer ${node.id}`}</span>
-                </label>
+                    {hasMultipleLegends && (
+                        <span style={{ color: '#666', marginRight: 4, userSelect: 'none', fontSize: '0.72rem' }}>
+                            {isLegendExpanded ? '▼' : '►'}
+                        </span>
+                    )}
+                    {legendItems.length === 1 && (
+                        <img
+                            src={`data:${legendItems[0].contentType};base64,${legendItems[0].imageData}`}
+                            alt={legendItems[0].label || ''}
+                            className="legend-img"
+                            style={{ width: 14, height: 14, flexShrink: 0 }}
+                        />
+                    )}
+                    <span className="upload-layer-name" title={node.name || node.label || `Layer ${node.id}`} style={{ flex: 1 }}>
+                        {node.name || node.label || `Layer ${node.id}`}
+                    </span>
+                    {hasMultipleLegends && (
+                        <span style={{ color: '#888', fontSize: '10px', marginLeft: 4, flexShrink: 0 }}>
+                            ({legendItems.length})
+                        </span>
+                    )}
+                </div>
+                {hasMultipleLegends && isLegendExpanded && (
+                    <div className="tree-children" style={{ marginTop: 2 }}>
+                        {legendItems.map((legendItem, index) => (
+                            <div
+                                key={index}
+                                className="upload-layer-sublayer tree-node"
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2, color: '#666', minHeight: 18 }}
+                            >
+                                <img
+                                    src={`data:${legendItem.contentType};base64,${legendItem.imageData}`}
+                                    alt={legendItem.label || ''}
+                                    className="legend-img"
+                                    style={{ width: 14, height: 14, flexShrink: 0 }}
+                                />
+                                <span className="upload-layer-name" title={legendItem.label}>{legendItem.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         );
     };
