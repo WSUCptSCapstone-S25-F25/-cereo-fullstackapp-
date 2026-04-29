@@ -27,6 +27,14 @@ import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './LayerTree';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
+import { fetchUserPreferences, saveUserPreferences } from './userPreferencesApi';
+import {
+    clearPendingLocalPreferences,
+    deepMergePreferences,
+    hasPreferenceValues,
+    readPendingLocalPreferences,
+    writePendingLocalPreferences,
+} from './userPreferencesLocalCache';
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -74,6 +82,62 @@ const BUILTIN_LAYERS = [
     { id: 'Places', label: 'City Limits' },
 ];
 const BUILTIN_FOLDER_NAME = 'Built-in Layers';
+const LEGACY_PINNED_STORAGE_KEY = 'arcgis_pinned_items';
+
+function normalizePinnedItems(items) {
+    if (!Array.isArray(items)) {
+        return [];
+    }
+
+    const seen = new Set();
+
+    return items.reduce((normalizedItems, item) => {
+        if (!item || typeof item !== 'object') {
+            return normalizedItems;
+        }
+
+        const serviceKey = typeof item.serviceKey === 'string' ? item.serviceKey.trim() : '';
+        if (!serviceKey) {
+            return normalizedItems;
+        }
+
+        const normalizedItem = {
+            serviceKey,
+            layerId: item.layerId ?? null,
+            sublayerIndex: item.sublayerIndex ?? null,
+        };
+
+        const dedupeKey = JSON.stringify(normalizedItem);
+        if (seen.has(dedupeKey)) {
+            return normalizedItems;
+        }
+
+        seen.add(dedupeKey);
+        normalizedItems.push(normalizedItem);
+        return normalizedItems;
+    }, []);
+}
+
+function extractPinnedItemsFromPreferences(preferences) {
+    return normalizePinnedItems(preferences?.arcgis?.pinnedItems);
+}
+
+function readLegacyPinnedItems() {
+    try {
+        const raw = localStorage.getItem(LEGACY_PINNED_STORAGE_KEY);
+        return normalizePinnedItems(raw ? JSON.parse(raw) : []);
+    } catch {
+        return [];
+    }
+}
+
+function clearLegacyPinnedItems() {
+    try {
+        localStorage.removeItem(LEGACY_PINNED_STORAGE_KEY);
+    } catch {
+        // Ignore storage cleanup failures.
+    }
+}
 
 function ArcgisUploadPanel({
     isOpen,
@@ -178,6 +242,10 @@ function ArcgisUploadPanel({
     const selectionsLoadedRef = useRef(false);
     const saveTimerRef = useRef(null);
     const userEmail = localStorage.getItem('email') || '';
+    const pinnedWriteInitializedRef = useRef(false);
+    const [pinnedItems, setPinnedItems] = useState([]);
+    const [pinnedPreferencesLoaded, setPinnedPreferencesLoaded] = useState(false);
+    const [localPinnedPreferencesReady, setLocalPinnedPreferencesReady] = useState(false);
 
     const {
         messages,
@@ -346,6 +414,12 @@ function ArcgisUploadPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dataSource, ARCGIS_SERVICES.length]); // Only reset when datasource changes
 
+    useEffect(() => {
+        if (!isOpen) {
+            selectionsLoadedRef.current = false;
+        }
+    }, [isOpen]);
+
     // Lazy-load layers and legends only for services in expanded state folders
     useEffect(() => {
         if (!isOpen) return;
@@ -444,26 +518,120 @@ function ArcgisUploadPanel({
     // }, [saveSelectionsToDb]);
     // --- End DB persistence disabled ---
 
-    // --- Pinned items: localStorage-based auto-load ---
-    const PINNED_STORAGE_KEY = 'arcgis_pinned_items';
-
-    const loadPinnedItems = () => {
-        try {
-            const raw = localStorage.getItem(PINNED_STORAGE_KEY);
-            return raw ? JSON.parse(raw) : [];
-        } catch { return []; }
-    };
-
-    const savePinnedItems = (items) => {
-        localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(items));
-    };
-
-    const [pinnedItems, setPinnedItems] = useState(() => loadPinnedItems());
-
-    // Persist pinned items to localStorage whenever they change
+    // --- Pinned items: user preference-backed auto-load ---
     useEffect(() => {
-        savePinnedItems(pinnedItems);
-    }, [pinnedItems]);
+        if (!isOpen) return;
+
+        let cancelled = false;
+
+        const loadPinnedPreferences = async () => {
+            pinnedWriteInitializedRef.current = false;
+            selectionsLoadedRef.current = false;
+
+            let localPreferences = readPendingLocalPreferences();
+            const legacyPinnedItems = readLegacyPinnedItems();
+
+            if (legacyPinnedItems.length > 0) {
+                writePendingLocalPreferences({
+                    arcgis: {
+                        pinnedItems: legacyPinnedItems,
+                    },
+                });
+                clearLegacyPinnedItems();
+                localPreferences = deepMergePreferences(localPreferences, {
+                    arcgis: {
+                        pinnedItems: legacyPinnedItems,
+                    },
+                });
+            }
+
+            if (!userEmail) {
+                if (!cancelled) {
+                    setPinnedItems(extractPinnedItemsFromPreferences(localPreferences));
+                    setPinnedPreferencesLoaded(false);
+                    setLocalPinnedPreferencesReady(true);
+                }
+                return;
+            }
+
+            if (!cancelled) {
+                setPinnedPreferencesLoaded(false);
+                setLocalPinnedPreferencesReady(false);
+            }
+
+            try {
+                const cloudPreferences = await fetchUserPreferences(userEmail);
+                if (cancelled) return;
+
+                const mergedPreferences = deepMergePreferences(cloudPreferences, localPreferences);
+                setPinnedItems(extractPinnedItemsFromPreferences(mergedPreferences));
+
+                if (hasPreferenceValues(localPreferences)) {
+                    await saveUserPreferences(userEmail, mergedPreferences);
+                    clearPendingLocalPreferences();
+                }
+            } catch (error) {
+                console.warn('[ArcgisUploadPanel] Failed to load pinned preferences:', error);
+                if (!cancelled) {
+                    setPinnedItems(extractPinnedItemsFromPreferences(localPreferences));
+                }
+            } finally {
+                if (!cancelled) {
+                    setPinnedPreferencesLoaded(true);
+                }
+            }
+        };
+
+        loadPinnedPreferences();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isOpen, userEmail]);
+
+    useEffect(() => {
+        if (!isOpen || !userEmail || !pinnedPreferencesLoaded) {
+            return;
+        }
+
+        if (!pinnedWriteInitializedRef.current) {
+            pinnedWriteInitializedRef.current = true;
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            saveUserPreferences(userEmail, {
+                arcgis: {
+                    pinnedItems,
+                },
+            }).catch(error => {
+                console.warn('[ArcgisUploadPanel] Failed to save pinned preferences:', error);
+            });
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [isOpen, userEmail, pinnedPreferencesLoaded, pinnedItems]);
+
+    useEffect(() => {
+        if (!isOpen || userEmail || !localPinnedPreferencesReady) {
+            return;
+        }
+
+        if (!pinnedWriteInitializedRef.current) {
+            pinnedWriteInitializedRef.current = true;
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            writePendingLocalPreferences({
+                arcgis: {
+                    pinnedItems,
+                },
+            });
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [isOpen, userEmail, localPinnedPreferencesReady, pinnedItems]);
 
     // Context menu hook (state, outside-click, pin/unpin)
     const {
@@ -476,6 +644,9 @@ function ArcgisUploadPanel({
 
     // Auto-load pinned items once services are loaded
     useEffect(() => {
+        const pinnedItemsReady = userEmail ? pinnedPreferencesLoaded : localPinnedPreferencesReady;
+
+        if (!pinnedItemsReady) return;
         if (!isOpen || ARCGIS_SERVICES.length === 0 || pinnedItems.length === 0) return;
         if (selectionsLoadedRef.current) return;
         selectionsLoadedRef.current = true;
@@ -540,7 +711,14 @@ function ArcgisUploadPanel({
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, ARCGIS_SERVICES.length]);
+    }, [
+        isOpen,
+        ARCGIS_SERVICES.length,
+        pinnedItems,
+        pinnedPreferencesLoaded,
+        localPinnedPreferencesReady,
+        userEmail,
+    ]);
 
     // On state change: remove any ArcGIS layers/sources left from the previous state
     // NOTE: Disabled since states are now all loaded together as top-level folders
