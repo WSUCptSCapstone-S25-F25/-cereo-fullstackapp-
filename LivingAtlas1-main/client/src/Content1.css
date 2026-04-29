@@ -97,6 +97,11 @@
   margin: 0 !important;
 }
 
+/* Delete is handled exclusively inside the Draw Polygon panel */
+.mapbox-gl-draw_trash {
+  display: none !important;
+}
+
 /* Marker/polygon visibility toggle button in draw control group */
 .marker-visibility-toggle {
   display: flex !important;
@@ -132,6 +137,35 @@
   width: 15px !important;
   height: 15px !important;
   fill: #333 !important;
+}
+
+.reset-view-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 29px !important;
+  height: 29px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-top: 1px solid #ddd !important;
+  border-radius: 0 !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+}
+
+.reset-view-btn:hover {
+  background-color: rgb(0 0 0 / 5%) !important;
+}
+
+.reset-view-btn svg {
+  width: 15px !important;
+  height: 15px !important;
+  stroke: #333 !important;
+  fill: none !important;
 }
 
 .marker {

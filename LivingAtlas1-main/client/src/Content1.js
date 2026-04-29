@@ -559,6 +559,16 @@ const Content1 = (props) => {
           }
         });
         drawGroup.appendChild(toggleBtn);
+
+        const resetViewBtn = document.createElement('button');
+        resetViewBtn.className = 'mapbox-gl-draw_ctrl-draw-btn reset-view-btn';
+        resetViewBtn.title = 'Reset Map View';
+        resetViewBtn.type = 'button';
+        resetViewBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="1.5" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="14.5" y2="8"/><circle cx="8" cy="8" r="2"/></svg>';
+        resetViewBtn.addEventListener('click', () => {
+          map.flyTo({ center: [-120, 46], zoom: 5.5 });
+        });
+        drawGroup.appendChild(resetViewBtn);
       }
     }
 

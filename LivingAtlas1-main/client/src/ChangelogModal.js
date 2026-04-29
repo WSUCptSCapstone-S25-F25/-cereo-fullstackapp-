@@ -16,8 +16,10 @@ function ChangelogModal({ isOpen, onClose }) {
             <div className="changelog-modal-body">
 
                 <h3>Update Date: 4/28/2026</h3>
+                <p>Added pentagon and hexagon shape presets to the Draw Polygon modal's shape menu.</p>
+                <p>Added a "Reset Map View" button to the Draw Polygon modal toolbar that flies the map back to the default view (Washington state).</p>
                 <p>Added undo/redo support to the Draw Polygon modal. Use Ctrl+Z to undo and Ctrl+Y (or Ctrl+Shift+Z) to redo any change to polygon vertices.</p>
-                <p>The draw bar's delete button is now hidden while the Draw Polygon modal is open — the Clear All action is only accessible from within the modal toolbar.</p>
+                <p>The draw bar's delete button has been permanently moved inside the Draw Polygon modal toolbar. Standardized all toolbar button icons to use solid FontAwesome icons for a consistent visual style.</p>
                 <p>Fixed a bug where clicking a linked item in the Learn More modal's "Linked ArcGIS Services/Layers" section would open the Upload Panel but fail to expand the correct folder or scroll to the target item.</p>
                 <p>Fixed a bug where opening the Upload Panel via a linked item in Learn More would not show the layer-loading animation.</p>
 

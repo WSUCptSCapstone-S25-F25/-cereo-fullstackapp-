@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import mapboxgl from 'mapbox-gl';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHand, faRotate, faUpRightAndDownLeftFromCenter } from '@fortawesome/free-solid-svg-icons';
+import { faHand, faRotate, faUpRightAndDownLeftFromCenter, faRotateLeft, faRotateRight, faTrash, faShapes } from '@fortawesome/free-solid-svg-icons';
 import './PolygonDrawingModal.css';
 
 const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor }) => {
@@ -920,33 +920,6 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         }
     }, [updatePolygonOnMap, createDraggableMarker, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode]);
 
-    // Hide MapboxDraw trash button from the draw bar while the panel is open
-    useEffect(() => {
-        const hiddenBtns = new Set();
-
-        const hideTrash = () => {
-            document.querySelectorAll('.mapbox-gl-draw_trash').forEach(btn => {
-                if (!hiddenBtns.has(btn)) {
-                    hiddenBtns.add(btn);
-                    btn.dataset._prevDisplay = btn.style.display;
-                    btn.style.display = 'none';
-                }
-            });
-        };
-
-        hideTrash();
-
-        const observer = new MutationObserver(hideTrash);
-        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
-
-        return () => {
-            observer.disconnect();
-            hiddenBtns.forEach(btn => {
-                btn.style.display = btn.dataset._prevDisplay || '';
-                delete btn.dataset._prevDisplay;
-            });
-        };
-    }, []);
 
     // Position modal flush with the draw control bar
     useEffect(() => {
@@ -1252,9 +1225,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         title="Shape Presets"
                         onClick={() => { setShowShapeMenu(v => !v); setShowLineMenu(false); setShowColorMenu(false); setShowOpacityMenu(false); }}
                     >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
-                            <rect x="2" y="2" width="12" height="12" rx="1" />
-                        </svg>
+                        <FontAwesomeIcon icon={faShapes} style={{ fontSize: 14, width: 16, height: 16 }} />
                     </button>
                     {showShapeMenu && (
                         <div className="polygon-draw-dropdown polygon-draw-shape-dropdown">
@@ -1334,10 +1305,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         disabled={history.length === 0}
                         onClick={handleUndo}
                     >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M2 6 C2 3.5 4 1.5 7 1.5 C10.5 1.5 13.5 4 13.5 8 C13.5 12 10.5 14.5 7 14.5"/>
-                            <polyline points="5,3 2,6 5,9"/>
-                        </svg>
+                        <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: 14, width: 16, height: 16 }} />
                     </button>
                 </div>
                 {/* Redo */}
@@ -1349,10 +1317,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         disabled={future.length === 0}
                         onClick={handleRedo}
                     >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 6 C14 3.5 12 1.5 9 1.5 C5.5 1.5 2.5 4 2.5 8 C2.5 12 5.5 14.5 9 14.5"/>
-                            <polyline points="11,3 14,6 11,9"/>
-                        </svg>
+                        <FontAwesomeIcon icon={faRotateRight} style={{ fontSize: 14, width: 16, height: 16 }} />
                     </button>
                 </div>
                 {/* Clear all (delete) */}
@@ -1364,32 +1329,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         disabled={vertices.length === 0}
                         onClick={handleClearAll}
                     >
-                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="0.5,3.5 14.5,3.5"/>
-                            <path d="M2.5,3.5 L3,13 L12,13 L12.5,3.5"/>
-                            <path d="M5.5,3.5 L5.5,1.5 L9.5,1.5 L9.5,3.5"/>
-                        </svg>
-                    </button>
-                </div>
-                {/* Reset map to default view */}
-                <div className="polygon-draw-style-btn-wrap">
-                    <button
-                        type="button"
-                        className="polygon-draw-style-btn"
-                        title="Reset Map View"
-                        onClick={() => {
-                            const map = window.atlasMapInstance;
-                            if (map) map.flyTo({ center: [-120, 46], zoom: 5.5 });
-                        }}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="8" cy="8" r="6.5"/>
-                            <path d="M8 1.5 V4"/>
-                            <path d="M8 12 V14.5"/>
-                            <path d="M1.5 8 H4"/>
-                            <path d="M12 8 H14.5"/>
-                            <circle cx="8" cy="8" r="2"/>
-                        </svg>
+                        <FontAwesomeIcon icon={faTrash} style={{ fontSize: 13, width: 15, height: 15 }} />
                     </button>
                 </div>
             </div>
