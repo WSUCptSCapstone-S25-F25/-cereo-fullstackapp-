@@ -162,7 +162,11 @@ function Home(props) {
                 ? uiPrefs.basemapId
                 : 'streets-v12'
         );
-        setCardViewModePreference(uiPrefs.cardViewMode === 'list' ? 'list' : 'grid');
+        const newCardViewMode = uiPrefs.cardViewMode === 'list' ? 'list' : 'grid';
+        setCardViewModePreference(newCardViewMode);
+        if (newCardViewMode === 'list') {
+            setCardPanelWidth(Math.round(window.innerWidth * 0.25));
+        }
         setCardPanelSide(uiPrefs.cardPanelSide === 'left' ? 'left' : 'right');
     };
 
