@@ -2,14 +2,116 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import mapboxgl from 'mapbox-gl';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHand, faRotate, faUpRightAndDownLeftFromCenter, faRotateLeft, faRotateRight, faTrash, faShapes } from '@fortawesome/free-solid-svg-icons';
+import { faHand, faRotate, faUpRightAndDownLeftFromCenter, faRotateLeft, faRotateRight, faTrash, faShapes, faPalette } from '@fortawesome/free-solid-svg-icons';
 import './PolygonDrawingModal.css';
+
+const BEZIER_STEPS = 24; // interpolation points per edge
+const DEFAULT_POLYGON_COLOR = '#0077c0';
+const MAX_MERCATOR_LAT = 85.0511287798066;
+
+const LINE_STYLES = {
+    solid: [],
+    dashed: [6, 3],
+    dotted: [1.5, 3],
+    dashdot: [6, 3, 1.5, 3],
+};
+
+const PALETTE_COLORS = [
+    '#0077c0', '#e74c3c', '#27ae60', '#f39c12', '#8e44ad',
+    '#1abc9c', '#2c3e50', '#d35400', '#c0392b', '#2980b9',
+];
+
+function quadBezierSeg(p0, c, p1) {
+    const p0Merc = lngLatToMercator(p0);
+    const cMerc = lngLatToMercator(c);
+    const p1Merc = lngLatToMercator(p1);
+    const pts = [];
+    for (let i = 0; i <= BEZIER_STEPS; i++) {
+        const t = i / BEZIER_STEPS;
+        const u = 1 - t;
+        const point = mercatorToLngLat({
+            x: u * u * p0Merc.x + 2 * u * t * cMerc.x + t * t * p1Merc.x,
+            y: u * u * p0Merc.y + 2 * u * t * cMerc.y + t * t * p1Merc.y,
+        });
+        pts.push([point.lng, point.lat]);
+    }
+    return pts;
+}
+
+function clampMercatorLat(lat) {
+    return Math.max(-MAX_MERCATOR_LAT, Math.min(MAX_MERCATOR_LAT, lat));
+}
+
+function lngLatToMercator(point) {
+    const clampedLat = clampMercatorLat(point.lat);
+    const x = (point.lng + 180) / 360;
+    const sinLat = Math.sin((clampedLat * Math.PI) / 180);
+    const y = 0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI);
+    return { x, y };
+}
+
+function mercatorToLngLat(point) {
+    const lng = point.x * 360 - 180;
+    const lat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * point.y))) * 180) / Math.PI;
+    return { lng, lat };
+}
+
+function buildBezierCoords(verts, ctrlPts) {
+    const n = verts.length;
+    const coords = [];
+    for (let i = 0; i < n; i++) {
+        const next = (i + 1) % n;
+        const ctrl = ctrlPts[i] ?? {
+            lat: (verts[i].lat + verts[next].lat) / 2,
+            lng: (verts[i].lng + verts[next].lng) / 2,
+        };
+        const seg = quadBezierSeg(verts[i], ctrl, verts[next]);
+        if (i === 0) coords.push(...seg);
+        else coords.push(...seg.slice(1));
+    }
+    if (coords.length) coords.push(coords[0]);
+    return coords;
+}
+
+function getDefaultCurveControlPoint(verts, edgeIdx) {
+    const next = (edgeIdx + 1) % verts.length;
+    const start = lngLatToMercator(verts[edgeIdx]);
+    const end = lngLatToMercator(verts[next]);
+    return mercatorToLngLat({
+        x: (start.x + end.x) / 2,
+        y: (start.y + end.y) / 2,
+    });
+}
+
+function getCurvePointAtHalf(verts, ctrlPts, edgeIdx) {
+    const next = (edgeIdx + 1) % verts.length;
+    const start = lngLatToMercator(verts[edgeIdx]);
+    const end = lngLatToMercator(verts[next]);
+    const ctrl = lngLatToMercator(ctrlPts[edgeIdx] ?? getDefaultCurveControlPoint(verts, edgeIdx));
+
+    return mercatorToLngLat({
+        x: 0.25 * start.x + 0.5 * ctrl.x + 0.25 * end.x,
+        y: 0.25 * start.y + 0.5 * ctrl.y + 0.25 * end.y,
+    });
+}
+
+function getControlPointFromCurvePoint(verts, edgeIdx, curvePoint) {
+    const next = (edgeIdx + 1) % verts.length;
+    const start = lngLatToMercator(verts[edgeIdx]);
+    const end = lngLatToMercator(verts[next]);
+    const curveMid = lngLatToMercator(curvePoint);
+
+    return mercatorToLngLat({
+        x: 2 * curveMid.x - 0.5 * (start.x + end.x),
+        y: 2 * curveMid.y - 0.5 * (start.y + end.y),
+    });
+}
 
 const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor }) => {
     const [vertices, setVertices] = useState(initialVertices || []);
     const [isDrawing, setIsDrawing] = useState(!(initialVertices && initialVertices.length >= 3));
     const [lineStyle, setLineStyle] = useState(initialLineStyle || 'solid'); // 'solid', 'dashed', 'dotted'
-    const [fillColor, setFillColor] = useState(initialFillColor || '#0077c0');
+    const [fillColor, setFillColor] = useState(initialFillColor || DEFAULT_POLYGON_COLOR);
     const [showLineMenu, setShowLineMenu] = useState(false);
     const [showColorMenu, setShowColorMenu] = useState(false);
     const [showShapeMenu, setShowShapeMenu] = useState(false);
@@ -39,23 +141,20 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const saveToHistoryRef = useRef(null); // updated each render to capture latest vertices
     const handleUndoRef = useRef(null);
     const handleRedoRef = useRef(null);
+    const [isCurveMode, setIsCurveMode] = useState(false);
+    const [curveControlPoints, setCurveControlPoints] = useState({}); // key: edgeIdx, value: {lat,lng}
+    const isCurveModeRef = useRef(false);
+    isCurveModeRef.current = isCurveMode;
+    const curveControlPointsRef = useRef({});
+    curveControlPointsRef.current = curveControlPoints;
+    const curveVertexCountRef = useRef((initialVertices || []).length);
+    const curveMarkersRef = useRef([]); // Mapbox markers for bezier control handles
+    const rebuildCurveMarkersRef = useRef(null);
 
     const POLYGON_LINE_SOURCE = 'card-polygon-draw-line';
     const POLYGON_LINE_LAYER = 'card-polygon-draw-line-layer';
     const POLYGON_FILL_SOURCE = 'card-polygon-draw-fill';
     const POLYGON_FILL_LAYER = 'card-polygon-draw-fill-layer';
-
-    const LINE_STYLES = {
-        solid: [],
-        dashed: [6, 3],
-        dotted: [1.5, 3],
-        dashdot: [6, 3, 1.5, 3],
-    };
-
-    const PALETTE_COLORS = [
-        '#0077c0', '#e74c3c', '#27ae60', '#f39c12', '#8e44ad',
-        '#1abc9c', '#2c3e50', '#d35400', '#c0392b', '#2980b9',
-    ];
 
     // Update line style on map when lineStyle changes
     useEffect(() => {
@@ -69,18 +168,19 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     useEffect(() => {
         const map = window.atlasMapInstance;
         if (!map) return;
+        const activeColor = fillColor || DEFAULT_POLYGON_COLOR;
         if (map.getLayer(POLYGON_LINE_LAYER)) {
-            map.setPaintProperty(POLYGON_LINE_LAYER, 'line-color', fillColor);
+            map.setPaintProperty(POLYGON_LINE_LAYER, 'line-color', activeColor);
         }
         if (map.getLayer(POLYGON_FILL_LAYER)) {
-            map.setPaintProperty(POLYGON_FILL_LAYER, 'fill-color', fillColor);
+            map.setPaintProperty(POLYGON_FILL_LAYER, 'fill-color', activeColor);
         }
         // Update dot colors
         markersRef.current.forEach(m => {
             const dot = m.getElement().querySelector('.polygon-draw-vertex-dot');
-            if (dot) dot.style.background = fillColor;
+            if (dot) dot.style.background = activeColor;
             const lbl = m.getElement().querySelector('.polygon-draw-vertex-label');
-            if (lbl) lbl.style.color = fillColor;
+            if (lbl) lbl.style.color = activeColor;
         });
     }, [fillColor]);
 
@@ -95,23 +195,27 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         const map = window.atlasMapInstance;
         if (!map) return;
 
-        // Build line coordinates (close the polygon if >= 3 points)
-        const lineCoords = verts.map(v => [v.lng, v.lat]);
-        if (lineCoords.length >= 3) {
-            lineCoords.push(lineCoords[0]); // close
-        }
+        const useCurve = isCurveModeRef.current && verts.length >= 3;
+        const lineCoords = useCurve
+            ? buildBezierCoords(verts, curveControlPointsRef.current)
+            : verts.map(v => [v.lng, v.lat]);
+        if (!useCurve && lineCoords.length >= 3) lineCoords.push(lineCoords[0]);
 
         // Update line
         if (linesSourceAdded.current) {
             const src = map.getSource(POLYGON_LINE_SOURCE);
             if (src) {
-                src.setData({
-                    type: 'Feature',
-                    geometry: {
-                        type: lineCoords.length >= 2 ? 'LineString' : 'Point',
-                        coordinates: lineCoords.length >= 2 ? lineCoords : (lineCoords[0] || [0, 0])
-                    }
-                });
+                src.setData(
+                    lineCoords.length >= 2
+                        ? {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: lineCoords
+                            }
+                        }
+                        : { type: 'FeatureCollection', features: [] }
+                );
             }
         }
 
@@ -120,20 +224,55 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             const src = map.getSource(POLYGON_FILL_SOURCE);
             if (src) {
                 if (verts.length >= 3) {
-                    const fillCoords = verts.map(v => [v.lng, v.lat]);
-                    fillCoords.push(fillCoords[0]);
+                    const fillCoords = useCurve
+                        ? buildBezierCoords(verts, curveControlPointsRef.current)
+                        : [...verts.map(v => [v.lng, v.lat]), [verts[0].lng, verts[0].lat]];
                     src.setData({
                         type: 'Feature',
-                        geometry: {
-                            type: 'Polygon',
-                            coordinates: [fillCoords]
-                        }
+                        geometry: { type: 'Polygon', coordinates: [fillCoords] }
                     });
                 } else {
                     src.setData({ type: 'FeatureCollection', features: [] });
                 }
             }
         }
+    }, []);
+
+    const syncCurveGeometry = useCallback((verts, options = {}) => {
+        const { forceReset = false, rebuildHandles = false } = options;
+        const vertexCountChanged = curveVertexCountRef.current !== verts.length;
+
+        if (verts.length < 3) {
+            curveVertexCountRef.current = verts.length;
+            if (Object.keys(curveControlPointsRef.current).length > 0) {
+                curveControlPointsRef.current = {};
+                setCurveControlPoints({});
+            }
+            if (rebuildHandles) {
+                curveMarkersRef.current.forEach(m => m.remove());
+                curveMarkersRef.current = [];
+            }
+            return {};
+        }
+
+        const shouldReset = forceReset || vertexCountChanged;
+        const nextCtrlPts = {};
+        for (let i = 0; i < verts.length; i++) {
+            const defaultCtrl = getDefaultCurveControlPoint(verts, i);
+            nextCtrlPts[i] = shouldReset
+                ? defaultCtrl
+                : (curveControlPointsRef.current[i] ?? defaultCtrl);
+        }
+
+        curveVertexCountRef.current = verts.length;
+        curveControlPointsRef.current = nextCtrlPts;
+        setCurveControlPoints(nextCtrlPts);
+
+        if (rebuildHandles && isCurveModeRef.current) {
+            rebuildCurveMarkersRef.current?.(verts, nextCtrlPts);
+        }
+
+        return nextCtrlPts;
     }, []);
 
     const createDraggableMarker = useCallback((vertex, index, currentVertices) => {
@@ -196,6 +335,36 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         });
     }, [createDraggableMarker]);
 
+    const rebuildCurveMarkers = useCallback((verts, ctrlPts) => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+        curveMarkersRef.current.forEach(m => m.remove());
+        curveMarkersRef.current = [];
+        if (!isCurveModeRef.current || verts.length < 3) return;
+        const n = verts.length;
+        for (let i = 0; i < n; i++) {
+            const curvePoint = getCurvePointAtHalf(verts, ctrlPts, i);
+            const el = document.createElement('div');
+            el.className = 'polygon-draw-curve-handle';
+            const edgeIdx = i;
+            const marker = new mapboxgl.Marker({ element: el, draggable: true, anchor: 'center' })
+                .setLngLat([curvePoint.lng, curvePoint.lat])
+                .addTo(map);
+            marker.on('drag', () => {
+                const pos = marker.getLngLat();
+                const updated = {
+                    ...curveControlPointsRef.current,
+                    [edgeIdx]: getControlPointFromCurvePoint(verts, edgeIdx, { lat: pos.lat, lng: pos.lng })
+                };
+                curveControlPointsRef.current = updated;
+                setCurveControlPoints(updated);
+                updatePolygonOnMap(verticesRef.current);
+            });
+            curveMarkersRef.current.push(marker);
+        }
+    }, [updatePolygonOnMap]);
+    rebuildCurveMarkersRef.current = rebuildCurveMarkers;
+
     // Toggle label visibility on markers when drawing state changes
     const updateMarkerLabels = useCallback((show) => {
         markersRef.current.forEach(m => {
@@ -220,10 +389,12 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         setFuture(f => [vertices, ...f.slice(0, 49)]);
         setHistory(h => h.slice(0, -1));
         setVertices(prevVerts);
+        syncCurveGeometry(prevVerts, { forceReset: true });
         updatePolygonOnMap(prevVerts);
         rebuildMarkers(prevVerts);
+        rebuildCurveMarkers(prevVerts, curveControlPointsRef.current);
         circleMetaRef.current = null;
-    }, [history, vertices, updatePolygonOnMap, rebuildMarkers]);
+    }, [history, vertices, updatePolygonOnMap, rebuildMarkers, rebuildCurveMarkers, syncCurveGeometry]);
 
     const handleRedo = useCallback(() => {
         if (future.length === 0) return;
@@ -231,10 +402,12 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         setHistory(h => [...h.slice(-49), vertices]);
         setFuture(f => f.slice(1));
         setVertices(nextVerts);
+        syncCurveGeometry(nextVerts, { forceReset: true });
         updatePolygonOnMap(nextVerts);
         rebuildMarkers(nextVerts);
+        rebuildCurveMarkers(nextVerts, curveControlPointsRef.current);
         circleMetaRef.current = null;
-    }, [future, vertices, updatePolygonOnMap, rebuildMarkers]);
+    }, [future, vertices, updatePolygonOnMap, rebuildMarkers, rebuildCurveMarkers, syncCurveGeometry]);
 
     handleUndoRef.current = handleUndo;
     handleRedoRef.current = handleRedo;
@@ -771,8 +944,23 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             stopDragMode();
             stopRotateMode();
             stopResizeMode();
+            curveMarkersRef.current.forEach(m => m.remove());
+            curveMarkersRef.current = [];
         };
     }, [stopDragMode, stopRotateMode, stopResizeMode]);
+
+    // Rebuild curve markers and re-render when curve mode toggles
+    useEffect(() => {
+        if (isCurveMode) {
+            syncCurveGeometry(verticesRef.current, { forceReset: curveVertexCountRef.current !== verticesRef.current.length });
+            rebuildCurveMarkers(verticesRef.current, curveControlPointsRef.current);
+        } else {
+            curveMarkersRef.current.forEach(m => m.remove());
+            curveMarkersRef.current = [];
+        }
+        updatePolygonOnMap(verticesRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isCurveMode]);
 
     // Start shape placement mode
     const startShapePlacement = useCallback((shape) => {
@@ -838,6 +1026,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     lng: parseFloat(v.lng.toFixed(6)),
                 }));
                 setVertices(rounded);
+                syncCurveGeometry(rounded, { forceReset: true });
                 updatePolygonOnMap(rounded);
                 // For circle/dot: store metadata and show only a center marker
                 const placedShape = shape;
@@ -873,6 +1062,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 } else {
                     circleMetaRef.current = null;
                     rebuildMarkers(rounded);
+                    rebuildCurveMarkers(rounded, curveControlPointsRef.current);
                 }
                 setIsDrawing(false);
                 updateMarkerLabels(false);
@@ -884,7 +1074,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         map.on('mousedown', onMouseDown);
         map.on('mousemove', onMouseMove);
         map.on('mouseup', onMouseUp);
-    }, [generateShapeVertices, updatePolygonOnMap, rebuildMarkers, updateMarkerLabels, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode]);
+    }, [generateShapeVertices, updatePolygonOnMap, rebuildMarkers, rebuildCurveMarkers, syncCurveGeometry, updateMarkerLabels, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode]);
 
     // Clear all drawn vertices and shapes
     const handleClearAll = useCallback(() => {
@@ -896,6 +1086,11 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         setVertices([]);
         markersRef.current.forEach(m => m.remove());
         markersRef.current = [];
+        curveMarkersRef.current.forEach(m => m.remove());
+        curveMarkersRef.current = [];
+        setCurveControlPoints({});
+        curveControlPointsRef.current = {};
+        curveVertexCountRef.current = 0;
         circleMetaRef.current = null;
         updatePolygonOnMap([]);
         setIsDrawing(true);
@@ -908,9 +1103,9 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 const newVertex = { lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)) };
                 setVertices(prev => {
                     const updated = [...prev, newVertex];
+                    syncCurveGeometry(updated, { rebuildHandles: true });
                     updatePolygonOnMap(updated);
-                    const marker = createDraggableMarker(newVertex, updated.length - 1, updated);
-                    if (marker) markersRef.current.push(marker);
+                    rebuildMarkers(updated);
                     return updated;
                 });
             };
@@ -918,7 +1113,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             map.on('click', handleMapClick);
             map.getCanvas().style.cursor = 'crosshair';
         }
-    }, [updatePolygonOnMap, createDraggableMarker, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode]);
+    }, [updatePolygonOnMap, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode, syncCurveGeometry, rebuildMarkers]);
 
 
     // Position modal flush with the draw control bar
@@ -956,7 +1151,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 type: 'line',
                 source: POLYGON_LINE_SOURCE,
                 paint: {
-                    'line-color': fillColor,
+                    'line-color': fillColor || DEFAULT_POLYGON_COLOR,
                     'line-width': 1.5,
                     'line-dasharray': LINE_STYLES[lineStyle] || []
                 }
@@ -977,7 +1172,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 type: 'fill',
                 source: POLYGON_FILL_SOURCE,
                 paint: {
-                    'fill-color': fillColor,
+                    'fill-color': fillColor || DEFAULT_POLYGON_COLOR,
                     'fill-opacity': fillOpacity
                 }
             });
@@ -985,6 +1180,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
 
         // Render initial vertices if provided (edit mode)
         if (initialVertices && initialVertices.length >= 3) {
+            syncCurveGeometry(initialVertices, { forceReset: true });
             updatePolygonOnMap(initialVertices);
             rebuildMarkers(initialVertices);
             updateMarkerLabels(false); // editing mode: hide labels initially
@@ -998,12 +1194,9 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             saveToHistoryRef.current?.();
             setVertices(prev => {
                 const updated = [...prev, newVertex];
+                syncCurveGeometry(updated, { rebuildHandles: true });
                 updatePolygonOnMap(updated);
-
-                // Add draggable marker
-                const marker = createDraggableMarker(newVertex, updated.length - 1, updated);
-                if (marker) markersRef.current.push(marker);
-
+                rebuildMarkers(updated);
                 return updated;
             });
         };
@@ -1015,11 +1208,64 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             map.getCanvas().style.cursor = 'crosshair';
         }
 
+        // Curve mode: hovering over the polygon line shows grab cursor and allows dragging to adjust curve
+        const onCurveLineEnter = () => { if (isCurveModeRef.current) map.getCanvas().style.cursor = 'grab'; };
+        const onCurveLineLeave = () => { if (isCurveModeRef.current && !shapePlacingRef.current) map.getCanvas().style.cursor = ''; };
+        map.on('mouseenter', POLYGON_LINE_LAYER, onCurveLineEnter);
+        map.on('mouseleave', POLYGON_LINE_LAYER, onCurveLineLeave);
+
+        let curveDragCleanup = null;
+        const onCurveLineMouseDown = (e) => {
+            if (!isCurveModeRef.current) return;
+            e.preventDefault();
+            map.dragPan.disable();
+            map.getCanvas().style.cursor = 'grabbing';
+            // Find the nearest edge midpoint to determine which control point to drag
+            const verts = verticesRef.current;
+            const n = verts.length;
+            if (n < 3) { map.dragPan.enable(); return; }
+            const clickPoint = lngLatToMercator({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+            let bestEdge = 0, bestDist = Infinity;
+            for (let i = 0; i < n; i++) {
+                const curvePoint = getCurvePointAtHalf(verts, curveControlPointsRef.current, i);
+                const projectedCurvePoint = lngLatToMercator(curvePoint);
+                const d = Math.hypot(clickPoint.x - projectedCurvePoint.x, clickPoint.y - projectedCurvePoint.y);
+                if (d < bestDist) { bestDist = d; bestEdge = i; }
+            }
+            const onMove = (e2) => {
+                const updated = {
+                    ...curveControlPointsRef.current,
+                    [bestEdge]: getControlPointFromCurvePoint(verts, bestEdge, { lat: e2.lngLat.lat, lng: e2.lngLat.lng })
+                };
+                curveControlPointsRef.current = updated;
+                setCurveControlPoints(updated);
+                updatePolygonOnMap(verticesRef.current);
+                if (curveMarkersRef.current[bestEdge]) {
+                    curveMarkersRef.current[bestEdge].setLngLat([e2.lngLat.lng, e2.lngLat.lat]);
+                }
+            };
+            const onUp = () => {
+                map.dragPan.enable();
+                map.getCanvas().style.cursor = isCurveModeRef.current ? 'grab' : '';
+                map.off('mousemove', onMove);
+                map.off('mouseup', onUp);
+                curveDragCleanup = null;
+            };
+            map.on('mousemove', onMove);
+            map.on('mouseup', onUp);
+            curveDragCleanup = () => { map.off('mousemove', onMove); map.off('mouseup', onUp); };
+        };
+        map.on('mousedown', POLYGON_LINE_LAYER, onCurveLineMouseDown);
+
         return () => {
             // Clean up
             if (mapClickHandlerRef.current) {
                 map.off('click', mapClickHandlerRef.current);
             }
+            map.off('mouseenter', POLYGON_LINE_LAYER, onCurveLineEnter);
+            map.off('mouseleave', POLYGON_LINE_LAYER, onCurveLineLeave);
+            map.off('mousedown', POLYGON_LINE_LAYER, onCurveLineMouseDown);
+            if (curveDragCleanup) curveDragCleanup();
             map.getCanvas().style.cursor = '';
 
             // Cancel any in-progress shape placement
@@ -1040,7 +1286,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             linesSourceAdded.current = false;
             fillSourceAdded.current = false;
         };
-    }, [updatePolygonOnMap, createDraggableMarker]);
+    }, [fillColor, fillOpacity, initialVertices, lineStyle, updateMarkerLabels, updatePolygonOnMap, rebuildMarkers, syncCurveGeometry]);
 
     // Stop drawing mode (finish polygon)
     const handleFinishDrawing = () => {
@@ -1070,6 +1316,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             saveToHistoryRef.current?.();
             setVertices(prev => {
                 const updated = [...prev, newVertex];
+                syncCurveGeometry(updated, { rebuildHandles: true });
                 updatePolygonOnMap(updated);
                 rebuildMarkers(updated);
                 return updated;
@@ -1087,6 +1334,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         saveToHistoryRef.current?.();
         setVertices(prev => {
             const updated = prev.filter((_, i) => i !== index);
+            syncCurveGeometry(updated, { forceReset: true, rebuildHandles: true });
             updatePolygonOnMap(updated);
             rebuildMarkers(updated);
             return updated;
@@ -1170,11 +1418,23 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 <div className="polygon-draw-style-btn-wrap">
                     <button
                         type="button"
+                        className={`polygon-draw-style-btn${isCurveMode ? ' polygon-draw-curve-active' : ''}`}
+                        title="Curve Mode"
+                        onClick={() => { setIsCurveMode(v => !v); setShowLineMenu(false); setShowColorMenu(false); setShowOpacityMenu(false); setShowShapeMenu(false); }}
+                    >
+                        <svg width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <path d="M1,10 C5,1.5 13,1.5 17,10"/>
+                        </svg>
+                    </button>
+                </div>
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
                         className="polygon-draw-style-btn"
                         title="Fill Color"
                         onClick={() => { setShowColorMenu(v => !v); setShowLineMenu(false); setShowOpacityMenu(false); }}
                     >
-                        <span className="polygon-draw-color-swatch" style={{ background: fillColor }} />
+                        <FontAwesomeIcon icon={faPalette} className="polygon-draw-fill-color-icon" style={{ fontSize: 14, width: 16, height: 16 }} />
                     </button>
                     {showColorMenu && (
                         <div className="polygon-draw-dropdown polygon-draw-color-grid">
@@ -1198,7 +1458,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         title="Fill Opacity"
                         onClick={() => { setShowOpacityMenu(v => !v); setShowLineMenu(false); setShowColorMenu(false); setShowShapeMenu(false); }}
                     >
-                        <span className="polygon-draw-opacity-swatch" style={{ background: fillColor, opacity: fillOpacity + 0.25 }} />
+                        <span className="polygon-draw-opacity-swatch" style={{ opacity: fillOpacity + 0.25 }} />
                     </button>
                     {showOpacityMenu && (
                         <div className="polygon-draw-dropdown polygon-draw-opacity-dropdown">
