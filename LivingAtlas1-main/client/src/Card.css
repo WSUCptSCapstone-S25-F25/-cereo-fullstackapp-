@@ -1686,49 +1686,47 @@
 
 .learn-more-arcgis-link-item {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 6px;
 }
 
 .learn-more-arcgis-link-breadcrumb {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    display: block;
     flex: 1;
     min-width: 0;
-    row-gap: 2px;
+    line-height: 1.5;
+    word-break: break-word;
 }
 
 .learn-more-breadcrumb-text {
+    display: inline;
     font-size: 0.82rem;
     color: #666;
-    white-space: nowrap;
 }
 
 .learn-more-breadcrumb-sep {
+    display: inline;
     font-size: 0.78rem;
     color: #aaa;
-    white-space: nowrap;
     margin: 0 1px;
 }
 
 .learn-more-arcgis-link-btn {
+    display: inline !important;
     background: none !important;
     border: none !important;
     color: #1565c0 !important;
-    padding: 1px 3px !important;
+    padding: 0 2px !important;
     cursor: pointer !important;
     font-size: 0.88rem !important;
     text-decoration: underline !important;
     text-align: left !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
     box-shadow: none !important;
     border-radius: 3px !important;
     transition: color 0.15s !important;
-    vertical-align: middle !important;
+    line-height: inherit !important;
+    vertical-align: baseline !important;
+    word-break: break-word !important;
 }
 
 .learn-more-arcgis-link-btn:hover {
