@@ -15,7 +15,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const [showShapeMenu, setShowShapeMenu] = useState(false);
     const [showOpacityMenu, setShowOpacityMenu] = useState(false);
     const [fillOpacity, setFillOpacity] = useState(0.15);
-    const [activeShape, setActiveShape] = useState(null); // 'triangle' | 'square' | 'rectangle' | 'circle' | 'dot' | null
+    const [activeShape, setActiveShape] = useState(null); // 'triangle' | 'square' | 'rectangle' | 'circle' | 'dot' | 'pentagon' | 'hexagon' | null
     const [isDragMode, setIsDragMode] = useState(false);
     const [isRotateMode, setIsRotateMode] = useState(false);
     const [isResizeMode, setIsResizeMode] = useState(false);
@@ -323,6 +323,22 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 });
             }
             return verts;
+        }
+        if (shape === 'pentagon') {
+            const r = Math.sqrt(dxNorm * dxNorm + dy * dy);
+            if (r < 0.00001) return [];
+            return Array.from({ length: 5 }, (_, i) => {
+                const angle = (2 * Math.PI * i) / 5 - Math.PI / 2;
+                return { lat: center.lat + r * Math.cos(angle), lng: center.lng + r * Math.sin(angle) * lngScale };
+            });
+        }
+        if (shape === 'hexagon') {
+            const r = Math.sqrt(dxNorm * dxNorm + dy * dy);
+            if (r < 0.00001) return [];
+            return Array.from({ length: 6 }, (_, i) => {
+                const angle = (2 * Math.PI * i) / 6 - Math.PI / 2;
+                return { lat: center.lat + r * Math.cos(angle), lng: center.lng + r * Math.sin(angle) * lngScale };
+            });
         }
         return [];
     }, []);
@@ -1262,6 +1278,14 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                                 <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" stroke="none"><circle cx="9" cy="9" r="5"/></svg>
                                 <span>Dot</span>
                             </button>
+                            <button type="button" className="polygon-draw-dropdown-item" onClick={() => startShapePlacement('pentagon')}>
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"><polygon points="9,1 17,6.6 14,16 4,16 1,6.6"/></svg>
+                                <span>Pentagon</span>
+                            </button>
+                            <button type="button" className="polygon-draw-dropdown-item" onClick={() => startShapePlacement('hexagon')}>
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"><polygon points="9,1 16.7,5 16.7,13 9,17 1.3,13 1.3,5"/></svg>
+                                <span>Hexagon</span>
+                            </button>
                         </div>
                     )}
                 </div>
@@ -1344,6 +1368,27 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                             <polyline points="0.5,3.5 14.5,3.5"/>
                             <path d="M2.5,3.5 L3,13 L12,13 L12.5,3.5"/>
                             <path d="M5.5,3.5 L5.5,1.5 L9.5,1.5 L9.5,3.5"/>
+                        </svg>
+                    </button>
+                </div>
+                {/* Reset map to default view */}
+                <div className="polygon-draw-style-btn-wrap">
+                    <button
+                        type="button"
+                        className="polygon-draw-style-btn"
+                        title="Reset Map View"
+                        onClick={() => {
+                            const map = window.atlasMapInstance;
+                            if (map) map.flyTo({ center: [-120, 46], zoom: 5.5 });
+                        }}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="8" cy="8" r="6.5"/>
+                            <path d="M8 1.5 V4"/>
+                            <path d="M8 12 V14.5"/>
+                            <path d="M1.5 8 H4"/>
+                            <path d="M12 8 H14.5"/>
+                            <circle cx="8" cy="8" r="2"/>
                         </svg>
                     </button>
                 </div>
