@@ -1479,8 +1479,8 @@ function Card(props) {
                                 <p><strong>Author:</strong> {formData.name}</p>
                                 <p><strong>Card Creator:</strong> {formData.username}</p>
                                 <p><strong>Email:</strong> {formData.email}</p>
-                                <p><strong>Funding:</strong> {formData.funding}</p>
-                                <p><strong>Organization:</strong> {formData.org}</p>
+                                <p><strong>Funding:</strong> {formData.funding || 'N/A'}</p>
+                                <p><strong>Organization:</strong> {formData.org || 'N/A'}</p>
                                 {!isPolygonCard && (
                                     <p className="learn-more-coordinate-readonly">
                                         <strong>Latitude:</strong> {formData.latitude}
@@ -1578,6 +1578,7 @@ function Card(props) {
                     )}
 
                     {/* Linked ArcGIS Services/Layers Section */}
+                    {(isLearnMoreEditMode || linkedArcgisItems.length > 0) && (
                     <div className="learn-more-arcgis-links-section">
                         <p><strong>Linked ArcGIS Services/Layers:</strong></p>
                         {linkedArcgisItems.length === 0 ? (
@@ -1634,6 +1635,7 @@ function Card(props) {
                             </button>
                         )}
                     </div>
+                    )}
 
                     {/* ArcGIS Picker Modal */}
                     {isArcgisPickerOpen && (
