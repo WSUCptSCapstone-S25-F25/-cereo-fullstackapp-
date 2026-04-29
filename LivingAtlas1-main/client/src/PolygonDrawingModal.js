@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import mapboxgl from 'mapbox-gl';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -214,6 +214,15 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         if (!map || !map.getLayer(POLYGON_FILL_LAYER)) return;
         map.setPaintProperty(POLYGON_FILL_LAYER, 'fill-opacity', fillOpacity);
     }, [fillOpacity]);
+
+    // Set crosshair cursor synchronously before paint whenever drawing mode is active.
+    // useLayoutEffect runs before the browser paints, preventing the default 'grab'
+    // cursor (from Mapbox's CSS) from briefly appearing when the modal first opens.
+    useLayoutEffect(() => {
+        const map = window.atlasMapInstance;
+        if (!map || !isDrawing) return;
+        map.getCanvas().style.cursor = 'crosshair';
+    }, [isDrawing]);
 
     const updatePolygonOnMap = useCallback((verts) => {
         const map = window.atlasMapInstance;
