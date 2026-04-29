@@ -107,6 +107,30 @@ function getControlPointFromCurvePoint(verts, edgeIdx, curvePoint) {
     });
 }
 
+function cloneCurveControlPoints(ctrlPts = {}) {
+    return Object.fromEntries(
+        Object.entries(ctrlPts).map(([edgeIdx, point]) => [
+            edgeIdx,
+            { lat: point.lat, lng: point.lng }
+        ])
+    );
+}
+
+function createHistorySnapshot(vertices, curveControlPoints) {
+    return {
+        vertices: vertices.map(vertex => ({ ...vertex })),
+        curveControlPoints: cloneCurveControlPoints(curveControlPoints),
+    };
+}
+
+function normalizeHistorySnapshot(snapshot) {
+    if (Array.isArray(snapshot)) {
+        return createHistorySnapshot(snapshot, {});
+    }
+
+    return createHistorySnapshot(snapshot?.vertices || [], snapshot?.curveControlPoints || {});
+}
+
 const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor }) => {
     const [vertices, setVertices] = useState(initialVertices || []);
     const [isDrawing, setIsDrawing] = useState(!(initialVertices && initialVertices.length >= 3));
@@ -350,6 +374,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             const marker = new mapboxgl.Marker({ element: el, draggable: true, anchor: 'center' })
                 .setLngLat([curvePoint.lng, curvePoint.lat])
                 .addTo(map);
+            marker.on('dragstart', () => { saveToHistoryRef.current?.(); });
             marker.on('drag', () => {
                 const pos = marker.getLngLat();
                 const updated = {
@@ -376,38 +401,45 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     }, []);
 
     // ── Undo / Redo ──
-    // saveToHistoryRef.current() always captures the latest vertices via verticesRef
+    // saveToHistoryRef.current() always captures the latest polygon geometry state via refs.
     saveToHistoryRef.current = () => {
-        const snap = verticesRef.current;
+        const snap = createHistorySnapshot(verticesRef.current, curveControlPointsRef.current);
         setHistory(prev => [...prev.slice(-49), snap]);
         setFuture([]);
     };
 
+    const restoreHistorySnapshot = useCallback((snapshot) => {
+        const normalized = normalizeHistorySnapshot(snapshot);
+        const restoredVertices = normalized.vertices;
+        const restoredCurveControlPoints = restoredVertices.length >= 3
+            ? normalized.curveControlPoints
+            : {};
+
+        setVertices(restoredVertices);
+        curveVertexCountRef.current = restoredVertices.length;
+        curveControlPointsRef.current = cloneCurveControlPoints(restoredCurveControlPoints);
+        setCurveControlPoints(curveControlPointsRef.current);
+        updatePolygonOnMap(restoredVertices);
+        rebuildMarkers(restoredVertices);
+        rebuildCurveMarkers(restoredVertices, curveControlPointsRef.current);
+        circleMetaRef.current = null;
+    }, [updatePolygonOnMap, rebuildMarkers, rebuildCurveMarkers]);
+
     const handleUndo = useCallback(() => {
         if (history.length === 0) return;
-        const prevVerts = history[history.length - 1];
-        setFuture(f => [vertices, ...f.slice(0, 49)]);
+        const prevSnapshot = history[history.length - 1];
+        setFuture(f => [createHistorySnapshot(vertices, curveControlPointsRef.current), ...f.slice(0, 49)]);
         setHistory(h => h.slice(0, -1));
-        setVertices(prevVerts);
-        syncCurveGeometry(prevVerts, { forceReset: true });
-        updatePolygonOnMap(prevVerts);
-        rebuildMarkers(prevVerts);
-        rebuildCurveMarkers(prevVerts, curveControlPointsRef.current);
-        circleMetaRef.current = null;
-    }, [history, vertices, updatePolygonOnMap, rebuildMarkers, rebuildCurveMarkers, syncCurveGeometry]);
+        restoreHistorySnapshot(prevSnapshot);
+    }, [history, vertices, restoreHistorySnapshot]);
 
     const handleRedo = useCallback(() => {
         if (future.length === 0) return;
-        const nextVerts = future[0];
-        setHistory(h => [...h.slice(-49), vertices]);
+        const nextSnapshot = future[0];
+        setHistory(h => [...h.slice(-49), createHistorySnapshot(vertices, curveControlPointsRef.current)]);
         setFuture(f => f.slice(1));
-        setVertices(nextVerts);
-        syncCurveGeometry(nextVerts, { forceReset: true });
-        updatePolygonOnMap(nextVerts);
-        rebuildMarkers(nextVerts);
-        rebuildCurveMarkers(nextVerts, curveControlPointsRef.current);
-        circleMetaRef.current = null;
-    }, [future, vertices, updatePolygonOnMap, rebuildMarkers, rebuildCurveMarkers, syncCurveGeometry]);
+        restoreHistorySnapshot(nextSnapshot);
+    }, [future, vertices, restoreHistorySnapshot]);
 
     handleUndoRef.current = handleUndo;
     handleRedoRef.current = handleRedo;
@@ -1218,6 +1250,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         const onCurveLineMouseDown = (e) => {
             if (!isCurveModeRef.current) return;
             e.preventDefault();
+            saveToHistoryRef.current?.();
             map.dragPan.disable();
             map.getCanvas().style.cursor = 'grabbing';
             // Find the nearest edge midpoint to determine which control point to drag

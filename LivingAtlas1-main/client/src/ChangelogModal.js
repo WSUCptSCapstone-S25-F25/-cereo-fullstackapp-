@@ -16,14 +16,15 @@ function ChangelogModal({ isOpen, onClose }) {
             <div className="changelog-modal-body">
 
                 <h3>Update Date: 4/29/2026</h3>
-                <p>Changed the Fill Color button icon in the Draw Polygon modal toolbar from a plain color swatch to a FontAwesome palette icon (faPalette). The icon now uses the current fill color as its foreground color.</p>
+                <p>Improved button icon in the Draw Polygon modal toolbar.</p>
+                <p>Added a "Curve" option to the line style menu in the Draw Polygon modal. When enabled, all polygon edges are rendered as smooth quadratic bezier curves. Each edge shows a draggable control-point handle; hovering over the curve or its handles shows a grab cursor, and dragging adjusts the curvature of that edge.</p>
+                <p>Added pentagon and hexagon shape presets to the Draw Polygon modal's shape menu.</p>
+                <p>Added a "Reset Map View" button to the draw control bar that flies the map back to the default view.</p>
 
                 <hr />
 
                 <h3>Update Date: 4/28/2026</h3>
-                <p>Added a "Curve" option to the line style menu in the Draw Polygon modal. When enabled, all polygon edges are rendered as smooth quadratic bezier curves. Each edge shows a draggable control-point handle; hovering over the curve or its handles shows a grab cursor, and dragging adjusts the curvature of that edge.</p>
-                <p>Added pentagon and hexagon shape presets to the Draw Polygon modal's shape menu.</p>
-                <p>Added a "Reset Map View" button to the draw control bar that flies the map back to the default view (Washington state).</p>
+
                 <p>Added undo/redo support to the Draw Polygon modal. Use Ctrl+Z to undo and Ctrl+Y (or Ctrl+Shift+Z) to redo any change to polygon vertices.</p>
                 <p>The draw bar's delete button has been permanently moved inside the Draw Polygon modal toolbar. Standardized all toolbar button icons to use solid FontAwesome icons for a consistent visual style.</p>
                 <p>Fixed a bug where clicking a linked item in the Learn More modal's "Linked ArcGIS Services/Layers" section would open the Upload Panel but fail to expand the correct folder or scroll to the target item.</p>
