@@ -111,6 +111,12 @@
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.card-list-item.menu-open {
+  z-index: 10;
 }
 
 .card-list-item:hover {
@@ -137,6 +143,7 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .card-list-item-btn {
@@ -180,6 +187,81 @@
 .card-list-item-btn.pin.active svg {
   color: #f0c040;
   fill: #f0c040;
+}
+
+/* List view: "..." more-options button */
+.card-list-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid rgba(0, 0, 0, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.82);
+  color: #555;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.card-list-more-btn:hover {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(0, 0, 0, 0.35);
+  color: #111;
+}
+
+/* Dropdown menu opened by "..." button */
+.card-list-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 200;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.13);
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+  min-width: 160px;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-list-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.87rem;
+  color: #222;
+  text-align: left;
+  width: 100%;
+  transition: background 0.13s;
+}
+
+.card-list-menu-item:hover {
+  background: #f3f4f6;
+}
+
+.card-list-menu-item.active-pin {
+  color: #d4a000;
+}
+
+.card-list-menu-item.active-pin svg {
+  color: #f0c040;
+}
+
+.card-list-menu-item.active-fav {
+  color: #e53935;
+}
+
+.card-list-menu-item.active-fav svg {
+  color: #e53935;
 }
 
 /* Pin button overlay on grid-view cards */

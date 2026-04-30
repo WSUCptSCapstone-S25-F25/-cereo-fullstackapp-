@@ -11,7 +11,7 @@ import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js
 import { allMarkers } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip, faRightLeft, faThumbtack } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip, faRightLeft, faThumbtack, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
@@ -27,6 +27,8 @@ function Content2(props) {
     const startWidth = useRef(500);
     const cardContainerRef = useRef(null);
     const lastHandledSidebarSearchRequestRef = useRef(0);
+    const [openMenuCardID, setOpenMenuCardID] = useState(null);
+    const menuRef = useRef(null);
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => { setIsModalOpen(false); setPendingPolygonData(null); };
@@ -91,6 +93,18 @@ function Content2(props) {
             window.removeEventListener('mouseup', onMouseUp);
         };
     }, [isDragging, setCardPanelWidth, isOnLeft]);
+
+    // Close card action menu when clicking outside
+    useEffect(() => {
+        if (!openMenuCardID) return;
+        const handleClickOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                setOpenMenuCardID(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [openMenuCardID]);
 
     const location = useLocation();
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
@@ -973,7 +987,7 @@ function Content2(props) {
 
                                 if (isListView) {
                                     return (
-                                        <div key={cardKey} className="card-list-item">
+                                        <div key={cardKey} className={`card-list-item${openMenuCardID === card.cardID ? ' menu-open' : ''}`}>
                                             <span
                                                 className="card-list-item-title"
                                                 onClick={() => {
@@ -983,42 +997,62 @@ function Content2(props) {
                                             >
                                                 {card.title}
                                             </span>
-                                            <div className="card-list-item-actions">
+                                            <div
+                                                className="card-list-item-actions"
+                                                ref={openMenuCardID === card.cardID ? menuRef : null}
+                                            >
                                                 <button
-                                                    className={`card-list-item-btn pin ${pinnedCardIDs.has(card.cardID) ? 'active' : ''}`}
-                                                    title={pinnedCardIDs.has(card.cardID) ? 'Unpin card' : 'Pin to top'}
+                                                    className="card-list-more-btn"
+                                                    title="More options"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        togglePin(card.cardID);
+                                                        setOpenMenuCardID(prev => prev === card.cardID ? null : card.cardID);
                                                     }}
                                                 >
-                                                    <FontAwesomeIcon icon={faThumbtack} />
+                                                    <FontAwesomeIcon icon={faEllipsisV} />
                                                 </button>
-                                                <button
-                                                    className={`card-list-item-btn fav ${bookmarkedCardIDs.has(card.cardID) ? 'active' : ''}`}
-                                                    title={bookmarkedCardIDs.has(card.cardID) ? 'Remove from favorites' : 'Add to favorites'}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (!props.isLoggedIn) { alert('Please log in to use favorites.'); return; }
-                                                        const endpoint = bookmarkedCardIDs.has(card.cardID) ? '/unbookmarkCard' : '/bookmarkCard';
-                                                        const fd = new FormData();
-                                                        fd.append('username', resolvedUsername);
-                                                        fd.append('cardID', card.cardID);
-                                                        api.post(endpoint, fd).then(() => fetchBookmarks()).catch(err => console.error(err));
-                                                    }}
-                                                >
-                                                    <FontAwesomeIcon icon={faHeart} />
-                                                </button>
-                                                <button
-                                                    className="card-list-item-btn locate"
-                                                    title="Locate on map"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleCardClick(card);
-                                                    }}
-                                                >
-                                                    <FontAwesomeIcon icon={faMapMarkerAlt} />
-                                                </button>
+                                                {openMenuCardID === card.cardID && (
+                                                    <div className="card-list-menu">
+                                                        <button
+                                                            className={`card-list-menu-item${pinnedCardIDs.has(card.cardID) ? ' active-pin' : ''}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                togglePin(card.cardID);
+                                                                setOpenMenuCardID(null);
+                                                            }}
+                                                        >
+                                                            <FontAwesomeIcon icon={faThumbtack} />
+                                                            <span>{pinnedCardIDs.has(card.cardID) ? 'Unpin' : 'Pin to top'}</span>
+                                                        </button>
+                                                        <button
+                                                            className={`card-list-menu-item${bookmarkedCardIDs.has(card.cardID) ? ' active-fav' : ''}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!props.isLoggedIn) { alert('Please log in to use favorites.'); setOpenMenuCardID(null); return; }
+                                                                const endpoint = bookmarkedCardIDs.has(card.cardID) ? '/unbookmarkCard' : '/bookmarkCard';
+                                                                const fd = new FormData();
+                                                                fd.append('username', resolvedUsername);
+                                                                fd.append('cardID', card.cardID);
+                                                                api.post(endpoint, fd).then(() => fetchBookmarks()).catch(err => console.error(err));
+                                                                setOpenMenuCardID(null);
+                                                            }}
+                                                        >
+                                                            <FontAwesomeIcon icon={faHeart} />
+                                                            <span>{bookmarkedCardIDs.has(card.cardID) ? 'Unfavorite' : 'Favorite'}</span>
+                                                        </button>
+                                                        <button
+                                                            className="card-list-menu-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleCardClick(card);
+                                                                setOpenMenuCardID(null);
+                                                            }}
+                                                        >
+                                                            <FontAwesomeIcon icon={faMapMarkerAlt} />
+                                                            <span>Locate on map</span>
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                             {/* Hidden Card for learn-more modal */}
                                             <div style={{ display: 'none' }}>
@@ -1043,7 +1077,7 @@ function Content2(props) {
                                 }
 
                                 return (
-                                    <div key={cardKey} className="card-grid-wrapper" onClick={() => handleCardClick(card)}>
+                                    <div key={cardKey} className="card-grid-wrapper" onClick={() => handleCardClick(card)} onContextMenu={(e) => e.preventDefault()}>
                                         <Card
                                             formData={{
                                                 ...card,
