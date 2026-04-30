@@ -16,6 +16,22 @@ function ChangelogModal({ isOpen, onClose }) {
             <div className="changelog-modal-body">
 
                 <h3>Update Date: 4/29/2026</h3>
+                <p>Added a pin button to cards in the card container. Pinned cards are always sorted to the top of the card list.</p>
+                <p>Fixed a sizing issue with the card container list view when it first loads.</p>
+                <p>Improved image display in the Learn More modal so the image fills the display area completely.</p>
+                <p>Improved button styles in the Learn More modal and ArcGIS Picker modal for a more consistent visual appearance.</p>
+                <p>Added an unsaved changes confirmation prompt to the cancel/close button in the Learn More modal's edit mode.</p>
+                <p>In list view, card action buttons (Favorite, Locate on Map, Pin to Top) are now grouped inside a "⋮" menu that opens a small modal near the button, keeping the card row clean.</p>
+                <p>Improved the display of empty fields in the Learn More modal's card info section.</p>
+                <p>Improved the display structure of linked ArcGIS services and layers in the Learn More modal to use a hierarchical layout.</p>
+                <p>Fixed a bug in the ArcGIS Picker modal where sublayers could not be displayed; layers now also show legend images.</p>
+                <p>Fixed a bug in the ArcGIS Picker modal's search feature and added previous/next navigation controls for search results.</p>
+                <p>Added previous/next search result navigation to the Upload Panel and Custom Layers Panel.</p>
+                <p>Fixed an issue in the ArcGIS Upload Panel and Custom Layers Panel where search results were incomplete due to layers not yet being loaded.</p>
+                <p>Fixed a bug in the Draw Polygon modal where changing the fill color would make the polygon and vertex points invisible.</p>
+                <hr />
+
+                <h3>Update Date: 4/29/2026</h3>
                 <p>Improved button icon in the Draw Polygon modal toolbar.</p>
                 <p>Added a "Curve" option to the line style menu in the Draw Polygon modal. When enabled, all polygon edges are rendered as smooth quadratic bezier curves. Each edge shows a draggable control-point handle and dragging adjusts the curvature of that edge.</p>
                 <p>Added pentagon and hexagon shape presets to the Draw Polygon modal's shape menu.</p>
