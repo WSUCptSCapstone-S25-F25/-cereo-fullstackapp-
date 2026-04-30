@@ -1328,7 +1328,10 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             linesSourceAdded.current = false;
             fillSourceAdded.current = false;
         };
-    }, [fillColor, fillOpacity, initialVertices, lineStyle, updateMarkerLabels, updatePolygonOnMap, rebuildMarkers, syncCurveGeometry]);
+    }, [initialVertices, updateMarkerLabels, updatePolygonOnMap, rebuildMarkers, syncCurveGeometry]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Note: fillColor, fillOpacity, lineStyle are intentionally excluded — they are handled by
+    // their own dedicated useEffects above via setPaintProperty, so they must NOT trigger a
+    // full teardown/reinit of the layer setup (which would make markers invisible).
 
     // Stop drawing mode (finish polygon)
     const handleFinishDrawing = () => {
