@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Modal from 'react-modal';
 import mapboxgl from 'mapbox-gl';
 import api from './api.js';
@@ -58,6 +58,7 @@ function Card(props) {
     const [linkedArcgisItems, setLinkedArcgisItems] = useState([]);
     const [isArcgisPickerOpen, setIsArcgisPickerOpen] = useState(false);
     const linkedItemsLoadedRef = useRef(null); // tracks which cardID was last loaded
+    const linkedArcgisItemsBackupRef = useRef(null); // backup of linkedArcgisItems when edit mode starts
     const [thumbnail, setThumbnail] = useState(null);
     const [preview, setPreview] = useState(
         formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
@@ -598,6 +599,7 @@ function Card(props) {
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
         setLearnMoreBackup({ ...formData });
+        linkedArcgisItemsBackupRef.current = linkedArcgisItems.map(i => ({ ...i }));
         setSessionUploadedImageIDs([]);
         setSelectedAllImageIDs([]);
         setPendingDeletedImageIDs([]);
@@ -643,6 +645,10 @@ function Card(props) {
 
         if (learnMoreBackup) {
             setFormData(learnMoreBackup);
+        }
+        if (linkedArcgisItemsBackupRef.current !== null) {
+            setLinkedArcgisItems(linkedArcgisItemsBackupRef.current);
+            linkedArcgisItemsBackupRef.current = null;
         }
 
         isEditingRef.current = false;
@@ -717,8 +723,43 @@ function Card(props) {
         }
     };
 
+    // Compute whether there are unsaved changes in edit mode
+    const hasUnsavedChanges = useMemo(() => {
+        if (!isLearnMoreEditMode || !learnMoreBackup) return false;
+
+        // Compare tracked formData fields
+        const trackedFields = [
+            'title', 'description', 'category', 'username', 'name',
+            'latitude', 'longitude', 'location_type',
+            'polygon_vertices', 'polygon_fill_color', 'polygon_line_style', 'polygon_fill_opacity',
+            'website_link', 'thumbnail_link', 'files',
+        ];
+        for (const field of trackedFields) {
+            if (JSON.stringify(formData[field]) !== JSON.stringify(learnMoreBackup[field])) return true;
+        }
+
+        // Compare images (order + identity)
+        if (JSON.stringify((formData.images || []).map(i => i.imageID ?? i.id)) !==
+            JSON.stringify((learnMoreBackup.images || []).map(i => i.imageID ?? i.id))) return true;
+
+        // Compare linked ArcGIS items
+        const backup = linkedArcgisItemsBackupRef.current;
+        if (backup !== null) {
+            const currentIds = linkedArcgisItems.map(i => i.id).sort().join(',');
+            const backupIds = backup.map(i => i.id).sort().join(',');
+            if (currentIds !== backupIds) return true;
+        }
+
+        return false;
+    }, [isLearnMoreEditMode, learnMoreBackup, formData, linkedArcgisItems]);
+
     const handleLearnMoreClose = async (e) => {
         if (e?.stopPropagation) e.stopPropagation();
+
+        if (isLearnMoreEditMode && hasUnsavedChanges) {
+            const confirmed = window.confirm('You have unsaved changes. Discard them and close?');
+            if (!confirmed) return;
+        }
 
         if (isLearnMoreEditMode) {
             await handleLearnMoreEditCancel(e);
@@ -1164,11 +1205,20 @@ function Card(props) {
                             </button>
                             <button
                                 className="learn-more-modal-toolbar-btn cancel"
-                                onClick={handleLearnMoreEditCancel}
+                                onClick={async (e) => {
+                                    if (hasUnsavedChanges) {
+                                        const confirmed = window.confirm('You have unsaved changes. Discard them?');
+                                        if (!confirmed) return;
+                                    }
+                                    await handleLearnMoreEditCancel(e);
+                                }}
                                 disabled={loading || isImageMutationLoading}
                             >
                                 Cancel
                             </button>
+                            {hasUnsavedChanges && (
+                                <span className="learn-more-unsaved-badge">You have unsaved changes</span>
+                            )}
                         </div>
                     ) : (
                         <button

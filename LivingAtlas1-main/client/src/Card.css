@@ -741,6 +741,17 @@
   background: #f1f5f9;
 }
 
+.learn-more-unsaved-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
 .learn-more-gallery {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
