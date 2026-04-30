@@ -344,7 +344,7 @@
     background-color: #005fa3;
 }
 
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-see-all-images-btn):not(.learn-more-all-images-back-link):not(.learn-more-all-image-btn):not(.learn-more-all-image-delete-btn) {
+.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-see-all-images-btn):not(.learn-more-all-images-back-link):not(.learn-more-all-image-btn):not(.learn-more-all-image-delete-btn):not(.learn-more-select-location-btn):not(.learn-more-add-arcgis-btn):not(.learn-more-all-images-delete-selected-btn):not(.learn-more-all-image-sort-btn):not(.learn-more-all-image-select):not(.learn-more-file-edit-delete-btn):not(.learn-more-arcgis-link-btn):not(.learn-more-arcgis-link-delete-btn):not(.arcgis-picker-search-btn):not(.arcgis-picker-clear-btn):not(.arcgis-picker-nav-btn):not(.arcgis-picker-cancel-btn):not(.arcgis-picker-add-btn) {
     margin-top: 20px;
     padding: 10px 20px;
     border: none;
@@ -355,7 +355,7 @@
     cursor: pointer;
 }
 
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-see-all-images-btn):not(.learn-more-all-images-back-link):not(.learn-more-all-image-btn):not(.learn-more-all-image-delete-btn):hover {
+.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-see-all-images-btn):not(.learn-more-all-images-back-link):not(.learn-more-all-image-btn):not(.learn-more-all-image-delete-btn):not(.learn-more-select-location-btn):not(.learn-more-add-arcgis-btn):not(.learn-more-all-images-delete-selected-btn):not(.learn-more-all-image-sort-btn):not(.learn-more-all-image-select):not(.learn-more-file-edit-delete-btn):not(.learn-more-arcgis-link-btn):not(.learn-more-arcgis-link-delete-btn):not(.arcgis-picker-search-btn):not(.arcgis-picker-clear-btn):not(.arcgis-picker-nav-btn):not(.arcgis-picker-cancel-btn):not(.arcgis-picker-add-btn):hover {
     background-color: #0062cc;
 }
 
@@ -755,14 +755,13 @@
   border-radius: 7px;
   border: 1px solid #cbd5e1;
   background: #ffffff;
-  color: #1f4f7e;
+  color: #334155;
   cursor: pointer;
   font-weight: 600;
 }
 
 .learn-more-see-all-images-btn:hover {
-  background: #eef5fd;
-  border-color: #8fb0d1;
+  background: #f1f5f9;
 }
 
 .learn-more-all-images-view {
@@ -957,7 +956,7 @@
   border-radius: 7px;
   border: 1px solid #cbd5e1;
   background: #ffffff;
-  color: #1f4f7e;
+  color: #334155;
   font-weight: 600;
 }
 
@@ -1199,17 +1198,16 @@
 .learn-more-select-location-btn {
   display: inline-block;
   margin: 4px 0 12px;
-  padding: 6px 16px;
-  font-size: 0.9rem;
+  padding: 7px 12px;
   font-weight: 600;
   color: #fff;
-  background: #2563eb;
-  border: none;
-  border-radius: 6px;
+  background: #1d4ed8;
+  border: 1px solid transparent;
+  border-radius: 7px;
   cursor: pointer;
 }
 .learn-more-select-location-btn:hover {
-  background: #1d4ed8;
+  background: #1e40af;
 }
 
 .learn-more-location-btn-group {
@@ -1222,10 +1220,10 @@
   margin: 0;
 }
 .learn-more-change-to-polygon-btn {
-  background: #7c3aed !important;
+  background: #1d4ed8 !important;
 }
 .learn-more-change-to-polygon-btn:hover {
-  background: #6d28d9 !important;
+  background: #1e40af !important;
 }
 
 .learn-more-modal-body p {
@@ -1766,20 +1764,18 @@
 }
 
 .learn-more-add-arcgis-btn {
-    background: #f0f4ff !important;
-    border: 1px dashed #93c5fd !important;
-    color: #1565c0 !important;
-    padding: 6px 12px !important;
-    border-radius: 5px !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    padding: 7px 12px !important;
+    border-radius: 7px !important;
     cursor: pointer !important;
-    font-size: 0.85rem !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     margin-top: 4px !important;
-    transition: background 0.15s, border-color 0.15s !important;
+    transition: background 0.15s !important;
     box-shadow: none !important;
 }
 
 .learn-more-add-arcgis-btn:hover {
-    background: #dbeafe !important;
-    border-color: #60a5fa !important;
+    background: #f1f5f9 !important;
 }

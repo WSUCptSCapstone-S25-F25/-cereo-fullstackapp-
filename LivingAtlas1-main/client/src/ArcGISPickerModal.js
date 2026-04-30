@@ -563,29 +563,7 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                         >
                             <FontAwesomeIcon icon={faTimes} />
                         </button>
-                        {searchResult && (
-                            <>
-                                <span className="arcgis-picker-search-counter">
-                                    {matchTotal > 0 ? `${currentIndex + 1} / ${matchTotal}` : '0 results'}
-                                </span>
-                                <button
-                                    className="arcgis-picker-nav-btn"
-                                    title="Previous match"
-                                    onClick={goToPrev}
-                                    disabled={matchTotal === 0}
-                                >
-                                    <FontAwesomeIcon icon={faChevronUp} />
-                                </button>
-                                <button
-                                    className="arcgis-picker-nav-btn"
-                                    title="Next match"
-                                    onClick={goToNext}
-                                    disabled={matchTotal === 0}
-                                >
-                                    <FontAwesomeIcon icon={faChevronDown} />
-                                </button>
-                            </>
-                        )}
+
                     </div>
                 </div>
 
@@ -593,6 +571,31 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                 <div className="arcgis-picker-body">
                     {renderTree()}
                 </div>
+
+                {/* Search nav mini modal — floats at top-right of the body area */}
+                {searchResult && (
+                    <div className="arcgis-picker-nav-mini">
+                        <span className="arcgis-picker-nav-mini-counter">
+                            {matchTotal > 0 ? `${currentIndex + 1} / ${matchTotal}` : '0 results'}
+                        </span>
+                        <button
+                            className="arcgis-picker-nav-btn"
+                            title="Previous match"
+                            onClick={goToPrev}
+                            disabled={matchTotal === 0}
+                        >
+                            <FontAwesomeIcon icon={faChevronUp} />
+                        </button>
+                        <button
+                            className="arcgis-picker-nav-btn"
+                            title="Next match"
+                            onClick={goToNext}
+                            disabled={matchTotal === 0}
+                        >
+                            <FontAwesomeIcon icon={faChevronDown} />
+                        </button>
+                    </div>
+                )}
 
                 {/* Footer: selected count + add/cancel */}
                 <div className="arcgis-picker-footer">

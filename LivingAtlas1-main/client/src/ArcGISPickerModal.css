@@ -17,6 +17,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
 }
 
 /* Header */
@@ -48,49 +49,44 @@
 }
 
 .arcgis-picker-search-input:focus {
-    border-color: #1976d2;
+    border-color: #1d4ed8;
 }
 
 .arcgis-picker-search-btn,
 .arcgis-picker-clear-btn {
-    background: #1976d2;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
+    border-radius: 7px;
     padding: 6px 10px;
     cursor: pointer;
     font-size: 0.82rem;
     transition: background 0.15s;
 }
 
+.arcgis-picker-search-btn {
+    background: #1d4ed8;
+    color: #fff;
+    border: 1px solid transparent;
+}
+
 .arcgis-picker-search-btn:hover {
-    background: #1565c0;
+    background: #1e40af;
 }
 
 .arcgis-picker-clear-btn {
-    background: #888;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
 }
 
 .arcgis-picker-clear-btn:hover {
-    background: #666;
-}
-
-/* Search result counter: "3 / 15" */
-.arcgis-picker-search-counter {
-    font-size: 0.78rem;
-    color: #555;
-    white-space: nowrap;
-    min-width: 42px;
-    text-align: center;
-    user-select: none;
+    background: #f1f5f9;
 }
 
 /* Prev / Next match navigation buttons */
 .arcgis-picker-nav-btn {
-    background: #f0f0f0;
-    color: #444;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
     padding: 4px 7px;
     cursor: pointer;
     font-size: 0.78rem;
@@ -99,12 +95,39 @@
 }
 
 .arcgis-picker-nav-btn:hover:not(:disabled) {
-    background: #ddd;
+    background: #f1f5f9;
 }
 
 .arcgis-picker-nav-btn:disabled {
     opacity: 0.4;
     cursor: default;
+}
+
+/* Mini nav modal — floats at top-right corner of the item display area */
+.arcgis-picker-nav-mini {
+    position: absolute;
+    /* header height ≈ 54 px; offset 8 px below into body */
+    top: 62px;
+    right: 10px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #c0cfea;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+    padding: 4px 8px;
+    pointer-events: all;
+    user-select: none;
+}
+
+.arcgis-picker-nav-mini-counter {
+    font-size: 0.78rem;
+    color: #444;
+    white-space: nowrap;
+    min-width: 46px;
+    text-align: center;
 }
 
 /* Highlight for the currently focused search match */
@@ -337,25 +360,26 @@
 
 .arcgis-picker-cancel-btn {
     padding: 7px 18px;
-    background: #e0e0e0;
-    color: #333;
-    border: none;
-    border-radius: 4px;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
     cursor: pointer;
     font-size: 0.88rem;
+    font-weight: 600;
     transition: background 0.15s;
 }
 
 .arcgis-picker-cancel-btn:hover {
-    background: #ccc;
+    background: #f1f5f9;
 }
 
 .arcgis-picker-add-btn {
     padding: 7px 20px;
-    background: #1976d2;
+    background: #1d4ed8;
     color: #fff;
-    border: none;
-    border-radius: 4px;
+    border: 1px solid transparent;
+    border-radius: 7px;
     cursor: pointer;
     font-size: 0.88rem;
     font-weight: 600;
@@ -363,7 +387,7 @@
 }
 
 .arcgis-picker-add-btn:hover:not(:disabled) {
-    background: #1565c0;
+    background: #1e40af;
 }
 
 .arcgis-picker-add-btn:disabled {
