@@ -173,13 +173,13 @@
 }
 
 .card-list-item-btn.pin.active {
-  border-color: #1976d2;
-  color: #1976d2;
+  border-color: #f0c040;
+  color: #f0c040;
 }
 
 .card-list-item-btn.pin.active svg {
-  color: #1976d2;
-  fill: #1976d2;
+  color: #f0c040;
+  fill: #f0c040;
 }
 
 /* Pin button overlay on grid-view cards */
@@ -215,13 +215,13 @@
 }
 
 .card-grid-pin-btn.active {
-  border-color: #1976d2;
-  color: #1976d2;
+  border-color: #f0c040;
+  color: #f0c040;
 }
 
 .card-grid-pin-btn.active svg {
-  color: #1976d2;
-  fill: #1976d2;
+  color: #f0c040;
+  fill: #f0c040;
 }
 
 .card-panel-top {
