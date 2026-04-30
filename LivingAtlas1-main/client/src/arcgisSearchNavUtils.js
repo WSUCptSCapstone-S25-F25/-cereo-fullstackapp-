@@ -110,6 +110,15 @@ export function useSearchNav(matchList) {
         }
     });
 
+    // When layers load in asynchronously after a search that found 0 results,
+    // auto-navigate to the first result once the match list becomes non-empty.
+    useEffect(() => {
+        if (currentIndex === -1 && matchList.length > 0) {
+            shouldScrollRef.current = true;
+            setCurrentIndex(0);
+        }
+    }, [matchList.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const goToNext = useCallback(() => {
         if (matchList.length === 0) return;
         shouldScrollRef.current = true;

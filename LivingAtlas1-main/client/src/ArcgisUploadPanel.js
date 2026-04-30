@@ -251,6 +251,7 @@ function ArcgisUploadPanel({
     const saveTimerRef = useRef(null);
     const userEmail = localStorage.getItem('email') || '';
     const pinnedWriteInitializedRef = useRef(false);
+    const activeSearchRef = useRef(null); // { keyword, searchType } — tracks active search for auto re-run when layers load
     const [pinnedItems, setPinnedItems] = useState([]);
     const [pinnedPreferencesLoaded, setPinnedPreferencesLoaded] = useState(false);
     const [localPinnedPreferencesReady, setLocalPinnedPreferencesReady] = useState(false);
@@ -419,6 +420,7 @@ function ArcgisUploadPanel({
         loadingStates.current = {};
         setIsMapLayerLoading(false);
         selectionsLoadedRef.current = false;
+        activeSearchRef.current = null;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dataSource, ARCGIS_SERVICES.length]); // Only reset when datasource changes
 
@@ -457,6 +459,18 @@ function ArcgisUploadPanel({
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, ARCGIS_SERVICES, expandedStates]); // React to panel opening, services changing, or state expansion
+
+    // Re-run filter when layers load in (handles first-search case where serviceLayers was still empty)
+    useEffect(() => {
+        if (!activeSearchRef.current) return;
+        const { keyword, searchType: type } = activeSearchRef.current;
+        const result = filterUploadPanelData({ services: ARCGIS_SERVICES, serviceLayers, searchType: type, keyword });
+        setSearchResult(result);
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serviceLayers]);
 
     // --- DB persistence disabled (kept for future use) ---
     // useEffect(() => {
@@ -1594,6 +1608,7 @@ function ArcgisUploadPanel({
                                 keyword: searchKeyword
                             });
                             setSearchResult(result);
+                            activeSearchRef.current = { keyword: searchKeyword, searchType };
                             setExpandedStates(new Set(STATE_CODES));
                             setExpandedFolders(new Set(result.expandedFolders));
                             setExpandedServices(new Set(result.expandedServices));
@@ -1634,6 +1649,7 @@ function ArcgisUploadPanel({
                             keyword: searchKeyword
                         });
                         setSearchResult(result);
+                        activeSearchRef.current = { keyword: searchKeyword, searchType };
                         setExpandedStates(new Set(STATE_CODES));
                         setExpandedFolders(new Set(result.expandedFolders));
                         setExpandedServices(new Set(result.expandedServices));
@@ -1648,6 +1664,7 @@ function ArcgisUploadPanel({
                     className="clear-btn upload-panel-searchbar-btn clear"
                     title="Clear Search"
                     onClick={() => {
+                        activeSearchRef.current = null;
                         setSearchKeyword('');
                         setSearchResult(null);
                         setExpandedStates(new Set());

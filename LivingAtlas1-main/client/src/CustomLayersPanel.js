@@ -60,6 +60,7 @@ function CustomLayersPanel({
     const statusTimer = useRef(null);
 
     const prevCheckedLayerIds = useRef({});
+    const activeSearchRef = useRef(null); // { keyword, searchType } — tracks active search for auto re-run when layers load
 
     // Rename state
     const [renamingItem, setRenamingItem] = useState(null);
@@ -166,6 +167,7 @@ function CustomLayersPanel({
             keyword: searchKeyword,
         });
         setSearchResult(result);
+        activeSearchRef.current = { keyword: searchKeyword, searchType };
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
@@ -174,6 +176,7 @@ function CustomLayersPanel({
     };
 
     const clearSearch = () => {
+        activeSearchRef.current = null;
         setSearchKeyword('');
         setSearchResult(null);
         setExpandedFolders(new Set());
@@ -200,25 +203,44 @@ function CustomLayersPanel({
         servicesByFolderToShow = filteredFolders;
     }
 
-    // Lazy-load layers/legends when a service is expanded
+    // Pre-load layers for ALL services when panel opens (needed so search works on first use)
     useEffect(() => {
         if (!isOpen) return;
         customServices.forEach(service => {
-            if (!expandedServices.has(service.key)) return;
             if (serviceLayers[service.key] !== undefined) return;
             if (!service.url || service.type !== 'MapServer') return;
-
             fetchArcgisLayers(service.url).then(layers => {
                 setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
                 setCheckedLayerIds(prev => prev[service.key] ? prev : { ...prev, [service.key]: [] });
                 setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
                 setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
             });
+        });
+    }, [isOpen, customServices]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Lazy-load legends when a service is expanded
+    useEffect(() => {
+        if (!isOpen) return;
+        customServices.forEach(service => {
+            if (!expandedServices.has(service.key)) return;
+            if (!service.url || service.type !== 'MapServer') return;
             fetchArcgisLegend(service.url).then(legend => {
                 setServiceLegends(prev => ({ ...prev, [service.key]: legend || {} }));
             });
         });
     }, [isOpen, customServices, expandedServices]);
+
+    // Re-run filter when layers load in (handles first-search case where serviceLayers was still empty)
+    useEffect(() => {
+        if (!activeSearchRef.current) return;
+        const { keyword, searchType: type } = activeSearchRef.current;
+        const result = filterUploadPanelData({ services: customServices, serviceLayers, searchType: type, keyword });
+        setSearchResult(result);
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serviceLayers]);
 
     // --- Map interaction: add/remove raster + vector layers per layer (matches ArcgisUploadPanel) ---
     useEffect(() => {
