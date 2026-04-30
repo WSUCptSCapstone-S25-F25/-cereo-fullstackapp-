@@ -2090,7 +2090,7 @@ function ArcgisUploadPanel({
                                     return (
                                         <div key={service.key} className="tree-node" data-service-key={service.key}>
                                             <div
-                                                className="upload-item"
+                                                className={`upload-item${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
                                                 style={searchResult?.matchedServiceKeys?.has(service.key) ? { fontWeight: 'bold' } : undefined}
                                                 data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                 onClick={() => handleServiceClick(service.key)}

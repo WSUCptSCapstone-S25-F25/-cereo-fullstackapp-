@@ -1115,7 +1115,7 @@ function CustomLayersPanel({
                                             return (
                                                 <div key={service.key} style={{ opacity: isServiceDragging ? 0.4 : 1 }}>
                                                     <div
-                                                        className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}`}
+                                                        className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
                                                         data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                         onClick={() => handleServiceClick(service.key)}
                                                         onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
