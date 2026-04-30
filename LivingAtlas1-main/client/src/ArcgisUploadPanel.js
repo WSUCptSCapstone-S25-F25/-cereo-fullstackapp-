@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
@@ -25,6 +25,7 @@ import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
 import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
 import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
+import { buildMatchList, useSearchNav } from './arcgisSearchNavUtils';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './LayerTree';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import { fetchUserPreferences, saveUserPreferences } from './userPreferencesApi';
@@ -38,7 +39,7 @@ import {
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faSync } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
@@ -218,6 +219,13 @@ function ArcgisUploadPanel({
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('any'); // 'any', 'folder', 'service', 'layer'
     const [searchResult, setSearchResult] = useState(null);
+
+    // Search navigation
+    const matchList = useMemo(
+        () => buildMatchList({ searchResult, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: STATE_CODES, serviceLayers }),
+        [searchResult, serviceLayers] // eslint-disable-line react-hooks/exhaustive-deps
+    );
+    const { currentIndex: navIndex, total: matchTotal, currentMatchId, goToNext, goToPrev, initNav, resetNav } = useSearchNav(matchList);
     const [expandedStates, setExpandedStates] = useState(new Set()); // Track which state-level folders are expanded
     const [expandedFolders, setExpandedFolders] = useState(new Set());
     const [expandedServices, setExpandedServices] = useState(new Set());
@@ -1551,6 +1559,7 @@ function ArcgisUploadPanel({
             checkedSublayerIds={checkedSublayerIds}
             expandedLayers={expandedLayers}
             searchResult={searchResult}
+            currentMatchId={currentMatchId}
             onLayerClick={handleLayerClick}
             onLayerCheckbox={handleLayerCheckbox}
             onGroupCheckbox={handleGroupLayerCheckbox}
@@ -1575,6 +1584,7 @@ function ArcgisUploadPanel({
                                 setExpandedFolders(new Set());
                                 setExpandedServices(new Set());
                                 setExpandedLayers(new Set());
+                                resetNav();
                                 return;
                             }
                             const result = filterUploadPanelData({
@@ -1588,6 +1598,8 @@ function ArcgisUploadPanel({
                             setExpandedFolders(new Set(result.expandedFolders));
                             setExpandedServices(new Set(result.expandedServices));
                             setExpandedLayers(new Set(result.expandedLayerKeys));
+                            const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: STATE_CODES, serviceLayers });
+                            initNav(mList.length);
                         }
                     }}
                     placeholder="Search folders, services, or layers..."
@@ -1612,6 +1624,7 @@ function ArcgisUploadPanel({
                             setExpandedFolders(new Set());
                             setExpandedServices(new Set());
                             setExpandedLayers(new Set());
+                            resetNav();
                             return;
                         }
                         const result = filterUploadPanelData({
@@ -1625,6 +1638,8 @@ function ArcgisUploadPanel({
                         setExpandedFolders(new Set(result.expandedFolders));
                         setExpandedServices(new Set(result.expandedServices));
                         setExpandedLayers(new Set(result.expandedLayerKeys));
+                        const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: STATE_CODES, serviceLayers });
+                        initNav(mList.length);
                     }}
                 >
                     <FontAwesomeIcon icon={faSearch} />
@@ -1639,6 +1654,7 @@ function ArcgisUploadPanel({
                         setExpandedFolders(new Set());
                         setExpandedServices(new Set());
                         setExpandedLayers(new Set());
+                        resetNav();
                     }}
                 >
                     <FontAwesomeIcon icon={faTimes} />
@@ -1963,6 +1979,30 @@ function ArcgisUploadPanel({
                                 </div>
                             )}
                         </div>
+                        <div className="upload-panel-folder-area-wrapper">
+                            {searchResult && (
+                                <div className="panel-nav-mini">
+                                    <span className="panel-nav-mini-counter">
+                                        {matchTotal > 0 ? `${navIndex + 1} / ${matchTotal}` : '0 results'}
+                                    </span>
+                                    <button
+                                        className="panel-nav-mini-btn"
+                                        title="Previous match"
+                                        onClick={goToPrev}
+                                        disabled={matchTotal === 0}
+                                    >
+                                        <FontAwesomeIcon icon={faChevronUp} />
+                                    </button>
+                                    <button
+                                        className="panel-nav-mini-btn"
+                                        title="Next match"
+                                        onClick={goToNext}
+                                        disabled={matchTotal === 0}
+                                    >
+                                        <FontAwesomeIcon icon={faChevronDown} />
+                                    </button>
+                                </div>
+                            )}
                         <div className="upload-panel-folder-area" ref={folderAreaRef}>
                         {/* Built-in Layers folder */}
                         <div>
@@ -2020,6 +2060,7 @@ function ArcgisUploadPanel({
                         <div
                             className="upload-folder"
                             style={searchResult?.matchedFolderNames?.has(folder) ? { fontWeight: 'bold' } : undefined}
+                            data-search-match-id={searchResult?.matchedFolderNames?.has(folder) ? `folder-${stateCode}-${folder}` : undefined}
                             onClick={() => handleFolderClick(folder)}
                             onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
                         >
@@ -2051,6 +2092,7 @@ function ArcgisUploadPanel({
                                             <div
                                                 className="upload-item"
                                                 style={searchResult?.matchedServiceKeys?.has(service.key) ? { fontWeight: 'bold' } : undefined}
+                                                data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                 onClick={() => handleServiceClick(service.key)}
                                                 onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                             >
@@ -2107,6 +2149,7 @@ function ArcgisUploadPanel({
                 );
             })}
                         </div>
+                        </div>{/* end upload-panel-folder-area-wrapper */}
                 
                 {/* Context Menu */}
                 <LayerContextMenuPopup

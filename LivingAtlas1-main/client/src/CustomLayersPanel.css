@@ -111,6 +111,16 @@
     flex-shrink: 0;
 }
 
+/* Folder area wrapper — provides positioning context for the floating nav mini modal */
+.custom-layers-panel-folder-area-wrapper {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 .custom-layers-panel-folder-area {
     border: 1px solid #d8e1ea;
     border-radius: 8px;

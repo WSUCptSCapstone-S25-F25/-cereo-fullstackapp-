@@ -54,6 +54,7 @@ export function LayerTreeNode({
     checkedSublayerIds,
     expandedLayers,
     searchResult,
+    currentMatchId,
     onLayerClick,
     onLayerCheckbox,
     onGroupCheckbox,
@@ -83,10 +84,12 @@ export function LayerTreeNode({
         const checkedCount = descendantIds.filter(id => checkedIds.includes(id)).length;
         const allChecked = descendantIds.length > 0 && checkedCount === descendantIds.length;
         const someChecked = checkedCount > 0 && !allChecked;
+        const groupMatchId = isBold(node.name) ? `layer-${service.key}-${node.id}` : undefined;
 
         return (
             <div key={node.id}
-                className={`tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}`}
+                className={`tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}${currentMatchId && currentMatchId === groupMatchId ? ' search-nav-current' : ''}`}
+                data-search-match-id={groupMatchId}
                 style={depth === 0 && draggingLayerId === node.id ? { opacity: 0.4 } : undefined}
                 onDragOver={depth === 0 && onLayerDragOver ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onLayerDragOver(e, service.key, node.id); } : undefined}
                 onDrop={depth === 0 && onLayerDrop ? (e) => { e.preventDefault(); onLayerDrop(e, service.key, node.id); } : undefined}
@@ -140,6 +143,7 @@ export function LayerTreeNode({
                                 checkedSublayerIds={checkedSublayerIds}
                                 expandedLayers={expandedLayers}
                                 searchResult={searchResult}
+                                currentMatchId={currentMatchId}
                                 onLayerClick={onLayerClick}
                                 onLayerCheckbox={onLayerCheckbox}
                                 onGroupCheckbox={onGroupCheckbox}
@@ -163,9 +167,12 @@ export function LayerTreeNode({
     }
     const hasMultipleLegends = legendItems.length > 1;
     const checkedSublayers = checkedSublayerIds[service.key]?.[node.id] || [];
+    const leafMatchId = isBold(node.name) ? `layer-${service.key}-${node.id}` : undefined;
 
     return (
-        <li key={node.id} className={`upload-layer-row tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}`} style={{
+        <li key={node.id} className={`upload-layer-row tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}${currentMatchId && currentMatchId === leafMatchId ? ' search-nav-current' : ''}`}
+            data-search-match-id={leafMatchId}
+            style={{
             flexDirection: 'column', alignItems: 'flex-start', marginBottom: 2,
             ...(depth === 0 && draggingLayerId === node.id ? { opacity: 0.4 } : {})
         }}

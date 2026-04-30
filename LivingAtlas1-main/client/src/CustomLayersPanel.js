@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
@@ -12,11 +12,12 @@ import {
 import { fetchCustomLayers, deleteCustomLayer, reorderCustomLayers, saveLayerOrder, fetchCustomFolders, createCustomFolder, deleteCustomFolder, renameCustomFolder } from './arcgisServicesDb';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './LayerTree';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
+import { buildMatchList, useSearchNav } from './arcgisSearchNavUtils';
 import ArcgisRenameItem from './ArcgisRenameItem';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSearch, faFolderPlus } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
 function CustomLayersPanel({
     isOpen,
@@ -48,6 +49,13 @@ function CustomLayersPanel({
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('any');
     const [searchResult, setSearchResult] = useState(null);
+
+    // Search navigation
+    const matchList = useMemo(
+        () => buildMatchList({ searchResult, allServicesByState: { CUSTOM: customServices }, stateCodes: ['CUSTOM'], serviceLayers }),
+        [searchResult, serviceLayers] // eslint-disable-line react-hooks/exhaustive-deps
+    );
+    const { currentIndex: navIndex, total: matchTotal, currentMatchId, goToNext, goToPrev, initNav, resetNav } = useSearchNav(matchList);
     const [showAddedOnly, setShowAddedOnly] = useState(false);
     const statusTimer = useRef(null);
 
@@ -148,6 +156,7 @@ function CustomLayersPanel({
             setExpandedFolders(new Set());
             setExpandedServices(new Set());
             setExpandedLayers(new Set());
+            resetNav();
             return;
         }
         const result = filterUploadPanelData({
@@ -160,6 +169,8 @@ function CustomLayersPanel({
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: customServices }, stateCodes: ['CUSTOM'], serviceLayers });
+        initNav(mList.length);
     };
 
     const clearSearch = () => {
@@ -168,6 +179,7 @@ function CustomLayersPanel({
         setExpandedFolders(new Set());
         setExpandedServices(new Set());
         setExpandedLayers(new Set());
+        resetNav();
     };
 
     // --- Compute display folders/services with search + showAddedOnly ---
@@ -862,6 +874,7 @@ function CustomLayersPanel({
             checkedSublayerIds={checkedSublayerIds}
             expandedLayers={expandedLayers}
             searchResult={searchResult}
+            currentMatchId={currentMatchId}
             onLayerClick={handleLayerClick}
             onLayerCheckbox={handleLayerCheckbox}
             onGroupCheckbox={handleGroupLayerCheckbox}
@@ -1014,6 +1027,30 @@ function CustomLayersPanel({
             )}
 
             {!isLoading && customServices.length > 0 && (
+                <div className="custom-layers-panel-folder-area-wrapper">
+                    {searchResult && (
+                        <div className="panel-nav-mini">
+                            <span className="panel-nav-mini-counter">
+                                {matchTotal > 0 ? `${navIndex + 1} / ${matchTotal}` : '0 results'}
+                            </span>
+                            <button
+                                className="panel-nav-mini-btn"
+                                title="Previous match"
+                                onClick={goToPrev}
+                                disabled={matchTotal === 0}
+                            >
+                                <FontAwesomeIcon icon={faChevronUp} />
+                            </button>
+                            <button
+                                className="panel-nav-mini-btn"
+                                title="Next match"
+                                onClick={goToNext}
+                                disabled={matchTotal === 0}
+                            >
+                                <FontAwesomeIcon icon={faChevronDown} />
+                            </button>
+                        </div>
+                    )}
                 <div className="custom-layers-panel-folder-area">
                     {foldersToShow.map(folder => {
                         const services = servicesByFolderToShow[folder] || [];
@@ -1026,6 +1063,7 @@ function CustomLayersPanel({
                             >
                                 <div
                                     className={`custom-layers-folder${isFolderDragOver ? ' drag-over' : ''}`}
+                                    data-search-match-id={searchResult?.matchedFolderNames?.has(folder) ? `folder-CUSTOM-${folder}` : undefined}
                                     onClick={() => handleFolderClick(folder)}
                                     onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
                                     onDragOver={(e) => handleDragOver(e, 'folder', folder)}
@@ -1078,6 +1116,7 @@ function CustomLayersPanel({
                                                 <div key={service.key} style={{ opacity: isServiceDragging ? 0.4 : 1 }}>
                                                     <div
                                                         className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}`}
+                                                        data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                         onClick={() => handleServiceClick(service.key)}
                                                         onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                                         onDragOver={(e) => handleDragOver(e, 'service', service.key, folder)}
@@ -1141,6 +1180,7 @@ function CustomLayersPanel({
                             </div>
                         );
                     })}
+                </div>
                 </div>
             )}
 
