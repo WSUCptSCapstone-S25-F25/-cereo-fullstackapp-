@@ -451,14 +451,28 @@ function ArcgisUploadPanel({
                 setCheckedLayerIds(prev => prev[service.key] ? prev : { ...prev, [service.key]: [] });
                 setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
                 setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
-            });
-
-            fetchArcgisLegend(service.url).then(legend => {
-                setServiceLegends(prev => ({ ...prev, [service.key]: legend || {} }));
+            }).catch(() => {
+                setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
             });
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, ARCGIS_SERVICES, expandedStates]); // React to panel opening, services changing, or state expansion
+
+    // Fetch legends on-demand only when a service is actually expanded in the UI
+    useEffect(() => {
+        if (!isOpen) return;
+        expandedServices.forEach(serviceKey => {
+            if (serviceLegends[serviceKey] !== undefined) return;
+            const service = ARCGIS_SERVICES.find(s => s.key === serviceKey);
+            if (!service?.url) return;
+            fetchArcgisLegend(service.url).then(legend => {
+                setServiceLegends(prev => ({ ...prev, [serviceKey]: legend || {} }));
+            }).catch(() => {
+                setServiceLegends(prev => ({ ...prev, [serviceKey]: {} }));
+            });
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, expandedServices]);
 
     // Re-run filter when layers load in (handles first-search case where serviceLayers was still empty)
     useEffect(() => {

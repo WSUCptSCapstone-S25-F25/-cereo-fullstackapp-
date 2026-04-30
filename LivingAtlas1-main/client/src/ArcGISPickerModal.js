@@ -132,16 +132,21 @@ function ArcGISPickerModal({ onAdd, onClose }) {
 
         let updatedServiceLayers = { ...serviceLayers };
         if (serviceKeysToFetch.length > 0) {
-            await Promise.all(serviceKeysToFetch.map(async (key) => {
-                const service = allServices.find(s => s.key === key);
-                if (!service?.url) return;
-                try {
-                    const layers = await fetchArcgisLayers(service.url);
-                    updatedServiceLayers[key] = layers || [];
-                } catch {
-                    updatedServiceLayers[key] = [];
-                }
-            }));
+            // Fetch in batches of 8 to avoid ERR_INSUFFICIENT_RESOURCES
+            const BATCH_SIZE = 8;
+            for (let i = 0; i < serviceKeysToFetch.length; i += BATCH_SIZE) {
+                const batch = serviceKeysToFetch.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(async (key) => {
+                    const service = allServices.find(s => s.key === key);
+                    if (!service?.url) return;
+                    try {
+                        const layers = await fetchArcgisLayers(service.url);
+                        updatedServiceLayers[key] = layers || [];
+                    } catch {
+                        updatedServiceLayers[key] = [];
+                    }
+                }));
+            }
             setServiceLayers(prev => ({ ...prev, ...updatedServiceLayers }));
         }
 
