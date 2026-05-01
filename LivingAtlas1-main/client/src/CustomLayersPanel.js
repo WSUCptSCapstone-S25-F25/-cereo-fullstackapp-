@@ -958,16 +958,6 @@ function CustomLayersPanel({
                         onKeyDown={e => { if (e.key === 'Enter') doSearch(); }}
                         placeholder="Search folders, services, or layers..."
                     />
-                    <select
-                        value={searchType}
-                        onChange={e => setSearchType(e.target.value)}
-                        className="upload-panel-searchbar-dropdown"
-                    >
-                        <option value="any">Any</option>
-                        <option value="folder">Folder</option>
-                        <option value="service">Service</option>
-                        <option value="layer">Layer</option>
-                    </select>
                     <button
                         className="search-btn upload-panel-searchbar-btn search"
                         title="Search"
