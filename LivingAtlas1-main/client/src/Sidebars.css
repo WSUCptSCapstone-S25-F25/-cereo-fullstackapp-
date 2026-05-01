@@ -332,6 +332,7 @@
 
 .left-sidebar :is(
     .left-sidebar-gis-button,
+    .left-sidebar-cards-button,
     .left-sidebar-customlayers-button
 ).active {
     background-color: #444a53;

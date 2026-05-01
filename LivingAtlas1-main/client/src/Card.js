@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Modal from 'react-modal';
 import mapboxgl from 'mapbox-gl';
 import api from './api.js';
+import { fetchArcgisLegend } from './arcgisDataUtils';
 import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
@@ -27,7 +28,11 @@ const _allArcgisServices = [
     ...(OR_ARCGIS_SERVICES || []),
 ];
 const ARCGIS_SERVICE_LABEL_BY_KEY = {};
-_allArcgisServices.forEach(s => { ARCGIS_SERVICE_LABEL_BY_KEY[s.key] = s.label || s.key; });
+const ARCGIS_SERVICE_URL_BY_KEY = {};
+_allArcgisServices.forEach(s => {
+    ARCGIS_SERVICE_LABEL_BY_KEY[s.key] = s.label || s.key;
+    ARCGIS_SERVICE_URL_BY_KEY[s.key] = s.url || null;
+});
 
 function parseLinks(link, linkText) {
     if (!link) return [{ url: '', text: '' }];
@@ -71,6 +76,7 @@ function Card(props) {
     const [loading, setLoading] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
     const [linkedArcgisItems, setLinkedArcgisItems] = useState([]);
+    const [arcgisLegends, setArcgisLegends] = useState({}); // { serviceKey: legendData }
     const [isArcgisPickerOpen, setIsArcgisPickerOpen] = useState(false);
     // Track which linked items have their layer shown on the map (keyed by item.id)
     const [linkedArcgisChecked, setLinkedArcgisChecked] = useState({});
@@ -129,6 +135,20 @@ function Card(props) {
             }
         }
     }, [props.forceOpenLearnMoreSignal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Fetch ArcGIS legend data for all service keys in linkedArcgisItems
+    useEffect(() => {
+        if (linkedArcgisItems.length === 0) return;
+        const uniqueKeys = [...new Set(linkedArcgisItems.map(i => i.service_key))];
+        uniqueKeys.forEach(key => {
+            if (arcgisLegends[key] !== undefined) return;
+            const serviceUrl = ARCGIS_SERVICE_URL_BY_KEY[key];
+            if (!serviceUrl) return;
+            fetchArcgisLegend(serviceUrl)
+                .then(legend => setArcgisLegends(prev => ({ ...prev, [key]: legend || {} })))
+                .catch(() => setArcgisLegends(prev => ({ ...prev, [key]: {} })));
+        });
+    }, [linkedArcgisItems]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Ensure username and name always have safe defaults
     // Now handled by handleEdit
@@ -1759,6 +1779,27 @@ function Card(props) {
                                     const isServiceLevel = item.item_type === 'service';
                                     const serviceLabel = ARCGIS_SERVICE_LABEL_BY_KEY[item.service_key] || item.service_key;
                                     const isLayerChecked = !!linkedArcgisChecked[item.id];
+
+                                    // Resolve legend image for this item
+                                    const legendImg = (() => {
+                                        if (item.layer_id == null) return null;
+                                        const legend = arcgisLegends[item.service_key];
+                                        if (!legend?.layers) return null;
+                                        const legendLayer = legend.layers.find(l => l.layerId === item.layer_id);
+                                        if (!legendLayer?.legend?.length) return null;
+                                        const entries = legendLayer.legend;
+                                        let entry;
+                                        if (item.sublayer_index != null && entries[item.sublayer_index]) {
+                                            entry = entries[item.sublayer_index];
+                                        } else if (entries.length === 1) {
+                                            entry = entries[0];
+                                        } else {
+                                            return null;
+                                        }
+                                        if (!entry.imageData || !entry.contentType) return null;
+                                        return `data:${entry.contentType};base64,${entry.imageData}`;
+                                    })();
+
                                     return (
                                         <li key={item.id} className="learn-more-arcgis-link-item">
                                             <label className="learn-more-arcgis-layer-toggle-label" title="Show/hide this layer on the map">
@@ -1779,35 +1820,43 @@ function Card(props) {
                                                     }}
                                                 />
                                             </label>
-                                            <span className="learn-more-arcgis-link-breadcrumb">
-                                                <span className="learn-more-breadcrumb-text">{stateLabel}</span>
-                                                <span className="learn-more-breadcrumb-sep"> → </span>
-                                                <span className="learn-more-breadcrumb-text">{item.folder_name}</span>
+                                            <span className="learn-more-arcgis-link-row">
+                                                <span className="learn-more-arcgis-row-text">{stateLabel}</span>
+                                                <span className="learn-more-arcgis-row-sep"> › </span>
+                                                <span className="learn-more-arcgis-row-text">{item.folder_name}</span>
                                                 {!isServiceLevel && (
                                                     <>
-                                                        <span className="learn-more-breadcrumb-sep"> → </span>
-                                                        <span className="learn-more-breadcrumb-text">{serviceLabel}</span>
+                                                        <span className="learn-more-arcgis-row-sep"> › </span>
+                                                        <span className="learn-more-arcgis-row-text">{serviceLabel}</span>
                                                     </>
                                                 )}
-                                                <span className="learn-more-breadcrumb-sep"> → </span>
-                                                <button
-                                                    type="button"
-                                                    className="learn-more-arcgis-link-btn"
-                                                    onClick={() => {
-                                                        window.dispatchEvent(new CustomEvent('open-arcgis-panel', {
-                                                            detail: {
-                                                                serviceKey: item.service_key,
-                                                                layerId: item.layer_id,
-                                                                stateCode: item.state_code,
-                                                                folderName: item.folder_name,
-                                                            }
-                                                        }));
-                                                    }}
-                                                    title="Open in ArcGIS Upload Panel"
-                                                >
-                                                    {item.display_name}
-                                                </button>
+                                                <span className="learn-more-arcgis-row-sep"> › </span>
+                                                {legendImg && (
+                                                    <img
+                                                        src={legendImg}
+                                                        alt=""
+                                                        className="learn-more-arcgis-legend-img"
+                                                    />
+                                                )}
+                                                <span className="learn-more-arcgis-row-text learn-more-arcgis-row-name">{item.display_name}</span>
                                             </span>
+                                            <button
+                                                type="button"
+                                                className="learn-more-arcgis-goto-btn"
+                                                onClick={() => {
+                                                    window.dispatchEvent(new CustomEvent('open-arcgis-panel', {
+                                                        detail: {
+                                                            serviceKey: item.service_key,
+                                                            layerId: item.layer_id,
+                                                            stateCode: item.state_code,
+                                                            folderName: item.folder_name,
+                                                        }
+                                                    }));
+                                                }}
+                                                title="Open in ArcGIS Upload Panel"
+                                            >
+                                                ›
+                                            </button>
                                             {isLearnMoreEditMode && (
                                                 <button
                                                     type="button"

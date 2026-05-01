@@ -1783,13 +1783,13 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    padding: 3px 0;
 }
 
 .learn-more-arcgis-link-checkbox {
     flex-shrink: 0;
     width: 15px;
     height: 15px;
-    margin-top: 3px;
     cursor: pointer;
     accent-color: #2563eb;
 }
@@ -1808,50 +1808,79 @@
     cursor: pointer;
     accent-color: #2563eb;
     margin: 0;
+    margin-right: 6px;
 }
 
-.learn-more-arcgis-link-breadcrumb {
-    display: block;
+/* Single inline row: breadcrumb + legend img + name */
+.learn-more-arcgis-link-row {
+    display: flex;
+    align-items: center;
     flex: 1;
     min-width: 0;
-    line-height: 1.5;
+    flex-wrap: wrap;
+    gap: 0;
+    row-gap: 0;
+}
+
+.learn-more-arcgis-row-text {
+    font-size: 0.85rem !important;
+    color: #4b5563 !important;
+    line-height: 1.4 !important;
+    white-space: nowrap !important;
+    font-weight: normal !important;
+    font-family: inherit !important;
+}
+
+.learn-more-arcgis-row-name {
+    font-weight: bold !important;
+    white-space: normal;
     word-break: break-word;
 }
 
-.learn-more-breadcrumb-text {
-    display: inline;
-    font-size: 0.82rem;
-    color: #666;
+.learn-more-arcgis-row-sep {
+    font-size: 0.95rem !important;
+    color: #9ca3af !important;
+    line-height: 1.4 !important;
+    flex-shrink: 0 !important;
+    margin: 0 8px !important;
+    font-weight: normal !important;
 }
 
-.learn-more-breadcrumb-sep {
-    display: inline;
-    font-size: 0.78rem;
-    color: #aaa;
-    margin: 0 1px;
+.learn-more-arcgis-legend-img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 2px;
+    margin-right: 3px;
 }
 
-.learn-more-arcgis-link-btn {
-    display: inline !important;
+.learn-more-arcgis-goto-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     background: none !important;
-    border: none !important;
-    color: #1565c0 !important;
-    padding: 0 2px !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #64748b !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    border-radius: 4px !important;
     cursor: pointer !important;
-    font-size: 0.88rem !important;
-    text-decoration: underline !important;
-    text-align: left !important;
+    font-size: 1.1rem !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+    margin-top: 0 !important;
+    align-self: center !important;
+    transition: background 0.12s, color 0.12s, border-color 0.12s !important;
     box-shadow: none !important;
-    border-radius: 3px !important;
-    transition: color 0.15s !important;
-    line-height: inherit !important;
-    vertical-align: baseline !important;
-    word-break: break-word !important;
 }
 
-.learn-more-arcgis-link-btn:hover {
-    color: #0d47a1 !important;
-    background: #e8f0fe !important;
+.learn-more-arcgis-goto-btn:hover {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    border-color: #94a3b8 !important;
 }
 
 .learn-more-arcgis-link-delete-btn {

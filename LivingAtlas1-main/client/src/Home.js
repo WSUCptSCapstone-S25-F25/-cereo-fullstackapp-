@@ -419,7 +419,7 @@ function Home(props) {
 
                 {/* Card Container Toggle Button */}
                 <button
-                    className="left-sidebar-cards-button"
+                    className={`left-sidebar-cards-button${!isCollapsed ? ' active' : ''}`}
                     onClick={toggleCardContainer}
                     title={isCollapsed ? "Show Cards" : "Hide Cards"}
                 >
