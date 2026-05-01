@@ -89,6 +89,7 @@ export function LayerTreeNode({
         return (
             <div key={node.id}
                 className={`tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}${currentMatchId && currentMatchId === groupMatchId ? ' search-nav-current' : ''}`}
+                data-layer-id={node.id}
                 data-search-match-id={groupMatchId}
                 style={depth === 0 && draggingLayerId === node.id ? { opacity: 0.4 } : undefined}
                 onDragOver={depth === 0 && onLayerDragOver ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onLayerDragOver(e, service.key, node.id); } : undefined}
@@ -171,6 +172,7 @@ export function LayerTreeNode({
 
     return (
         <li key={node.id} className={`upload-layer-row tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}${currentMatchId && currentMatchId === leafMatchId ? ' search-nav-current' : ''}`}
+            data-layer-id={node.id}
             data-search-match-id={leafMatchId}
             style={{
             flexDirection: 'column', alignItems: 'flex-start', marginBottom: 2,

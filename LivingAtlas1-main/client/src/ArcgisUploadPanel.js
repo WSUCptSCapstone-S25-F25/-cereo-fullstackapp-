@@ -863,12 +863,33 @@ function ArcgisUploadPanel({
             }
         }
 
-        // Scroll to the service element
+        // Expand all ancestor group layers of the target layer so it's visible
+        if (layerId != null) {
+            const layerMap = {};
+            layers.forEach(l => { layerMap[l.id] = l; });
+            const ancestorKeys = [];
+            let cur = layerMap[layerId];
+            while (cur) {
+                const pid = cur.parentLayer ? cur.parentLayer.id
+                    : (cur.parentLayerId !== undefined && cur.parentLayerId !== null ? cur.parentLayerId : -1);
+                if (pid === -1 || pid === null || pid === undefined || !layerMap[pid]) break;
+                ancestorKeys.push(`${serviceKey}-${pid}`);
+                cur = layerMap[pid];
+            }
+            if (ancestorKeys.length > 0) {
+                setExpandedLayers(prev => new Set([...prev, ...ancestorKeys]));
+            }
+        }
+
+        // Scroll to the specific layer element (or fall back to service)
         setTimeout(() => {
-            const el = folderAreaRef.current?.querySelector(`[data-service-key="${serviceKey}"]`);
+            const layerEl = layerId != null
+                ? folderAreaRef.current?.querySelector(`[data-layer-id="${layerId}"]`)
+                : null;
+            const el = layerEl ?? folderAreaRef.current?.querySelector(`[data-service-key="${serviceKey}"]`);
             el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             onNavigateToItemDone?.();
-        }, 120);
+        }, 180);
     }, [serviceLayers]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Listen for 'arcgis-layer-toggle' events dispatched by learn-more modal checkboxes
