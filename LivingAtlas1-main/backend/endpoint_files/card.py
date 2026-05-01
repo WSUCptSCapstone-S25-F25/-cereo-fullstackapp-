@@ -457,7 +457,8 @@ async def upload_form(
     tags: Optional[str] = Form(None),
     files: Optional[list[UploadFile]] = File(None),
     thumbnail: Optional[UploadFile] = File(None),
-    thumbnail_link: Optional[str] = Form(None)
+    thumbnail_link: Optional[str] = Form(None),
+    images: Optional[list[UploadFile]] = File(None)
 ):
     """
     Create or update a Card with metadata, thumbnail, and optional files.
@@ -751,6 +752,37 @@ async def upload_form(
         if enable_commits:
             conn.commit()
             print("[COMMIT] All changes committed successfully")
+
+        # --------------------------------------------------
+        # Populate CardImages for newly created cards
+        # --------------------------------------------------
+        if not update and thumbnail_url != DEFAULT_THUMBNAIL_URL:
+            try:
+                from endpoint_files.images import save_uploaded_file as _save_img
+                # Use the already-uploaded thumbnail as the first gallery image
+                cur.execute(
+                    "INSERT INTO CardImages (CardID, ImageURL, DisplayOrder, AltText) VALUES (%s, %s, 0, '')",
+                    (nextcardid, thumbnail_url)
+                )
+                # Upload and insert any additional images (index 1+ since index 0 == thumbnail)
+                if images and len(images) > 1:
+                    for idx, img_file in enumerate(images[1:], start=1):
+                        try:
+                            img_url = _save_img(img_file, require_gcs=True)
+                            cur.execute(
+                                "INSERT INTO CardImages (CardID, ImageURL, DisplayOrder, AltText) VALUES (%s, %s, %s, '')",
+                                (nextcardid, img_url, idx)
+                            )
+                        except Exception as img_err:
+                            print(f"[IMAGE] Failed to upload image at index {idx}: {img_err}")
+                conn.commit()
+                print(f"[IMAGES] Inserted CardImages for new card {nextcardid}")
+            except Exception as img_err:
+                print(f"[IMAGE] Failed to insert CardImages: {img_err}")
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
 
         return {"message": "Card uploaded successfully", "card_id": nextcardid}
 
