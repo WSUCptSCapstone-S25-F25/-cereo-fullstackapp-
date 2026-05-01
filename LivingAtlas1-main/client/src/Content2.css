@@ -119,10 +119,20 @@
   z-index: 10;
 }
 
+.card-list-item.pinned {
+  border-color: #f0c040;
+  box-shadow: 0 0 0 2px rgba(240, 192, 64, 0.35), 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
 .card-list-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(20, 49, 81, 0.22);
   border-color: #90a9c2;
+}
+
+.card-list-item.pinned:hover {
+  border-color: #e6ac00;
+  box-shadow: 0 0 0 2px rgba(240, 192, 64, 0.55), 0 10px 24px rgba(240, 192, 64, 0.25);
 }
 
 .card-list-item-title {
@@ -267,6 +277,18 @@
 /* Pin button overlay on grid-view cards */
 .card-grid-wrapper {
   position: relative;
+}
+
+.card-grid-wrapper.pinned {
+  outline: 2px solid #f0c040;
+  outline-offset: -2px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 4px rgba(240, 192, 64, 0.25);
+}
+
+.card-grid-wrapper.pinned:hover {
+  outline-color: #e6ac00;
+  box-shadow: 0 0 0 4px rgba(240, 192, 64, 0.5);
 }
 
 .card-grid-pin-btn {

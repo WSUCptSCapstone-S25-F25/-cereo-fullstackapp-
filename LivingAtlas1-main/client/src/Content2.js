@@ -117,12 +117,23 @@ function Content2(props) {
     const [showOnlyInView, setShowOnlyInView] = useState(false);
     const [learnMoreRequest, setLearnMoreRequest] = useState(null);
     const [isListView, setIsListView] = useState((props.initialCardViewMode || 'grid') === 'list');
-    const [pinnedCardIDs, setPinnedCardIDs] = useState(new Set());
+    const PINNED_CARDS_STORAGE_KEY = 'pinned_card_ids';
+    const [pinnedCardIDs, setPinnedCardIDs] = useState(() => {
+        try {
+            const raw = localStorage.getItem(PINNED_CARDS_STORAGE_KEY);
+            return raw ? new Set(JSON.parse(raw)) : new Set();
+        } catch {
+            return new Set();
+        }
+    });
     const togglePin = (cardID) => {
         setPinnedCardIDs(prev => {
             const next = new Set(prev);
             if (next.has(cardID)) next.delete(cardID);
             else next.add(cardID);
+            try {
+                localStorage.setItem(PINNED_CARDS_STORAGE_KEY, JSON.stringify([...next]));
+            } catch {}
             return next;
         });
     };
@@ -987,7 +998,7 @@ function Content2(props) {
 
                                 if (isListView) {
                                     return (
-                                        <div key={cardKey} className={`card-list-item${openMenuCardID === card.cardID ? ' menu-open' : ''}`}>
+                                        <div key={cardKey} className={`card-list-item${openMenuCardID === card.cardID ? ' menu-open' : ''}${pinnedCardIDs.has(card.cardID) ? ' pinned' : ''}`}>
                                             <span
                                                 className="card-list-item-title"
                                                 onClick={() => {
@@ -1077,7 +1088,7 @@ function Content2(props) {
                                 }
 
                                 return (
-                                    <div key={cardKey} className="card-grid-wrapper" onClick={() => handleCardClick(card)} onContextMenu={(e) => e.preventDefault()}>
+                                    <div key={cardKey} className={`card-grid-wrapper${pinnedCardIDs.has(card.cardID) ? ' pinned' : ''}`} onClick={() => handleCardClick(card)} onContextMenu={(e) => e.preventDefault()}>
                                         <Card
                                             formData={{
                                                 ...card,
