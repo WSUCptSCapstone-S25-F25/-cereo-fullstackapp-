@@ -29,6 +29,21 @@ const _allArcgisServices = [
 const ARCGIS_SERVICE_LABEL_BY_KEY = {};
 _allArcgisServices.forEach(s => { ARCGIS_SERVICE_LABEL_BY_KEY[s.key] = s.label || s.key; });
 
+function parseLinks(link, linkText) {
+    if (!link) return [{ url: '', text: '' }];
+    try {
+        const parsed = JSON.parse(link);
+        if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : [{ url: '', text: '' }];
+    } catch {}
+    return [{ url: link, text: linkText || '' }];
+}
+
+function serializeLinks(links) {
+    const filtered = links.filter(l => l.url.trim() !== '');
+    if (filtered.length === 0) return '';
+    return JSON.stringify(filtered);
+}
+
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -59,6 +74,8 @@ function Card(props) {
     const [isArcgisPickerOpen, setIsArcgisPickerOpen] = useState(false);
     const linkedItemsLoadedRef = useRef(null); // tracks which cardID was last loaded
     const linkedArcgisItemsBackupRef = useRef(null); // backup of linkedArcgisItems when edit mode starts
+    const [learnMoreLinks, setLearnMoreLinks] = useState([{ url: '', text: '' }]);
+    const [editFormLinks, setEditFormLinks] = useState([{ url: '', text: '' }]);
     const [thumbnail, setThumbnail] = useState(null);
     const [preview, setPreview] = useState(
         formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
@@ -153,9 +170,10 @@ function Card(props) {
     const handleEdit = (e) => {
         e.stopPropagation();
         isEditingRef.current = true; // Lock editing state
-        setFormData({ 
+        setEditFormLinks(parseLinks(props.formData.link, props.formData.link_text));
+        setFormData({
             ...props.formData,
-            original_username: props.formData.username, 
+            original_username: props.formData.username,
             original_email: props.formData.email,
             original_title: props.formData.title,
         });
@@ -264,7 +282,7 @@ function Card(props) {
     };
 
     const saveEdits = async (options = {}) => {
-     const { skipReload = false, closeEditModal = true } = options;
+     const { skipReload = false, closeEditModal = true, linkOverride } = options;
     if (!validateForm()) return;
 
     // Extra guard for username and name
@@ -308,9 +326,14 @@ function Card(props) {
             key !== "category" &&
             formData[key] !== undefined && formData[key] !== null
         ) {
+            if (linkOverride && (key === 'link' || key === 'link_text')) return;
             formDataToSend.append(key, formData[key]);
         }
     });
+    if (linkOverride) {
+        formDataToSend.append('link', linkOverride.link ?? '');
+        formDataToSend.append('link_text', linkOverride.link_text ?? '');
+    }
     formDataToSend.append('category', formData.category || 'None');
 
     // Send polygon vertices as JSON string if polygon card
@@ -599,6 +622,7 @@ function Card(props) {
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
         setLearnMoreBackup({ ...formData });
+        setLearnMoreLinks(parseLinks(formData.link, formData.link_text));
         linkedArcgisItemsBackupRef.current = linkedArcgisItems.map(i => ({ ...i }));
         setSessionUploadedImageIDs([]);
         setSelectedAllImageIDs([]);
@@ -699,7 +723,12 @@ function Card(props) {
 
     const handleLearnMoreEditSave = async (e) => {
         e.stopPropagation();
-        const success = await saveEdits({ skipReload: true, closeEditModal: false });
+        const serializedLink = serializeLinks(learnMoreLinks);
+        const success = await saveEdits({
+            skipReload: true,
+            closeEditModal: false,
+            linkOverride: { link: serializedLink, link_text: '' },
+        });
         if (success) {
             try {
                 await applyPendingImageDeletes();
@@ -742,6 +771,10 @@ function Card(props) {
         if (JSON.stringify((formData.images || []).map(i => i.imageID ?? i.id)) !==
             JSON.stringify((learnMoreBackup.images || []).map(i => i.imageID ?? i.id))) return true;
 
+        // Compare links
+        const backupLinks = parseLinks(learnMoreBackup.link, learnMoreBackup.link_text);
+        if (JSON.stringify(learnMoreLinks) !== JSON.stringify(backupLinks)) return true;
+
         // Compare linked ArcGIS items
         const backup = linkedArcgisItemsBackupRef.current;
         if (backup !== null) {
@@ -751,7 +784,7 @@ function Card(props) {
         }
 
         return false;
-    }, [isLearnMoreEditMode, learnMoreBackup, formData, linkedArcgisItems]);
+    }, [isLearnMoreEditMode, learnMoreBackup, formData, linkedArcgisItems, learnMoreLinks]);
 
     const handleLearnMoreClose = async (e) => {
         if (e?.stopPropagation) e.stopPropagation();
@@ -1521,11 +1554,41 @@ function Card(props) {
                                 )}
                             </div>
 
-                            <p><strong>Link URL:</strong></p>
-                            <input className="learn-more-inline-input" type="text" name="link" value={formData.link || ''} onChange={handleInputChange} />
-
-                            <p><strong>Link Text:</strong></p>
-                            <input className="learn-more-inline-input" type="text" name="link_text" placeholder="Display text (optional)" value={formData.link_text || ''} onChange={handleInputChange} />
+                            <p><strong>Links:</strong></p>
+                            {learnMoreLinks.map((linkItem, idx) => (
+                                <div key={idx} className="learn-more-link-row">
+                                    <input
+                                        className="learn-more-inline-input"
+                                        type="text"
+                                        placeholder="URL"
+                                        value={linkItem.url}
+                                        onChange={e => setLearnMoreLinks(learnMoreLinks.map((l, i) => i === idx ? { ...l, url: e.target.value } : l))}
+                                    />
+                                    <input
+                                        className="learn-more-inline-input learn-more-link-text-input"
+                                        type="text"
+                                        placeholder="Display text (optional)"
+                                        value={linkItem.text}
+                                        onChange={e => setLearnMoreLinks(learnMoreLinks.map((l, i) => i === idx ? { ...l, text: e.target.value } : l))}
+                                    />
+                                    {learnMoreLinks.length > 1 && (
+                                        <button
+                                            type="button"
+                                            className="learn-more-link-remove-btn"
+                                            onClick={() => setLearnMoreLinks(learnMoreLinks.filter((_, i) => i !== idx))}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                className="learn-more-modal-toolbar-btn cancel learn-more-add-link-btn"
+                                onClick={() => setLearnMoreLinks([...learnMoreLinks, { url: '', text: '' }])}
+                            >
+                                + Add More Links
+                            </button>
 
                             <p><strong>Description:</strong></p>
                             <textarea className="learn-more-inline-textarea" name="description" value={formData.description || ''} onChange={handleInputChange} />
@@ -1564,16 +1627,24 @@ function Card(props) {
                                     </p>
                                 )}
                             </div>
-                            <p>
-                                <strong>Link:</strong>{' '}
-                                {formData.link ? (
-                                    <a href={formData.link} target="_blank" rel="noopener noreferrer">
-                                        {formData.link_text || formData.link}
-                                    </a>
-                                ) : (
-                                    <span>N/A</span>
-                                )}
-                            </p>
+                            <div className="learn-more-links-view">
+                                <strong>Links:</strong>
+                                {(() => {
+                                    const links = parseLinks(formData.link, formData.link_text).filter(l => l.url.trim() !== '');
+                                    if (links.length === 0) return <span> N/A</span>;
+                                    return (
+                                        <ul className="learn-more-links-list">
+                                            {links.map((l, i) => (
+                                                <li key={i}>
+                                                    <a href={l.url} target="_blank" rel="noopener noreferrer">
+                                                        {l.text || l.url}
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    );
+                                })()}
+                            </div>
                             <p className="learn-more-modal-description"><strong>Description:</strong> {formData.description}</p>
                             <p><strong>Tags:</strong> {formData.tags}</p>
                         </>
@@ -1816,10 +1887,11 @@ function Card(props) {
                 className="Modal"
             >
                 <h2>{formData.cardID ? "Edit Card" : "Create Card"}</h2>
-                <form onSubmit={(e) => { 
-                    e.preventDefault(); 
+                <form onSubmit={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
-                    saveEdits(); 
+                    const serializedLink = serializeLinks(editFormLinks);
+                    saveEdits({ linkOverride: { link: serializedLink, link_text: '' } });
                 }}>
                     <label>Card Creator:
                         <input type="text" name="username" value={formData.username || ''} readOnly required title="Card Creator cannot be edited" />
@@ -1883,15 +1955,43 @@ function Card(props) {
                             onChange={handleInputChange}
                         />
                     </label>
-                    <label>
-                        Link:
-                        <input
-                            type="text"
-                            name="link"
-                            value={formData.link || ""}
-                            onChange={handleInputChange}
-                        />
-                    </label>
+                    <div className="edit-form-links-section">
+                        <label className="edit-form-links-label">Links:</label>
+                        {editFormLinks.map((linkItem, idx) => (
+                            <div key={idx} className="learn-more-link-row">
+                                <input
+                                    type="text"
+                                    className="edit-form-link-input"
+                                    placeholder="URL"
+                                    value={linkItem.url}
+                                    onChange={e => setEditFormLinks(editFormLinks.map((l, i) => i === idx ? { ...l, url: e.target.value } : l))}
+                                />
+                                <input
+                                    type="text"
+                                    className="edit-form-link-input learn-more-link-text-input"
+                                    placeholder="Display text (optional)"
+                                    value={linkItem.text}
+                                    onChange={e => setEditFormLinks(editFormLinks.map((l, i) => i === idx ? { ...l, text: e.target.value } : l))}
+                                />
+                                {editFormLinks.length > 1 && (
+                                    <button
+                                        type="button"
+                                        className="learn-more-link-remove-btn"
+                                        onClick={() => setEditFormLinks(editFormLinks.filter((_, i) => i !== idx))}
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button
+                            type="button"
+                            className="learn-more-modal-toolbar-btn cancel learn-more-add-link-btn"
+                            onClick={() => setEditFormLinks([...editFormLinks, { url: '', text: '' }])}
+                        >
+                            + Add More Links
+                        </button>
+                    </div>
                     <label>
                         Category:
                         <select
