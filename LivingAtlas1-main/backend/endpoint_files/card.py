@@ -109,7 +109,7 @@ async def create_card(
     return {"message": "Card created successfully", "thumbnail_link": thumbnail_link}
 
 @card_router.delete("/deleteCard")
-async def deleteCard(username: str, title: str):
+async def deleteCard(username: str, title: str, requester_email: str = None):
     if username is None or title is None:
         raise HTTPException(status_code=422, detail="Username and title must not be None")
     if not isinstance(username, str) or not isinstance(title, str):
@@ -117,7 +117,7 @@ async def deleteCard(username: str, title: str):
 
     try:
         cur.execute("""
-            SELECT Cards.CardID, Cards.thumbnail_link
+            SELECT Cards.CardID, Cards.thumbnail_link, Users.Email
             FROM Users
             JOIN Cards ON Users.UserID = Cards.UserID
             WHERE Users.Username = %s AND Cards.Title = %s
@@ -126,7 +126,16 @@ async def deleteCard(username: str, title: str):
         print(f"Card fetch result: {result}")
         if result is None:
             raise HTTPException(status_code=404, detail="Card not found")
-        cardID, thumbnail_link = result
+        cardID, thumbnail_link, card_owner_email = result
+
+        if requester_email:
+            cur.execute("SELECT Is_Admin FROM Users WHERE Email = %s", (requester_email,))
+            requester_row = cur.fetchone()
+            if requester_row is None:
+                raise HTTPException(status_code=403, detail="Requester account not found")
+            requester_is_admin = bool(requester_row[0])
+            if not requester_is_admin and requester_email.lower() != card_owner_email.lower():
+                raise HTTPException(status_code=403, detail="You do not have permission to delete this card")
 
         if thumbnail_link and thumbnail_link != DEFAULT_THUMBNAIL_URL:
             # Convert full URL to blob path by stripping bucket URL prefix:
@@ -156,6 +165,9 @@ async def deleteCard(username: str, title: str):
         cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
         conn.commit()
         return {"Success": "The card is deleted"}
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         print(f"Failed to delete card: {e}")
@@ -429,6 +441,7 @@ async def upload_form(
     original_username: Optional[str] = Form(None),
     original_email: Optional[str] = Form(None),
     original_title: Optional[str] = Form(None),
+    requester_email: Optional[str] = Form(None),
     category: Optional[str] = Form("None"),
     latitude: Optional[str] = Form(None),
     longitude: Optional[str] = Form(None),
@@ -480,6 +493,19 @@ async def upload_form(
         if not user_row:
             raise HTTPException(status_code=404, detail="User not found")
         userID = user_row[0]
+
+        # --------------------------------------------------
+        # Authorization check for updates
+        # --------------------------------------------------
+        if update and requester_email:
+            cur.execute("SELECT Is_Admin FROM Users WHERE Email = %s", (requester_email,))
+            req_row = cur.fetchone()
+            if req_row is None:
+                raise HTTPException(status_code=403, detail="Requester account not found")
+            req_is_admin = bool(req_row[0])
+            card_owner_email = original_email or email
+            if not req_is_admin and requester_email.lower() != card_owner_email.lower():
+                raise HTTPException(status_code=403, detail="You do not have permission to edit this card")
 
         # --------------------------------------------------
         # Map category name to ID

@@ -196,12 +196,21 @@ function Card(props) {
             return;
         }
 
+        const viewerEmail = localStorage.getItem('email') || '';
+        const cardOwnerEmail = formData.email || '';
+        const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('isAdmin')); } catch { return false; } })();
+        if (!isAdmin && viewerEmail && cardOwnerEmail && viewerEmail !== cardOwnerEmail) {
+            alert("Only admins can delete cards that don't belong to them.");
+            return;
+        }
+
         if (!window.confirm("Are you sure you want to delete this card?")) return;
 
         api.delete(`/deleteCard`, {
             params: {
                 username: formData.username,
                 title: formData.title,
+                requester_email: viewerEmail,
             }
         })
         .then(() => {
@@ -377,6 +386,11 @@ function Card(props) {
         formData.filesToUpload.forEach((file) => {
             formDataToSend.append("files", file);
         });
+    }
+
+    const requesterEmail = localStorage.getItem('email') || '';
+    if (requesterEmail) {
+        formDataToSend.append('requester_email', requesterEmail);
     }
 
     setLoading(true);
@@ -621,6 +635,13 @@ function Card(props) {
 
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
+        const _viewerEmail = localStorage.getItem('email') || '';
+        const _cardOwnerEmail = formData.email || '';
+        const _isAdmin = (() => { try { return JSON.parse(localStorage.getItem('isAdmin')); } catch { return false; } })();
+        if (!_isAdmin && _viewerEmail && _cardOwnerEmail && _viewerEmail !== _cardOwnerEmail) {
+            alert("Only admins can edit cards that don't belong to them.");
+            return;
+        }
         setLearnMoreBackup({ ...formData });
         setLearnMoreLinks(parseLinks(formData.link, formData.link_text));
         linkedArcgisItemsBackupRef.current = linkedArcgisItems.map(i => ({ ...i }));
