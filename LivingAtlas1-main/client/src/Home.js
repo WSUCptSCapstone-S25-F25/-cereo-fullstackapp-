@@ -428,7 +428,7 @@ function Home(props) {
 
                 {/* GIS Services Button */}
                 <button
-                    className="left-sidebar-gis-button"
+                    className={`left-sidebar-gis-button${isUploadPanelOpen ? ' active' : ''}`}
                     onClick={() => { setIsUploadPanelOpen(v => !v); setIsCustomLayerPanelOpen(false); }}
                     title="Toggle Layers"
                 >
@@ -451,7 +451,7 @@ function Home(props) {
 
                 {/* Custom Layers Button */}
                 <button
-                    className="left-sidebar-customlayers-button"
+                    className={`left-sidebar-customlayers-button${isCustomLayerPanelOpen ? ' active' : ''}`}
                     onClick={() => { setIsCustomLayerPanelOpen(v => !v); setIsUploadPanelOpen(false); }}
                     title="Custom Layers"
                 >

@@ -326,7 +326,18 @@
     background-color: #444a53;
     color: #f5f8ff;
     border-color: rgba(255, 255, 255, 0.22);
+    border-radius: 6px;
     transform: translateY(-1px);
+}
+
+.left-sidebar :is(
+    .left-sidebar-gis-button,
+    .left-sidebar-customlayers-button
+).active {
+    background-color: #444a53;
+    color: #f5f8ff;
+    border-color: rgba(255, 255, 255, 0.22);
+    border-radius: 6px;
 }
 
 .left-sidebar :is(

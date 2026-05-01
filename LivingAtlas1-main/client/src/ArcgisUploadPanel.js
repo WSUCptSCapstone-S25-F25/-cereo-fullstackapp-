@@ -40,6 +40,7 @@ import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faTimes, faSync, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import {
     useArcgisLoadingMessages,
     getLoadingMsgId,
@@ -229,6 +230,8 @@ function ArcgisUploadPanel({
     const { currentIndex: navIndex, total: matchTotal, currentMatchId, goToNext, goToPrev, initNav, resetNav } = useSearchNav(matchList);
     const [expandedStates, setExpandedStates] = useState(new Set()); // Track which state-level folders are expanded
     const [expandedFolders, setExpandedFolders] = useState(new Set());
+    // Navigation path for file-explorer style folder browsing: { stateCode: null|string, folder: null|string }
+    const [currentPath, setCurrentPath] = useState({ stateCode: null, folder: null });
     const [expandedServices, setExpandedServices] = useState(new Set());
     const [expandedLayers, setExpandedLayers] = useState(new Set()); // Track which layers are expanded
     // State for added-only checkbox
@@ -804,6 +807,7 @@ function ArcgisUploadPanel({
         if (ARCGIS_SERVICES.length === 0) return; // wait for services to load
         const { serviceKey, stateCode, folderName } = navigateToItem;
         pendingNavigateRef.current = navigateToItem;
+        setCurrentPath({ stateCode, folder: folderName });
         setExpandedStates(prev => new Set([...prev, stateCode]));
         setExpandedFolders(prev => new Set([...prev, folderName]));
         setExpandedServices(prev => new Set([...prev, serviceKey]));
@@ -1789,6 +1793,20 @@ function ArcgisUploadPanel({
         });
     };
 
+    // Navigation double-click handlers
+    const handleStateDoubleClick = (code) => {
+        setCurrentPath({ stateCode: code, folder: null });
+    };
+    const handleFolderDoubleClick = (folder) => {
+        setCurrentPath(prev => ({ stateCode: prev.stateCode, folder }));
+    };
+    const handleNavBack = () => {
+        setCurrentPath(prev => {
+            if (prev.folder !== null) return { stateCode: prev.stateCode, folder: null };
+            return { stateCode: null, folder: null };
+        });
+    };
+
     // Service click
     const handleServiceClick = (serviceKey) => {
         setExpandedServices(prev => {
@@ -2047,150 +2065,244 @@ function ArcgisUploadPanel({
                                 </div>
                             )}
                         <div className="upload-panel-folder-area" ref={folderAreaRef}>
-                        {/* Built-in Layers folder */}
-                        <div>
-                            <div
-                                className="upload-state-folder"
-                                onClick={() => {
-                                    setExpandedStates(prev => {
-                                        const newSet = new Set(prev);
-                                        if (newSet.has('__builtin__')) newSet.delete('__builtin__');
-                                        else newSet.add('__builtin__');
-                                        return newSet;
-                                    });
-                                }}
-                            >
-                                <span>
-                                    {expandedStates.has('__builtin__') ? '▼' : '►'} {BUILTIN_FOLDER_NAME}
-                                </span>
+                        {searchResult ? (
+                            /* ── SEARCH MODE: full filtered tree ── */
+                            <>
+                            {/* Built-in Layers folder */}
+                            <div>
+                                <div
+                                    className="upload-state-folder"
+                                    onClick={() => {
+                                        setExpandedStates(prev => {
+                                            const newSet = new Set(prev);
+                                            if (newSet.has('__builtin__')) newSet.delete('__builtin__');
+                                            else newSet.add('__builtin__');
+                                            return newSet;
+                                        });
+                                    }}
+                                >
+                                    <span>{BUILTIN_FOLDER_NAME}</span>
+                                </div>
+                                {expandedStates.has('__builtin__') && (
+                                    <div className="upload-state-folder-content">
+                                        {BUILTIN_LAYERS.map(layer => (
+                                            <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
+                                                <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
+                                                    <input type="checkbox" checked={!!areaVisibility[layer.id]} onChange={() => handleAreaCheckbox?.(layer.id)} style={{ marginRight: 4 }} />
+                                                    {layer.label}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            {expandedStates.has('__builtin__') && (
+                            {STATE_CODES.map(stateCode => {
+                                const stateData = stateFoldersToShow[stateCode];
+                                if (!stateData || stateData.folders.length === 0) return null;
+                                const isStateExpanded = expandedStates.has(stateCode);
+                                return (
+                                    <div key={stateCode}>
+                                        <div className="upload-state-folder" onClick={() => {
+                                                setSearchKeyword('');
+                                                setSearchResult(null);
+                                                handleStateDoubleClick(stateCode);
+                                            }}>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                <FontAwesomeIcon icon={faFolder} />{STATE_FULL_NAMES[stateCode] || stateCode}
+                                            </span>
+                                        </div>
+                                        {isStateExpanded && (
+                                            <div className="upload-state-folder-content">
+                                                {stateData.folders.map(folder => (
+                                                    <div key={folder}>
+                                                        <div
+                                                            className="upload-folder"
+                                                            style={searchResult?.matchedFolderNames?.has(folder) ? { fontWeight: 'bold' } : undefined}
+                                                            data-search-match-id={searchResult?.matchedFolderNames?.has(folder) ? `folder-${stateCode}-${folder}` : undefined}
+                                                            onClick={() => {
+                                                                setSearchKeyword('');
+                                                                setSearchResult(null);
+                                                                setCurrentPath({ stateCode, folder });
+                                                            }}
+                                                            onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
+                                                        >
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                                <FontAwesomeIcon icon={faFolder} />
+                                                                <ArcgisRenameItem value={folder} onSave={(newName) => handleFolderRename(folder, newName)} placeholder="Enter folder name..." isFolder={true} disabled={!isAdmin} startEditing={renamingItem?.type === 'folder' && renamingItem?.key === folder} onEditingDone={() => setRenamingItem(null)} />
+                                                            </span>
+                                                        </div>
+                                                        {expandedFolders.has(folder) && (
+                                                            <div className="tree-children">
+                                                                {stateData.byFolder[folder].map(service => {
+                                                                    const layers = serviceLayers[service.key] || [];
+                                                                    const checkedIds = checkedLayerIds[service.key] || [];
+                                                                    const rawLayers = layers.length > 0 ? layers : (service.layers || []);
+                                                                    const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+                                                                    const allFeatureLayers = getAllLeafLayers(layerTree);
+                                                                    return (
+                                                                        <div key={service.key} className="tree-node" data-service-key={service.key}>
+                                                                            <div
+                                                                                className={`upload-item${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
+                                                                                style={searchResult?.matchedServiceKeys?.has(service.key) ? { fontWeight: 'bold' } : undefined}
+                                                                                data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
+                                                                                onClick={() => handleServiceClick(service.key)}
+                                                                                onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
+                                                                            >
+                                                                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', minWidth: 0, flex: 1 }}>
+                                                                                    <input type="checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
+                                                                                    {expandedServices.has(service.key) ? '▼' : '►'}
+                                                                                    <ArcgisRenameItem value={service.label} displayValue={service.label} onSave={(newLabel) => handleServiceRename(service.key, newLabel)} placeholder="Enter service name..." isFolder={false} disabled={!isAdmin} startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key} onEditingDone={() => setRenamingItem(null)} />
+                                                                                </span>
+                                                                            </div>
+                                                                            {expandedServices.has(service.key) && (
+                                                                                <div className="tree-children">
+                                                                                    <ul className="tree-children" style={{ listStyle: 'none' }}>
+                                                                                        {layerTree.map(node => renderLayerNode(node, service, checkedIds, allFeatureLayers))}
+                                                                                    </ul>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                <div className="upload-panel-attribution" style={{ marginTop: 4, marginBottom: 2 }}>
+                                                    Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[stateCode]?.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[stateCode]?.name} ArcGIS Services</a>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                            </>
+                        ) : (
+                            /* ── NAVIGATION MODE ── */
+                            <>
+                            {/* Breadcrumb */}
+                            {currentPath.stateCode !== null && (
+                                <div className="upload-panel-breadcrumb">
+                                    <button className="upload-panel-breadcrumb-back" onClick={handleNavBack} title="Back">←</button>
+                                    <span className="upload-panel-breadcrumb-path">
+                                        {currentPath.stateCode === '__builtin__'
+                                            ? BUILTIN_FOLDER_NAME
+                                            : currentPath.folder !== null
+                                                ? <>{STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode} <span className="upload-panel-breadcrumb-sep">/</span> {currentPath.folder}</>
+                                                : STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode
+                                        }
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* ROOT: list state folders + builtin */}
+                            {currentPath.stateCode === null && (
+                                <>
+                                    <div
+                                        className="upload-state-folder"
+                                        onClick={() => setCurrentPath({ stateCode: '__builtin__', folder: '__builtin__' })}
+                                        title="Click to open"
+                                    >
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                            <FontAwesomeIcon icon={faFolder} />{BUILTIN_FOLDER_NAME}
+                                        </span>
+                                    </div>
+                                    {STATE_CODES.map(stateCode => {
+                                        const stateData = stateFoldersToShow[stateCode];
+                                        if (!stateData || stateData.folders.length === 0) return null;
+                                        return (
+                                            <div
+                                                key={stateCode}
+                                                className="upload-state-folder"
+                                                onClick={() => handleStateDoubleClick(stateCode)}
+                                                title="Click to open"
+                                            >
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                    <FontAwesomeIcon icon={faFolder} />{STATE_FULL_NAMES[stateCode] || stateCode}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </>
+                            )}
+
+                            {/* BUILTIN VIEW */}
+                            {currentPath.stateCode === '__builtin__' && (
                                 <div className="upload-state-folder-content">
                                     {BUILTIN_LAYERS.map(layer => (
                                         <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
                                             <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={!!areaVisibility[layer.id]}
-                                                    onChange={() => handleAreaCheckbox?.(layer.id)}
-                                                    style={{ marginRight: 4 }}
-                                                />
+                                                <input type="checkbox" checked={!!areaVisibility[layer.id]} onChange={() => handleAreaCheckbox?.(layer.id)} style={{ marginRight: 4 }} />
                                                 {layer.label}
                                             </label>
                                         </div>
                                     ))}
                                 </div>
                             )}
-                        </div>
-                        {STATE_CODES.map(stateCode => {
-                            const stateData = stateFoldersToShow[stateCode];
-                            if (!stateData || stateData.folders.length === 0) return null;
-                            const isStateExpanded = expandedStates.has(stateCode);
-                            return (
-                                <div key={stateCode}>
-                                    <div
-                                        className="upload-state-folder"
-                                        onClick={() => handleStateClick(stateCode)}
-                                    >
-                                        <span>
-                                            {isStateExpanded ? "▼" : "►"} {STATE_FULL_NAMES[stateCode] || stateCode}
-                                        </span>
-                                    </div>
-                                    {isStateExpanded && (
-                                        <div className="upload-state-folder-content">
-                                            {stateData.folders.map(folder => (
-                    <div key={folder}>
-                        <div
-                            className="upload-folder"
-                            style={searchResult?.matchedFolderNames?.has(folder) ? { fontWeight: 'bold' } : undefined}
-                            data-search-match-id={searchResult?.matchedFolderNames?.has(folder) ? `folder-${stateCode}-${folder}` : undefined}
-                            onClick={() => handleFolderClick(folder)}
-                            onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
-                        >
-                            <span>
-                                {expandedFolders.has(folder) ? "▼" : "►"} 
-                                <ArcgisRenameItem
-                                    value={folder}
-                                    onSave={(newName) => handleFolderRename(folder, newName)}
-                                    placeholder="Enter folder name..."
-                                    isFolder={true}
-                                    disabled={!isAdmin}
-                                    startEditing={renamingItem?.type === 'folder' && renamingItem?.key === folder}
-                                    onEditingDone={() => setRenamingItem(null)}
-                                />
-                            </span>
-                        </div>
-                        {expandedFolders.has(folder) && (
-                            <div className="tree-children">
-                                {stateData.byFolder[folder].map(service => {
-                                    const layers = serviceLayers[service.key] || [];
-                                    const checkedIds = checkedLayerIds[service.key] || [];
-                                    const rawLayers = layers.length > 0 ? layers : (service.layers || []);
-                                    // Build hierarchical tree from flat layer list
-                                    const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
-                                    const allFeatureLayers = getAllLeafLayers(layerTree);
 
-                                    return (
-                                        <div key={service.key} className="tree-node" data-service-key={service.key}>
+                            {/* STATE VIEW: list folders */}
+                            {currentPath.stateCode !== null && currentPath.stateCode !== '__builtin__' && currentPath.folder === null && (
+                                <>
+                                    {(stateFoldersToShow[currentPath.stateCode]?.folders || []).map(folder => (
+                                        <div key={folder}>
                                             <div
-                                                className={`upload-item${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
-                                                style={searchResult?.matchedServiceKeys?.has(service.key) ? { fontWeight: 'bold' } : undefined}
-                                                data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
-                                                onClick={() => handleServiceClick(service.key)}
-                                                onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
+                                                className="upload-folder"
+                                                onClick={() => handleFolderDoubleClick(folder)}
+                                                onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
+                                                title="Click to open"
                                             >
-                                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', minWidth: 0, flex: 1 }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length}
-                                                        ref={el => {
-                                                            if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length;
-                                                        }}
-                                                        onChange={(e) => {
-                                                            e.stopPropagation();
-                                                            handleSelectAll(service, allFeatureLayers);
-                                                        }}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        style={{ marginRight: 4, flexShrink: 0 }}
-                                                    />
-                                                    {expandedServices.has(service.key) ? "▼" : "►"} 
-                                                    <ArcgisRenameItem
-                                                        value={service.label}
-                                                        displayValue={service.label}
-                                                        onSave={(newLabel) => handleServiceRename(service.key, newLabel)}
-                                                        placeholder="Enter service name..."
-                                                        isFolder={false}
-                                                        disabled={!isAdmin}
-                                                        startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key}
-                                                        onEditingDone={() => setRenamingItem(null)}
-                                                    />
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                    <FontAwesomeIcon icon={faFolder} />
+                                                    <ArcgisRenameItem value={folder} onSave={(newName) => handleFolderRename(folder, newName)} placeholder="Enter folder name..." isFolder={true} disabled={!isAdmin} startEditing={renamingItem?.type === 'folder' && renamingItem?.key === folder} onEditingDone={() => setRenamingItem(null)} />
                                                 </span>
-                                                            </div>
-                                            {expandedServices.has(service.key) && (
-                                                <div className="tree-children">
-                                                    <ul className="tree-children" style={{ listStyle: "none" }}>
-                                                        {layerTree.map(node =>
-                                                            renderLayerNode(node, service, checkedIds, allFeatureLayers)
-                                                        )}
-                                                    </ul>
-                                                </div>
-                                            )}
+                                            </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                    ))}
+                                    <div className="upload-panel-attribution" style={{ marginTop: 4, marginBottom: 2 }}>
+                                        Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[currentPath.stateCode]?.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[currentPath.stateCode]?.name} ArcGIS Services</a>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* FOLDER VIEW: list services */}
+                            {currentPath.stateCode !== null && currentPath.stateCode !== '__builtin__' && currentPath.folder !== null && (
+                                <>
+                                    {(stateFoldersToShow[currentPath.stateCode]?.byFolder[currentPath.folder] || []).map(service => {
+                                        const layers = serviceLayers[service.key] || [];
+                                        const checkedIds = checkedLayerIds[service.key] || [];
+                                        const rawLayers = layers.length > 0 ? layers : (service.layers || []);
+                                        const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+                                        const allFeatureLayers = getAllLeafLayers(layerTree);
+                                        return (
+                                            <div key={service.key} className="tree-node" data-service-key={service.key}>
+                                                <div
+                                                    className="upload-item"
+                                                    onClick={() => handleServiceClick(service.key)}
+                                                    onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
+                                                >
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', minWidth: 0, flex: 1 }}>
+                                                        <input type="checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
+                                                        {expandedServices.has(service.key) ? '▼' : '►'}
+                                                        <ArcgisRenameItem value={service.label} displayValue={service.label} onSave={(newLabel) => handleServiceRename(service.key, newLabel)} placeholder="Enter service name..." isFolder={false} disabled={!isAdmin} startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key} onEditingDone={() => setRenamingItem(null)} />
+                                                    </span>
+                                                </div>
+                                                {expandedServices.has(service.key) && (
+                                                    <div className="tree-children">
+                                                        <ul className="tree-children" style={{ listStyle: 'none' }}>
+                                                            {layerTree.map(node => renderLayerNode(node, service, checkedIds, allFeatureLayers))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    <div className="upload-panel-attribution" style={{ marginTop: 4, marginBottom: 2 }}>
+                                        Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[currentPath.stateCode]?.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[currentPath.stateCode]?.name} ArcGIS Services</a>
+                                    </div>
+                                </>
+                            )}
+                            </>
                         )}
-                    </div>
-                ))}
-                            {/* Per-state attribution */}
-                            <div className="upload-panel-attribution" style={{ marginTop: 4, marginBottom: 2 }}>
-                                Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[stateCode]?.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[stateCode]?.name} ArcGIS Services</a>
-                            </div>
-                        </div>
-                    )}
-                </div>
-                );
-            })}
                         </div>
                         </div>{/* end upload-panel-folder-area-wrapper */}
                 

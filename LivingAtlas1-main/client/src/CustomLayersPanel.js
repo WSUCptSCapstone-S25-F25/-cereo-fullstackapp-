@@ -18,6 +18,7 @@ import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import ClearAllLayersButton from './ClearAllLayersButton';
 
 function CustomLayersPanel({
@@ -434,6 +435,13 @@ function CustomLayersPanel({
 
     // Handlers
     const handleFolderClick = (folder) => {
+        if (searchResult) {
+            // Exit search and navigate directly to folder
+            setSearchKeyword('');
+            setSearchResult(null);
+            setExpandedFolders(new Set([folder]));
+            return;
+        }
         setExpandedFolders(prev => {
             const next = new Set(prev);
             if (next.has(folder)) next.delete(folder); else next.add(folder);
@@ -1101,9 +1109,10 @@ function CustomLayersPanel({
                                         onClick={(e) => e.stopPropagation()}
                                         title="Drag to reorder"
                                     >⠿</span>
+                                    <FontAwesomeIcon icon={faFolder} style={{ flexShrink: 0, verticalAlign: 0 }} />
                                     <ArcgisRenameItem
                                         value={folder}
-                                        displayValue={`${isFolderExpanded ? '▼' : '►'} ${folder}`}
+                                        displayValue={searchResult ? folder : `${isFolderExpanded ? '▼' : '►'} ${folder}`}
                                         onSave={(newName) => handleFolderRename(folder, newName)}
                                         placeholder="Enter folder name..."
                                         isFolder={true}
