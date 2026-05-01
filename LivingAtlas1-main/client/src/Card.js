@@ -127,11 +127,14 @@ function Card(props) {
         if (props.forceOpenLearnMoreSignal) {
             setIsModalOpen(true);
             const cardId = formData.cardID;
-            if (cardId && linkedItemsLoadedRef.current !== cardId) {
-                linkedItemsLoadedRef.current = cardId;
-                api.get(`/cardArcGISLinks?card_id=${cardId}`)
-                    .then(res => setLinkedArcgisItems(res.data.data || []))
-                    .catch(() => {});
+            if (cardId) {
+                refreshCardImages().catch(() => {});
+                if (linkedItemsLoadedRef.current !== cardId) {
+                    linkedItemsLoadedRef.current = cardId;
+                    api.get(`/cardArcGISLinks?card_id=${cardId}`)
+                        .then(res => setLinkedArcgisItems(res.data.data || []))
+                        .catch(() => {});
+                }
             }
         }
     }, [props.forceOpenLearnMoreSignal]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -171,11 +174,14 @@ function Card(props) {
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
         const cardId = formData.cardID;
-        if (cardId && linkedItemsLoadedRef.current !== cardId) {
-            linkedItemsLoadedRef.current = cardId;
-            api.get(`/cardArcGISLinks?card_id=${cardId}`)
-                .then(res => setLinkedArcgisItems(res.data.data || []))
-                .catch(() => {});
+        if (cardId) {
+            refreshCardImages().catch(() => {});
+            if (linkedItemsLoadedRef.current !== cardId) {
+                linkedItemsLoadedRef.current = cardId;
+                api.get(`/cardArcGISLinks?card_id=${cardId}`)
+                    .then(res => setLinkedArcgisItems(res.data.data || []))
+                    .catch(() => {});
+            }
         }
     };
 
@@ -1142,8 +1148,11 @@ function Card(props) {
             })
             .slice(0, 2)
     );
-    const isDefaultFallbackImage = (img) => !img?.imageID && (img?.url === '/CEREO-logo.png' || img?.url === cardThumbnailSrc);
-    const learnMoreGalleryImages = imageList.filter(img => !isDefaultFallbackImage(img)).slice(0, 5);
+    const learnMoreGalleryImages = (Array.isArray(formData.images) && formData.images.length > 0)
+        ? formData.images.map((img, idx) => normalizeImageRecord(img, idx)).slice(0, 5)
+        : (displayCardData.thumbnail_link && displayCardData.thumbnail_link.trim() !== ""
+            ? [{ url: cardThumbnailSrc, id: 0, imageID: null }]
+            : []);
     const learnMoreGallerySlots = Array.from({ length: 5 }, (_, index) => learnMoreGalleryImages[index] || null);
 
     const goToPrevImage = (e) => {
