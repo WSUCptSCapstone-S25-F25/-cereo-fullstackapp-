@@ -72,6 +72,8 @@ function Card(props) {
     const [isFavorited, setIsFavorited] = useState(false);
     const [linkedArcgisItems, setLinkedArcgisItems] = useState([]);
     const [isArcgisPickerOpen, setIsArcgisPickerOpen] = useState(false);
+    // Track which linked items have their layer shown on the map (keyed by item.id)
+    const [linkedArcgisChecked, setLinkedArcgisChecked] = useState({});
     const linkedItemsLoadedRef = useRef(null); // tracks which cardID was last loaded
     const linkedArcgisItemsBackupRef = useRef(null); // backup of linkedArcgisItems when edit mode starts
     const [learnMoreLinks, setLearnMoreLinks] = useState([{ url: '', text: '' }]);
@@ -1756,8 +1758,27 @@ function Card(props) {
                                     const stateLabel = ARCGIS_STATE_FULL_NAMES[item.state_code] || item.state_code;
                                     const isServiceLevel = item.item_type === 'service';
                                     const serviceLabel = ARCGIS_SERVICE_LABEL_BY_KEY[item.service_key] || item.service_key;
+                                    const isLayerChecked = !!linkedArcgisChecked[item.id];
                                     return (
                                         <li key={item.id} className="learn-more-arcgis-link-item">
+                                            <label className="learn-more-arcgis-layer-toggle-label" title="Show/hide this layer on the map">
+                                                <input
+                                                    type="checkbox"
+                                                    className="learn-more-arcgis-layer-toggle-cb"
+                                                    checked={isLayerChecked}
+                                                    onChange={() => {
+                                                        const nowChecked = !isLayerChecked;
+                                                        setLinkedArcgisChecked(prev => ({ ...prev, [item.id]: nowChecked }));
+                                                        window.dispatchEvent(new CustomEvent('arcgis-layer-toggle', {
+                                                            detail: {
+                                                                serviceKey: item.service_key,
+                                                                layerId: item.layer_id,
+                                                                checked: nowChecked,
+                                                            }
+                                                        }));
+                                                    }}
+                                                />
+                                            </label>
                                             <span className="learn-more-arcgis-link-breadcrumb">
                                                 <span className="learn-more-breadcrumb-text">{stateLabel}</span>
                                                 <span className="learn-more-breadcrumb-sep"> → </span>

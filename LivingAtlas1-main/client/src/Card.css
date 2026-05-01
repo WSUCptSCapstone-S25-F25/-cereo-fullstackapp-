@@ -1785,6 +1785,31 @@
     gap: 6px;
 }
 
+.learn-more-arcgis-link-checkbox {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    margin-top: 3px;
+    cursor: pointer;
+    accent-color: #2563eb;
+}
+
+/* Checkbox label wrapper for linked ArcGIS layer toggle */
+.learn-more-arcgis-layer-toggle-label {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.learn-more-arcgis-layer-toggle-cb {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: #2563eb;
+    margin: 0;
+}
+
 .learn-more-arcgis-link-breadcrumb {
     display: block;
     flex: 1;

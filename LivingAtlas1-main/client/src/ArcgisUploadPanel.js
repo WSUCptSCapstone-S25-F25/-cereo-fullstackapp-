@@ -250,6 +250,10 @@ function ArcgisUploadPanel({
     const pendingNavigateRef = useRef(null); // { serviceKey, layerId, stateCode, folderName }
     const folderAreaRef = useRef(null); // ref to upload-panel-folder-area for scrolling
 
+    // Direct layer toggle (from learn-more modal checkboxes — no panel open required)
+    const pendingDirectTogglesRef = useRef([]);
+    const [directToggleTick, setDirectToggleTick] = useState(0);
+
     // Persistence: track whether saved selections have been loaded for current state/datasource
     const selectionsLoadedRef = useRef(false);
     const saveTimerRef = useRef(null);
@@ -825,20 +829,37 @@ function ArcgisUploadPanel({
 
         const service = ARCGIS_SERVICES.find(s => s.key === serviceKey);
 
-        if (layerId != null) {
-            setCheckedLayerIds(prev => ({
-                ...prev,
-                [serviceKey]: [...new Set([...(prev[serviceKey] || []), layerId])],
-            }));
-            if (service) {
-                const layer = layers.find(l => l.id === layerId);
-                if (layer) addLoadingMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer));
-            }
-        } else {
-            const allIds = layers.map(l => l.id);
-            setCheckedLayerIds(prev => ({ ...prev, [serviceKey]: allIds }));
-            if (service) {
-                addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
+        // If triggered by a learn-more checkbox, toggle the corresponding panel checkbox
+        if (target.toggleLayer && service) {
+            if (target.toggleChecked) {
+                // Add: same logic as checking the layer in the panel
+                if (layerId != null) {
+                    const layer = layers.find(l => l.id === layerId);
+                    if (layer) {
+                        setCheckedLayerIds(prev => ({
+                            ...prev,
+                            [serviceKey]: [...new Set([...(prev[serviceKey] || []), layerId])],
+                        }));
+                        addLoadingMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer));
+                    }
+                } else {
+                    const allIds = layers.map(l => l.id);
+                    setCheckedLayerIds(prev => ({ ...prev, [serviceKey]: allIds }));
+                    addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
+                }
+            } else {
+                // Remove: same logic as unchecking the layer in the panel
+                if (layerId != null) {
+                    const layer = layers.find(l => l.id === layerId);
+                    setCheckedLayerIds(prev => ({
+                        ...prev,
+                        [serviceKey]: (prev[serviceKey] || []).filter(id => id !== layerId),
+                    }));
+                    if (layer) removeLoadingMessage(getLoadingMsgId(service, layer));
+                } else {
+                    setCheckedLayerIds(prev => ({ ...prev, [serviceKey]: [] }));
+                    removeLoadingMessage(getLoadingMsgId(service, null));
+                }
             }
         }
 
@@ -849,6 +870,81 @@ function ArcgisUploadPanel({
             onNavigateToItemDone?.();
         }, 120);
     }, [serviceLayers]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Listen for 'arcgis-layer-toggle' events dispatched by learn-more modal checkboxes
+    useEffect(() => {
+        const handler = (e) => {
+            const { serviceKey, layerId, checked } = e.detail;
+            // Replace any existing pending toggle for the same item
+            pendingDirectTogglesRef.current = [
+                ...pendingDirectTogglesRef.current.filter(
+                    t => !(t.serviceKey === serviceKey && t.layerId === layerId)
+                ),
+                { serviceKey, layerId, checked },
+            ];
+            setDirectToggleTick(t => t + 1);
+        };
+        window.addEventListener('arcgis-layer-toggle', handler);
+        return () => window.removeEventListener('arcgis-layer-toggle', handler);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Process pending direct toggles (triggered by directToggleTick or when serviceLayers updates)
+    useEffect(() => {
+        if (pendingDirectTogglesRef.current.length === 0) return;
+        const stillPending = [];
+        pendingDirectTogglesRef.current.forEach(({ serviceKey, layerId, checked }) => {
+            const service = ARCGIS_SERVICES.find(s => s.key === serviceKey);
+            if (!service) return;
+            const layers = serviceLayers[serviceKey];
+            if (layers === undefined) {
+                stillPending.push({ serviceKey, layerId, checked });
+                // Kick off layer loading so we can apply the toggle once they arrive
+                fetchArcgisLayers(service.url)
+                    .then(loaded => {
+                        setServiceLayers(prev => ({ ...prev, [serviceKey]: loaded || [] }));
+                        setCheckedLayerIds(prev => prev[serviceKey] !== undefined ? prev : { ...prev, [serviceKey]: [] });
+                        setServiceLayerAdded(prev => prev[serviceKey] !== undefined ? prev : { ...prev, [serviceKey]: false });
+                        setCheckedSublayerIds(prev => prev[serviceKey] !== undefined ? prev : { ...prev, [serviceKey]: {} });
+                    })
+                    .catch(() => setServiceLayers(prev => ({ ...prev, [serviceKey]: [] })));
+                return;
+            }
+            // Layers available — apply toggle
+            if (layerId != null) {
+                if (checked) {
+                    setCheckedLayerIds(prev => {
+                        const prevC = prev[serviceKey] || [];
+                        if (prevC.includes(layerId)) return prev;
+                        const layer = layers.find(l => l.id === layerId);
+                        if (layer) addLoadingMessage(getLoadingMsgId(service, layer), getLoadingMsgText(service, layer));
+                        return { ...prev, [serviceKey]: [...prevC, layerId] };
+                    });
+                    setServiceLayerAdded(prev => ({ ...prev, [serviceKey]: true }));
+                } else {
+                    setCheckedLayerIds(prev => {
+                        const layer = layers.find(l => l.id === layerId);
+                        if (layer) removeLoadingMessage(getLoadingMsgId(service, layer));
+                        const newC = (prev[serviceKey] || []).filter(id => id !== layerId);
+                        setServiceLayerAdded(p => ({ ...p, [serviceKey]: newC.length > 0 }));
+                        return { ...prev, [serviceKey]: newC };
+                    });
+                }
+            } else {
+                // Service-level item (no layerId)
+                if (checked) {
+                    const allIds = layers.map(l => l.id);
+                    setCheckedLayerIds(prev => ({ ...prev, [serviceKey]: allIds }));
+                    setServiceLayerAdded(prev => ({ ...prev, [serviceKey]: true }));
+                    addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
+                } else {
+                    setCheckedLayerIds(prev => ({ ...prev, [serviceKey]: [] }));
+                    setServiceLayerAdded(prev => ({ ...prev, [serviceKey]: false }));
+                    removeLoadingMessage(getLoadingMsgId(service, null));
+                }
+            }
+        });
+        pendingDirectTogglesRef.current = stillPending;
+    }, [directToggleTick, serviceLayers]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Add/Remove button logic:
     const handleAddRemove = (service, layers) => {
@@ -1950,25 +2046,28 @@ function ArcgisUploadPanel({
         return text.replace(/\u00A0/g, ' ').trim();
     }
 
-    if (!isOpen) return null;
+    // Map loading spinner — rendered even when panel is closed (e.g. triggered from learn-more modal)
+    const spinnerPortal = isMapLayerLoading && mapContainerEl && createPortal(
+        <div className="arcgis-map-loading-overlay">
+            <div className="arcgis-map-spinner">
+                <div className="arcgis-spinner-dots">
+                    {[...Array(8)].map((_, i) => (
+                        <div key={i} className="arcgis-spinner-dot" style={{ '--dot-index': i }} />
+                    ))}
+                </div>
+                <div className="arcgis-spinner-text">loading...</div>
+            </div>
+        </div>,
+        mapContainerEl
+    );
+
+    if (!isOpen) return spinnerPortal || null;
 
     // JSX return that renders the upload panel UI 
     return (
         <>
             {/* Map loading spinner overlay */}
-            {isMapLayerLoading && mapContainerEl && createPortal(
-                <div className="arcgis-map-loading-overlay">
-                    <div className="arcgis-map-spinner">
-                        <div className="arcgis-spinner-dots">
-                            {[...Array(8)].map((_, i) => (
-                                <div key={i} className="arcgis-spinner-dot" style={{ '--dot-index': i }} />
-                            ))}
-                        </div>
-                        <div className="arcgis-spinner-text">loading...</div>
-                    </div>
-                </div>,
-                mapContainerEl
-            )}
+            {spinnerPortal}
             {/* Upload Panel */}
             <div className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}`} onContextMenu={e => e.preventDefault()}>
                 <div className="upload-panel-header">
