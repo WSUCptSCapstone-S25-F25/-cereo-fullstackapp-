@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import './Login.css';
 import api from './api.js';
@@ -17,7 +17,26 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
     const [submitemail, setsubmitEmail] = useState('');
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
     const [showForgotPasswordForm, setShowForgotPasswordForm] = useState(false);
+    const [redirectCountdown, setRedirectCountdown] = useState(null);
+    const countdownRef = useRef(null);
     const history = useHistory();
+
+    // Cancel redirect if user navigates away manually
+    useEffect(() => {
+        const unlisten = history.listen(() => {
+            if (countdownRef.current) {
+                clearInterval(countdownRef.current);
+                countdownRef.current = null;
+                setRedirectCountdown(null);
+            }
+        });
+        return () => {
+            unlisten();
+            if (countdownRef.current) {
+                clearInterval(countdownRef.current);
+            }
+        };
+    }, [history]);
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -46,7 +65,22 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
 
                 setIsLoggedIn(true);
                 setMessage('Successfully logged in!');
-                setTimeout(() => history.push('/'), 3000);
+
+                // Countdown redirect (3 → 2 → 1)
+                setRedirectCountdown(3);
+                let count = 3;
+                countdownRef.current = setInterval(() => {
+                    count -= 1;
+                    if (count <= 0) {
+                        clearInterval(countdownRef.current);
+                        countdownRef.current = null;
+                        setRedirectCountdown(null);
+                        history.push('/');
+                    } else {
+                        setRedirectCountdown(count);
+                    }
+                }, 1000);
+
                 setUsername(name);
                 setEmail(email);
                 setIsAdmin(resolvedIsAdmin);
@@ -145,8 +179,6 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
                     <button className="login-primary-btn" type="submit">Login</button>
                 </form>
 
-                <button className="login-secondary-btn" onClick={handleLogout}>Logout</button>
-
                 <div className="login-inline-action">
                     <button className="login-link-btn" onClick={() => setShowForgotPasswordForm(!showForgotPasswordForm)}>
                         {isLoggedIn ? 'Change Password?' : 'Forgot Password?'}
@@ -175,7 +207,14 @@ function Login({ email, setEmail, password, setPassword, message, setMessage, is
                     </Link>
                 </p>
 
-                {message && <p className="login-message">{message}</p>}
+                {message && (
+                    <p className="login-message">
+                        {message}
+                        {redirectCountdown !== null && (
+                            <span> Redirecting in {redirectCountdown}...</span>
+                        )}
+                    </p>
+                )}
             </div>
         </div>
     );

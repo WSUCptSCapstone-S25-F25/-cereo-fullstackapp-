@@ -200,7 +200,7 @@ function Card(props) {
         const cardOwnerEmail = formData.email || '';
         const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('isAdmin')); } catch { return false; } })();
         if (!isAdmin && viewerEmail && cardOwnerEmail && viewerEmail !== cardOwnerEmail) {
-            alert("Only admins can delete cards that don't belong to them.");
+            alert("You don't have permission to delete this card. Only the card's creator or an admin can delete it.");
             return;
         }
 
@@ -639,7 +639,7 @@ function Card(props) {
         const _cardOwnerEmail = formData.email || '';
         const _isAdmin = (() => { try { return JSON.parse(localStorage.getItem('isAdmin')); } catch { return false; } })();
         if (!_isAdmin && _viewerEmail && _cardOwnerEmail && _viewerEmail !== _cardOwnerEmail) {
-            alert("Only admins can edit cards that don't belong to them.");
+            alert("You don't have permission to edit this card. Only the card's creator or an admin can edit it.");
             return;
         }
         setLearnMoreBackup({ ...formData });
