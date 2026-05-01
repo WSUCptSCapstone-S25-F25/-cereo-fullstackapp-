@@ -1953,6 +1953,12 @@ function ArcgisUploadPanel({
             )}
             {/* Upload Panel */}
             <div className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}`} onContextMenu={e => e.preventDefault()}>
+                <div className="upload-panel-header">
+                    <h3>Browse ArcGIS Services</h3>
+                    <button className="upload-panel-header-close-btn" onClick={onClose}>
+                        <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                </div>
                 {/* Only show search bar and services when not loading database data */}
                 {!(isLoadingServices && dataSource === 'database') && (
                     <>
