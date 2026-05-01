@@ -18,6 +18,7 @@ import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import ClearAllLayersButton from './ClearAllLayersButton';
 
 function CustomLayersPanel({
     isOpen,
@@ -373,6 +374,13 @@ function CustomLayersPanel({
         });
         // eslint-disable-next-line
     }, [checkedLayerIds, serviceLayers, checkedSublayerIds]);
+
+    // Clear all layers from map:
+    const handleClearAllLayers = () => {
+        setCheckedLayerIds({});
+        setServiceLayerAdded({});
+        setCheckedSublayerIds({});
+    };
 
     // Opacity change handler — update all custom raster + vector layers
     const handleOpacityChange = (newOpacity) => {
@@ -1025,6 +1033,10 @@ function CustomLayersPanel({
                         Show only services added to map
                     </label>
                 </div>
+                <ClearAllLayersButton
+                    onClick={handleClearAllLayers}
+                    disabled={!Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0)}
+                />
             </div>
 
             {isLoading && (

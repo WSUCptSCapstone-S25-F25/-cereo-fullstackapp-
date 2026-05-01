@@ -743,6 +743,49 @@
     padding: 0;
 }
 
+/* Clear All Layers button (shared by Upload Panel and Custom Layers Panel) */
+.clear-all-layers-btn {
+    all: revert;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #fff;
+    color: #27425d !important;
+    border: 1px solid #bfd0e2;
+    border-radius: 8px;
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.clear-all-layers-btn:hover {
+    border-color: #e05252;
+    background: #fff5f5;
+    color: #c0392b !important;
+}
+
+.clear-all-layers-btn:active {
+    background: #fde8e8;
+}
+
+.clear-all-layers-btn:disabled {
+    background: #f0f2f5;
+    border-color: #d8e1ea;
+    color: #a0adb8 !important;
+    cursor: not-allowed;
+}
+
+.clear-all-layers-btn:disabled:hover {
+    border-color: #d8e1ea;
+    background: #f0f2f5;
+    color: #a0adb8 !important;
+}
+
 /* Datasource toggle switch */
 .upload-panel-datasource-switch {
     all: revert;

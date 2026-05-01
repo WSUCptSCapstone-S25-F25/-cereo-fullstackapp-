@@ -45,6 +45,7 @@ import {
     getLoadingMsgId,
     getLoadingMsgText
 } from './arcgisUploadMessageUtils';
+import ClearAllLayersButton from './ClearAllLayersButton';
 
 // --- State selector ---
 const STATE_CODES = ['WA', 'ID', 'OR'];
@@ -260,7 +261,8 @@ function ArcgisUploadPanel({
         messages,
         addLoadingMessage: originalAddLoadingMessage,
         removeLoadingMessage: originalRemoveLoadingMessage,
-        showFinishedMessage
+        showFinishedMessage,
+        clearAllMessages
     } = useArcgisLoadingMessages();
 
     // Whether any map layer is currently loading (for spinner overlay)
@@ -909,6 +911,16 @@ function ArcgisUploadPanel({
             
             addLoadingMessage(getLoadingMsgId(service, null), getLoadingMsgText(service, null));
         }
+    };
+
+    // Clear all layers from map:
+    const handleClearAllLayers = () => {
+        setCheckedLayerIds({});
+        setServiceLayerAdded({});
+        setCheckedSublayerIds({});
+        loadingStates.current = {};
+        setIsMapLayerLoading(false);
+        clearAllMessages();
     };
 
     // Layer checkbox logic:
@@ -1979,6 +1991,10 @@ function ArcgisUploadPanel({
                                 >
                                     <FontAwesomeIcon icon={faSync} spin={isUpdating} />
                                 </button>
+                                <ClearAllLayersButton
+                                    onClick={handleClearAllLayers}
+                                    disabled={!Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0)}
+                                />
                             </div>
                             {/* Update progress display */}
                             {(updateProgress || updateResults) && (

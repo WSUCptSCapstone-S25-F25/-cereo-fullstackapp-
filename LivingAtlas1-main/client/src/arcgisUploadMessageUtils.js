@@ -57,11 +57,20 @@ export function useArcgisLoadingMessages() {
         return consolidated;
     }, [rawMessages]);
 
+    function clearAllMessages() {
+        Object.keys(timersRef.current).forEach(id => {
+            clearTimeout(timersRef.current[id]);
+            delete timersRef.current[id];
+        });
+        setRawMessages([]);
+    }
+
     return {
         messages,
         addLoadingMessage,
         removeLoadingMessage,
-        showFinishedMessage
+        showFinishedMessage,
+        clearAllMessages
     };
 }
 
