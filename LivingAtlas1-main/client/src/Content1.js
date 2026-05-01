@@ -428,7 +428,6 @@ const Content1 = (props) => {
     props.isCollapsed,
     props.cardPanelWidth,
     props.isUploadPanelOpen,
-    props.isRemovedPanelOpen,
     props.isSidebarOpen
   ]);
 
@@ -1001,7 +1000,7 @@ const Content1 = (props) => {
 
   // Compute styles for outer map container to respond to card panel state
   const leftSidebarWidth = props.isSidebarOpen ? 300 : 48;
-  const hasLeftPanel = props.isUploadPanelOpen || props.isRemovedPanelOpen;
+  const hasLeftPanel = props.isUploadPanelOpen;
   const cardPanelW = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
   const cardOnLeft = props.cardPanelSide === 'left';
   const bothOnLeft = cardOnLeft && !props.isCollapsed && hasLeftPanel;

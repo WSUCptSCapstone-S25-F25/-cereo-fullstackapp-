@@ -11,10 +11,9 @@ import './Home.css';
 import './Sidebars.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
 import CustomLayersPanel from './CustomLayersPanel';
-import RemovedServicesPanel from './RemovedServicesPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
-import { faLayerGroup, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { faBell, faMap, faObjectGroup } from '@fortawesome/free-solid-svg-icons';
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
@@ -46,7 +45,6 @@ function Home(props) {
     );
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [arcgisNavigateTarget, setArcgisNavigateTarget] = useState(null);
-    const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);
     const [isCustomLayerPanelOpen, setIsCustomLayerPanelOpen] = useState(false);
     const [cardPanelSide, setCardPanelSide] = useState('right');
     const [folderExpanded, setFolderExpanded] = useState(false);
@@ -80,6 +78,7 @@ function Home(props) {
     useEffect(() => {
         const handler = (e) => {
             setIsUploadPanelOpen(true);
+            setIsCustomLayerPanelOpen(false);
             setArcgisNavigateTarget(e.detail);
         };
         window.addEventListener('open-arcgis-panel', handler);
@@ -430,7 +429,7 @@ function Home(props) {
                 {/* GIS Services Button */}
                 <button
                     className="left-sidebar-gis-button"
-                    onClick={() => setIsUploadPanelOpen(v => !v)}
+                    onClick={() => { setIsUploadPanelOpen(v => !v); setIsCustomLayerPanelOpen(false); }}
                     title="Toggle Layers"
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
@@ -453,7 +452,7 @@ function Home(props) {
                 {/* Custom Layers Button */}
                 <button
                     className="left-sidebar-customlayers-button"
-                    onClick={() => setIsCustomLayerPanelOpen(v => !v)}
+                    onClick={() => { setIsCustomLayerPanelOpen(v => !v); setIsUploadPanelOpen(false); }}
                     title="Custom Layers"
                 >
                     <FontAwesomeIcon icon={faObjectGroup} />
@@ -483,21 +482,6 @@ function Home(props) {
                     mapInstance={getMapboxMap}
                     currentBasemapId={preferredBasemapId}
                     onBasemapChange={setPreferredBasemapId}
-                />
-
-                {/* Trash button*/}
-                <button
-                    className="left-sidebar-trash-button"
-                    title="Removed Services"
-                    onClick={() => setIsRemovedPanelOpen(v => !v)}
-                >
-                    <FontAwesomeIcon icon={faTrash} />
-                </button>
-
-                {/* Removed Services Panel */}
-                <RemovedServicesPanel
-                    isOpen={isRemovedPanelOpen}
-                    onClose={() => setIsRemovedPanelOpen(false)}
                 />
 
                 {/* Spacer pushes bell to bottom */}
@@ -569,7 +553,6 @@ function Home(props) {
                 setIsCollapsed={setIsCollapsed}
                 isSidebarOpen={isSidebarOpen}
                 isUploadPanelOpen={isUploadPanelOpen}
-                isRemovedPanelOpen={isRemovedPanelOpen}
                 selectedCardCoords={selectedCardCoords}
                 onMarkerCardSelect={setSelectedCardIdFromMap}
                 cardPanelWidth={cardPanelWidth}
