@@ -15,6 +15,15 @@ function ChangelogModal({ isOpen, onClose }) {
             </div>
             <div className="changelog-modal-body">
 
+                <h3>Update Date: 4/30/2026</h3>
+                <p>Added support for multiple links per card, and improved how links are displayed in the Learn More modal.</p>
+                <p>Fixed an issue where pinned cards would lose their position after refreshing the page. Pinned cards now also have a distinct visual appearance.</p>
+                <p>Removed the type dropdown menu from the search toolbar in the Upload Panel and Custom Layers Panel.</p>
+                <p>Removed the Removed Services Panel button from the left sidebar.</p>
+                <p>Added a "Clear All" button to the Upload Panel and Custom Layers Panel that unchecks all currently visible map layers at once.</p>
+                <p>Refactored state folder and folder behavior: clicking a folder now navigates into it (file-explorer style) instead of toggling expand/collapse.</p>
+                <hr />
+
                 <h3>Update Date: 4/29/2026</h3>
                 <p>Added a pin button to cards in the card container. Pinned cards are always sorted to the top of the card list.</p>
                 <p>Fixed a sizing issue with the card container list view when it first loads.</p>
