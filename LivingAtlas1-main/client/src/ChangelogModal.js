@@ -15,6 +15,15 @@ function ChangelogModal({ isOpen, onClose }) {
             </div>
             <div className="changelog-modal-body">
 
+                <h3>Update Date: 5/1/2026</h3>
+                <p>Restricted card editing and deletion so that non-admin users can only modify or delete their own cards.</p>
+                <p>Added the ability to link ArcGIS services and layers directly from the Upload Card modal, matching the functionality already available in the Learn More edit mode.</p>
+                <p>Added checkboxes to linked ArcGIS service/layer items in the Learn More modal to toggle layer visibility on the map. Also improved the visual layout of linked items and the Upload Panel jump-to behavior.</p>
+                <p>Improved the success message display after login and streamlined the redirect flow to the home page.</p>
+                <p>Fixed an issue where images in the Learn More modal's image display area failed to render.</p>
+                <p>Fixed the appearance of the "Select a Location" UI elements in the Learn More modal's edit mode.</p>
+                <hr />
+
                 <h3>Update Date: 4/30/2026</h3>
                 <p>Added support for multiple links per card, and improved how links are displayed in the Learn More modal.</p>
                 <p>Fixed an issue where pinned cards would lose their position after refreshing the page. Pinned cards now also have a distinct visual appearance.</p>
