@@ -215,6 +215,7 @@ function ArcgisUploadPanel({
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [expandedService, setExpandedService] = useState(null);
     const [serviceLayers, setServiceLayers] = useState({}); // { key: [layers] }
+    const [serviceLayersLoading, setServiceLayersLoading] = useState({}); // { key: bool } — tracks in-flight layer fetches
     const [serviceLegends, setServiceLegends] = useState({}); // { key: legend }
     const [checkedLayerIds, setCheckedLayerIds] = useState({}); // { key: [layerIds] }
     const [serviceLayerAdded, setServiceLayerAdded] = useState({}); // { key: bool }
@@ -414,6 +415,7 @@ function ArcgisUploadPanel({
     useEffect(() => {
         // Reset per-datasource caches/UI
         setServiceLayers({});
+        setServiceLayersLoading({});
         setServiceLegends({});
         setCheckedLayerIds({});
         setServiceLayerAdded({});
@@ -439,33 +441,36 @@ function ArcgisUploadPanel({
         }
     }, [isOpen]);
 
-    // Lazy-load layers and legends only for services in expanded state folders
+    // Lazy-load layers only when a specific service is expanded by the user
     useEffect(() => {
         if (!isOpen) return;
 
-        // Only fetch layers/legends for services belonging to expanded states
-        const expandedStateServices = [];
-        expandedStates.forEach(code => {
-            (ALL_SERVICES_BY_STATE[code] || []).forEach(service => {
-                if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
-                // Skip if already fetched
-                if (serviceLayers[service.key] !== undefined) return;
-                expandedStateServices.push(service);
-            });
-        });
+        expandedServices.forEach(serviceKey => {
+            // Skip if already fetched or currently loading
+            if (serviceLayers[serviceKey] !== undefined) return;
+            if (serviceLayersLoading[serviceKey]) return;
 
-        expandedStateServices.forEach(service => {
+            const service = ARCGIS_SERVICES.find(s => s.key === serviceKey);
+            if (!service || service.type !== 'MapServer' || !service.url) return;
+
+            setServiceLayersLoading(prev => ({ ...prev, [serviceKey]: true }));
             fetchArcgisLayers(service.url).then(layers => {
-                setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
-                setCheckedLayerIds(prev => prev[service.key] ? prev : { ...prev, [service.key]: [] });
-                setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
-                setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
+                setServiceLayers(prev => ({ ...prev, [serviceKey]: layers || [] }));
+                setCheckedLayerIds(prev => prev[serviceKey] !== undefined ? prev : { ...prev, [serviceKey]: [] });
+                setServiceLayerAdded(prev => prev[serviceKey] !== undefined ? prev : { ...prev, [serviceKey]: false });
+                setCheckedSublayerIds(prev => prev[serviceKey] !== undefined ? prev : { ...prev, [serviceKey]: {} });
             }).catch(() => {
-                setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
+                setServiceLayers(prev => ({ ...prev, [serviceKey]: [] }));
+            }).finally(() => {
+                setServiceLayersLoading(prev => {
+                    const next = { ...prev };
+                    delete next[serviceKey];
+                    return next;
+                });
             });
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, ARCGIS_SERVICES, expandedStates]); // React to panel opening, services changing, or state expansion
+    }, [isOpen, expandedServices]); // Load layers on demand when a service is expanded
 
     // Fetch legends on-demand only when a service is actually expanded in the UI
     useEffect(() => {
@@ -483,7 +488,7 @@ function ArcgisUploadPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, expandedServices]);
 
-    // Re-run filter when layers load in (handles first-search case where serviceLayers was still empty)
+    // Re-run filter (and refresh nav count) when layers load in during an active search
     useEffect(() => {
         if (!activeSearchRef.current) return;
         const { keyword, searchType: type } = activeSearchRef.current;
@@ -492,6 +497,8 @@ function ArcgisUploadPanel({
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: STATE_CODES, serviceLayers });
+        initNav(mList.length);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serviceLayers]);
 
@@ -1708,6 +1715,62 @@ function ArcgisUploadPanel({
         });
     };
 
+    // True while an active search is waiting for layer data from unloaded services
+    const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
+
+    // Trigger loading layers for ALL services not yet loaded (used when searching for layers)
+    const triggerLayerLoadForSearch = (type) => {
+        if (type !== 'any' && type !== 'layer') return;
+        ARCGIS_SERVICES.forEach(service => {
+            if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
+            if (serviceLayers[service.key] !== undefined) return;
+            if (serviceLayersLoading[service.key]) return;
+            setServiceLayersLoading(prev => ({ ...prev, [service.key]: true }));
+            fetchArcgisLayers(service.url)
+                .then(layers => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
+                    setCheckedLayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: [] });
+                    setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
+                    setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
+                })
+                .catch(() => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
+                })
+                .finally(() => {
+                    setServiceLayersLoading(prev => {
+                        const next = { ...prev };
+                        delete next[service.key];
+                        return next;
+                    });
+                });
+        });
+    };
+
+    // Unified search handler — replaces the duplicated inline logic in the search bar
+    const handleSearch = (keyword, type) => {
+        if (!keyword) {
+            activeSearchRef.current = null;
+            setSearchResult(null);
+            setExpandedStates(new Set());
+            setExpandedFolders(new Set());
+            setExpandedServices(new Set());
+            setExpandedLayers(new Set());
+            resetNav();
+            return;
+        }
+        const result = filterUploadPanelData({ services: ARCGIS_SERVICES, serviceLayers, searchType: type, keyword });
+        setSearchResult(result);
+        activeSearchRef.current = { keyword, searchType: type };
+        setExpandedStates(new Set(STATE_CODES));
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: STATE_CODES, serviceLayers });
+        initNav(mList.length);
+        // Kick off loading unloaded service layers so layer-name matches aren't missed
+        triggerLayerLoadForSearch(type);
+    };
+
     // Render a layer tree node using the shared component
     const renderLayerNode = (node, service, checkedIds, allFeatureLayers, depth = 0) => (
         <LayerTreeNode
@@ -1739,29 +1802,7 @@ function ArcgisUploadPanel({
                     onChange={e => setSearchKeyword(e.target.value)}
                     onKeyDown={e => {
                         if (e.key === 'Enter') {
-                            if (!searchKeyword) {
-                                setSearchResult(null);
-                                setExpandedStates(new Set());
-                                setExpandedFolders(new Set());
-                                setExpandedServices(new Set());
-                                setExpandedLayers(new Set());
-                                resetNav();
-                                return;
-                            }
-                            const result = filterUploadPanelData({
-                                services: ARCGIS_SERVICES,
-                                serviceLayers,
-                                searchType,
-                                keyword: searchKeyword
-                            });
-                            setSearchResult(result);
-                            activeSearchRef.current = { keyword: searchKeyword, searchType };
-                            setExpandedStates(new Set(STATE_CODES));
-                            setExpandedFolders(new Set(result.expandedFolders));
-                            setExpandedServices(new Set(result.expandedServices));
-                            setExpandedLayers(new Set(result.expandedLayerKeys));
-                            const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: STATE_CODES, serviceLayers });
-                            initNav(mList.length);
+                            handleSearch(searchKeyword, searchType);
                         }
                     }}
                     placeholder="Search folders, services, or layers..."
@@ -1769,31 +1810,7 @@ function ArcgisUploadPanel({
                 <button
                     className="search-btn upload-panel-searchbar-btn search"
                     title="Search"
-                    onClick={() => {
-                        if (!searchKeyword) {
-                            setSearchResult(null);
-                            setExpandedStates(new Set());
-                            setExpandedFolders(new Set());
-                            setExpandedServices(new Set());
-                            setExpandedLayers(new Set());
-                            resetNav();
-                            return;
-                        }
-                        const result = filterUploadPanelData({
-                            services: ARCGIS_SERVICES,
-                            serviceLayers,
-                            searchType,
-                            keyword: searchKeyword
-                        });
-                        setSearchResult(result);
-                        activeSearchRef.current = { keyword: searchKeyword, searchType };
-                        setExpandedStates(new Set(STATE_CODES));
-                        setExpandedFolders(new Set(result.expandedFolders));
-                        setExpandedServices(new Set(result.expandedServices));
-                        setExpandedLayers(new Set(result.expandedLayerKeys));
-                        const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: STATE_CODES, serviceLayers });
-                        initNav(mList.length);
-                    }}
+                    onClick={() => handleSearch(searchKeyword, searchType)}
                 >
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
@@ -1814,6 +1831,12 @@ function ArcgisUploadPanel({
                     <FontAwesomeIcon icon={faTimes} />
                 </button>
             </div>
+            {isSearchLoadingLayers && (
+                <div className="upload-panel-search-loading">
+                    <span className="upload-panel-search-loading-spinner" />
+                    Searching… loading more results ({Object.keys(serviceLayersLoading).length} remaining)
+                </div>
+            )}
             <div className="upload-panel-added-checkbox-row">
                 <label>
                     <input
@@ -2276,9 +2299,13 @@ function ArcgisUploadPanel({
                                                                             </div>
                                                                             {expandedServices.has(service.key) && (
                                                                                 <div className="tree-children">
-                                                                                    <ul className="tree-children" style={{ listStyle: 'none' }}>
-                                                                                        {layerTree.map(node => renderLayerNode(node, service, checkedIds, allFeatureLayers))}
-                                                                                    </ul>
+                                                                                    {serviceLayersLoading[service.key] ? (
+                                                                                        <div className="upload-panel-layers-loading">Loading layers…</div>
+                                                                                    ) : (
+                                                                                        <ul className="tree-children" style={{ listStyle: 'none' }}>
+                                                                                            {layerTree.map(node => renderLayerNode(node, service, checkedIds, allFeatureLayers))}
+                                                                                        </ul>
+                                                                                    )}
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -2408,9 +2435,13 @@ function ArcgisUploadPanel({
                                                 </div>
                                                 {expandedServices.has(service.key) && (
                                                     <div className="tree-children">
-                                                        <ul className="tree-children" style={{ listStyle: 'none' }}>
-                                                            {layerTree.map(node => renderLayerNode(node, service, checkedIds, allFeatureLayers))}
-                                                        </ul>
+                                                        {serviceLayersLoading[service.key] ? (
+                                                            <div className="upload-panel-layers-loading">Loading layers…</div>
+                                                        ) : (
+                                                            <ul className="tree-children" style={{ listStyle: 'none' }}>
+                                                                {layerTree.map(node => renderLayerNode(node, service, checkedIds, allFeatureLayers))}
+                                                            </ul>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>

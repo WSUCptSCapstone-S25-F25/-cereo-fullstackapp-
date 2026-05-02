@@ -485,6 +485,43 @@
     text-align: center;
 }
 
+/* Lazy-load spinner shown while a service's layers are being fetched */
+.upload-panel-layers-loading {
+    padding: 6px 14px;
+    font-size: 12px;
+    color: #1976d2;
+    font-style: italic;
+    opacity: 0.85;
+}
+
+/* Search-in-progress indicator shown below the search bar */
+.upload-panel-search-loading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #1565c0;
+    background: #e3f2fd;
+    border-radius: 4px;
+    margin: 3px 0 0 0;
+}
+
+.upload-panel-search-loading-spinner {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border: 2px solid #90caf9;
+    border-top-color: #1565c0;
+    border-radius: 50%;
+    animation: upload-panel-spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes upload-panel-spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Folder area wrapper — provides positioning context for the floating nav mini modal */
 .upload-panel-folder-area-wrapper {
     position: relative;
