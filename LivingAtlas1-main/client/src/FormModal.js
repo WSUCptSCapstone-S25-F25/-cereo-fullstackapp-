@@ -241,6 +241,7 @@ const FormModal = (props) => {
 
         // Hide the modal while selecting location
         setIsSelectingLocation(true);
+        map.getCanvas().style.cursor = 'crosshair';
 
         const onMapClick = (e) => {
             const { lat, lng } = e.lngLat;
@@ -288,6 +289,7 @@ const FormModal = (props) => {
                 marker.remove();
                 selectLocationMarker.current = null;
                 setIsSelectingLocation(false);
+                map.getCanvas().style.cursor = '';
                 map.off('click', onMapClick);
             });
 
@@ -306,12 +308,15 @@ const FormModal = (props) => {
 
     const cancelSelectLocation = () => {
         const map = window.atlasMapInstance;
-        if (map && selectLocationMarker.current) {
-            if (selectLocationMarker.current._onMapClick) {
-                map.off('click', selectLocationMarker.current._onMapClick);
+        if (map) {
+            map.getCanvas().style.cursor = '';
+            if (selectLocationMarker.current) {
+                if (selectLocationMarker.current._onMapClick) {
+                    map.off('click', selectLocationMarker.current._onMapClick);
+                }
+                selectLocationMarker.current.remove();
+                selectLocationMarker.current = null;
             }
-            selectLocationMarker.current.remove();
-            selectLocationMarker.current = null;
         }
         setIsSelectingLocation(false);
     };

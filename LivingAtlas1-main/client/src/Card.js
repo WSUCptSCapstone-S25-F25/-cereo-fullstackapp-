@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import Modal from 'react-modal';
 import mapboxgl from 'mapbox-gl';
 import api from './api.js';
@@ -477,6 +478,7 @@ function Card(props) {
         if (!map) { console.error('Map not found'); return; }
 
         setIsSelectingLocation(true);
+        map.getCanvas().style.cursor = 'crosshair';
 
         const onMapClick = (e) => {
             const { lat, lng } = e.lngLat;
@@ -511,6 +513,7 @@ function Card(props) {
                 marker.remove();
                 selectLocationMarker.current = null;
                 setIsSelectingLocation(false);
+                map.getCanvas().style.cursor = '';
                 map.off('click', onMapClick);
             });
 
@@ -526,12 +529,15 @@ function Card(props) {
 
     const cancelSelectLocation = () => {
         const map = window.atlasMapInstance;
-        if (map && selectLocationMarker.current) {
-            if (selectLocationMarker.current._onMapClick) {
-                map.off('click', selectLocationMarker.current._onMapClick);
+        if (map) {
+            map.getCanvas().style.cursor = '';
+            if (selectLocationMarker.current) {
+                if (selectLocationMarker.current._onMapClick) {
+                    map.off('click', selectLocationMarker.current._onMapClick);
+                }
+                selectLocationMarker.current.remove();
+                selectLocationMarker.current = null;
             }
-            selectLocationMarker.current.remove();
-            selectLocationMarker.current = null;
         }
         setIsSelectingLocation(false);
     };
@@ -1257,11 +1263,12 @@ function Card(props) {
             </div>
 
             {/* Floating hint when selecting location from learn-more */}
-            {isSelectingLocation && (
+            {isSelectingLocation && ReactDOM.createPortal(
                 <div className="location-select-hint">
                     <span>Click on the map to select a location</span>
                     <button type="button" onClick={cancelSelectLocation}>Cancel</button>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Learn More Modal */}
