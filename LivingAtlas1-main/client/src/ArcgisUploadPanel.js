@@ -491,13 +491,13 @@ function ArcgisUploadPanel({
     // Re-run filter (and refresh nav count) when layers load in during an active search
     useEffect(() => {
         if (!activeSearchRef.current) return;
-        const { keyword, searchType: type } = activeSearchRef.current;
-        const result = filterUploadPanelData({ services: ARCGIS_SERVICES, serviceLayers, searchType: type, keyword });
+        const { keyword, searchType: type, scopedServices, scopedStateCodes } = activeSearchRef.current;
+        const result = filterUploadPanelData({ services: scopedServices, serviceLayers, searchType: type, keyword });
         setSearchResult(result);
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
-        const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: STATE_CODES, serviceLayers });
+        const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: scopedStateCodes, serviceLayers });
         initNav(mList.length);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serviceLayers]);
@@ -1718,10 +1718,32 @@ function ArcgisUploadPanel({
     // True while an active search is waiting for layer data from unloaded services
     const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
 
-    // Trigger loading layers for ALL services not yet loaded (used when searching for layers)
-    const triggerLayerLoadForSearch = (type) => {
+    // Returns the service list scoped to the current navigation path (state and/or folder)
+    const getScopedServices = (path = currentPath) => {
+        if (path.stateCode !== null && path.stateCode !== '__builtin__') {
+            if (path.folder !== null) {
+                // Inside a specific folder: only services in that state + folder
+                return (servicesByStateAndFolder[path.stateCode]?.folders?.[path.folder]) || [];
+            }
+            // Inside a state: all services for that state
+            return ALL_SERVICES_BY_STATE[path.stateCode] || [];
+        }
+        // Root level: all services
+        return ARCGIS_SERVICES;
+    };
+
+    // Returns the STATE_CODES subset relevant to the current navigation scope
+    const getScopedStateCodes = (path = currentPath) => {
+        if (path.stateCode !== null && path.stateCode !== '__builtin__') {
+            return [path.stateCode];
+        }
+        return STATE_CODES;
+    };
+
+    // Trigger loading layers for services in scope that are not yet loaded (used when searching for layers)
+    const triggerLayerLoadForSearch = (type, scopedServicesList) => {
         if (type !== 'any' && type !== 'layer') return;
-        ARCGIS_SERVICES.forEach(service => {
+        scopedServicesList.forEach(service => {
             if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
             if (serviceLayers[service.key] !== undefined) return;
             if (serviceLayersLoading[service.key]) return;
@@ -1746,7 +1768,7 @@ function ArcgisUploadPanel({
         });
     };
 
-    // Unified search handler — replaces the duplicated inline logic in the search bar
+    // Unified search handler — scoped to currentPath
     const handleSearch = (keyword, type) => {
         if (!keyword) {
             activeSearchRef.current = null;
@@ -1758,17 +1780,20 @@ function ArcgisUploadPanel({
             resetNav();
             return;
         }
-        const result = filterUploadPanelData({ services: ARCGIS_SERVICES, serviceLayers, searchType: type, keyword });
+        const scopedServicesList = getScopedServices();
+        const scopedCodes = getScopedStateCodes();
+        const result = filterUploadPanelData({ services: scopedServicesList, serviceLayers, searchType: type, keyword });
         setSearchResult(result);
-        activeSearchRef.current = { keyword, searchType: type };
-        setExpandedStates(new Set(STATE_CODES));
+        activeSearchRef.current = { keyword, searchType: type, scopedServices: scopedServicesList, scopedStateCodes: scopedCodes };
+        // Expand states relevant to scope so results are visible
+        setExpandedStates(new Set(scopedCodes));
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
-        const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: STATE_CODES, serviceLayers });
+        const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: scopedCodes, serviceLayers });
         initNav(mList.length);
-        // Kick off loading unloaded service layers so layer-name matches aren't missed
-        triggerLayerLoadForSearch(type);
+        // Kick off loading unloaded service layers so layer-name matches aren’t missed
+        triggerLayerLoadForSearch(type, scopedServicesList);
     };
 
     // Render a layer tree node using the shared component
@@ -1793,7 +1818,14 @@ function ArcgisUploadPanel({
         />
     );
 
-    const renderSearchBar = () => (
+    const renderSearchBar = () => {
+        const searchPlaceholder = currentPath.folder !== null
+            ? `Search in "${currentPath.folder}"…`
+            : currentPath.stateCode !== null && currentPath.stateCode !== '__builtin__'
+                ? `Search in ${STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode}…`
+                : 'Search folders, services, or layers…';
+
+        return (
         <div>
             <div className="upload-panel-searchbar">
                 <input
@@ -1805,7 +1837,7 @@ function ArcgisUploadPanel({
                             handleSearch(searchKeyword, searchType);
                         }
                     }}
-                    placeholder="Search folders, services, or layers..."
+                    placeholder={searchPlaceholder}
                 />
                 <button
                     className="search-btn upload-panel-searchbar-btn search"
@@ -1873,7 +1905,8 @@ function ArcgisUploadPanel({
                 </label>
             </div>
         </div>
-    );
+        );
+    };
 
     // Build per-state folders to show directly from per-state grouped data.
     // Do not re-split merged services by service.state because backend state values can be inconsistent,
@@ -1933,15 +1966,28 @@ function ArcgisUploadPanel({
         });
     };
 
-    // Navigation double-click handlers
+    // Navigation double-click handlers — clear any active search when navigating to a new scope
     const handleStateDoubleClick = (code) => {
+        activeSearchRef.current = null;
+        setSearchResult(null);
+        setSearchKeyword('');
+        resetNav();
         setCurrentPath({ stateCode: code, folder: null });
     };
     const handleFolderDoubleClick = (folder) => {
+        activeSearchRef.current = null;
+        setSearchResult(null);
+        setSearchKeyword('');
+        resetNav();
         setCurrentPath(prev => ({ stateCode: prev.stateCode, folder }));
     };
     const handleNavBack = () => {
+        activeSearchRef.current = null;
+        setSearchResult(null);
+        setSearchKeyword('');
+        resetNav();
         setCurrentPath(prev => {
+            if (prev.stateCode === '__builtin__') return { stateCode: null, folder: null };
             if (prev.folder !== null) return { stateCode: prev.stateCode, folder: null };
             return { stateCode: null, folder: null };
         });
@@ -2210,9 +2256,18 @@ function ArcgisUploadPanel({
                         <div className="upload-panel-folder-area" ref={folderAreaRef}>
                         {searchResult ? (
                             /* ── SEARCH MODE: full filtered tree ── */
-                            <>
-                            {/* Built-in Layers folder */}
-                            <div>
+                            (() => {
+                            const _lk = searchResult.keyword || '';
+                            const _matchBuiltinLayers = searchType === 'service' ? [] :
+                                (searchType === 'folder'
+                                    ? (BUILTIN_FOLDER_NAME.toLowerCase().includes(_lk) ? BUILTIN_LAYERS : [])
+                                    : BUILTIN_LAYERS.filter(l => l.label.toLowerCase().includes(_lk)));
+                            const _showBuiltin = searchType === 'folder'
+                                ? BUILTIN_FOLDER_NAME.toLowerCase().includes(_lk)
+                                : _matchBuiltinLayers.length > 0;
+                            return (<>
+                            {/* Built-in Layers folder — only shown when there are matching results */}
+                            {_showBuiltin && <div>
                                 <div
                                     className="upload-state-folder"
                                     onClick={() => {
@@ -2228,7 +2283,7 @@ function ArcgisUploadPanel({
                                 </div>
                                 {expandedStates.has('__builtin__') && (
                                     <div className="upload-state-folder-content">
-                                        {BUILTIN_LAYERS.map(layer => (
+                                        {(searchType === 'folder' ? BUILTIN_LAYERS : _matchBuiltinLayers).map(layer => (
                                             <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
                                                 <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
                                                     <input type="checkbox" checked={!!areaVisibility[layer.id]} onChange={() => handleAreaCheckbox?.(layer.id)} style={{ marginRight: 4 }} />
@@ -2238,7 +2293,7 @@ function ArcgisUploadPanel({
                                         ))}
                                     </div>
                                 )}
-                            </div>
+                            </div>}
                             {STATE_CODES.map(stateCode => {
                                 const stateData = stateFoldersToShow[stateCode];
                                 if (!stateData || stateData.folders.length === 0) return null;
@@ -2323,7 +2378,7 @@ function ArcgisUploadPanel({
                                     </div>
                                 );
                             })}
-                            </>
+                            </>);})()
                         ) : (
                             /* ── NAVIGATION MODE ── */
                             <>
