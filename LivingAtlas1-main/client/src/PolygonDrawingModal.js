@@ -116,25 +116,27 @@ function cloneCurveControlPoints(ctrlPts = {}) {
     );
 }
 
-function createHistorySnapshot(vertices, curveControlPoints, fillColor, fillOpacity) {
+function createHistorySnapshot(vertices, curveControlPoints, fillColor, fillOpacity, lineStyle) {
     return {
         vertices: vertices.map(vertex => ({ ...vertex })),
         curveControlPoints: cloneCurveControlPoints(curveControlPoints),
         fillColor: fillColor ?? DEFAULT_POLYGON_COLOR,
         fillOpacity: fillOpacity ?? 0.15,
+        lineStyle: lineStyle ?? 'solid',
     };
 }
 
 function normalizeHistorySnapshot(snapshot) {
     if (Array.isArray(snapshot)) {
-        return createHistorySnapshot(snapshot, {}, DEFAULT_POLYGON_COLOR, 0.15);
+        return createHistorySnapshot(snapshot, {}, DEFAULT_POLYGON_COLOR, 0.15, 'solid');
     }
 
     return createHistorySnapshot(
         snapshot?.vertices || [],
         snapshot?.curveControlPoints || {},
         snapshot?.fillColor,
-        snapshot?.fillOpacity
+        snapshot?.fillOpacity,
+        snapshot?.lineStyle
     );
 }
 
@@ -173,6 +175,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     fillColorRef.current = fillColor;
     const fillOpacityRef = useRef(fillOpacity); // always-current fillOpacity, safe for stale closures
     fillOpacityRef.current = fillOpacity;
+    const lineStyleRef = useRef(lineStyle);
+    lineStyleRef.current = lineStyle;
     const saveToHistoryRef = useRef(null); // updated each render to capture latest vertices
     const handleUndoRef = useRef(null);
     const handleRedoRef = useRef(null);
@@ -424,7 +428,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     // ── Undo / Redo ──
     // saveToHistoryRef.current() always captures the latest polygon geometry state via refs.
     saveToHistoryRef.current = () => {
-        const snap = createHistorySnapshot(verticesRef.current, curveControlPointsRef.current, fillColorRef.current, fillOpacityRef.current);
+        const snap = createHistorySnapshot(verticesRef.current, curveControlPointsRef.current, fillColorRef.current, fillOpacityRef.current, lineStyleRef.current);
         setHistory(prev => [...prev.slice(-49), snap]);
         setFuture([]);
     };
@@ -442,6 +446,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         setCurveControlPoints(curveControlPointsRef.current);
         if (normalized.fillColor) setFillColor(normalized.fillColor);
         if (normalized.fillOpacity !== undefined) setFillOpacity(normalized.fillOpacity);
+        if (normalized.lineStyle) setLineStyle(normalized.lineStyle);
         updatePolygonOnMap(restoredVertices);
         rebuildMarkers(restoredVertices);
         rebuildCurveMarkers(restoredVertices, curveControlPointsRef.current);
@@ -1461,7 +1466,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                                     key={key}
                                     type="button"
                                     className={`polygon-draw-dropdown-item${lineStyle === key ? ' active' : ''}`}
-                                    onClick={() => { setLineStyle(key); setShowLineMenu(false); }}
+                                    onClick={() => { saveToHistoryRef.current?.(); setLineStyle(key); setShowLineMenu(false); }}
                                 >
                                     <svg width="32" height="8" viewBox="0 0 32 8">
                                         {key === 'solid' && <line x1="0" y1="4" x2="32" y2="4" stroke="currentColor" strokeWidth="2"/>}
