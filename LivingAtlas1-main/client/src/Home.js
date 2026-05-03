@@ -53,11 +53,11 @@ function Home(props) {
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v13');
+        return !localStorage.getItem('changelog_seen_v14');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v13', 'true');
+        localStorage.setItem('changelog_seen_v14', 'true');
         setIsChangelogOpen(false);
     };
 
