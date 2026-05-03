@@ -394,3 +394,155 @@
     background: #9ec2e8;
     cursor: not-allowed;
 }
+
+/* Search type dropdown */
+.arcgis-picker-search-type-select {
+    padding: 5px 8px;
+    font-size: 0.82rem;
+    border: 1px solid #bfd0e2;
+    border-radius: 7px;
+    background: #fff;
+    color: #27425d;
+    cursor: pointer;
+    height: 32px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+/* Search loading indicator */
+.arcgis-picker-search-loading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #1565c0;
+    background: #e3f2fd;
+    border-radius: 4px;
+    margin: 4px 0 0 0;
+}
+
+.arcgis-picker-search-loading-spinner {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border: 2px solid #90caf9;
+    border-top-color: #1565c0;
+    border-radius: 50%;
+    animation: arcgis-picker-spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes arcgis-picker-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Breadcrumb — fixed bar between header and body, not inside scrollable area */
+.arcgis-picker-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    background: #eef2f7;
+    border-bottom: 1px solid #d8e1ea;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.arcgis-picker-back-btn {
+    background: #fff;
+    border: 1px solid #bfd0e2;
+    border-radius: 5px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #27425d;
+    flex-shrink: 0;
+    padding: 0;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.arcgis-picker-back-btn:hover {
+    background: #dce8f5;
+    border-color: #8eabc8;
+}
+
+.arcgis-picker-breadcrumb-path {
+    font-weight: 600;
+    color: #223244;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.arcgis-picker-breadcrumb-sep {
+    color: #8eabc8;
+    font-weight: 400;
+    margin: 0 4px;
+}
+
+/* Navigation-mode: state-level folder rows (root list) */
+.arcgis-picker-nav-state-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    background: #fff;
+    border: 1px solid #d8e1ea;
+    border-bottom: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    color: #223244;
+    user-select: none;
+    transition: background 0.15s;
+    letter-spacing: 0.1px;
+}
+
+.arcgis-picker-nav-state-row:last-of-type {
+    border-bottom: 1px solid #d8e1ea;
+}
+
+.arcgis-picker-nav-state-row:hover {
+    background: #e8f0fe;
+}
+
+/* Navigation-mode: sub-folder rows (inside a state) */
+.arcgis-picker-nav-folder-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 5px 10px 0;
+    padding: 6px 10px;
+    border-radius: 7px;
+    background: #fff;
+    border: 1px solid #d8e1ea;
+    cursor: pointer;
+    font-weight: normal;
+    font-size: 13px;
+    color: #223244;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.arcgis-picker-nav-folder-row:last-of-type {
+    margin-bottom: 6px;
+}
+
+.arcgis-picker-nav-folder-row:hover {
+    background: #f2f7fc;
+    border-color: #8eabc8;
+}
+
+.arcgis-picker-nav-folder-icon {
+    color: #5b8ab5;
+    font-size: 12px;
+    flex-shrink: 0;
+}

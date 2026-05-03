@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { fetchServicesByStateMap } from './arcgisServicesDb';
 import { fetchArcgisLayers, fetchArcgisLegend } from './arcgisDataUtils';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers } from './LayerTree';
@@ -6,7 +6,7 @@ import './LayerTree.css';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
 import { buildMatchList, useSearchNav } from './arcgisSearchNavUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faChevronUp, faChevronDown, faFolder } from '@fortawesome/free-solid-svg-icons';
 import './ArcGISPickerModal.css';
 import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
 import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
@@ -36,7 +36,11 @@ function ArcGISPickerModal({ onAdd, onClose }) {
     // selectedItems: Map<string, object>  key = "service:key" | "layer:serviceKey:layerId"
     const [selectedItems, setSelectedItems] = useState(new Map());
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [searchType, setSearchType] = useState('any');
     const [searchResult, setSearchResult] = useState(null);
+    const [serviceLayersLoading, setServiceLayersLoading] = useState({});
+    const [currentPath, setCurrentPath] = useState({ stateCode: null, folder: null });
+    const activeSearchRef = useRef(null);
 
     // Build per-state service lists (memoized to stabilize matchList)
     const allServicesByState = useMemo(() => {
@@ -107,74 +111,74 @@ function ArcGISPickerModal({ onAdd, onClose }) {
         });
     }, [expandedServices]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleSearch = async () => {
-        if (!searchKeyword.trim()) {
+    // Scoped search helpers — mirrors ArcgisUploadPanel
+    const getScopedServices = () => {
+        if (currentPath.stateCode !== null) {
+            const stateServices = allServicesByState[currentPath.stateCode] || [];
+            if (currentPath.folder !== null) {
+                return stateServices.filter(s => (s.folder || 'Root') === currentPath.folder);
+            }
+            return stateServices;
+        }
+        return allServices;
+    };
+    const getScopedStateCodes = () => {
+        if (currentPath.stateCode !== null) return [currentPath.stateCode];
+        return STATE_CODES;
+    };
+
+    // Trigger layer loading for unloaded services when searching (non-blocking)
+    const triggerLayerLoadForSearch = (type, scopedServicesList) => {
+        if (type !== 'any' && type !== 'layer') return;
+        scopedServicesList.forEach(service => {
+            if (!service?.url || !service?.key) return;
+            if (serviceLayers[service.key] !== undefined) return;
+            if (serviceLayersLoading[service.key]) return;
+            setServiceLayersLoading(prev => ({ ...prev, [service.key]: true }));
+            fetchArcgisLayers(service.url)
+                .then(layers => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
+                })
+                .catch(() => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
+                })
+                .finally(() => {
+                    setServiceLayersLoading(prev => {
+                        const next = { ...prev };
+                        delete next[service.key];
+                        return next;
+                    });
+                });
+        });
+    };
+
+    const handleSearch = (keyword, type) => {
+        if (!keyword.trim()) {
+            activeSearchRef.current = null;
             setSearchResult(null);
             setExpandedStates(new Set());
             setExpandedFolders(new Set());
             setExpandedServices(new Set());
             setExpandedLayers(new Set());
+            resetNav();
             return;
         }
-
-        // First pass: find which services match by name/folder (without layer data)
-        const firstPass = filterUploadPanelData({
-            services: allServices,
-            serviceLayers,
-            searchType: 'any',
-            keyword: searchKeyword,
-        });
-
-        // Fetch layers for all services that don't have them yet
-        const serviceKeysToFetch = allServices
-            .filter(s => serviceLayers[s.key] === undefined)
-            .map(s => s.key);
-
-        let updatedServiceLayers = { ...serviceLayers };
-        if (serviceKeysToFetch.length > 0) {
-            // Fetch in batches of 8 to avoid ERR_INSUFFICIENT_RESOURCES
-            const BATCH_SIZE = 8;
-            for (let i = 0; i < serviceKeysToFetch.length; i += BATCH_SIZE) {
-                const batch = serviceKeysToFetch.slice(i, i + BATCH_SIZE);
-                await Promise.all(batch.map(async (key) => {
-                    const service = allServices.find(s => s.key === key);
-                    if (!service?.url) return;
-                    try {
-                        const layers = await fetchArcgisLayers(service.url);
-                        updatedServiceLayers[key] = layers || [];
-                    } catch {
-                        updatedServiceLayers[key] = [];
-                    }
-                }));
-            }
-            setServiceLayers(prev => ({ ...prev, ...updatedServiceLayers }));
-        }
-
-        // Second pass with full layer data for accurate expandedLayerKeys
-        const result = filterUploadPanelData({
-            services: allServices,
-            serviceLayers: updatedServiceLayers,
-            searchType: 'any',
-            keyword: searchKeyword,
-        });
-
-        // Compute match list with the fresh data BEFORE React re-renders (needed for initNav count)
-        const mList = buildMatchList({
-            searchResult: result,
-            allServicesByState,
-            stateCodes: STATE_CODES,
-            serviceLayers: updatedServiceLayers,
-        });
-
+        const scopedServicesList = getScopedServices();
+        const scopedCodes = getScopedStateCodes();
+        const result = filterUploadPanelData({ services: scopedServicesList, serviceLayers, searchType: type, keyword });
         setSearchResult(result);
-        setExpandedStates(new Set(STATE_CODES));
+        activeSearchRef.current = { keyword, searchType: type, scopedServices: scopedServicesList, scopedStateCodes: scopedCodes };
+        setExpandedStates(new Set(scopedCodes));
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState, stateCodes: scopedCodes, serviceLayers });
         initNav(mList.length);
+        triggerLayerLoadForSearch(type, scopedServicesList);
     };
 
     const handleClear = () => {
+        activeSearchRef.current = null;
         setSearchKeyword('');
         setSearchResult(null);
         setExpandedStates(new Set());
@@ -196,6 +200,48 @@ function ArcGISPickerModal({ onAdd, onClose }) {
     const handleAdd = () => {
         if (selectedItems.size === 0) return;
         onAdd(Array.from(selectedItems.values()));
+    };
+
+    // Re-run filter when layers load in during active search (matches upload panel behavior)
+    useEffect(() => {
+        if (!activeSearchRef.current) return;
+        const { keyword, searchType: type, scopedServices, scopedStateCodes } = activeSearchRef.current;
+        const result = filterUploadPanelData({ services: scopedServices, serviceLayers, searchType: type, keyword });
+        setSearchResult(result);
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState, stateCodes: scopedStateCodes, serviceLayers });
+        initNav(mList.length);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serviceLayers]);
+
+    const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
+
+    // Drill-down navigation handlers
+    const handleStateNavigate = (code) => {
+        activeSearchRef.current = null;
+        setSearchResult(null);
+        setSearchKeyword('');
+        resetNav();
+        setCurrentPath({ stateCode: code, folder: null });
+    };
+    const handleFolderNavigate = (folder) => {
+        activeSearchRef.current = null;
+        setSearchResult(null);
+        setSearchKeyword('');
+        resetNav();
+        setCurrentPath(prev => ({ stateCode: prev.stateCode, folder }));
+    };
+    const handleNavBack = () => {
+        activeSearchRef.current = null;
+        setSearchResult(null);
+        setSearchKeyword('');
+        resetNav();
+        setCurrentPath(prev => {
+            if (prev.folder !== null) return { stateCode: prev.stateCode, folder: null };
+            return { stateCode: null, folder: null };
+        });
     };
 
     // Render a single layer node (and its children recursively)
@@ -375,169 +421,198 @@ function ArcGISPickerModal({ onAdd, onClose }) {
         return 'WA';
     };
 
+    // Shared service block renderer (used by both search mode and navigation mode)
+    const renderServiceBlock = (service, stateCode) => {
+        const serviceKey = `service:${service.key}`;
+        const layers = serviceLayers[service.key];
+        const rawLayers = Array.isArray(layers) && layers.length > 0
+            ? layers
+            : (Array.isArray(service.layers) ? service.layers : []);
+        const layerTree = buildLayerTree(rawLayers);
+        const allLeafLayers = getAllLeafLayers(layerTree);
+        const checkedLeafCount = allLeafLayers.filter(l => selectedItems.has(`layer:${service.key}:${l.id}`)).length;
+        const isServiceSelected = selectedItems.has(serviceKey);
+        const allLayersChecked = allLeafLayers.length > 0 && checkedLeafCount === allLeafLayers.length;
+        const someLayersChecked = checkedLeafCount > 0 && checkedLeafCount < allLeafLayers.length;
+        const isServiceExpanded = expandedServices.has(service.key);
+        const layersLoading = (isServiceExpanded && layers === undefined) || !!serviceLayersLoading[service.key];
+
+        return (
+            <div key={service.key} className="arcgis-picker-service-block">
+                <div
+                    className={`arcgis-picker-service-row${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
+                    data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
+                    onClick={() => setExpandedServices(prev => {
+                        const n = new Set(prev);
+                        n.has(service.key) ? n.delete(service.key) : n.add(service.key);
+                        return n;
+                    })}
+                >
+                    <input
+                        type="checkbox"
+                        className="arcgis-picker-checkbox"
+                        checked={isServiceSelected || allLayersChecked}
+                        ref={el => { if (el) el.indeterminate = !isServiceSelected && someLayersChecked; }}
+                        onChange={e => {
+                            e.stopPropagation();
+                            if (allLeafLayers.length > 0) {
+                                setSelectedItems(prev => {
+                                    const n = new Map(prev);
+                                    if (allLayersChecked) {
+                                        allLeafLayers.forEach(l => n.delete(`layer:${service.key}:${l.id}`));
+                                    } else {
+                                        allLeafLayers.forEach(l => n.set(`layer:${service.key}:${l.id}`, {
+                                            service_key: service.key,
+                                            layer_id: l.id,
+                                            sublayer_index: null,
+                                            display_name: l.name || l.label || `Layer ${l.id}`,
+                                            item_type: 'layer',
+                                            state_code: stateCode,
+                                            folder_name: service.folder || 'Root',
+                                        }));
+                                        n.delete(serviceKey);
+                                    }
+                                    return n;
+                                });
+                            } else {
+                                toggleSelect(serviceKey, {
+                                    service_key: service.key,
+                                    layer_id: null,
+                                    sublayer_index: null,
+                                    display_name: service.label,
+                                    item_type: 'service',
+                                    state_code: stateCode,
+                                    folder_name: service.folder || 'Root',
+                                });
+                            }
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    />
+                    <span className="arcgis-picker-arrow">{isServiceExpanded ? '▼' : '►'}</span>
+                    <span className="arcgis-picker-service-label">{service.label}</span>
+                    {layersLoading && (
+                        <span className="arcgis-picker-fetching"> (loading...)</span>
+                    )}
+                </div>
+                {isServiceExpanded && !layersLoading && (
+                    <div className="arcgis-picker-layers-content">
+                        {layerTree.length === 0 ? (
+                            <p className="arcgis-picker-no-layers">No layers found.</p>
+                        ) : (
+                            layerTree.map(node => renderLayerNode(node, service))
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const renderTree = () => {
         if (isLoading) {
             return <p className="arcgis-picker-loading-msg">Loading ArcGIS services...</p>;
         }
 
-        return STATE_CODES.map(stateCode => {
-            const stateData = servicesByStateAndFolder[stateCode];
-            if (!stateData) return null;
+        // SEARCH MODE: accordion across all states that have matching items
+        if (searchResult) {
+            return STATE_CODES.map(stateCode => {
+                const stateData = servicesByStateAndFolder[stateCode];
+                if (!stateData) return null;
 
-            let foldersToShow = stateData.folderNames;
-            const byFolder = stateData.folders;
-
-            if (searchResult) {
-                foldersToShow = foldersToShow.filter(folder => {
+                const foldersToShow = stateData.folderNames.filter(folder => {
                     const searched = searchResult.filteredFolders?.[folder] || [];
                     return searched.length > 0;
                 });
-            }
-            if (foldersToShow.length === 0) return null;
+                if (foldersToShow.length === 0) return null;
 
-            const isStateExpanded = expandedStates.has(stateCode);
-            return (
-                <div key={stateCode}>
-                    <div
-                        className="arcgis-picker-state-row"
-                        onClick={() => setExpandedStates(prev => {
-                            const n = new Set(prev);
-                            n.has(stateCode) ? n.delete(stateCode) : n.add(stateCode);
-                            return n;
-                        })}
-                    >
-                        <span className="arcgis-picker-arrow">{isStateExpanded ? '▼' : '►'}</span>
-                        {STATE_FULL_NAMES[stateCode]}
-                    </div>
-                    {isStateExpanded && (
-                        <div className="arcgis-picker-state-content">
-                            {foldersToShow.map(folder => {
-                                let services = byFolder[folder] || [];
-                                if (searchResult) {
+                const isStateExpanded = expandedStates.has(stateCode);
+                return (
+                    <div key={stateCode}>
+                        <div
+                            className="arcgis-picker-state-row"
+                            onClick={() => setExpandedStates(prev => {
+                                const n = new Set(prev);
+                                n.has(stateCode) ? n.delete(stateCode) : n.add(stateCode);
+                                return n;
+                            })}
+                        >
+                            <span className="arcgis-picker-arrow">{isStateExpanded ? '▼' : '►'}</span>
+                            {STATE_FULL_NAMES[stateCode]}
+                        </div>
+                        {isStateExpanded && (
+                            <div className="arcgis-picker-state-content">
+                                {foldersToShow.map(folder => {
                                     const searched = searchResult.filteredFolders?.[folder] || [];
                                     const searchedKeys = new Set(searched.map(s => s.key));
-                                    services = services.filter(s => searchedKeys.has(s.key));
-                                }
-                                if (services.length === 0) return null;
-                                const isFolderExpanded = expandedFolders.has(folder);
-                                return (
-                                    <div key={folder}>
-                                        <div
-                                            className={`arcgis-picker-folder-row${currentMatchId === `folder-${stateCode}-${folder}` ? ' search-nav-current' : ''}`}
-                                            data-search-match-id={searchResult?.matchedFolderNames?.has(folder) ? `folder-${stateCode}-${folder}` : undefined}
-                                            onClick={() => setExpandedFolders(prev => {
-                                                const n = new Set(prev);
-                                                n.has(folder) ? n.delete(folder) : n.add(folder);
-                                                return n;
-                                            })}
-                                        >
-                                            <span className="arcgis-picker-arrow">{isFolderExpanded ? '▼' : '►'}</span>
-                                            {folder}
-                                        </div>
-                                        {isFolderExpanded && (
-                                            <div className="arcgis-picker-folder-content">
-                                                {services.map(service => {
-                                                    const serviceKey = `service:${service.key}`;
-                                                    const layers = serviceLayers[service.key];
-                                                    const rawLayers = Array.isArray(layers) && layers.length > 0
-                                                        ? layers
-                                                        : (Array.isArray(service.layers) ? service.layers : []);
-                                                    const layerTree = buildLayerTree(rawLayers);
-                                                    const allLeafLayers = getAllLeafLayers(layerTree);
-
-                                                    const checkedLeafCount = allLeafLayers.filter(l =>
-                                                        selectedItems.has(`layer:${service.key}:${l.id}`)
-                                                    ).length;
-                                                    const isServiceSelected = selectedItems.has(serviceKey);
-                                                    const allLayersChecked = allLeafLayers.length > 0 && checkedLeafCount === allLeafLayers.length;
-                                                    const someLayersChecked = checkedLeafCount > 0 && checkedLeafCount < allLeafLayers.length;
-
-                                                    const isServiceExpanded = expandedServices.has(service.key);
-                                                    const layersLoading = isServiceExpanded && layers === undefined;
-
-                                                    return (
-                                                        <div key={service.key} className="arcgis-picker-service-block">
-                                                            <div
-                                                                className={`arcgis-picker-service-row${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
-                                                                data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
-                                                                onClick={() => setExpandedServices(prev => {
-                                                                    const n = new Set(prev);
-                                                                    n.has(service.key) ? n.delete(service.key) : n.add(service.key);
-                                                                    return n;
-                                                                })}
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    className="arcgis-picker-checkbox"
-                                                                    checked={isServiceSelected || allLayersChecked}
-                                                                    ref={el => {
-                                                                        if (el) el.indeterminate = !isServiceSelected && someLayersChecked;
-                                                                    }}
-                                                                    onChange={e => {
-                                                                        e.stopPropagation();
-                                                                        // If layers loaded, toggle all layer checks
-                                                                        if (allLeafLayers.length > 0) {
-                                                                            setSelectedItems(prev => {
-                                                                                const n = new Map(prev);
-                                                                                if (allLayersChecked) {
-                                                                                    allLeafLayers.forEach(l => n.delete(`layer:${service.key}:${l.id}`));
-                                                                                } else {
-                                                                                    allLeafLayers.forEach(l => n.set(`layer:${service.key}:${l.id}`, {
-                                                                                        service_key: service.key,
-                                                                                        layer_id: l.id,
-                                                                                        sublayer_index: null,
-                                                                                        display_name: l.name || l.label || `Layer ${l.id}`,
-                                                                                        item_type: 'layer',
-                                                                                        state_code: stateCode,
-                                                                                        folder_name: service.folder || 'Root',
-                                                                                    }));
-                                                                                    n.delete(serviceKey);
-                                                                                }
-                                                                                return n;
-                                                                            });
-                                                                        } else {
-                                                                            // No layers loaded yet: toggle the service-level selection
-                                                                            toggleSelect(serviceKey, {
-                                                                                service_key: service.key,
-                                                                                layer_id: null,
-                                                                                sublayer_index: null,
-                                                                                display_name: service.label,
-                                                                                item_type: 'service',
-                                                                                state_code: stateCode,
-                                                                                folder_name: service.folder || 'Root',
-                                                                            });
-                                                                        }
-                                                                    }}
-                                                                    onClick={e => e.stopPropagation()}
-                                                                />
-                                                                <span className="arcgis-picker-arrow">{isServiceExpanded ? '▼' : '►'}</span>
-                                                                <span className="arcgis-picker-service-label">{service.label}</span>
-                                                                {layersLoading && (
-                                                                    <span className="arcgis-picker-fetching"> (loading...)</span>
-                                                                )}
-                                                            </div>
-                                                            {isServiceExpanded && !layersLoading && (
-                                                                <div className="arcgis-picker-layers-content">
-                                                                    {layerTree.length === 0 ? (
-                                                                        <p className="arcgis-picker-no-layers">No layers found.</p>
-                                                                    ) : (
-                                                                        layerTree.map(node => renderLayerNode(node, service))
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
+                                    const services = (stateData.folders[folder] || []).filter(s => searchedKeys.has(s.key));
+                                    if (services.length === 0) return null;
+                                    const isFolderExpanded = expandedFolders.has(folder);
+                                    const isFolderMatch = searchResult?.matchedFolderNames?.has(folder);
+                                    return (
+                                        <div key={folder}>
+                                            <div
+                                                className={`arcgis-picker-folder-row${currentMatchId === `folder-${stateCode}-${folder}` ? ' search-nav-current' : ''}`}
+                                                data-search-match-id={isFolderMatch ? `folder-${stateCode}-${folder}` : undefined}
+                                                onClick={() => setExpandedFolders(prev => {
+                                                    const n = new Set(prev);
+                                                    n.has(folder) ? n.delete(folder) : n.add(folder);
+                                                    return n;
                                                 })}
+                                            >
+                                                <span className="arcgis-picker-arrow">{isFolderExpanded ? '▼' : '►'}</span>
+                                                <span style={{ fontWeight: isFolderMatch ? 'bold' : undefined }}>{folder}</span>
                                             </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                                            {isFolderExpanded && (
+                                                <div className="arcgis-picker-folder-content">
+                                                    {services.map(service => renderServiceBlock(service, stateCode))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                );
+            });
+        }
+
+        // NAVIGATION MODE: drill-down (mirrors ArcgisUploadPanel)
+        return (
+            <>
+                {/* ROOT: list states */}
+                {currentPath.stateCode === null && STATE_CODES.map(stateCode => (
+                    <div
+                        key={stateCode}
+                        className="arcgis-picker-nav-state-row"
+                        onClick={() => handleStateNavigate(stateCode)}
+                    >
+                        <FontAwesomeIcon icon={faFolder} className="arcgis-picker-nav-folder-icon" />
+                        {STATE_FULL_NAMES[stateCode]}
+                    </div>
+                ))}
+
+                {/* STATE VIEW: folder list */}
+                {currentPath.stateCode !== null && currentPath.folder === null && (
+                    (servicesByStateAndFolder[currentPath.stateCode]?.folderNames || []).map(folder => (
+                        <div
+                            key={folder}
+                            className="arcgis-picker-nav-folder-row"
+                            onClick={() => handleFolderNavigate(folder)}
+                        >
+                            <FontAwesomeIcon icon={faFolder} className="arcgis-picker-nav-folder-icon" />
+                            {folder}
                         </div>
-                    )}
-                </div>
-            );
-        });
+                    ))
+                )}
+
+                {/* FOLDER VIEW: service list */}
+                {currentPath.stateCode !== null && currentPath.folder !== null && (
+                    (servicesByStateAndFolder[currentPath.stateCode]?.folders[currentPath.folder] || []).map(service =>
+                        renderServiceBlock(service, currentPath.stateCode)
+                    )
+                )}
+            </>
+        );
     };
 
     return (
@@ -551,26 +626,62 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                             className="arcgis-picker-search-input"
                             value={searchKeyword}
                             onChange={e => setSearchKeyword(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                            placeholder="Search services or layers..."
+                            onKeyDown={e => e.key === 'Enter' && handleSearch(searchKeyword, searchType)}
+                            placeholder={
+                                currentPath.folder !== null
+                                    ? `Search in "${currentPath.folder}"…`
+                                    : currentPath.stateCode !== null
+                                        ? `Search in ${STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode}…`
+                                        : 'Search folders, services, or layers…'
+                            }
                         />
+                        <select
+                            value={searchType}
+                            onChange={e => setSearchType(e.target.value)}
+                            className="arcgis-picker-search-type-select"
+                        >
+                            <option value="any">Any</option>
+                            <option value="folder">Folder</option>
+                            <option value="service">Service</option>
+                            <option value="layer">Layer</option>
+                        </select>
                         <button
+                            type="button"
                             className="arcgis-picker-search-btn"
                             title="Search"
-                            onClick={handleSearch}
+                            onClick={() => handleSearch(searchKeyword, searchType)}
                         >
                             <FontAwesomeIcon icon={faSearch} />
                         </button>
                         <button
+                            type="button"
                             className="arcgis-picker-clear-btn"
                             title="Clear search"
                             onClick={handleClear}
                         >
                             <FontAwesomeIcon icon={faTimes} />
                         </button>
-
                     </div>
+                    {isSearchLoadingLayers && (
+                        <div className="arcgis-picker-search-loading">
+                            <span className="arcgis-picker-search-loading-spinner" />
+                            Searching… loading more results ({Object.keys(serviceLayersLoading).length} remaining)
+                        </div>
+                    )}
                 </div>
+
+                {/* Breadcrumb — shown between header and body when drilled into a state/folder */}
+                {!searchResult && currentPath.stateCode !== null && (
+                    <div className="arcgis-picker-breadcrumb">
+                        <button type="button" className="arcgis-picker-back-btn" onClick={handleNavBack} title="Back">←</button>
+                        <span className="arcgis-picker-breadcrumb-path">
+                            {currentPath.folder !== null
+                                ? <>{STATE_FULL_NAMES[currentPath.stateCode]} <span className="arcgis-picker-breadcrumb-sep">/</span> {currentPath.folder}</>
+                                : STATE_FULL_NAMES[currentPath.stateCode]
+                            }
+                        </span>
+                    </div>
+                )}
 
                 {/* Body: tree */}
                 <div className="arcgis-picker-body">
@@ -584,6 +695,7 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                             {matchTotal > 0 ? `${currentIndex + 1} / ${matchTotal}` : '0 results'}
                         </span>
                         <button
+                            type="button"
                             className="arcgis-picker-nav-btn"
                             title="Previous match"
                             onClick={goToPrev}
@@ -592,6 +704,7 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                             <FontAwesomeIcon icon={faChevronUp} />
                         </button>
                         <button
+                            type="button"
                             className="arcgis-picker-nav-btn"
                             title="Next match"
                             onClick={goToNext}
@@ -608,10 +721,11 @@ function ArcGISPickerModal({ onAdd, onClose }) {
                         {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
                     </span>
                     <div className="arcgis-picker-footer-btns">
-                        <button className="arcgis-picker-cancel-btn" onClick={onClose}>
+                        <button type="button" className="arcgis-picker-cancel-btn" onClick={onClose}>
                             Cancel
                         </button>
                         <button
+                            type="button"
                             className="arcgis-picker-add-btn"
                             onClick={handleAdd}
                             disabled={selectedItems.size === 0}
