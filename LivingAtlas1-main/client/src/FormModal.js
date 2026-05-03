@@ -9,6 +9,12 @@ import ArcGISPickerModal from './ArcGISPickerModal';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+function serializeLinks(links) {
+    const filtered = links.filter(l => l.url.trim() !== '');
+    if (filtered.length === 0) return '';
+    return JSON.stringify(filtered);
+}
+
 const FormModal = (props) => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
@@ -62,6 +68,8 @@ const FormModal = (props) => {
         latitude: '',
         longitude: '',
     });
+
+    const [links, setLinks] = useState([{ url: '', text: '' }]);
 
     const [selectedFiles, setSelectedFiles] = useState([]);   // <-- multiple files
     const [imageFiles, setImageFiles] = useState([]);         // multi-image upload
@@ -142,7 +150,8 @@ const FormModal = (props) => {
         if (formData.description && formData.description.length > 2000) errors.push("Description must be <2001 chars.");
         if (formData.org && formData.org.length > 255) errors.push("Org must be <256 chars.");
         if (formData.funding && formData.funding.length > 255) errors.push("Funding must be <256 chars.");
-        if (formData.link && formData.link.length > 255) errors.push("Link must be <256 chars.");
+        const serializedLink = serializeLinks(links);
+        if (serializedLink.length > 2000) errors.push("Links text is too long.");
         return errors;
     };
 
@@ -163,10 +172,14 @@ const FormModal = (props) => {
 
         const formData2 = new FormData();
         Object.entries(payload).forEach(([key, value]) => {
+            if (key === 'link') return; // handled separately via links state
             if (value !== undefined && value !== null && value !== '') {
                 formData2.append(key, value);
             }
         });
+        const serializedLink = serializeLinks(links);
+        formData2.append('link', serializedLink);
+        formData2.append('link_text', '');
 
         // Add location type and polygon data
         formData2.append('location_type', locationType);
@@ -413,8 +426,39 @@ const FormModal = (props) => {
                     <label>Organization:</label>
                     <input type="text" name="org" value={formData.org} onChange={handleInputChange} />
 
-                    <label>Link:</label>
-                    <input type="text" name="link" value={formData.link} onChange={handleInputChange} />
+                    <div className="form-modal-links-section">
+                        <label className="form-modal-links-label">Links:</label>
+                        {links.map((linkItem, idx) => (
+                            <div key={idx} className="form-modal-link-row">
+                                <input
+                                    type="text"
+                                    className="form-modal-link-input"
+                                    placeholder="URL"
+                                    value={linkItem.url}
+                                    onChange={e => setLinks(links.map((l, i) => i === idx ? { ...l, url: e.target.value } : l))}
+                                />
+                                <input
+                                    type="text"
+                                    className="form-modal-link-input form-modal-link-text-input"
+                                    placeholder="Display text (optional)"
+                                    value={linkItem.text}
+                                    onChange={e => setLinks(links.map((l, i) => i === idx ? { ...l, text: e.target.value } : l))}
+                                />
+                                {links.length > 1 && (
+                                    <button
+                                        type="button"
+                                        className="form-modal-link-remove-btn"
+                                        onClick={() => setLinks(links.filter((_, i) => i !== idx))}
+                                    >&times;</button>
+                                )}
+                            </div>
+                        ))}
+                        <button
+                            type="button"
+                            className="form-modal-add-link-btn"
+                            onClick={() => setLinks([...links, { url: '', text: '' }])}
+                        >+ Add More Links</button>
+                    </div>
 
                     <label>Location Type:</label>
                     <div className="form-modal-location-tabs">
