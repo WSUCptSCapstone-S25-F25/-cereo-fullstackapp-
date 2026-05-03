@@ -116,19 +116,26 @@ function cloneCurveControlPoints(ctrlPts = {}) {
     );
 }
 
-function createHistorySnapshot(vertices, curveControlPoints) {
+function createHistorySnapshot(vertices, curveControlPoints, fillColor, fillOpacity) {
     return {
         vertices: vertices.map(vertex => ({ ...vertex })),
         curveControlPoints: cloneCurveControlPoints(curveControlPoints),
+        fillColor: fillColor ?? DEFAULT_POLYGON_COLOR,
+        fillOpacity: fillOpacity ?? 0.15,
     };
 }
 
 function normalizeHistorySnapshot(snapshot) {
     if (Array.isArray(snapshot)) {
-        return createHistorySnapshot(snapshot, {});
+        return createHistorySnapshot(snapshot, {}, DEFAULT_POLYGON_COLOR, 0.15);
     }
 
-    return createHistorySnapshot(snapshot?.vertices || [], snapshot?.curveControlPoints || {});
+    return createHistorySnapshot(
+        snapshot?.vertices || [],
+        snapshot?.curveControlPoints || {},
+        snapshot?.fillColor,
+        snapshot?.fillOpacity
+    );
 }
 
 const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor }) => {
@@ -162,9 +169,14 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const modalRef = useRef(null);
     const verticesRef = useRef(vertices); // always-current vertices, safe for use inside stale closures
     verticesRef.current = vertices;
+    const fillColorRef = useRef(fillColor); // always-current fillColor, safe for stale closures
+    fillColorRef.current = fillColor;
+    const fillOpacityRef = useRef(fillOpacity); // always-current fillOpacity, safe for stale closures
+    fillOpacityRef.current = fillOpacity;
     const saveToHistoryRef = useRef(null); // updated each render to capture latest vertices
     const handleUndoRef = useRef(null);
     const handleRedoRef = useRef(null);
+    const placeHandlesRef = useRef(null); // set while resize mode is active; cleared on exit
     const [isCurveMode, setIsCurveMode] = useState(false);
     const [curveControlPoints, setCurveControlPoints] = useState({}); // key: edgeIdx, value: {lat,lng}
     const isCurveModeRef = useRef(false);
@@ -412,7 +424,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     // ── Undo / Redo ──
     // saveToHistoryRef.current() always captures the latest polygon geometry state via refs.
     saveToHistoryRef.current = () => {
-        const snap = createHistorySnapshot(verticesRef.current, curveControlPointsRef.current);
+        const snap = createHistorySnapshot(verticesRef.current, curveControlPointsRef.current, fillColorRef.current, fillOpacityRef.current);
         setHistory(prev => [...prev.slice(-49), snap]);
         setFuture([]);
     };
@@ -428,16 +440,20 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         curveVertexCountRef.current = restoredVertices.length;
         curveControlPointsRef.current = cloneCurveControlPoints(restoredCurveControlPoints);
         setCurveControlPoints(curveControlPointsRef.current);
+        if (normalized.fillColor) setFillColor(normalized.fillColor);
+        if (normalized.fillOpacity !== undefined) setFillOpacity(normalized.fillOpacity);
         updatePolygonOnMap(restoredVertices);
         rebuildMarkers(restoredVertices);
         rebuildCurveMarkers(restoredVertices, curveControlPointsRef.current);
         circleMetaRef.current = null;
+        // If resize mode is active, refresh the 8 handles to match restored vertices
+        if (placeHandlesRef.current) placeHandlesRef.current(restoredVertices);
     }, [updatePolygonOnMap, rebuildMarkers, rebuildCurveMarkers]);
 
     const handleUndo = useCallback(() => {
         if (history.length === 0) return;
         const prevSnapshot = history[history.length - 1];
-        setFuture(f => [createHistorySnapshot(vertices, curveControlPointsRef.current), ...f.slice(0, 49)]);
+        setFuture(f => [createHistorySnapshot(vertices, curveControlPointsRef.current, fillColorRef.current, fillOpacityRef.current), ...f.slice(0, 49)]);
         setHistory(h => h.slice(0, -1));
         restoreHistorySnapshot(prevSnapshot);
     }, [history, vertices, restoreHistorySnapshot]);
@@ -445,7 +461,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const handleRedo = useCallback(() => {
         if (future.length === 0) return;
         const nextSnapshot = future[0];
-        setHistory(h => [...h.slice(-49), createHistorySnapshot(vertices, curveControlPointsRef.current)]);
+        setHistory(h => [...h.slice(-49), createHistorySnapshot(vertices, curveControlPointsRef.current, fillColorRef.current, fillOpacityRef.current)]);
         setFuture(f => f.slice(1));
         restoreHistorySnapshot(nextSnapshot);
     }, [future, vertices, restoreHistorySnapshot]);
@@ -672,7 +688,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         }
         setIsDrawing(false);
         markersRef.current.forEach(m => m.setDraggable(false));
-        map.getCanvas().style.cursor = 'crosshair';
+        map.getCanvas().style.cursor = 'grab';
 
         const onMouseDown = (e) => {
             e.preventDefault();
@@ -690,6 +706,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 return currentVerts;
             });
             map.dragPan.disable();
+            map.getCanvas().style.cursor = 'grabbing';
         };
 
         const rotateVertices = (startVerts, centroid, angle) => {
@@ -726,6 +743,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             const rotated = rotateVertices(startVertices, centroid, delta);
             rotateRef.current = null;
             map.dragPan.enable();
+            map.getCanvas().style.cursor = 'grab';
             setVertices(rotated);
             updatePolygonOnMap(rotated);
             rotated.forEach((v, i) => {
@@ -744,6 +762,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         resizeHandlesRef.current.forEach(m => m.remove());
         resizeHandlesRef.current = [];
         resizeStateRef.current = null;
+        placeHandlesRef.current = null;
         markersRef.current.forEach(m => m.setDraggable(true));
     }, []);
 
@@ -920,13 +939,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                             if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
                         });
                     }
-                    // Reposition all handles to final bbox
-                    const newBBox = buildBBox(resized);
-                    const newPositions = computeHandles(newBBox);
-                    resizeHandlesRef.current.forEach(rm => {
-                        const np = newPositions.find(p => p.type === rm._resizeType);
-                        if (np) rm.setLngLat([np.lng, np.lat]);
-                    });
+                    // Rebuild all handles at final bbox positions (ensures clean drag state for next resize)
+                    placeHandles(resized);
                 });
 
                 resizeHandlesRef.current.push(marker);
@@ -937,6 +951,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             placeHandles(currentVerts);
             return currentVerts;
         });
+        placeHandlesRef.current = placeHandles;
     }, [updatePolygonOnMap]);
 
     const handleToggleDragMode = useCallback(() => {
@@ -1489,7 +1504,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                                     type="button"
                                     className={`polygon-draw-color-option${fillColor === c ? ' active' : ''}`}
                                     style={{ background: c }}
-                                    onClick={() => { setFillColor(c); setShowColorMenu(false); }}
+                                    onClick={() => { saveToHistoryRef.current?.(); setFillColor(c); setShowColorMenu(false); }}
                                 />
                             ))}
                         </div>
@@ -1517,6 +1532,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                                 max="1"
                                 step="0.01"
                                 value={fillOpacity}
+                                onMouseDown={() => saveToHistoryRef.current?.()}
                                 onChange={(e) => setFillOpacity(parseFloat(e.target.value))}
                             />
                         </div>
