@@ -52,6 +52,7 @@ function CustomLayersPanel({
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('any');
     const [searchResult, setSearchResult] = useState(null);
+    const [serviceLayersLoading, setServiceLayersLoading] = useState({}); // { key: bool } — tracks in-flight layer fetches triggered by search
 
     // Search navigation
     const matchList = useMemo(
@@ -154,6 +155,36 @@ function CustomLayersPanel({
     const folderNames = Object.keys(servicesByFolder).sort((a, b) => (folderFirstOrder[a] ?? 0) - (folderFirstOrder[b] ?? 0));
 
     // --- Search handler ---
+    const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
+
+    // Trigger loading of any not-yet-fetched service layers so layer-name matches aren't missed
+    const triggerLayerLoadForSearch = (type) => {
+        if (type !== 'any' && type !== 'layer') return;
+        customServices.forEach(service => {
+            if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
+            if (serviceLayers[service.key] !== undefined) return;
+            if (serviceLayersLoading[service.key]) return;
+            setServiceLayersLoading(prev => ({ ...prev, [service.key]: true }));
+            fetchArcgisLayers(service.url)
+                .then(layers => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
+                    setCheckedLayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: [] });
+                    setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
+                    setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
+                })
+                .catch(() => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
+                })
+                .finally(() => {
+                    setServiceLayersLoading(prev => {
+                        const next = { ...prev };
+                        delete next[service.key];
+                        return next;
+                    });
+                });
+        });
+    };
+
     const doSearch = () => {
         if (!searchKeyword) {
             setSearchResult(null);
@@ -176,6 +207,7 @@ function CustomLayersPanel({
         setExpandedLayers(new Set(result.expandedLayerKeys));
         const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: customServices }, stateCodes: ['CUSTOM'], serviceLayers });
         initNav(mList.length);
+        triggerLayerLoadForSearch(searchType);
     };
 
     const clearSearch = () => {
@@ -1006,8 +1038,18 @@ function CustomLayersPanel({
                         value={searchKeyword}
                         onChange={e => setSearchKeyword(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') doSearch(); }}
-                        placeholder="Search folders, services, or layers..."
+                        placeholder={currentPath ? `Search in "${currentPath.includes('/') ? currentPath.slice(currentPath.lastIndexOf('/') + 1) : currentPath}"…` : 'Search folders, services, or layers…'}
                     />
+                    <select
+                        value={searchType}
+                        onChange={e => setSearchType(e.target.value)}
+                        className="upload-panel-searchbar-dropdown"
+                    >
+                        <option value="any">Any</option>
+                        <option value="folder">Folder</option>
+                        <option value="service">Service</option>
+                        <option value="layer">Layer</option>
+                    </select>
                     <button
                         className="search-btn upload-panel-searchbar-btn search"
                         title="Search"
@@ -1023,6 +1065,12 @@ function CustomLayersPanel({
                         <FontAwesomeIcon icon={faTimes} />
                     </button>
                 </div>
+                {isSearchLoadingLayers && (
+                    <div className="upload-panel-search-loading">
+                        <span className="upload-panel-search-loading-spinner" />
+                        Searching… loading more results ({Object.keys(serviceLayersLoading).length} remaining)
+                    </div>
+                )}
 
                 {/* Opacity slider */}
                 <div className="upload-panel-opacity-slider-row">
