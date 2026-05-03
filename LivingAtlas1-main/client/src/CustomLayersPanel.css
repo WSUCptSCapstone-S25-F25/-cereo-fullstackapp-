@@ -242,7 +242,13 @@
 }
 
 /* Drag-and-drop indicators */
-.custom-layers-folder.drag-over,
+.custom-layers-folder.drag-over {
+    background: #d6e8f7;
+    border-color: #5a9fd4;
+    box-shadow: 0 0 0 2px #a8ccea;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
 .custom-layers-item.drag-over {
     border-top: 2px solid #1976d2;
 }
