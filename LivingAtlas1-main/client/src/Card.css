@@ -661,6 +661,12 @@
   flex-shrink: 0;
 }
 
+.learn-more-modal-toolbar-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .learn-more-modal-toolbar-right {
   display: inline-flex;
   align-items: center;

@@ -1286,44 +1286,44 @@ function Card(props) {
                     onKeyUp={(e) => e.stopPropagation()}
                 >
                 <div className="learn-more-modal-toolbar">
-                    {isLearnMoreEditMode ? (
-                        <div className="learn-more-modal-toolbar-actions">
+                    <div className="learn-more-modal-toolbar-left">
+                        {isLearnMoreEditMode ? (
+                            <div className="learn-more-modal-toolbar-actions">
+                                <button
+                                    className="learn-more-modal-toolbar-btn save"
+                                    onClick={handleLearnMoreEditSave}
+                                    disabled={loading || isImageMutationLoading}
+                                >
+                                    {loading ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                    className="learn-more-modal-toolbar-btn cancel"
+                                    onClick={async (e) => {
+                                        if (hasUnsavedChanges) {
+                                            const confirmed = window.confirm('You have unsaved changes. Discard them?');
+                                            if (!confirmed) return;
+                                        }
+                                        await handleLearnMoreEditCancel(e);
+                                    }}
+                                    disabled={loading || isImageMutationLoading}
+                                >
+                                    Cancel
+                                </button>
+                                {hasUnsavedChanges && (
+                                    <span className="learn-more-unsaved-badge">You have unsaved changes</span>
+                                )}
+                            </div>
+                        ) : (
                             <button
-                                className="learn-more-modal-toolbar-btn save"
-                                onClick={handleLearnMoreEditSave}
-                                disabled={loading || isImageMutationLoading}
+                                className="learn-more-modal-edit-btn"
+                                onClick={handleLearnMoreEditStart}
+                                aria-label="Edit card in Learn More modal"
+                                title="Edit"
                             >
-                                {loading ? 'Saving...' : 'Save'}
+                                <FontAwesomeIcon icon={faPenToSquare} />
                             </button>
-                            <button
-                                className="learn-more-modal-toolbar-btn cancel"
-                                onClick={async (e) => {
-                                    if (hasUnsavedChanges) {
-                                        const confirmed = window.confirm('You have unsaved changes. Discard them?');
-                                        if (!confirmed) return;
-                                    }
-                                    await handleLearnMoreEditCancel(e);
-                                }}
-                                disabled={loading || isImageMutationLoading}
-                            >
-                                Cancel
-                            </button>
-                            {hasUnsavedChanges && (
-                                <span className="learn-more-unsaved-badge">You have unsaved changes</span>
-                            )}
-                        </div>
-                    ) : (
-                        <button
-                            className="learn-more-modal-edit-btn"
-                            onClick={handleLearnMoreEditStart}
-                            aria-label="Edit card in Learn More modal"
-                            title="Edit"
-                        >
-                            <FontAwesomeIcon icon={faPenToSquare} />
-                        </button>
-                    )}
+                        )}
 
-                    <div className="learn-more-modal-toolbar-right">
                         <button
                             className="learn-more-modal-delete-btn"
                             onClick={handleDelete}
@@ -1332,7 +1332,9 @@ function Card(props) {
                         >
                             <FontAwesomeIcon icon={faTrashCan} />
                         </button>
+                    </div>
 
+                    <div className="learn-more-modal-toolbar-right">
                         <button
                             className="learn-more-modal-close"
                             onClick={handleLearnMoreClose}
