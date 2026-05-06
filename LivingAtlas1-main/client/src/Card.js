@@ -350,25 +350,24 @@ function Card(props) {
             formData.files.forEach(f => addText(`• ${f.filename || 'File'}`, { fontSize: 11 }));
         }
 
-        // Images
-        const imageUrls = (formData.images && Array.isArray(formData.images) && formData.images.length > 0)
-            ? formData.images.map(img => img.url).filter(Boolean)
+        // Images — fetched through the backend proxy to avoid GCS CORS restrictions
+        const imageRecords = (formData.images && Array.isArray(formData.images) && formData.images.length > 0)
+            ? formData.images.filter(img => img.imageID != null)
             : [];
-        if (imageUrls.length > 0) {
+        if (imageRecords.length > 0) {
             y += 6;
             addDivider();
             addText('Images', { fontSize: 13, bold: true });
             y += 4;
-            for (const url of imageUrls) {
+            for (const imgRecord of imageRecords) {
                 try {
-                    const resp = await fetch(url);
-                    const blob = await resp.blob();
-                    const dataUrl = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
+                    const response = await api.get(`/cardImageProxy/${imgRecord.imageID}`, { responseType: 'arraybuffer' });
+                    const bytes = new Uint8Array(response.data);
+                    let binary = '';
+                    bytes.forEach(b => { binary += String.fromCharCode(b); });
+                    const base64Str = btoa(binary);
+                    const contentType = (response.headers['content-type'] || 'image/jpeg').split(';')[0];
+                    const dataUrl = `data:${contentType};base64,${base64Str}`;
                     const imgProps = doc.getImageProperties(dataUrl);
                     const imgAspect = imgProps.width / imgProps.height;
                     const imgW = Math.min(maxW, 400);
@@ -377,10 +376,11 @@ function Card(props) {
                         doc.addPage();
                         y = margin;
                     }
-                    doc.addImage(dataUrl, imgProps.fileType || 'JPEG', margin, y, imgW, imgH);
+                    const fmt = contentType.includes('png') ? 'PNG' : 'JPEG';
+                    doc.addImage(dataUrl, fmt, margin, y, imgW, imgH);
                     y += imgH + 14;
                 } catch (err) {
-                    addText(`[Image could not be embedded: ${url}]`, { fontSize: 10, color: [150, 150, 150] });
+                    addText('[Image could not be embedded]', { fontSize: 10, color: [150, 150, 150] });
                 }
             }
         }

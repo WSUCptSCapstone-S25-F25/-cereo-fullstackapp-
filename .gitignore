@@ -861,3 +861,4 @@ tasks.md
 tasks.zh.md
 Render_MCP.md
 .claude/scheduled_tasks.lock
+.claude/settings.json
