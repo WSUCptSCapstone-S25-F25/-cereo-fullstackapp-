@@ -6,7 +6,8 @@ import api from './api.js';
 import { fetchArcgisLegend } from './arcgisDataUtils';
 import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
+import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { jsPDF } from 'jspdf';
 import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import ArcGISPickerModal from './ArcGISPickerModal';
@@ -254,6 +255,138 @@ function Card(props) {
             console.error("Delete failed:", error);
             alert("Failed to delete the card.");
         });
+    };
+
+    const handleDownloadPdf = async () => {
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const pageW = doc.internal.pageSize.getWidth();
+        const margin = 40;
+        const maxW = pageW - margin * 2;
+        let y = margin;
+
+        const addText = (text, opts = {}) => {
+            const { fontSize = 12, bold = false, color = [33, 33, 33], wrap = true } = opts;
+            doc.setFontSize(fontSize);
+            doc.setFont('helvetica', bold ? 'bold' : 'normal');
+            doc.setTextColor(...color);
+            if (wrap) {
+                const lines = doc.splitTextToSize(String(text || ''), maxW);
+                lines.forEach(line => {
+                    if (y > doc.internal.pageSize.getHeight() - margin) {
+                        doc.addPage();
+                        y = margin;
+                    }
+                    doc.text(line, margin, y);
+                    y += fontSize * 1.4;
+                });
+            } else {
+                if (y > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); y = margin; }
+                doc.text(String(text || ''), margin, y);
+                y += fontSize * 1.4;
+            }
+        };
+
+        const addField = (label, value) => {
+            if (!value && value !== 0) return;
+            const str = String(value).trim();
+            if (!str) return;
+            addText(`${label}: ${str}`, { fontSize: 11 });
+        };
+
+        const addDivider = () => {
+            if (y > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); y = margin; }
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, y, pageW - margin, y);
+            y += 10;
+        };
+
+        // Title
+        addText(formData.title || 'Untitled', { fontSize: 20, bold: true });
+        y += 6;
+        addDivider();
+
+        // Meta fields
+        addField('Uploaded by', formData.username);
+        addField('Category', formData.category);
+        addField('Organization', formData.org);
+        addField('Funding', formData.funding);
+        addField('Tags', formData.tags);
+        if (formData.created_date) addField('Created', new Date(formData.created_date).toLocaleDateString());
+
+        // Location
+        const isPolygonCard = Array.isArray(formData.polygon_coords) && formData.polygon_coords.length > 0;
+        if (isPolygonCard) {
+            addField('Location type', 'Polygon area');
+        } else if (formData.lat !== undefined && formData.lat !== null && formData.lon !== undefined && formData.lon !== null) {
+            addField('Latitude', formData.lat);
+            addField('Longitude', formData.lon);
+        }
+
+        // Description
+        if (formData.description) {
+            y += 6;
+            addDivider();
+            addText('Description', { fontSize: 13, bold: true });
+            addText(formData.description, { fontSize: 11 });
+        }
+
+        // Links
+        const links = parseLinks(formData.link, formData.link_text).filter(l => l.url && l.url.trim());
+        if (links.length > 0) {
+            y += 6;
+            addDivider();
+            addText('Links', { fontSize: 13, bold: true });
+            links.forEach(l => {
+                const label = l.text ? `${l.text} — ${l.url}` : l.url;
+                addText(label, { fontSize: 11, color: [37, 99, 235] });
+            });
+        }
+
+        // Attached files
+        if (formData.files && formData.files.length > 0) {
+            y += 6;
+            addDivider();
+            addText('Attached Files', { fontSize: 13, bold: true });
+            formData.files.forEach(f => addText(`• ${f.filename || 'File'}`, { fontSize: 11 }));
+        }
+
+        // Images
+        const imageUrls = (formData.images && Array.isArray(formData.images) && formData.images.length > 0)
+            ? formData.images.map(img => img.url).filter(Boolean)
+            : [];
+        if (imageUrls.length > 0) {
+            y += 6;
+            addDivider();
+            addText('Images', { fontSize: 13, bold: true });
+            y += 4;
+            for (const url of imageUrls) {
+                try {
+                    const resp = await fetch(url);
+                    const blob = await resp.blob();
+                    const dataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                    const imgProps = doc.getImageProperties(dataUrl);
+                    const imgAspect = imgProps.width / imgProps.height;
+                    const imgW = Math.min(maxW, 400);
+                    const imgH = imgW / imgAspect;
+                    if (y + imgH > doc.internal.pageSize.getHeight() - margin) {
+                        doc.addPage();
+                        y = margin;
+                    }
+                    doc.addImage(dataUrl, imgProps.fileType || 'JPEG', margin, y, imgW, imgH);
+                    y += imgH + 14;
+                } catch (err) {
+                    addText(`[Image could not be embedded: ${url}]`, { fontSize: 10, color: [150, 150, 150] });
+                }
+            }
+        }
+
+        const safeName = (formData.title || 'card').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        doc.save(`${safeName}.pdf`);
     };
 
     const handleFavoriteClick = async (e) => {
@@ -1323,6 +1456,15 @@ function Card(props) {
                                 <FontAwesomeIcon icon={faPenToSquare} />
                             </button>
                         )}
+
+                        <button
+                            className="learn-more-modal-download-btn"
+                            onClick={handleDownloadPdf}
+                            aria-label="Download card as PDF"
+                            title="Download as PDF"
+                        >
+                            <FontAwesomeIcon icon={faDownload} />
+                        </button>
 
                         <button
                             className="learn-more-modal-delete-btn"

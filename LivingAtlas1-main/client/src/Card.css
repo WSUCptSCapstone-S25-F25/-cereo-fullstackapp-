@@ -344,21 +344,6 @@
     background-color: #005fa3;
 }
 
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-see-all-images-btn):not(.learn-more-all-images-back-link):not(.learn-more-all-image-btn):not(.learn-more-all-image-delete-btn):not(.learn-more-select-location-btn):not(.learn-more-add-arcgis-btn):not(.learn-more-all-images-delete-selected-btn):not(.learn-more-all-image-sort-btn):not(.learn-more-all-image-select):not(.learn-more-file-edit-delete-btn):not(.learn-more-arcgis-link-btn):not(.learn-more-arcgis-link-delete-btn):not(.arcgis-picker-search-btn):not(.arcgis-picker-clear-btn):not(.arcgis-picker-nav-btn):not(.arcgis-picker-cancel-btn):not(.arcgis-picker-add-btn):not(.panel-nav-mini-btn):not(.upload-panel-searchbar-btn):not(.learn-more-link-remove-btn) {
-    margin-top: 20px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #007bff;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-see-all-images-btn):not(.learn-more-all-images-back-link):not(.learn-more-all-image-btn):not(.learn-more-all-image-delete-btn):not(.learn-more-select-location-btn):not(.learn-more-add-arcgis-btn):not(.learn-more-all-images-delete-selected-btn):not(.learn-more-all-image-sort-btn):not(.learn-more-all-image-select):not(.learn-more-file-edit-delete-btn):not(.learn-more-arcgis-link-btn):not(.learn-more-arcgis-link-delete-btn):not(.arcgis-picker-search-btn):not(.arcgis-picker-clear-btn):not(.arcgis-picker-nav-btn):not(.arcgis-picker-cancel-btn):not(.arcgis-picker-add-btn):not(.panel-nav-mini-btn):not(.upload-panel-searchbar-btn):not(.learn-more-link-remove-btn):hover {
-    background-color: #0062cc;
-}
-
 .close-button {
     padding: 10px 20px;
     background-color: #ff4c4c;
@@ -671,6 +656,26 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.learn-more-modal-download-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #c9d6e4;
+  background: #ffffff;
+  color: #1f4f7e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+.learn-more-modal-download-btn:hover {
+  background: #eef5fd;
+  border-color: #8fb0d1;
 }
 
 .learn-more-modal-delete-btn {

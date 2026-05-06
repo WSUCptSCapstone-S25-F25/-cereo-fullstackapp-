@@ -16,6 +16,7 @@
     "chromedriver": "^118.0.1",
     "esri-leaflet": "^3.0.18",
     "install": "^0.13.0",
+    "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "mapbox-gl": "^2.15.0",
     "node-fetch": "^2.7.0",
