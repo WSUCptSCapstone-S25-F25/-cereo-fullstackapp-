@@ -457,3 +457,17 @@ async def proxy_card_image(image_id: int):
         content_type = _MIME_MAP.get(ext, "image/jpeg")
         with open(filepath, "rb") as f:
             return Response(content=f.read(), media_type=content_type)
+
+
+@images_router.get("/imageUrlProxy")
+async def proxy_image_by_url(url: str):
+    """Fetch an image from an arbitrary URL and return its bytes, bypassing client CORS restrictions."""
+    if not url or not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="Invalid or missing url parameter")
+    try:
+        resp = _requests.get(url, timeout=15)
+        resp.raise_for_status()
+        content_type = resp.headers.get("content-type", "image/jpeg").split(";")[0]
+        return Response(content=resp.content, media_type=content_type)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch image: {e}")

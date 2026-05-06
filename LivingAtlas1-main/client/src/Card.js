@@ -350,16 +350,60 @@ function Card(props) {
             formData.files.forEach(f => addText(`• ${f.filename || 'File'}`, { fontSize: 11 }));
         }
 
-        // Images — fetched through the backend proxy to avoid GCS CORS restrictions
+        // Helper: load an image URL through the backend URL proxy (avoids GCS CORS)
+        const loadImageViaUrlProxy = async (url) => {
+            const response = await api.get('/imageUrlProxy', {
+                params: { url },
+                responseType: 'arraybuffer'
+            });
+            const bytes = new Uint8Array(response.data);
+            let binary = '';
+            bytes.forEach(b => { binary += String.fromCharCode(b); });
+            const base64Str = btoa(binary);
+            const contentType = (response.headers['content-type'] || 'image/jpeg').split(';')[0];
+            const dataUrl = `data:${contentType};base64,${base64Str}`;
+            const imgProps = doc.getImageProperties(dataUrl);
+            return {
+                dataUrl,
+                format: contentType.includes('png') ? 'PNG' : 'JPEG',
+                width: imgProps.width,
+                height: imgProps.height
+            };
+        };
+        // Helper: embed one image (dataUrl) into the PDF at current y position
+        const embedImageInPdf = (dataUrl, format, width, height) => {
+            const imgAspect = width / height;
+            const imgW = Math.min(maxW, 400);
+            const imgH = imgW / imgAspect;
+            if (y + imgH > doc.internal.pageSize.getHeight() - margin) {
+                doc.addPage();
+                y = margin;
+            }
+            doc.addImage(dataUrl, format, margin, y, imgW, imgH);
+            y += imgH + 14;
+        };
+
+        // Images — try backend proxy first (avoids CORS), fall back to canvas
         const imageRecords = (formData.images && Array.isArray(formData.images) && formData.images.length > 0)
             ? formData.images.filter(img => img.imageID != null)
             : [];
-        if (imageRecords.length > 0) {
+
+        // For cards with no CardImages entries, fall back to thumbnail_link
+        const thumbnailFallbackUrl = (imageRecords.length === 0 && formData.thumbnail_link
+            && formData.thumbnail_link.trim() !== ''
+            && !formData.thumbnail_link.includes('CEREO-logo'))
+            ? formData.thumbnail_link.trim()
+            : null;
+
+        if (imageRecords.length > 0 || thumbnailFallbackUrl) {
             y += 6;
             addDivider();
             addText('Images', { fontSize: 13, bold: true });
             y += 4;
+
             for (const imgRecord of imageRecords) {
+                let embedded = false;
+                // 1. Try backend proxy (returns raw bytes, bypasses GCS CORS)
                 try {
                     const response = await api.get(`/cardImageProxy/${imgRecord.imageID}`, { responseType: 'arraybuffer' });
                     const bytes = new Uint8Array(response.data);
@@ -369,17 +413,32 @@ function Card(props) {
                     const contentType = (response.headers['content-type'] || 'image/jpeg').split(';')[0];
                     const dataUrl = `data:${contentType};base64,${base64Str}`;
                     const imgProps = doc.getImageProperties(dataUrl);
-                    const imgAspect = imgProps.width / imgProps.height;
-                    const imgW = Math.min(maxW, 400);
-                    const imgH = imgW / imgAspect;
-                    if (y + imgH > doc.internal.pageSize.getHeight() - margin) {
-                        doc.addPage();
-                        y = margin;
-                    }
                     const fmt = contentType.includes('png') ? 'PNG' : 'JPEG';
-                    doc.addImage(dataUrl, fmt, margin, y, imgW, imgH);
-                    y += imgH + 14;
-                } catch (err) {
+                    embedImageInPdf(dataUrl, fmt, imgProps.width, imgProps.height);
+                    embedded = true;
+                } catch (_proxyErr) { /* fall through to canvas */ }
+
+                // 2. Fall back to URL proxy (image ID proxy may have failed; try fetching image URL via backend)
+                if (!embedded) {
+                    try {
+                        const normalized = normalizeImageRecord(imgRecord);
+                        const { dataUrl, format, width, height } = await loadImageViaUrlProxy(normalized.url);
+                        embedImageInPdf(dataUrl, format, width, height);
+                        embedded = true;
+                    } catch (_urlProxyErr) { /* fall through */ }
+                }
+
+                if (!embedded) {
+                    addText('[Image could not be embedded]', { fontSize: 10, color: [150, 150, 150] });
+                }
+            }
+
+            // Thumbnail fallback for cards without CardImages entries
+            if (thumbnailFallbackUrl) {
+                try {
+                    const { dataUrl, format, width, height } = await loadImageViaUrlProxy(thumbnailFallbackUrl);
+                    embedImageInPdf(dataUrl, format, width, height);
+                } catch (_err) {
                     addText('[Image could not be embedded]', { fontSize: 10, color: [150, 150, 150] });
                 }
             }
