@@ -7,6 +7,14 @@ function ChangelogHistory() {
             <h1>Update History</h1>
             <div className="changelog-history-body">
 
+                <h3>Update Date: 5/5/2026</h3>
+                <p>Added a PDF download button next to the Edit button in the Learn More modal toolbar, allowing users to export the full card content as a PDF directly from the detail view.</p>
+                <p>Added a screenshot button to the Mapbox map toolbar. Clicking it captures the current map view and downloads it as a PNG image.</p>
+                <p>Added an Update History page (accessible from the top navbar) that shows all past release notes. The "What's New" popup now shows only the most recent update instead of the full history.</p>
+                <p>Improved the display and behavior of the embedded map info modal: better layout, cleaner interactions, and more consistent styling.</p>
+                <p>Fixed a bug where searching in the card container using the same keyword more than once would not re-trigger the search.</p>
+                <hr />
+
                 <h3>Update Date: 5/2/2026</h3>
                 <p>Improved the loading logic of the Upload Panel: layers inside a service are now lazy-loaded on demand. When a user expands a state → folder → service path, only the layers for that service are fetched at that moment, reducing unnecessary network requests on initial load.</p>
                 <p>Improved search in the Upload Panel, Custom Layers Panel, and ArcGIS Picker Modal: search now uses a lazy algorithm that searches already-loaded items first and fetches additional data only as needed. Folder-level pagination is also supported so search results within large folders are browsable page by page.</p>
