@@ -47,6 +47,7 @@ const Content1 = (props) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerPopupRef = useRef(null);
+  const openMarkerIdRef = useRef(null);
   const [creditPortalHost, setCreditPortalHost] = useState(null);
   const { setSearchCondition, onMarkerCardSelect } = props;
   const [lng, setLng] = useState(-120);
@@ -62,6 +63,7 @@ const Content1 = (props) => {
       markerPopupRef.current.remove();
       markerPopupRef.current = null;
     }
+    openMarkerIdRef.current = null;
     marker_clicked = false;
     setSearchCondition("");
     onMarkerCardSelect?.(null);
@@ -359,8 +361,13 @@ const Content1 = (props) => {
     return root;
   }, [resolveImageUrl]);
 
-  const openMarkerPopup = useCallback((feature, markerInstance, mapInstance) => {
+  const openMarkerPopup = useCallback((feature, lngLatOrMarker, mapInstance) => {
     closeMarkerPopup();
+    openMarkerIdRef.current = feature.cardID;
+
+    const lngLat = lngLatOrMarker && typeof lngLatOrMarker.getLngLat === 'function'
+      ? lngLatOrMarker.getLngLat()
+      : lngLatOrMarker;
 
     const popupContent = buildMarkerPopupContent(feature);
 
@@ -371,7 +378,7 @@ const Content1 = (props) => {
       offset: [12, -8],
       className: 'card-pin-rich-popup'
     })
-      .setLngLat(markerInstance.getLngLat())
+      .setLngLat(lngLat)
       .setDOMContent(popupContent)
       .addTo(mapInstance);
 
@@ -379,6 +386,7 @@ const Content1 = (props) => {
       popupContent.cleanupImageOverlay?.();
       if (markerPopupRef.current === popup) {
         markerPopupRef.current = null;
+        openMarkerIdRef.current = null;
       }
       marker_clicked = false;
       setSearchCondition("");
@@ -452,6 +460,7 @@ const Content1 = (props) => {
   useEffect(() => {
     let isActive = true;
     let markersFetchInFlight = false;
+    let preventGenericClickClose = false;
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
@@ -607,6 +616,17 @@ const Content1 = (props) => {
       }
     });
 
+    // Close popup when clicking on map background (not on markers or polygons)
+    map.on('click', () => {
+      if (preventGenericClickClose) {
+        preventGenericClickClose = false;
+        return;
+      }
+      if (markerPopupRef.current) {
+        closeMarkerPopup();
+      }
+    });
+
     map.on('draw.create', updateMarkers);
     map.on('draw.delete', showAll);
     map.on('draw.update', updateMarkers);
@@ -702,6 +722,10 @@ const Content1 = (props) => {
         marker.getElement().addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
+          if (markerPopupRef.current && openMarkerIdRef.current === feature.cardID) {
+            closeMarkerPopup();
+            return;
+          }
           marker_clicked = true;
           setSearchCondition(feature.title);
           openMarkerPopup(feature, marker, map);
@@ -788,33 +812,14 @@ const Content1 = (props) => {
         // Click handler for polygon fill — open card popup
         mapInstance.on('click', fillLayerId, (e) => {
           e.originalEvent.stopPropagation();
+          preventGenericClickClose = true;
+          if (markerPopupRef.current && openMarkerIdRef.current === feature.cardID) {
+            closeMarkerPopup();
+            return;
+          }
           marker_clicked = true;
           setSearchCondition(feature.title);
-
-          closeMarkerPopup();
-          const popupContent = buildMarkerPopupContent(feature);
-          const popup = new mapboxgl.Popup({
-            closeButton: true,
-            closeOnClick: false,
-            anchor: 'bottom-left',
-            offset: [12, -8],
-            className: 'card-pin-rich-popup'
-          })
-            .setLngLat(e.lngLat)
-            .setDOMContent(popupContent)
-            .addTo(mapInstance);
-
-          popup.on('close', () => {
-            popupContent.cleanupImageOverlay?.();
-            if (markerPopupRef.current === popup) {
-              markerPopupRef.current = null;
-            }
-            marker_clicked = false;
-            setSearchCondition("");
-            onMarkerCardSelect?.(null);
-          });
-          markerPopupRef.current = popup;
-          onMarkerCardSelect?.(feature.cardID);
+          openMarkerPopup(feature, e.lngLat, mapInstance);
         });
 
         // Cursor style on hover

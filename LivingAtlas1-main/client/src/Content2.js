@@ -117,6 +117,7 @@ function Content2(props) {
     const [showOnlyInView, setShowOnlyInView] = useState(false);
     const [learnMoreRequest, setLearnMoreRequest] = useState(null);
     const [isListView, setIsListView] = useState((props.initialCardViewMode || 'grid') === 'list');
+    const [containerPanelSearchVersion, setContainerPanelSearchVersion] = useState(0);
     const PINNED_CARDS_STORAGE_KEY = 'pinned_card_ids';
     const [pinnedCardIDs, setPinnedCardIDs] = useState(() => {
         try {
@@ -181,6 +182,7 @@ function Content2(props) {
         props.setSearchTriggerSource?.('container-panel');
         props.setSearchCondition?.(cardSearchKeyword.trim().toLowerCase());
         props.setCategoryConditionCondition?.(cardTypeFilter);
+        setContainerPanelSearchVersion(prev => prev + 1);
     };
 
     const handleCardSearchClear = () => {
@@ -578,7 +580,7 @@ function Content2(props) {
             loadCardsByCriteria();
             props.setSearchTriggerSource?.('');
         }
-    }, [props.searchCondition, props.sidebarSearchRequestId]);
+    }, [props.searchCondition, props.sidebarSearchRequestId, containerPanelSearchVersion]);
 
     const fetchBookmarks = async () => {
         console.log("Fetching bookmarks for:", resolvedUsername);
@@ -758,10 +760,6 @@ function Content2(props) {
             const cardID = event?.detail?.cardID;
             if (cardID == null) return;
 
-            props.setIsCollapsed?.(false);
-            if (cardContainerRef.current) {
-                cardContainerRef.current.scrollTop = 0;
-            }
             setLearnMoreRequest({
                 cardID: String(cardID),
                 token: Date.now()
@@ -772,7 +770,7 @@ function Content2(props) {
         return () => {
             window.removeEventListener('atlas:open-card-learn-more', handleOpenLearnMoreFromMapPin);
         };
-    }, [props.setIsCollapsed]);
+    }, []);
 
     useEffect(() => {
         if (!learnMoreRequest) return;
