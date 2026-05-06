@@ -25,6 +25,9 @@
   z-index: 999;
   display: flex;
   flex-direction: column;
+  /* enable container queries so .card-container columns respond to panel drag-resize */
+  container-type: inline-size;
+  container-name: card-panel;
 }
 
 #content-2.collapsed {
@@ -82,11 +85,20 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* Always reserve scrollbar space so grid width stays stable when scrollbar appears */
+  scrollbar-gutter: stable;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 280px);
+  /*
+   * Card width = 20vw (viewport-relative, fixed to screen size).
+   * This means card absolute size never changes when the panel is drag-resized,
+   * because vw is tied to the viewport, not to the panel.
+   * auto-fill adds/removes columns automatically as the panel grows/shrinks.
+   * Panel default width is computed in JS as: 2 cols × 20vw + gap + padding.
+   */
+  grid-template-columns: repeat(auto-fill, 20vw);
   grid-gap: 16px;
   padding: 16px;
-  justify-content: center;
+  justify-content: start;
   align-content: start;
   z-index: 1;
 }
@@ -553,8 +565,9 @@
   }
 
   .card-container {
-    grid-template-columns: repeat(auto-fill, 280px);
-    grid-gap: 12px;
-    padding: 12px;
+    /* on small screens keep 2 fixed columns relative to mobile panel size */
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 10px;
+    padding: 10px;
   }
 }

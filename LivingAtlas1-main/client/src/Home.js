@@ -40,9 +40,22 @@ function Home(props) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(true);
-    const [cardPanelWidth, setCardPanelWidth] = useState(() => 
-        Math.max(300, Math.min(900, Math.floor(window.innerWidth * 0.41)))
-    );
+    const [cardPanelWidth, setCardPanelWidth] = useState(() => {
+        // Derive default panel width from the card size formula so it always fits exactly 2 columns.
+        // Card width in CSS = 20vw, grid-gap = 16px, padding = 16px × 2 sides = 32px
+        // scrollbar-gutter: stable reserves ~17px for scrollbar even when hidden
+        // Panel for 2 cols = 2 × (20vw) + 1 × gap + padding + scrollbar_gutter
+        const CARD_VW = 0.20;
+        const GRID_GAP = 16;
+        const GRID_PADDING = 32;
+        const SCROLLBAR_GUTTER = 20; // matches scrollbar-gutter:stable reserved width
+        const SUBPIXEL_BUFFER = 4;  // absorbs browser subpixel rounding of vw values
+        const COLS = 2;
+        // Math.ceil avoids being 1px short when Windows display scaling (e.g. 125%) reduces vw
+        return Math.max(300, Math.ceil(
+            window.innerWidth * CARD_VW * COLS + GRID_GAP * (COLS - 1) + GRID_PADDING + SCROLLBAR_GUTTER + SUBPIXEL_BUFFER
+        ));
+    });
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [arcgisNavigateTarget, setArcgisNavigateTarget] = useState(null);
     const [isCustomLayerPanelOpen, setIsCustomLayerPanelOpen] = useState(false);
