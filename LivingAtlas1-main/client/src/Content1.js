@@ -11,8 +11,9 @@ import updateMarkers from './PolygonFiltering.js';
 import { showAll } from './Filter';
 import api from './api.js';
 import PolygonDrawingModal from './PolygonDrawingModal';
+import html2canvas from 'html2canvas';
 import { icon } from '@fortawesome/fontawesome-svg-core';
-import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faCamera } from '@fortawesome/free-solid-svg-icons';
 
 // Mapbox Token
 mapboxgl.accessToken =
@@ -456,7 +457,8 @@ const Content1 = (props) => {
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [lng, lat],
-      zoom: zoom
+      zoom: zoom,
+      preserveDrawingBuffer: true
     });
 
     window.atlasMapInstance = map;
@@ -568,6 +570,33 @@ const Content1 = (props) => {
           map.flyTo({ center: [-120, 46], zoom: 5.5 });
         });
         drawGroup.appendChild(resetViewBtn);
+
+        const screenshotBtn = document.createElement('button');
+        screenshotBtn.className = 'mapbox-gl-draw_ctrl-draw-btn screenshot-btn';
+        screenshotBtn.title = 'Screenshot Map';
+        screenshotBtn.type = 'button';
+        screenshotBtn.innerHTML = icon(faCamera).html[0];
+        screenshotBtn.addEventListener('click', () => {
+          const container = map.getContainer();
+          html2canvas(container, {
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: null,
+            scale: window.devicePixelRatio || 1,
+            ignoreElements: (el) => el.classList.contains('mapboxgl-ctrl-top-right') || el.classList.contains('mapboxgl-ctrl-top-left') || el.classList.contains('mapboxgl-ctrl-bottom-right') || el.classList.contains('mapboxgl-ctrl-bottom-left'),
+          }).then((snapshotCanvas) => {
+            snapshotCanvas.toBlob((blob) => {
+              if (!blob) return;
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `map-screenshot-${Date.now()}.png`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }, 'image/png');
+          });
+        });
+        drawGroup.appendChild(screenshotBtn);
       }
     }
 

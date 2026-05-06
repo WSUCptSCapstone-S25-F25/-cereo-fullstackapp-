@@ -15,6 +15,7 @@
     "bootstrap": "^5.3.2",
     "chromedriver": "^118.0.1",
     "esri-leaflet": "^3.0.18",
+    "html2canvas": "^1.4.1",
     "install": "^0.13.0",
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
