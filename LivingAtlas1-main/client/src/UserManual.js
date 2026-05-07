@@ -20,6 +20,7 @@ import {
   faSync,
   faChevronUp,
   faChevronDown,
+  faFolderPlus,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart, faFolder } from '@fortawesome/free-regular-svg-icons';
 import './Card.css';
@@ -27,15 +28,19 @@ import './Content2.css';
 import './SortDropdown.css';
 import './FilterDropdown.css';
 import './UserManual.css';
+import './FormModal.css';
 import './ArcgisUploadPanel.css';
+import './CustomLayersPanel.css';
 import './LayerContextMenu.css';
 
 const SECTIONS = [
   { id: 'home',          label: '🏠  Overview' },
   { id: 'card-container', label: 'Card Container' },
   { id: 'toolbar',        label: 'Card Panel Toolbar' },
+  { id: 'add-card',       label: 'Add Card Form' },
   { id: 'detail-view',   label: 'Card Detail View' },
-  { id: 'arcgis-panel',  label: 'ArcGIS Upload Panel' },
+  { id: 'arcgis-panel',     label: 'ArcGIS Upload Panel' },
+  { id: 'custom-layers',    label: 'Custom Layers Panel' },
 ];
 
 function UserManual() {
@@ -82,7 +87,9 @@ function UserManual() {
                 'card-container': 'How cards are displayed, navigated, pinned, and favorited.',
                 'toolbar':        'Tools for adding cards, sorting, filtering, and switching views.',
                 'detail-view':    'The full-screen modal with editing, images, files, and ArcGIS layers.',
+                'add-card':       'Submit a new research entry with location, description, links, images, files, and optional ArcGIS service associations.',
                 'arcgis-panel':   'Browse and toggle ArcGIS REST map layers organized by state, folder, and service.',
+                'custom-layers':  'Manage your personal saved layers with custom folders, drag-and-drop ordering, and pinned auto-load items.',
               }[s.id]}
             </button>
           ))}
@@ -760,6 +767,233 @@ function UserManual() {
                 are applied, along with a label indicating the scope ("all cards" or "in
                 view"). The count updates in real time as you apply filters, search, or pan
                 the map.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'add-card' && (
+      <section className="um-section">
+        <h2>Add Card Form</h2>
+        <p className="um-section-desc">
+          The Add Card form lets you submit a new research entry to the atlas. Click the{' '}
+          <strong>+</strong> button in the card panel toolbar to open it. You must be logged
+          in — a login prompt appears otherwise. Once submitted, the new card appears in the
+          card container and is pinned to the map.
+        </p>
+
+        {/* ---- Overview demo: compact scrollable form ---- */}
+        <div className="um-form-demo-wrapper">
+          <div className="um-form-demo-inner">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <h2 style={{ margin: 0 }}>Create Card</h2>
+              <button className="close-modal-button" style={{ position: 'static', fontSize: '20px', pointerEvents: 'none' }}>&times;</button>
+            </div>
+            <label>Author Name (required):</label>
+            <input type="text" readOnly placeholder="Jane Doe" className="um-form-input-mock" />
+            <label>Email (required):</label>
+            <input type="text" readOnly placeholder="jane@example.com" className="um-form-input-mock" />
+            <label>Title (required):</label>
+            <input type="text" readOnly placeholder="WA Watershed Study 2024" className="um-form-input-mock" />
+            <label>Category:</label>
+            <select disabled className="um-form-input-mock">
+              <option>Select a Category</option>
+              <option>River</option>
+            </select>
+            <label>Description:</label>
+            <textarea readOnly rows={2} placeholder="A brief summary of the dataset…" className="um-form-input-mock" style={{ resize: 'none' }} />
+            <label>Links:</label>
+            <div className="form-modal-link-row" style={{ pointerEvents: 'none' }}>
+              <input type="text" readOnly placeholder="URL" className="form-modal-link-input" />
+              <input type="text" readOnly placeholder="Display text" className="form-modal-link-input form-modal-link-text-input" />
+            </div>
+            <label style={{ marginTop: '8px' }}>Location Type:</label>
+            <div className="form-modal-location-tabs" style={{ pointerEvents: 'none', marginBottom: '10px' }}>
+              <button type="button" className="form-modal-location-tab active">Single Point</button>
+              <button type="button" className="form-modal-location-tab">Polygon Area</button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
+              <button type="button" style={{ background: '#0077c0', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 18px', fontWeight: 600, fontSize: '13px', cursor: 'default' }}>Submit</button>
+              <button type="button" className="cancel_button" style={{ pointerEvents: 'none', fontSize: '13px' }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        {/* ---- Feature rows ---- */}
+        <div className="um-feature-list">
+
+          {/* 1. Opening the Form */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <button type="button" className="card-toolbar-button card-toolbar-button--icon" title="Add Card" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faPlus} />
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Opening the Form</p>
+              <p className="um-feature-desc">
+                Click the <strong>+</strong> button in the card panel toolbar. Login is
+                required; if you are not logged in, a prompt appears instead. The form
+                slides in as a side panel over the map.
+              </p>
+            </div>
+          </div>
+
+          {/* 2. Required Fields */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#374957', marginBottom: '3px' }}>Author Name <span style={{ color: '#e05' }}>*</span></label>
+                <input type="text" readOnly defaultValue="Jane Doe" className="um-form-input-mock" style={{ marginBottom: '8px' }} />
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#374957', marginBottom: '3px' }}>Title <span style={{ color: '#e05' }}>*</span></label>
+                <input type="text" readOnly defaultValue="WA Watershed Study 2024" className="um-form-input-mock" style={{ marginBottom: '8px' }} />
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#374957', marginBottom: '3px' }}>Category</label>
+                <select disabled className="um-form-input-mock">
+                  <option>River</option>
+                </select>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Required Fields</p>
+              <p className="um-feature-desc">
+                <strong>Author Name</strong>, <strong>Email</strong>, and <strong>Title</strong>{' '}
+                are required. <strong>Category</strong> is optional and can be one of:
+                River, Watershed, Places, or Other. Validation runs on submit and
+                highlights any missing or invalid fields.
+              </p>
+            </div>
+          </div>
+
+          {/* 3. Optional Info Fields */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#374957', marginBottom: '3px' }}>Description</label>
+                <textarea readOnly rows={2} defaultValue="Longitudinal stream temperature data…" className="um-form-input-mock" style={{ resize: 'none', marginBottom: '8px' }} />
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#374957', marginBottom: '3px' }}>Funding</label>
+                <input type="text" readOnly defaultValue="NSF Grant #1234567" className="um-form-input-mock" style={{ marginBottom: '8px' }} />
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#374957', marginBottom: '3px' }}>Tags (comma-separated)</label>
+                <input type="text" readOnly defaultValue="river, temperature, salmon" className="um-form-input-mock" />
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Content Fields</p>
+              <p className="um-feature-desc">
+                <strong>Description</strong> (max 2000 chars), <strong>Funding</strong>,
+                and <strong>Organization</strong> provide context for the card.{' '}
+                <strong>Tags</strong> (comma-separated) make cards discoverable in
+                search and filter. None of these are required.
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Links */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px' }}>
+                <div className="form-modal-link-row" style={{ pointerEvents: 'none' }}>
+                  <input type="text" readOnly defaultValue="https://example.gov/data" className="form-modal-link-input" />
+                  <input type="text" readOnly defaultValue="Dataset Portal" className="form-modal-link-input form-modal-link-text-input" />
+                </div>
+                <div className="form-modal-link-row" style={{ pointerEvents: 'none' }}>
+                  <input type="text" readOnly placeholder="URL" className="form-modal-link-input" />
+                  <input type="text" readOnly placeholder="Display text (optional)" className="form-modal-link-input form-modal-link-text-input" />
+                </div>
+                <button type="button" className="form-modal-add-link-btn" style={{ pointerEvents: 'none', alignSelf: 'flex-start', marginTop: '4px' }}>+ Add More Links</button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Links</p>
+              <p className="um-feature-desc">
+                Add one or more external links with optional display text. Click{' '}
+                <strong>+ Add More Links</strong> to add additional rows. Links appear
+                as clickable buttons on the card's Detail View.
+              </p>
+            </div>
+          </div>
+
+          {/* 5. Location */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', gap: '8px' }}>
+                <div className="form-modal-location-tabs" style={{ pointerEvents: 'none' }}>
+                  <button type="button" className="form-modal-location-tab active">Single Point</button>
+                  <button type="button" className="form-modal-location-tab">Polygon Area</button>
+                </div>
+                <button type="button" className="location_button" style={{ pointerEvents: 'none', marginBottom: 0 }}>
+                  <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: '6px' }} />
+                  Select a Location
+                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="text" readOnly placeholder="Latitude" className="um-form-input-mock" style={{ margin: 0 }} />
+                  <input type="text" readOnly placeholder="Longitude" className="um-form-input-mock" style={{ margin: 0 }} />
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Location Picker</p>
+              <p className="um-feature-desc">
+                Choose <strong>Single Point</strong> to click on the map and confirm a
+                lat/lng coordinate, or enter coordinates manually. Choose{' '}
+                <strong>Polygon Area</strong> to draw a custom polygon directly on the
+                map. The polygon's centroid is stored as the card's primary location.
+                Location is required for card submission.
+              </p>
+            </div>
+          </div>
+
+          {/* 6. Images & Files */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '240px', gap: '8px' }}>
+                <div className="form-modal-image-upload-area" style={{ pointerEvents: 'none', padding: '12px' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#666' }}>Click or drag to add images</p>
+                  <span className="form-modal-image-upload-btn" style={{ fontSize: '12px', padding: '4px 10px' }}>Choose Images</span>
+                </div>
+                <div className="form-modal-file-upload-area" style={{ pointerEvents: 'none', padding: '12px' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#666' }}>Click to add files (max 5 MB)</p>
+                  <span className="form-modal-image-upload-btn" style={{ fontSize: '12px', padding: '4px 10px' }}>Choose Files</span>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Images &amp; File Attachments</p>
+              <p className="um-feature-desc">
+                Upload one or more images (PNG, JPG, GIF, WebP, max 5 MB each). The
+                first image becomes the card's thumbnail. Upload supporting files
+                (PDFs, spreadsheets, etc., max 5 MB each) that viewers can download
+                from the Card Detail View.
+              </p>
+            </div>
+          </div>
+
+          {/* 7. Linked ArcGIS Services */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                <button type="button" className="location_button" style={{ pointerEvents: 'none', marginBottom: 0 }}>
+                  + Link ArcGIS Service / Layer
+                </button>
+                <div className="form-modal-file-list" style={{ width: '100%' }}>
+                  <div className="form-modal-file-item" style={{ pointerEvents: 'none' }}>
+                    <span>WA Streams and Rivers — Stream Layer</span>
+                    <button type="button">&times;</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Linked ArcGIS Services</p>
+              <p className="um-feature-desc">
+                Optionally link ArcGIS services or individual layers to the card. Click{' '}
+                <strong>+ Link ArcGIS Service / Layer</strong> to open the ArcGIS picker
+                and browse by state. Linked items appear in the Card Detail View and can
+                be toggled directly on the map from there. Multiple links can be added.
               </p>
             </div>
           </div>
@@ -1538,6 +1772,326 @@ function UserManual() {
                 panel automatically scrolls to bring each highlighted match into view.
                 "0 results" is shown when nothing matched the keyword.
               </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'custom-layers' && (
+      <section className="um-section">
+        <h2>Custom Layers Panel</h2>
+        <p className="um-section-desc">
+          The Custom Layers Panel is your personal library of saved ArcGIS services. Add
+          services here from the ArcGIS Upload Panel, organize them into folders, reorder
+          them by dragging, and pin items to auto-load every time you open the panel. Login
+          is required to use this panel.
+        </p>
+
+        {/* ---- Panel shell demo ---- */}
+        <div className="um-arcgis-panel-mock">
+          <div className="custom-layers-panel-header" style={{ padding: '10px 12px 8px', borderBottom: '1px solid #d8e1ea' }}>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#223244', flex: 1 }}>Custom Layers</h3>
+            <button className="custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }} title="New Folder">
+              <FontAwesomeIcon icon={faFolderPlus} />
+            </button>
+            <button className="custom-layers-panel-close-btn" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
+          <div style={{ padding: '6px 10px 8px' }}>
+            <div className="upload-panel-searchbar">
+              <input type="text" placeholder="Search folders, services, or layers…" readOnly />
+              <select className="upload-panel-searchbar-dropdown" defaultValue="any" style={{ pointerEvents: 'none' }}>
+                <option value="any">Any</option>
+              </select>
+              <button className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faSearch} />
+              </button>
+              <button className="upload-panel-searchbar-btn clear" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+          </div>
+          <div className="upload-panel-folder-area" style={{ maxHeight: '160px', margin: '0 10px 10px' }}>
+            <div className="custom-layers-folder">
+              <FontAwesomeIcon icon={faFolder} style={{ color: '#5a7fa8', fontSize: '12px' }} />
+              My Hydrology Layers
+            </div>
+            <div className="custom-layers-folder-content">
+              <div className="custom-layers-item" style={{ pointerEvents: 'none' }}>
+                <input type="checkbox" defaultChecked readOnly style={{ marginRight: '4px', accentColor: '#1976d2' }} />
+                <span className="custom-layers-item-label">WA Streams and Rivers</span>
+              </div>
+              <div className="custom-layers-item" style={{ pointerEvents: 'none' }}>
+                <input type="checkbox" readOnly style={{ marginRight: '4px' }} />
+                <span className="custom-layers-item-label">Watershed Boundaries</span>
+              </div>
+            </div>
+            <div className="custom-layers-folder" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faFolder} style={{ color: '#5a7fa8', fontSize: '12px' }} />
+              Boundaries
+            </div>
+          </div>
+        </div>
+
+        {/* ---- Feature rows ---- */}
+        <div className="um-feature-list">
+
+          {/* 1. Opening the Panel */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <button type="button" className="card-toolbar-button" title="Custom Layers" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faFolderPlus} />
+                  <span>Custom Layers</span>
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Opening the Panel</p>
+              <p className="um-feature-desc">
+                Click the <strong>Custom Layers</strong> button in the map toolbar to open
+                or close the panel. You must be logged in; a login prompt appears otherwise.
+                When the ArcGIS Upload Panel is also open, the two panels share the left
+                side vertically.
+              </p>
+            </div>
+          </div>
+
+          {/* 2. Panel Header */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '260px' }}>
+                <div className="custom-layers-panel-header" style={{ border: '1px solid #d8e1ea', borderRadius: '6px', padding: '8px 12px' }}>
+                  <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#223244', flex: 1 }}>Custom Layers</h3>
+                  <button className="custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }} title="New Folder">
+                    <FontAwesomeIcon icon={faFolderPlus} />
+                  </button>
+                  <button className="custom-layers-panel-close-btn" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Panel Header</p>
+              <p className="um-feature-desc">
+                The header shows the panel title, a <strong>New Folder</strong>{' '}
+                <FontAwesomeIcon icon={faFolderPlus} style={{ fontSize: '12px' }} /> button
+                to create a custom folder, and an <strong>×</strong> close button. Closing
+                the panel does not remove layers already added to the map.
+              </p>
+            </div>
+          </div>
+
+          {/* 3. Search Bar */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ minWidth: '280px' }}>
+                <div className="upload-panel-searchbar">
+                  <input type="text" defaultValue="streams" readOnly />
+                  <select className="upload-panel-searchbar-dropdown" defaultValue="layer" style={{ pointerEvents: 'none' }}>
+                    <option value="layer">Layer</option>
+                  </select>
+                  <button className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faSearch} />
+                  </button>
+                  <button className="upload-panel-searchbar-btn clear" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Search Bar</p>
+              <p className="um-feature-desc">
+                Search across all your custom services and folders. The type dropdown
+                narrows results to <strong>Any</strong>, <strong>Folder</strong>,{' '}
+                <strong>Service</strong>, or <strong>Layer</strong>. Navigation arrows
+                appear when there are multiple matches.
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Layer Opacity */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ minWidth: '240px' }}>
+                <div className="upload-panel-opacity-slider-row">
+                  <label>Layer Opacity:</label>
+                  <input
+                    type="range"
+                    className="upload-panel-opacity-slider"
+                    defaultValue="70"
+                    min="0"
+                    max="100"
+                    readOnly
+                    style={{ background: 'linear-gradient(to right, #1976d2 70%, #d0d0d0 70%)' }}
+                  />
+                  <span className="upload-panel-opacity-value">70%</span>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Layer Opacity</p>
+              <p className="um-feature-desc">
+                Drag the slider to adjust the transparency of all custom layers on the map
+                simultaneously. The percentage updates live as you drag.
+              </p>
+            </div>
+          </div>
+
+          {/* 5. Show Added / Clear All */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                <div className="upload-panel-added-checkbox-row">
+                  <input type="checkbox" id="um-cl-show-added" defaultChecked readOnly style={{ marginRight: '6px', accentColor: '#1976d2' }} />
+                  <label htmlFor="um-cl-show-added" style={{ cursor: 'default', userSelect: 'none', fontSize: '13px', color: '#1976d2' }}>Show only services added to map</label>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Show Added Only &amp; Clear All</p>
+              <p className="um-feature-desc">
+                <strong>Show only services added to map</strong> collapses the list to
+                display only services with at least one active layer. <strong>Clear
+                All Layers</strong> (below the checkbox) unchecks every active layer in
+                one click. Both controls work the same as in the ArcGIS Upload Panel.
+              </p>
+            </div>
+          </div>
+
+          {/* 6. Folder Structure */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', padding: 0, gap: 0 }}>
+                <div className="custom-layers-folder" style={{ borderRadius: '4px 4px 0 0' }}>
+                  <FontAwesomeIcon icon={faFolder} style={{ color: '#5a7fa8', fontSize: '12px' }} />
+                  My Hydrology Layers
+                </div>
+                <div className="custom-layers-folder-content" style={{ paddingBottom: '4px' }}>
+                  <div className="custom-layers-item" style={{ pointerEvents: 'none' }}>
+                    <input type="checkbox" defaultChecked readOnly style={{ marginRight: '4px', accentColor: '#1976d2' }} />
+                    <span className="custom-layers-item-label">WA Streams and Rivers</span>
+                  </div>
+                </div>
+                <div className="custom-layers-folder" style={{ borderRadius: '0 0 4px 4px', borderBottom: '1px solid #d8e1ea', pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faFolder} style={{ color: '#5a7fa8', fontSize: '12px' }} />
+                  Boundaries
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Folder Structure</p>
+              <p className="um-feature-desc">
+                Services are grouped inside user-created folders. Click a folder to navigate
+                into it (file-explorer style). A breadcrumb bar at the top shows your
+                current path and lets you navigate back. Folders can be nested inside other
+                folders by dragging one folder onto another.
+              </p>
+            </div>
+          </div>
+
+          {/* 7. Drag-and-Drop Reordering */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', padding: 0, gap: '3px' }}>
+                <div className="custom-layers-item" style={{ background: '#e3eef9', borderRadius: '4px', cursor: 'grab' }}>
+                  <span style={{ fontSize: '11px', color: '#5c6f82', marginRight: '6px' }}>⠿</span>
+                  <input type="checkbox" defaultChecked readOnly style={{ marginRight: '4px', accentColor: '#1976d2' }} />
+                  <span className="custom-layers-item-label" style={{ fontSize: '12px' }}>WA Streams and Rivers</span>
+                </div>
+                <div className="custom-layers-item" style={{ borderRadius: '4px', cursor: 'grab' }}>
+                  <span style={{ fontSize: '11px', color: '#5c6f82', marginRight: '6px' }}>⠿</span>
+                  <input type="checkbox" readOnly style={{ marginRight: '4px' }} />
+                  <span className="custom-layers-item-label" style={{ fontSize: '12px' }}>Watershed Boundaries</span>
+                </div>
+                <div className="custom-layers-item" style={{ borderRadius: '4px', cursor: 'grab', opacity: 0.5, border: '2px dashed #bfd0e2' }}>
+                  <span style={{ fontSize: '11px', color: '#5c6f82', marginRight: '6px' }}>⠿</span>
+                  <input type="checkbox" readOnly style={{ marginRight: '4px' }} />
+                  <span className="custom-layers-item-label" style={{ fontSize: '12px' }}>County Lines</span>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Drag-and-Drop Reordering</p>
+              <p className="um-feature-desc">
+                Drag any service row to reorder it within its folder. Drag a service onto a
+                folder header to move it into that folder. Drag a folder onto another folder
+                to nest it. Drag a layer row (when a service is expanded) to reorder layers
+                within that service. All changes are saved to the database automatically.
+              </p>
+            </div>
+          </div>
+
+          {/* 8. Right-Click Menu */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
+                <div>
+                  <p style={{ margin: '0 0 4px', fontSize: '11px', color: '#5c6f82', fontWeight: 600 }}>Right-click a service:</p>
+                  <div className="layer-context-menu" style={{ position: 'static', boxShadow: 'none' }}>
+                    <button style={{ pointerEvents: 'none' }}>Rename</button>
+                    <button style={{ pointerEvents: 'none' }}>Learn More</button>
+                    <button style={{ pointerEvents: 'none' }}>Remove from Custom Layers</button>
+                    <button style={{ pointerEvents: 'none' }}>Pin (Auto-load)</button>
+                  </div>
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 4px', fontSize: '11px', color: '#5c6f82', fontWeight: 600 }}>Right-click a folder:</p>
+                  <div className="layer-context-menu" style={{ position: 'static', boxShadow: 'none' }}>
+                    <button style={{ pointerEvents: 'none' }}>Rename</button>
+                    <button style={{ pointerEvents: 'none' }}>Delete Folder</button>
+                  </div>
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 4px', fontSize: '11px', color: '#5c6f82', fontWeight: 600 }}>Right-click a layer:</p>
+                  <div className="layer-context-menu" style={{ position: 'static', boxShadow: 'none' }}>
+                    <button style={{ pointerEvents: 'none' }}>Learn More</button>
+                    <button style={{ pointerEvents: 'none' }}>Pin (Auto-load)</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Right-Click Menu</p>
+              <p className="um-feature-desc">
+                Right-click any row to open a context menu:
+                <br />• <strong>Rename</strong> — rename a service or folder
+                <br />• <strong>Learn More</strong> — view metadata from the ArcGIS REST endpoint
+                <br />• <strong>Remove from Custom Layers</strong> — permanently delete the service from your library and unload it from the map
+                <br />• <strong>Delete Folder</strong> — delete the folder (services inside are moved to Root)
+                <br />• <strong>Pin (Auto-load)</strong> — auto-load the item every time the panel opens; right-click again to Unpin
+              </p>
+            </div>
+          </div>
+
+          {/* 9. Adding Layers from Upload Panel */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="layer-context-menu" style={{ position: 'static', boxShadow: 'none' }}>
+                  <button style={{ pointerEvents: 'none' }}>Rename</button>
+                  <button style={{ pointerEvents: 'none' }}>Learn More</button>
+                  <button style={{ pointerEvents: 'none', fontWeight: 700, color: '#1a6b2a !important' }}>Save to Custom Layers</button>
+                  <button style={{ pointerEvents: 'none' }}>Pin (Auto-load)</button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Adding Layers from the Upload Panel</p>
+              <p className="um-feature-desc">
+                In the ArcGIS Upload Panel, right-click any service row and choose{' '}
+                <strong>Save to Custom Layers</strong>. This copies the service into your
+                Custom Layers library where you can organize it into folders and reorder it
+                at will. The original service in the Upload Panel is unaffected.
+              </p>
+              <span className="um-feature-note">
+                You must be logged in to save layers. A login prompt will appear if you are not.
+              </span>
             </div>
           </div>
 

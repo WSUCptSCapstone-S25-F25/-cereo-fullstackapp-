@@ -457,3 +457,50 @@ nav.um-nav-sidebar {
   margin: 0 auto 32px;
 }
 
+/* ---- Add Card form demo ---- */
+.um-form-demo-wrapper {
+  max-width: 420px;
+  margin: 0 auto 32px;
+  border: 1px solid #d8e1ea;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.um-form-demo-inner {
+  background: #fff;
+  padding: 20px 24px;
+  max-height: 380px;
+  overflow-y: auto;
+  font-size: 13px;
+}
+
+.um-form-demo-inner h2 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a2a3a;
+}
+
+.um-form-demo-inner label {
+  display: block;
+  margin-bottom: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374957;
+}
+
+.um-form-input-mock {
+  width: 100%;
+  padding: 6px 9px;
+  font-size: 13px;
+  border: 1px solid #c6d2df;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: #f9fafb;
+  box-sizing: border-box;
+  color: #374957;
+  pointer-events: none;
+  font-family: inherit;
+}
+
