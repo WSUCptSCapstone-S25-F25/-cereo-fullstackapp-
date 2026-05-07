@@ -17,33 +17,36 @@ import {
   faPenToSquare,
   faTrashCan,
   faDownload,
+  faSync,
+  faChevronUp,
+  faChevronDown,
 } from '@fortawesome/free-solid-svg-icons';
-import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
+import { faHeart as regularHeart, faFolder } from '@fortawesome/free-regular-svg-icons';
 import './Card.css';
 import './Content2.css';
 import './SortDropdown.css';
 import './FilterDropdown.css';
 import './UserManual.css';
+import './ArcgisUploadPanel.css';
+import './LayerContextMenu.css';
 
 const SECTIONS = [
+  { id: 'home',          label: '🏠  Overview' },
   { id: 'card-container', label: 'Card Container' },
   { id: 'toolbar',        label: 'Card Panel Toolbar' },
-  { id: 'detail-view',   label: 'Detail View' },
+  { id: 'detail-view',   label: 'Card Detail View' },
+  { id: 'arcgis-panel',  label: 'ArcGIS Upload Panel' },
 ];
 
 function UserManual() {
-  const [activeSection, setActiveSection] = useState('card-container');
+  const [activeSection, setActiveSection] = useState('home');
   return (
     <div className="user-manual">
       <h1>User Manual</h1>
-      <p className="user-manual-intro">
-        This guide explains every interactive feature available on a data card.
-        The demos below use the exact same styles and hover effects as the real application —
-        try hovering over each element to see it in action.
-      </p>
 
       <div className="um-layout">
         <nav className="um-nav-sidebar">
+          <span className="um-nav-heading">Sections</span>
           {SECTIONS.map(s => (
             <button
               key={s.id}
@@ -56,6 +59,37 @@ function UserManual() {
         </nav>
 
         <div className="um-content-area">
+
+      {activeSection === 'home' && (
+      <section className="um-section">
+        <h2>Welcome to the User Manual</h2>
+        <p className="um-section-desc">
+          This guide explains every interactive feature available in the RWC Living Atlas.
+          Use the navigation on the left to browse each section — demos use the exact same
+          styles and hover effects as the real application, so you can try them directly
+          on this page.
+        </p>
+
+        <div className="um-home-cards">
+          {SECTIONS.filter(s => s.id !== 'home').map(s => (
+            <button
+              key={s.id}
+              className="um-home-card"
+              onClick={() => setActiveSection(s.id)}
+            >
+              <span className="um-home-card-title">{s.label}</span>
+              {{
+                'card-container': 'How cards are displayed, navigated, pinned, and favorited.',
+                'toolbar':        'Tools for adding cards, sorting, filtering, and switching views.',
+                'detail-view':    'The full-screen modal with editing, images, files, and ArcGIS layers.',
+                'arcgis-panel':   'Browse and toggle ArcGIS REST map layers organized by state, folder, and service.',
+              }[s.id]}
+            </button>
+          ))}
+        </div>
+      </section>
+      )}
+
       {activeSection === 'card-container' && (
       <section className="um-section">
         <h2>Card Container</h2>
@@ -736,7 +770,7 @@ function UserManual() {
 
       {activeSection === 'detail-view' && (
       <section className="um-section">
-        <h2>Detail View</h2>
+        <h2>Card Detail View</h2>
         <p className="um-section-desc">
           Clicking <strong>Open Detail View</strong> on a card opens a full-screen panel
           showing all dataset information. It also has tools for editing, downloading a PDF,
@@ -1179,6 +1213,330 @@ function UserManual() {
                 navigate between images. The progress bar at the bottom shows your position;
                 click any segment to jump to that image. Press <strong>×</strong> in the
                 top-right corner or click the dark overlay to close the lightbox.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'arcgis-panel' && (
+      <section className="um-section">
+        <h2>ArcGIS Upload Panel</h2>
+        <p className="um-section-desc">
+          The ArcGIS Upload Panel lets you browse and add ArcGIS REST map layers directly
+          onto the main map. Open it by clicking the <strong>Layers</strong> button in the
+          map toolbar. Services are organized by state (WA / ID / OR), then by folder, then
+          by individual service and layer.
+        </p>
+
+        {/* ---- Panel shell demo ---- */}
+        <div className="um-arcgis-panel-mock">
+          <div className="upload-panel-header">
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#223244' }}>Browse ArcGIS Services</h3>
+            <button className="upload-panel-header-close-btn" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
+          <div style={{ padding: '6px 10px 8px' }}>
+            <div className="upload-panel-searchbar">
+              <input type="text" placeholder="Search layers, folders, services..." readOnly />
+              <button className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faSearch} />
+              </button>
+              <button className="upload-panel-searchbar-btn clear" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+            <div className="upload-panel-opacity-slider-row">
+              <label>Layer Opacity:</label>
+              <input
+                type="range"
+                className="upload-panel-opacity-slider"
+                defaultValue="70"
+                min="0"
+                max="100"
+                readOnly
+                style={{ background: 'linear-gradient(to right, #1976d2 70%, #d0d0d0 70%)' }}
+              />
+              <span className="upload-panel-opacity-value">70%</span>
+            </div>
+          </div>
+          <div className="upload-panel-folder-area" style={{ maxHeight: '170px', margin: '0 10px 10px' }}>
+            <div className="upload-state-folder">
+              <FontAwesomeIcon icon={faFolder} style={{ marginRight: '6px', color: '#5a7fa8' }} />
+              Washington State ArcGIS Services
+            </div>
+            <div className="upload-state-folder-content">
+              <div className="upload-folder" style={{ margin: '2px 0', pointerEvents: 'none' }}>
+                <span>Hydrology</span>
+              </div>
+              <div className="upload-folder" style={{ margin: '2px 0', pointerEvents: 'none' }}>
+                <span>Boundaries</span>
+              </div>
+            </div>
+            <div className="upload-state-folder" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faFolder} style={{ marginRight: '6px', color: '#5a7fa8' }} />
+              Idaho ArcGIS Services
+            </div>
+            <div className="upload-state-folder" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faFolder} style={{ marginRight: '6px', color: '#5a7fa8' }} />
+              Oregon ArcGIS Services
+            </div>
+          </div>
+        </div>
+
+        {/* ---- Feature rows ---- */}
+        <div className="um-feature-list">
+
+          {/* 1. Opening the Panel */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <button type="button" className="card-toolbar-button" title="Toggle ArcGIS Layers" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faGrip} />
+                  <span>Layers</span>
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Opening the Panel</p>
+              <p className="um-feature-desc">
+                Click the <strong>Layers</strong> button in the map toolbar to open or close
+                the ArcGIS Upload Panel. The panel slides in from the left edge of the screen.
+                When the card panel is also open, the two panels split the left side vertically.
+              </p>
+            </div>
+          </div>
+
+          {/* 2. Panel Header */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ minWidth: '260px', padding: 0 }}>
+                <div className="upload-panel-header" style={{ border: '1px solid #d8e1ea', borderRadius: '6px', padding: '8px 12px' }}>
+                  <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#223244' }}>Browse ArcGIS Services</h3>
+                  <button className="upload-panel-header-close-btn" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Panel Header</p>
+              <p className="um-feature-desc">
+                The header displays the panel title and an <strong>×</strong> close button
+                to dismiss the panel. Closing the panel does <em>not</em> remove any layers
+                already added to the map — they remain visible until you uncheck them.
+              </p>
+            </div>
+          </div>
+
+          {/* 3. Search Bar */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ minWidth: '280px' }}>
+                <div className="upload-panel-searchbar">
+                  <input type="text" defaultValue="Hydrology" readOnly />
+                  <button className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faSearch} />
+                  </button>
+                  <button className="upload-panel-searchbar-btn clear" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Service Search Bar</p>
+              <p className="um-feature-desc">
+                Type a keyword and press <strong>Enter</strong> or click the search button
+                to search across all states. The type dropdown (any / folder / service /
+                layer) narrows the scope. Click <strong>×</strong> to clear the search and
+                return to the full folder tree.
+              </p>
+              <span className="um-feature-note">
+                While a search is active, a result-navigation counter appears with ▲ / ▼ arrows to jump between matches.
+              </span>
+            </div>
+          </div>
+
+          {/* 4. Show Added Only */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="upload-panel-added-checkbox-row">
+                  <input type="checkbox" id="um-show-added" defaultChecked readOnly style={{ marginRight: '6px', accentColor: '#1976d2' }} />
+                  <label htmlFor="um-show-added" style={{ cursor: 'default', userSelect: 'none', fontSize: '13px', color: '#1976d2' }}>Show added layers only</label>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Show Added Only</p>
+              <p className="um-feature-desc">
+                When checked, the folder tree collapses to display only services and layers
+                that are currently active (checked) on the map. This makes it easy to
+                review or remove layers you have already loaded without scrolling through
+                the full service tree.
+              </p>
+            </div>
+          </div>
+
+          {/* 5. Layer Opacity */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ minWidth: '240px' }}>
+                <div className="upload-panel-opacity-slider-row">
+                  <label>Layer Opacity:</label>
+                  <input
+                    type="range"
+                    className="upload-panel-opacity-slider"
+                    defaultValue="70"
+                    min="0"
+                    max="100"
+                    readOnly
+                    style={{ background: 'linear-gradient(to right, #1976d2 70%, #d0d0d0 70%)' }}
+                  />
+                  <span className="upload-panel-opacity-value">70%</span>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Layer Opacity</p>
+              <p className="um-feature-desc">
+                The opacity slider controls the transparency of <em>all</em> ArcGIS layers
+                added to the map at once. Drag left for more transparent, right for fully
+                opaque. The current percentage is shown beside the slider and updates live
+                as you drag.
+              </p>
+            </div>
+          </div>
+
+          {/* 6. Update & Clear Controls */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ gap: '8px' }}>
+                <button className="upload-panel-update-btn" title="Update services" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faSync} />
+                </button>
+                <button type="button" className="card-toolbar-button" title="Clear All Layers" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faTimes} />
+                  <span>Clear All</span>
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Update &amp; Clear Controls</p>
+              <p className="um-feature-desc">
+                The <strong>⟳ sync button</strong> re-fetches the services list from the
+                ArcGIS REST servers and updates the database, discovering newly published or
+                renamed services. <strong>Clear All Layers</strong> unchecks every active
+                layer and removes them all from the map in one click.
+              </p>
+              <span className="um-feature-note">
+                Updating services may take a moment; a progress message is shown while the operation runs.
+              </span>
+            </div>
+          </div>
+
+          {/* 7. Service Tree Hierarchy */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', padding: 0, gap: 0 }}>
+                <div className="upload-state-folder" style={{ borderRadius: '4px 4px 0 0' }}>
+                  <FontAwesomeIcon icon={faFolder} style={{ marginRight: '6px', color: '#5a7fa8' }} />
+                  Washington State ArcGIS Services
+                </div>
+                <div className="upload-state-folder-content" style={{ paddingBottom: '4px' }}>
+                  <div className="upload-folder" style={{ margin: '2px 0', pointerEvents: 'none' }}>
+                    <span>
+                      <FontAwesomeIcon icon={faChevronDown} style={{ fontSize: '10px', marginRight: '6px', color: '#5a7fa8' }} />
+                      Hydrology
+                    </span>
+                  </div>
+                  <div style={{ paddingLeft: '16px' }}>
+                    <label className="upload-item" style={{ pointerEvents: 'none' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px' }}>
+                        <input type="checkbox" readOnly />
+                        WA Streams and Rivers
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Service Tree Hierarchy</p>
+              <p className="um-feature-desc">
+                Services are organized in a three-level tree:{' '}
+                <strong>State</strong> (WA, ID, OR) → <strong>Folder</strong> →{' '}
+                <strong>Service / Layer</strong>. Click a state heading to expand or
+                collapse all of its folders. Click a folder to drill into it. Click a
+                service to expand and show its individual layers.
+              </p>
+            </div>
+          </div>
+
+          {/* 8. Layer Rows & Right-Click Menu */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
+                {/* Service row */}
+                <div>
+                  <p style={{ margin: '0 0 4px', fontSize: '11px', color: '#5c6f82', fontWeight: 600 }}>Right-click a service:</p>
+                  <div className="layer-context-menu" style={{ position: 'static', boxShadow: 'none' }}>
+                    <button style={{ pointerEvents: 'none' }}>Rename</button>
+                    <button style={{ pointerEvents: 'none' }}>Learn More</button>
+                    <button style={{ pointerEvents: 'none' }}>Pin (Auto-load)</button>
+                  </div>
+                </div>
+                {/* Layer row */}
+                <div>
+                  <p style={{ margin: '0 0 4px', fontSize: '11px', color: '#5c6f82', fontWeight: 600 }}>Right-click a layer:</p>
+                  <div className="layer-context-menu" style={{ position: 'static', boxShadow: 'none' }}>
+                    <button style={{ pointerEvents: 'none' }}>Learn More</button>
+                    <button style={{ pointerEvents: 'none' }}>Pin (Auto-load)</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Layer Rows &amp; Right-Click Menu</p>
+              <p className="um-feature-desc">
+                Each service or layer is shown as a row with a checkbox and name.
+                <strong> Right-click</strong> any row to open a context menu:
+                <br />• <strong>Rename</strong> — rename the service (admin only)
+                <br />• <strong>Learn More</strong> — open a popup with metadata from the ArcGIS REST endpoint (description, extent, layer details)
+                <br />• <strong>Pin (Auto-load)</strong> — pin the item so it loads automatically every time the panel opens; right-click again and choose <strong>Unpin</strong> to remove it
+              </p>
+              <span className="um-feature-note">
+                Check the checkbox next to a layer to toggle its visibility on the map.
+              </span>
+            </div>
+          </div>
+
+          {/* 9. Search Result Navigation */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="panel-nav-mini" style={{ position: 'static' }}>
+                  <span className="panel-nav-mini-counter">2 / 7</span>
+                  <button className="panel-nav-mini-btn" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faChevronUp} />
+                  </button>
+                  <button className="panel-nav-mini-btn" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faChevronDown} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Search Result Navigation</p>
+              <p className="um-feature-desc">
+                When a search returns multiple matches, a floating counter (e.g. "2 / 7")
+                appears with <strong>▲ / ▼</strong> arrows to jump between matches. The
+                panel automatically scrolls to bring each highlighted match into view.
+                "0 results" is shown when nothing matched the keyword.
               </p>
             </div>
           </div>

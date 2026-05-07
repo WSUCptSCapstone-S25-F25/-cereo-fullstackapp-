@@ -5,9 +5,10 @@
 
 .user-manual {
   font-family: 'Roboto', sans-serif;
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 0 24px 60px;
+  /* Sidebar is 220px wide; center the remaining space */
+  margin-left: calc(220px + (100vw - 220px) / 2 - 460px);
+  width: min(900px, 100vw - 220px - 48px);
+  padding: 40px 24px 60px;
   color: #333;
 }
 
@@ -27,26 +28,89 @@
   padding-bottom: 20px;
 }
 
+/* ---- Home landing cards ---- */
+.um-home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.um-home-card {
+  /* reset button */
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  border: 1.5px solid #dce6f0;
+  border-radius: 10px;
+  padding: 24px 20px;
+  background: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.88rem;
+  color: #4b5563;
+  line-height: 1.55;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+
+.um-home-card:hover {
+  background: #eaf1fb;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.12);
+  transform: translateY(-2px);
+}
+
+.um-home-card-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin-bottom: 8px;
+}
+
 /* ---- Sectioned layout ---- */
 .um-layout {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  display: block;
 }
 
 /* Override global `nav { background: #333 }` from About.css */
 nav.um-nav-sidebar {
-  flex: 0 0 172px;
-  position: sticky;
-  top: 80px;
+  /* Fixed to the left edge of the viewport, below the navbar */
+  position: fixed;
+  top: 50px;
+  left: 0;
+  bottom: 0;
+  width: 220px;
+  z-index: 100;
+  /* layout */
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
   gap: 2px;
+  padding: 16px 0 24px;
+  overflow-y: auto;
+  /* visuals */
+  background: #f8fafc;
+  border-right: 1px solid #dce6f0;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.06);
   /* reset About.css global nav styles */
-  background: transparent;
   color: inherit;
-  padding: 10px 0;
-  border-right: 1px solid #e0e8f0;
+}
+
+/* Use high-specificity to beat any global button/a resets */
+.um-nav-sidebar .um-nav-heading {
+  display: block;
+  padding: 0 14px 10px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  border-bottom: 1px solid #e5edf5;
+  margin-bottom: 6px;
 }
 
 /* Use high-specificity to beat any global button/a resets */
@@ -95,30 +159,40 @@ nav.um-nav-sidebar {
 }
 
 .um-content-area {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
 }
 
-@media (max-width: 780px) {
-  .um-layout {
-    flex-direction: column;
-  }
+@media (max-width: 640px) {
   nav.um-nav-sidebar {
-    flex: none;
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
     width: 100%;
-    position: static;
+    height: auto;
     flex-direction: row;
     flex-wrap: wrap;
     border-right: none;
-    border-bottom: 1px solid #e0e8f0;
-    padding: 0 0 10px;
+    border-top: 1px solid #dce6f0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.07);
+    padding: 6px 4px;
+  }
+  .um-layout {
+    margin-left: 0;
+    margin-bottom: 60px; /* clear bottom nav */
+  }
+  .user-manual {
+    margin: 16px 16px 60px;
+    width: auto;
   }
   .um-nav-sidebar .um-nav-item {
     border-left: none;
     border-right: none;
     border-top: none;
     border-bottom: 3px solid transparent;
-    padding: 8px 14px;
+    padding: 7px 12px;
+    font-size: 0.82rem;
   }
   .um-nav-sidebar .um-nav-item.active {
     border-bottom-color: #3b82f6;
@@ -369,5 +443,17 @@ nav.um-nav-sidebar {
 .um-modal-body-preview {
   max-height: 480px;
   overflow-y: auto;
+}
+
+/* ── ArcGIS Panel overview demo ── */
+.um-arcgis-panel-mock {
+  background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
+  border: 1px solid #d8e1ea;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 13px;
+  color: #223244;
+  max-width: 380px;
+  margin: 0 auto 32px;
 }
 
