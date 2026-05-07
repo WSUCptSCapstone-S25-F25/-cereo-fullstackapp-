@@ -504,3 +504,58 @@ nav.um-nav-sidebar {
   font-family: inherit;
 }
 
+/* ---- ArcGIS Picker demo ---- */
+.um-picker-demo-wrapper {
+  max-width: 480px;
+  margin: 0 auto 32px;
+  border: 1px solid #d0d7e2;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  background: #fff;
+  font-size: 0.86rem;
+}
+
+/* nav rows used in picker demo */
+.arcgis-picker-nav-state-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1565c0;
+  background: #eaf1fb;
+  border-top: 1px solid #d0dcea;
+  transition: background 0.1s;
+}
+
+.arcgis-picker-nav-state-row:hover {
+  background: #d6e6f8;
+}
+
+.arcgis-picker-nav-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 22px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  background: #f5f7fa;
+  border-top: 1px solid #ececec;
+  transition: background 0.1s;
+}
+
+.arcgis-picker-nav-folder-row:hover {
+  background: #eaecef;
+}
+
+.arcgis-picker-nav-folder-icon {
+  color: #5a7fa8;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+

@@ -29,6 +29,7 @@ import './SortDropdown.css';
 import './FilterDropdown.css';
 import './UserManual.css';
 import './FormModal.css';
+import './ArcGISPickerModal.css';
 import './ArcgisUploadPanel.css';
 import './CustomLayersPanel.css';
 import './LayerContextMenu.css';
@@ -38,6 +39,7 @@ const SECTIONS = [
   { id: 'card-container', label: 'Card Container' },
   { id: 'toolbar',        label: 'Card Panel Toolbar' },
   { id: 'add-card',       label: 'Add Card Form' },
+  { id: 'arcgis-picker',  label: 'ArcGIS Picker Modal' },
   { id: 'detail-view',   label: 'Card Detail View' },
   { id: 'arcgis-panel',     label: 'ArcGIS Upload Panel' },
   { id: 'custom-layers',    label: 'Custom Layers Panel' },
@@ -88,6 +90,7 @@ function UserManual() {
                 'toolbar':        'Tools for adding cards, sorting, filtering, and switching views.',
                 'detail-view':    'The full-screen modal with editing, images, files, and ArcGIS layers.',
                 'add-card':       'Submit a new research entry with location, description, links, images, files, and optional ArcGIS service associations.',
+                'arcgis-picker':  'Browse and select ArcGIS services and layers to link directly to a card — opened from the Add Card form.',
                 'arcgis-panel':   'Browse and toggle ArcGIS REST map layers organized by state, folder, and service.',
                 'custom-layers':  'Manage your personal saved layers with custom folders, drag-and-drop ordering, and pinned auto-load items.',
               }[s.id]}
@@ -994,6 +997,214 @@ function UserManual() {
                 <strong>+ Link ArcGIS Service / Layer</strong> to open the ArcGIS picker
                 and browse by state. Linked items appear in the Card Detail View and can
                 be toggled directly on the map from there. Multiple links can be added.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'arcgis-picker' && (
+      <section className="um-section">
+        <h2>ArcGIS Picker Modal</h2>
+        <p className="um-section-desc">
+          The ArcGIS Picker lets you search and select ArcGIS services or individual layers
+          to link to a card. It opens from the <strong>+ Link ArcGIS Service / Layer</strong>{' '}
+          button inside the Add Card form. Selected items are attached to the card and can be
+          toggled on the map from the Card Detail View.
+        </p>
+
+        {/* ---- Overview demo ---- */}
+        <div className="um-picker-demo-wrapper">
+          {/* Header */}
+          <div className="arcgis-picker-header" style={{ borderBottom: '1px solid #e0e0e0' }}>
+            <div className="arcgis-picker-search-row">
+              <input type="text" className="arcgis-picker-search-input" readOnly placeholder="Search folders, services, or layers…" />
+              <select className="arcgis-picker-search-type-select" defaultValue="any" style={{ pointerEvents: 'none' }}>
+                <option value="any">Any</option>
+              </select>
+              <button type="button" className="arcgis-picker-search-btn" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faSearch} />
+              </button>
+              <button type="button" className="arcgis-picker-clear-btn" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+          </div>
+          {/* Body */}
+          <div style={{ borderBottom: '1px solid #f0f0f0' }}>
+            <div className="arcgis-picker-nav-state-row" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faFolder} className="arcgis-picker-nav-folder-icon" />
+              Washington State ArcGIS Services
+            </div>
+            <div className="arcgis-picker-nav-state-row" style={{ pointerEvents: 'none', opacity: 0.65 }}>
+              <FontAwesomeIcon icon={faFolder} className="arcgis-picker-nav-folder-icon" />
+              Idaho ArcGIS Services
+            </div>
+            <div className="arcgis-picker-nav-state-row" style={{ pointerEvents: 'none', opacity: 0.65 }}>
+              <FontAwesomeIcon icon={faFolder} className="arcgis-picker-nav-folder-icon" />
+              Oregon ArcGIS Services
+            </div>
+          </div>
+          {/* Footer */}
+          <div className="arcgis-picker-footer">
+            <span className="arcgis-picker-count">0 items selected</span>
+            <div className="arcgis-picker-footer-btns">
+              <button type="button" className="arcgis-picker-cancel-btn" style={{ pointerEvents: 'none' }}>Cancel</button>
+              <button type="button" className="arcgis-picker-add-btn" disabled style={{ pointerEvents: 'none' }}>Add</button>
+            </div>
+          </div>
+        </div>
+
+        {/* ---- Feature rows ---- */}
+        <div className="um-feature-list">
+
+          {/* 1. Opening */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <button type="button" className="location_button" style={{ pointerEvents: 'none', marginBottom: 0 }}>
+                  + Link ArcGIS Service / Layer
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Opening the Picker</p>
+              <p className="um-feature-desc">
+                Click <strong>+ Link ArcGIS Service / Layer</strong> inside the Add Card
+                form to open the picker. It loads available services from the database and
+                falls back to the bundled local list if the database is unavailable.
+              </p>
+            </div>
+          </div>
+
+          {/* 2. Search */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px' }}>
+                <div className="arcgis-picker-search-row" style={{ pointerEvents: 'none' }}>
+                  <input type="text" className="arcgis-picker-search-input" readOnly defaultValue="streams" />
+                  <select className="arcgis-picker-search-type-select" defaultValue="layer" style={{ pointerEvents: 'none' }}>
+                    <option value="layer">Layer</option>
+                  </select>
+                  <button type="button" className="arcgis-picker-search-btn" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faSearch} />
+                  </button>
+                  <button type="button" className="arcgis-picker-clear-btn" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: '6px', gap: '4px' }}>
+                  <span style={{ fontSize: '12px', color: '#444', minWidth: '46px', textAlign: 'center' }}>2 / 7</span>
+                  <button type="button" className="arcgis-picker-nav-btn" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faChevronUp} />
+                  </button>
+                  <button type="button" className="arcgis-picker-nav-btn" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faChevronDown} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Search Bar &amp; Navigation</p>
+              <p className="um-feature-desc">
+                Type a keyword and press Enter or click the search button. The type
+                dropdown narrows results to <strong>Any</strong>, <strong>Folder</strong>,{' '}
+                <strong>Service</strong>, or <strong>Layer</strong>. When multiple matches
+                exist, a counter and Prev/Next arrows appear to jump between them.
+              </p>
+            </div>
+          </div>
+
+          {/* 3. Drill-down Navigation */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', padding: 0, gap: 0 }}>
+                {/* breadcrumb */}
+                <div className="arcgis-picker-breadcrumb" style={{ pointerEvents: 'none' }}>
+                  <button type="button" className="arcgis-picker-back-btn" style={{ pointerEvents: 'none' }}>←</button>
+                  <span style={{ fontSize: '13px', color: '#2a4d7a' }}>Washington State ArcGIS Services <span style={{ color: '#999', margin: '0 4px' }}>/</span> Hydrology</span>
+                </div>
+                {/* folder rows */}
+                <div className="arcgis-picker-nav-folder-row" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faFolder} className="arcgis-picker-nav-folder-icon" style={{ marginRight: '6px' }} />
+                  Streams and Rivers
+                </div>
+                <div className="arcgis-picker-nav-folder-row" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faFolder} className="arcgis-picker-nav-folder-icon" style={{ marginRight: '6px' }} />
+                  Watershed Boundaries
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Drill-Down Navigation</p>
+              <p className="um-feature-desc">
+                In navigation mode the root view shows three state tiles (WA, ID, OR).
+                Click a state to see its folders; click a folder to see its services.
+                A breadcrumb bar at the top shows your current path, and the Back button
+                moves you one level up.
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Service rows */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', padding: 0, gap: 0 }}>
+                <div className="arcgis-picker-service-row" style={{ pointerEvents: 'none' }}>
+                  <input type="checkbox" className="arcgis-picker-checkbox" readOnly />
+                  <span className="arcgis-picker-arrow">►</span>
+                  <span className="arcgis-picker-service-label">WA Streams and Rivers</span>
+                </div>
+                <div className="arcgis-picker-service-row" style={{ pointerEvents: 'none', background: '#f0f4fa' }}>
+                  <input type="checkbox" className="arcgis-picker-checkbox" defaultChecked readOnly style={{ accentColor: '#1d4ed8' }} />
+                  <span className="arcgis-picker-arrow">▼</span>
+                  <span className="arcgis-picker-service-label">Watershed Boundaries</span>
+                </div>
+                <div className="arcgis-picker-layers-content" style={{ pointerEvents: 'none' }}>
+                  <div className="upload-layer-row" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 0' }}>
+                    <input type="checkbox" defaultChecked readOnly style={{ marginRight: '4px', accentColor: '#1d4ed8' }} />
+                    <span className="upload-layer-name" style={{ fontSize: '0.82rem' }}>HUC 8 Boundaries</span>
+                  </div>
+                  <div className="upload-layer-row" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 0' }}>
+                    <input type="checkbox" readOnly style={{ marginRight: '4px' }} />
+                    <span className="upload-layer-name" style={{ fontSize: '0.82rem' }}>HUC 12 Boundaries</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Services &amp; Layer Selection</p>
+              <p className="um-feature-desc">
+                Each service row has a checkbox and an expand arrow. Checking the service
+                checkbox selects the whole service. Clicking the row expands it to show
+                individual layers — check individual layers to link only those. Group
+                layers expand recursively with their own checkboxes.
+              </p>
+            </div>
+          </div>
+
+          {/* 5. Footer */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', padding: 0 }}>
+                <div className="arcgis-picker-footer" style={{ pointerEvents: 'none' }}>
+                  <span className="arcgis-picker-count">3 items selected</span>
+                  <div className="arcgis-picker-footer-btns">
+                    <button type="button" className="arcgis-picker-cancel-btn" style={{ pointerEvents: 'none' }}>Cancel</button>
+                    <button type="button" className="arcgis-picker-add-btn" style={{ pointerEvents: 'none' }}>Add</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Add &amp; Cancel</p>
+              <p className="um-feature-desc">
+                The footer shows how many items are currently selected. <strong>Add</strong>{' '}
+                is enabled once at least one item is selected; clicking it inserts all
+                selected services and layers as linked items in the Add Card form.{' '}
+                <strong>Cancel</strong> closes the picker without changing the form.
               </p>
             </div>
           </div>
