@@ -22,6 +22,23 @@ import {
   faChevronDown,
   faFolderPlus,
   faMap,
+  faCamera,
+  faEye,
+  faEyeSlash,
+  faDrawPolygon,
+  faExpand,
+  faCompress,
+  faMinus,
+  faLocationCrosshairs,
+  faLocationDot,
+  faRotate,
+  faShapes,
+  faPalette,
+  faHand,
+  faUpRightAndDownLeftFromCenter,
+  faRotateLeft,
+  faRotateRight,
+  faTrash,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart, faFolder } from '@fortawesome/free-regular-svg-icons';
 import './Card.css';
@@ -35,6 +52,8 @@ import './ArcgisUploadPanel.css';
 import './CustomLayersPanel.css';
 import './LayerContextMenu.css';
 import './BasemapSwitcher.css';
+import './Content1.css';
+import './PolygonDrawingModal.css';
 
 const SECTIONS = [
   { id: 'home',          label: '🏠  Overview' },
@@ -46,6 +65,8 @@ const SECTIONS = [
   { id: 'arcgis-panel',     label: 'ArcGIS Upload Panel' },
   { id: 'custom-layers',    label: 'Custom Layers Panel' },
   { id: 'basemap-panel',     label: 'Basemap Panel' },
+  { id: 'map-controls',      label: 'Map Controls' },
+  { id: 'polygon-draw',      label: 'Draw Polygon Panel' },
 ];
 
 function UserManual() {
@@ -97,6 +118,8 @@ function UserManual() {
                 'arcgis-panel':   'Browse and toggle ArcGIS REST map layers organized by state, folder, and service.',
                 'custom-layers':  'Manage your personal saved layers with custom folders, drag-and-drop ordering, and pinned auto-load items.',
                 'basemap-panel':   'Switch between six Mapbox map styles while preserving your ArcGIS layers, camera position, and zoom level.',
+                'map-controls':    'All interactive buttons on the map canvas — search, fullscreen, zoom, compass, geolocate, draw, and more.',
+                'polygon-draw':    'Draw freehand or preset-shape polygons to spatially filter cards, with style, transform, and history tools.',
               }[s.id]}
             </button>
           ))}
@@ -2463,6 +2486,592 @@ function UserManual() {
                 When you switch styles, the map automatically saves your camera position
                 (center, zoom, bearing, pitch) and all active custom ArcGIS layers, then
                 restores them once the new style finishes loading.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'map-controls' && (
+      <section className="um-section">
+        <h2>Map Controls</h2>
+        <p className="um-section-desc">
+          The map canvas has two groups of controls: a vertical stack in the
+          <strong> top-left</strong> and a vertical stack in the <strong>top-right</strong>.
+          Together they provide search, fullscreen, zoom, compass, location, drawing, and
+          utility tools. All controls are built into the Mapbox/Mapbox-Draw interface and
+          require no account or sign-in.
+        </p>
+
+        {/* ---- overview layout ---- */}
+        <div className="um-mapctrl-overview">
+          <div className="um-mapctrl-corner um-mapctrl-tl">
+            <div className="um-mapctrl-label">Top-left</div>
+            <div className="um-mapctrl-geocoder-mock">
+              <FontAwesomeIcon icon={faSearch} style={{ color: '#aaa', marginRight: 6 }} />
+              <span style={{ color: '#aaa', fontSize: '12px' }}>Address or LAT, LONG</span>
+            </div>
+            <div className="um-mapctrl-group">
+              <button className="um-mapctrl-btn" title="Enter Fullscreen"><FontAwesomeIcon icon={faExpand} /></button>
+            </div>
+            <div className="um-mapctrl-group">
+              <button className="um-mapctrl-btn" title="Zoom In"><strong>+</strong></button>
+              <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Zoom Out"><strong>−</strong></button>
+              <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Reset Bearing / Compass">
+                <FontAwesomeIcon icon={faRotate} style={{ fontSize: '13px' }} />
+              </button>
+            </div>
+            <div className="um-mapctrl-group">
+              <button className="um-mapctrl-btn" title="Geolocate"><FontAwesomeIcon icon={faLocationCrosshairs} /></button>
+            </div>
+          </div>
+
+          <div className="um-mapctrl-corner um-mapctrl-tr">
+            <div className="um-mapctrl-label">Top-right</div>
+            <div className="um-mapctrl-group">
+              <button className="um-mapctrl-btn" title="Draw Polygon"><FontAwesomeIcon icon={faDrawPolygon} /></button>
+              <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Toggle Markers"><FontAwesomeIcon icon={faEye} /></button>
+              <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Reset View">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="8" cy="8" r="6.5"/><line x1="8" y1="1.5" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="14.5" y2="8"/><circle cx="8" cy="8" r="2"/>
+                </svg>
+              </button>
+              <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Screenshot"><FontAwesomeIcon icon={faCamera} /></button>
+            </div>
+          </div>
+        </div>
+
+        {/* ---- feature rows ---- */}
+        <div className="um-feature-list">
+
+          {/* 1. Geocoder search */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-geocoder-mock" style={{ minWidth: '220px' }}>
+                  <FontAwesomeIcon icon={faSearch} style={{ color: '#aaa', marginRight: 6 }} />
+                  <span style={{ color: '#aaa', fontSize: '12px' }}>Address or LAT, LONG</span>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Search / Geocoder</p>
+              <p className="um-feature-desc">
+                Type an address, place name, or <em>lat, lng</em> coordinates to fly the map
+                to that location. Results are highlighted with a green marker. After selecting
+                a result the visible card list is filtered to the new viewport bounds.
+              </p>
+            </div>
+          </div>
+
+          {/* 2. Fullscreen */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ gap: '6px' }}>
+                <div className="um-mapctrl-group">
+                  <button className="um-mapctrl-btn" style={{ pointerEvents: 'none' }} title="Enter Fullscreen">
+                    <FontAwesomeIcon icon={faExpand} />
+                  </button>
+                </div>
+                <span style={{ fontSize: '11px', color: '#888' }}>→</span>
+                <div className="um-mapctrl-group">
+                  <button className="um-mapctrl-btn" style={{ pointerEvents: 'none' }} title="Exit Fullscreen">
+                    <FontAwesomeIcon icon={faCompress} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Fullscreen Toggle</p>
+              <p className="um-feature-desc">
+                Click the expand icon to enter browser fullscreen mode; the icon changes to
+                a compress icon. Click again (or press <kbd>Esc</kbd>) to exit.
+              </p>
+            </div>
+          </div>
+
+          {/* 3. Zoom & compass */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Zoom In"><strong>+</strong></button>
+                  <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Zoom Out"><strong>−</strong></button>
+                  <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Reset Bearing">
+                    <FontAwesomeIcon icon={faRotate} style={{ fontSize: '13px' }} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Zoom In / Out &amp; Compass</p>
+              <p className="um-feature-desc">
+                <strong>+</strong> and <strong>−</strong> adjust the map zoom level. The
+                compass/rotate button resets the map bearing to north when you have panned
+                the rotation. You can also scroll the mouse wheel to zoom or drag to rotate.
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Geolocate */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Geolocate">
+                    <FontAwesomeIcon icon={faLocationCrosshairs} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Geolocate (Current Location)</p>
+              <p className="um-feature-desc">
+                Click to fly to your current GPS position and optionally track it. Your
+                heading is shown as an arrow when the device supports it. Requires browser
+                location permission.
+              </p>
+            </div>
+          </div>
+
+          {/* 5. Draw polygon */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Draw Polygon">
+                    <FontAwesomeIcon icon={faDrawPolygon} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Draw Polygon Filter</p>
+              <p className="um-feature-desc">
+                Click to activate polygon-drawing mode, then click on the map to place
+                vertices and close the shape. Cards whose location markers fall inside the
+                polygon are shown; all others are hidden. The polygon can be deleted from
+                the drawing panel that opens after completing the shape.
+              </p>
+            </div>
+          </div>
+
+          {/* 6. Toggle markers */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ gap: '10px' }}>
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Markers visible (active)">
+                    <FontAwesomeIcon icon={faEye} />
+                  </button>
+                </div>
+                <span style={{ fontSize: '11px', color: '#888' }}>↔</span>
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none', opacity: 0.45 }}>
+                  <button className="um-mapctrl-btn" title="Markers hidden">
+                    <FontAwesomeIcon icon={faEyeSlash} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Toggle Markers &amp; Polygons Visibility</p>
+              <p className="um-feature-desc">
+                Click the eye icon to hide all card markers and polygon overlays on the map.
+                Click again to show them. The icon dims when markers are hidden.
+                This is useful for viewing the base map or ArcGIS layers without clutter.
+              </p>
+            </div>
+          </div>
+
+          {/* 7. Reset view */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Reset Map View">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="8" cy="8" r="6.5"/><line x1="8" y1="1.5" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="14.5" y2="8"/><circle cx="8" cy="8" r="2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Reset Map View</p>
+              <p className="um-feature-desc">
+                Flies the map back to the default Pacific Northwest overview (centered near
+                Washington State, zoom&nbsp;5.5). Useful after panning or zooming far away.
+              </p>
+            </div>
+          </div>
+
+          {/* 8. Screenshot */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Screenshot Map">
+                    <FontAwesomeIcon icon={faCamera} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Screenshot Map</p>
+              <p className="um-feature-desc">
+                Captures the current map canvas (excluding control overlays) as a PNG and
+                downloads it automatically. File name includes a timestamp.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'polygon-draw' && (
+      <section className="um-section">
+        <h2>Draw Polygon Panel</h2>
+        <p className="um-section-desc">
+          The Draw Polygon Panel appears on the map after you click the polygon tool in the
+          top-right control group. It lets you place vertices by clicking the map, then
+          style, transform, and save the shape to use as a spatial filter — cards whose
+          markers fall inside the polygon are shown; all others are hidden.
+        </p>
+
+        {/* ---- Overview demo ---- */}
+        <div className="um-polydraw-demo-wrapper">
+          {/* Header */}
+          <div className="polygon-draw-modal-header">
+            <h3>Draw Polygon</h3>
+            <span className="polygon-draw-modal-hint">Click on the map to add points</span>
+          </div>
+
+          {/* Style toolbar */}
+          <div className="polygon-draw-style-toolbar" style={{ pointerEvents: 'none' }}>
+            {/* Line style */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Line Style">
+                <svg width="18" height="10" viewBox="0 0 18 10"><line x1="0" y1="5" x2="18" y2="5" stroke="currentColor" strokeWidth="2"/></svg>
+              </button>
+            </div>
+            {/* Curve mode */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Curve Mode">
+                <svg width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1,10 C5,1.5 13,1.5 17,10"/></svg>
+              </button>
+            </div>
+            {/* Fill color */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Fill Color">
+                <FontAwesomeIcon icon={faPalette} style={{ fontSize: 14, width: 16, height: 16 }} />
+              </button>
+            </div>
+            {/* Opacity */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Fill Opacity">
+                <span className="polygon-draw-opacity-swatch" style={{ opacity: 0.65 }} />
+              </button>
+            </div>
+            {/* Shapes */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Shape Presets">
+                <FontAwesomeIcon icon={faShapes} style={{ fontSize: 14, width: 16, height: 16 }} />
+              </button>
+            </div>
+            {/* Move */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Move Polygon">
+                <FontAwesomeIcon icon={faHand} style={{ fontSize: 16, width: 16, height: 16 }} />
+              </button>
+            </div>
+            {/* Rotate */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Rotate Polygon">
+                <FontAwesomeIcon icon={faRotate} style={{ fontSize: 16, width: 16, height: 16 }} />
+              </button>
+            </div>
+            {/* Resize */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Resize Polygon">
+                <FontAwesomeIcon icon={faUpRightAndDownLeftFromCenter} style={{ fontSize: 14, width: 16, height: 16 }} />
+              </button>
+            </div>
+            {/* Undo */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Undo">
+                <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: 14, width: 16, height: 16 }} />
+              </button>
+            </div>
+            {/* Redo */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn" title="Redo">
+                <FontAwesomeIcon icon={faRotateRight} style={{ fontSize: 14, width: 16, height: 16 }} />
+              </button>
+            </div>
+            {/* Clear */}
+            <div className="polygon-draw-style-btn-wrap">
+              <button type="button" className="polygon-draw-style-btn polygon-draw-clear-btn" title="Clear All">
+                <FontAwesomeIcon icon={faTrash} style={{ fontSize: 13, width: 15, height: 15 }} />
+              </button>
+            </div>
+          </div>
+
+          {/* Vertex list */}
+          <div className="polygon-draw-modal-vertices" style={{ pointerEvents: 'none' }}>
+            {[{ lat: '47.6062', lng: '-122.3321' }, { lat: '47.5112', lng: '-122.2572' }, { lat: '47.4829', lng: '-122.4194' }].map((v, i) => (
+              <div key={i} className="polygon-draw-modal-vertex-row">
+                <span className="polygon-draw-modal-vertex-num">{i + 1}</span>
+                <div className="polygon-draw-modal-vertex-coords polygon-draw-modal-vertex-inputs">
+                  <input type="text" className="polygon-draw-vertex-input" readOnly defaultValue={v.lat} title="Latitude" />
+                  <span className="polygon-draw-vertex-comma">,</span>
+                  <input type="text" className="polygon-draw-vertex-input" readOnly defaultValue={v.lng} title="Longitude" />
+                </div>
+                <button type="button" className="polygon-draw-modal-vertex-remove" style={{ pointerEvents: 'none' }}>×</button>
+              </div>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div className="polygon-draw-modal-actions" style={{ pointerEvents: 'none' }}>
+            <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-finish">Finish Drawing</button>
+            <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-save">Save</button>
+            <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-cancel">Cancel</button>
+          </div>
+        </div>
+
+        {/* ---- Feature rows ---- */}
+        <div className="um-feature-list">
+
+          {/* 1. Freehand drawing */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', gap: '8px', minWidth: '180px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#444' }}>
+                  <FontAwesomeIcon icon={faDrawPolygon} style={{ color: '#1d4ed8', fontSize: '16px' }} />
+                  <span>Click map → add vertex</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#444' }}>
+                  <span style={{ width: 16, textAlign: 'center', fontWeight: 700, color: '#27ae60' }}>3+</span>
+                  <span>Points → "Finish Drawing"</span>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Freehand Drawing</p>
+              <p className="um-feature-desc">
+                After clicking the polygon button on the map, click anywhere on the map canvas
+                to place vertices. A live preview of the polygon grows with each click. Once
+                you have at least 3 points, <strong>Finish Drawing</strong> appears — click it
+                to close the polygon. Drag any numbered vertex marker to fine-tune its position.
+              </p>
+            </div>
+          </div>
+
+          {/* 2. Shape presets */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', gap: 0, padding: 0, minWidth: '140px' }}>
+                <div className="polygon-draw-style-toolbar" style={{ pointerEvents: 'none', borderBottom: 'none', padding: '5px 6px' }}>
+                  <div className="polygon-draw-style-btn-wrap">
+                    <button type="button" className="polygon-draw-style-btn polygon-draw-shape-active" title="Shape Presets">
+                      <FontAwesomeIcon icon={faShapes} style={{ fontSize: 14 }} />
+                    </button>
+                  </div>
+                </div>
+                <div style={{ background: '#fff', borderRadius: '4px', boxShadow: '0 0 0 2px rgba(0,0,0,.1)', padding: '4px', width: '110px', marginLeft: '6px' }}>
+                  {[
+                    { label: 'Triangle', svg: <svg width="20" height="18" viewBox="0 0 20 18" fill="none" stroke="currentColor" strokeWidth="1.4"><polygon points="10,1 1,17 19,17"/></svg> },
+                    { label: 'Square',   svg: <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="1" width="16" height="16"/></svg> },
+                    { label: 'Circle',   svg: <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="9" cy="9" r="8"/></svg> },
+                  ].map(s => (
+                    <div key={s.label} className="polygon-draw-dropdown-item" style={{ pointerEvents: 'none', fontSize: '11px' }}>
+                      {s.svg}<span>{s.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Shape Presets</p>
+              <p className="um-feature-desc">
+                Click the shapes icon to open a preset menu: Triangle, Square, Rectangle,
+                Circle, Dot, Pentagon, and Hexagon. After selecting a shape, drag on the
+                map to place and size it. A circle is stored as a polygon with many
+                vertices.
+              </p>
+            </div>
+          </div>
+
+          {/* 3. Styling */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ pointerEvents: 'none', gap: '6px', flexWrap: 'wrap', maxWidth: '220px' }}>
+                {/* line style swatches */}
+                {['solid','dashed','dotted'].map(s => (
+                  <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%' }}>
+                    <svg width="32" height="8" viewBox="0 0 32 8">
+                      {s === 'solid'  && <line x1="0" y1="4" x2="32" y2="4" stroke="#333" strokeWidth="2"/>}
+                      {s === 'dashed' && <line x1="0" y1="4" x2="32" y2="4" stroke="#333" strokeWidth="2" strokeDasharray="6 3"/>}
+                      {s === 'dotted' && <line x1="0" y1="4" x2="32" y2="4" stroke="#333" strokeWidth="2" strokeDasharray="1.5 3" strokeLinecap="round"/>}
+                    </svg>
+                    <span style={{ fontSize: '11px', color: '#555' }}>{s}</span>
+                  </div>
+                ))}
+                {/* color swatches */}
+                <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                  {['#0077c0','#e74c3c','#27ae60','#f39c12','#8e44ad','#1abc9c'].map(c => (
+                    <div key={c} style={{ width: 18, height: 18, borderRadius: 3, background: c, border: '2px solid transparent' }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Style: Line, Color &amp; Opacity</p>
+              <p className="um-feature-desc">
+                The toolbar lets you change the polygon's <strong>border line style</strong>{' '}
+                (solid, dashed, dotted, dash-dot), <strong>fill color</strong> from a
+                10-color palette, and <strong>fill opacity</strong> via a slider. Changes
+                are reflected on the map immediately.
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Curve mode */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ pointerEvents: 'none', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <svg width="50" height="36" viewBox="0 0 50 36" fill="none" stroke="#0077c0" strokeWidth="2">
+                    <polyline points="5,30 25,5 45,30 5,30"/>
+                  </svg>
+                  <span style={{ fontSize: '10px', color: '#888' }}>Straight</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <svg width="50" height="36" viewBox="0 0 50 36" fill="none" stroke="#0077c0" strokeWidth="2">
+                    <path d="M5,30 C15,5 35,5 45,30 C35,38 15,38 5,30"/>
+                  </svg>
+                  <span style={{ fontSize: '10px', color: '#888' }}>Curved</span>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Curve Mode</p>
+              <p className="um-feature-desc">
+                Toggle the curve button to switch polygon edges from straight lines to
+                smooth Bézier curves. In curve mode a draggable control-point appears
+                on each edge, letting you adjust the curvature independently.
+              </p>
+            </div>
+          </div>
+
+          {/* 5. Transform: move / rotate / resize */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ pointerEvents: 'none', gap: '10px' }}>
+                {[
+                  { icon: faHand,                         label: 'Move',   active: true },
+                  { icon: faRotate,                        label: 'Rotate', active: false },
+                  { icon: faUpRightAndDownLeftFromCenter,   label: 'Resize', active: false },
+                ].map(({ icon: ic, label, active }) => (
+                  <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className={`polygon-draw-style-btn${active ? ' polygon-draw-drag-active' : ''}`} title={label}>
+                        <FontAwesomeIcon icon={ic} style={{ fontSize: 15 }} />
+                      </button>
+                    </div>
+                    <span style={{ fontSize: '10px', color: '#666' }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Transform: Move, Rotate &amp; Resize</p>
+              <p className="um-feature-desc">
+                Three transform modes are available once the polygon has at least 3 vertices.{' '}
+                <strong>Move</strong> lets you drag the whole shape. <strong>Rotate</strong>{' '}
+                spins it around its centroid. <strong>Resize</strong> shows corner and edge
+                handles for scaling and stretching. Only one mode is active at a time.
+              </p>
+            </div>
+          </div>
+
+          {/* 6. Undo / Redo */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ pointerEvents: 'none', gap: '10px' }}>
+                <div className="polygon-draw-style-btn-wrap">
+                  <button type="button" className="polygon-draw-style-btn" title="Undo (Ctrl+Z)">
+                    <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: 14 }} />
+                  </button>
+                </div>
+                <div className="polygon-draw-style-btn-wrap">
+                  <button type="button" className="polygon-draw-style-btn" title="Redo (Ctrl+Y)">
+                    <FontAwesomeIcon icon={faRotateRight} style={{ fontSize: 14 }} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Undo &amp; Redo</p>
+              <p className="um-feature-desc">
+                Every vertex edit, style change, or transform is recorded in a history stack.
+                Click <strong>Undo</strong> (or press <kbd>Ctrl+Z</kbd>) to step back, or{' '}
+                <strong>Redo</strong> (<kbd>Ctrl+Y</kbd>) to reapply. Buttons are dimmed when
+                the stack is empty.
+              </p>
+            </div>
+          </div>
+
+          {/* 7. Vertex list */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ pointerEvents: 'none', padding: 0, minWidth: '210px' }}>
+                <div className="polygon-draw-modal-vertices" style={{ maxHeight: 'unset' }}>
+                  {[{ lat: '47.6062', lng: '-122.332' }, { lat: '47.5112', lng: '-122.257' }].map((v, i) => (
+                    <div key={i} className="polygon-draw-modal-vertex-row">
+                      <span className="polygon-draw-modal-vertex-num">{i + 1}</span>
+                      <div className="polygon-draw-modal-vertex-coords polygon-draw-modal-vertex-inputs">
+                        <input type="text" className="polygon-draw-vertex-input" readOnly defaultValue={v.lat} />
+                        <span className="polygon-draw-vertex-comma">,</span>
+                        <input type="text" className="polygon-draw-vertex-input" readOnly defaultValue={v.lng} />
+                      </div>
+                      <button type="button" className="polygon-draw-modal-vertex-remove">×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Vertex Coordinate List</p>
+              <p className="um-feature-desc">
+                Each vertex is listed with editable lat/lng number inputs. You can type exact
+                coordinates directly for precision. Click <strong>×</strong> to remove any
+                vertex. For circles, only the center coordinate is shown.
+              </p>
+            </div>
+          </div>
+
+          {/* 8. Save / Cancel / Clear */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ pointerEvents: 'none', flexWrap: 'wrap', gap: '4px', maxWidth: '200px' }}>
+                <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-finish" style={{ flex: '1 1 90px' }}>Finish Drawing</button>
+                <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-resume" style={{ flex: '1 1 90px' }}>Add More Points</button>
+                <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-save" style={{ flex: '1 1 60px' }}>Save</button>
+                <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-cancel" style={{ flex: '1 1 60px' }}>Cancel</button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Save, Finish &amp; Cancel</p>
+              <p className="um-feature-desc">
+                While drawing, <strong>Finish Drawing</strong> closes the polygon. After
+                finishing, <strong>Add More Points</strong> resumes vertex placement.{' '}
+                <strong>Save</strong> applies the polygon as a map filter (disabled until
+                3+ vertices). <strong>Cancel</strong> removes the polygon and closes the
+                panel. The trash icon clears all vertices at any time.
               </p>
             </div>
           </div>
