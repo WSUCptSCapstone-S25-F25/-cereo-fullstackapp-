@@ -1039,6 +1039,7 @@ function Content2(props) {
                                                             className={`card-list-menu-item${pinnedCardIDs.has(card.cardID) ? ' active-pin' : ''}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
+                                                                if (!props.isLoggedIn) { setShowLoginPrompt(true); setOpenMenuCardID(null); return; }
                                                                 togglePin(card.cardID);
                                                                 setOpenMenuCardID(null);
                                                             }}
@@ -1119,6 +1120,7 @@ function Content2(props) {
                                             className={`card-grid-pin-btn ${pinnedCardIDs.has(card.cardID) ? 'active' : ''}`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                if (!props.isLoggedIn) { setShowLoginPrompt(true); return; }
                                                 togglePin(card.cardID);
                                             }}
                                             title={pinnedCardIDs.has(card.cardID) ? 'Unpin card' : 'Pin to top'}

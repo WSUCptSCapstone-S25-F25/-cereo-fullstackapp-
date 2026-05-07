@@ -308,6 +308,7 @@ function ArcgisUploadPanel({
     const [serviceInfoOpenKey, setServiceInfoOpenKey] = useState(null); // service.key
     const [serviceInfoCache, setServiceInfoCache] = useState({}); // { key: info }
     const [serviceInfoLoading, setServiceInfoLoading] = useState(false);
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
     // Layer info modal state ---
     const [layerInfoOpen, setLayerInfoOpen] = useState(null); // { serviceKey, layerId, layerName, serviceUrl }
@@ -693,6 +694,15 @@ function ArcgisUploadPanel({
         isPinned,
         handleTogglePin,
     } = useLayerContextMenu({ pinnedItems, setPinnedItems });
+
+    const handleTogglePinGuarded = () => {
+        if (!userEmail) {
+            setShowLoginPrompt(true);
+            closeContextMenu();
+            return;
+        }
+        handleTogglePin();
+    };
 
     // Auto-load pinned items once services are loaded
     useEffect(() => {
@@ -2074,7 +2084,7 @@ function ArcgisUploadPanel({
         if (type !== 'service') return;
         const email = localStorage.getItem('email') || '';
         if (!email) {
-            alert('Please log in to save custom layers.');
+            setShowLoginPrompt(true);
             return;
         }
         try {
@@ -2517,7 +2527,7 @@ function ArcgisUploadPanel({
                     contextMenu={contextMenu}
                     isPinned={isPinned}
                     onLearnMore={handleContextLearnMore}
-                    onTogglePin={handleTogglePin}
+                    onTogglePin={handleTogglePinGuarded}
                     extraServiceItems={[
                         { label: 'Save to Custom Layers', onClick: handleSaveToCustomLayers },
                     ]}
@@ -2741,6 +2751,31 @@ function ArcgisUploadPanel({
 
             {/* State menu: outside the upload panel */}
             {/* renderStateMenu() - disabled, DB/Local toggle moved to toolbar */}
+
+            {/* Login Required Prompt */}
+            {showLoginPrompt && createPortal(
+                <div
+                    className="login-prompt-overlay"
+                    onClick={() => setShowLoginPrompt(false)}
+                >
+                    <div
+                        className="login-prompt-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <p>Please log in to use this feature.</p>
+                        <div className="login-prompt-actions">
+                            <a href="/login" className="login-prompt-btn login-prompt-btn--primary">Log In</a>
+                            <button
+                                className="login-prompt-btn login-prompt-btn--secondary"
+                                onClick={() => setShowLoginPrompt(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </>
     );
 }
