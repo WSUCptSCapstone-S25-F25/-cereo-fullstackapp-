@@ -235,3 +235,40 @@
   width: auto !important;
   min-width: auto !important;
 }
+
+/* ── Detail View (learn-more modal) section helpers ── */
+
+/* Gallery demo: constrain width so tiles don't get huge */
+.um-gallery-demo {
+  width: 300px;
+  padding: 10px !important;
+}
+
+/* All Images demo: constrain width */
+.um-all-images-demo {
+  width: 300px;
+  padding: 10px !important;
+}
+
+/* Fields demo: constrain width to look like a real modal body */
+.um-fields-demo {
+  width: 320px;
+}
+
+/* ArcGIS demo: constrain width */
+.um-arcgis-demo {
+  width: 360px;
+  padding: 10px !important;
+}
+
+/* Image preview mockup */
+.um-image-preview-demo {
+  width: 260px;
+}
+
+/* Full modal body preview: limit height and scroll */
+.um-modal-body-preview {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
