@@ -5,7 +5,7 @@
 
 .user-manual {
   font-family: 'Roboto', sans-serif;
-  max-width: 900px;
+  max-width: 1100px;
   margin: 40px auto;
   padding: 0 24px 60px;
   color: #333;
@@ -22,9 +22,108 @@
   font-size: 1rem;
   color: #555;
   line-height: 1.7;
-  margin-bottom: 36px;
+  margin-bottom: 28px;
   border-bottom: 1px solid #e0e8f0;
   padding-bottom: 20px;
+}
+
+/* ---- Sectioned layout ---- */
+.um-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* Override global `nav { background: #333 }` from About.css */
+nav.um-nav-sidebar {
+  flex: 0 0 172px;
+  position: sticky;
+  top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* reset About.css global nav styles */
+  background: transparent;
+  color: inherit;
+  padding: 10px 0;
+  border-right: 1px solid #e0e8f0;
+}
+
+/* Use high-specificity to beat any global button/a resets */
+.um-nav-sidebar .um-nav-item {
+  /* reset browser + any global button styles */
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 16px 9px 14px;
+  margin: 0;
+  /* borders */
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  outline: none;
+  /* colours */
+  background: transparent;
+  color: #4b5563;
+  /* typography */
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-decoration: none;
+  /* interaction */
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.um-nav-sidebar .um-nav-item:hover {
+  background: #f0f5fb;
+  color: #1a3a5c;
+}
+
+.um-nav-sidebar .um-nav-item.active {
+  background: #eaf1fb;
+  color: #1a3a5c;
+  font-weight: 700;
+  border-left-color: #3b82f6;
+}
+
+.um-content-area {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 780px) {
+  .um-layout {
+    flex-direction: column;
+  }
+  nav.um-nav-sidebar {
+    flex: none;
+    width: 100%;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid #e0e8f0;
+    padding: 0 0 10px;
+  }
+  .um-nav-sidebar .um-nav-item {
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-bottom: 3px solid transparent;
+    padding: 8px 14px;
+  }
+  .um-nav-sidebar .um-nav-item.active {
+    border-bottom-color: #3b82f6;
+    border-left-color: transparent;
+  }
 }
 
 /* ---- Section ---- */

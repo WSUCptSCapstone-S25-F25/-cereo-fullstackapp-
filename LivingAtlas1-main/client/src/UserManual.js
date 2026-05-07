@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faHeart as solidHeart,
@@ -7,6 +7,7 @@ import {
   faMapMarkerAlt,
   faSort,
   faFilter,
+  faThumbtack,
   faHeart,
   faSearch,
   faTimes,
@@ -24,7 +25,14 @@ import './SortDropdown.css';
 import './FilterDropdown.css';
 import './UserManual.css';
 
+const SECTIONS = [
+  { id: 'card-container', label: 'Card Container' },
+  { id: 'toolbar',        label: 'Card Panel Toolbar' },
+  { id: 'detail-view',   label: 'Detail View' },
+];
+
 function UserManual() {
+  const [activeSection, setActiveSection] = useState('card-container');
   return (
     <div className="user-manual">
       <h1>User Manual</h1>
@@ -34,7 +42,21 @@ function UserManual() {
         try hovering over each element to see it in action.
       </p>
 
-      {/* ===== Card Container Features ===== */}
+      <div className="um-layout">
+        <nav className="um-nav-sidebar">
+          {SECTIONS.map(s => (
+            <button
+              key={s.id}
+              className={`um-nav-item${activeSection === s.id ? ' active' : ''}`}
+              onClick={() => setActiveSection(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="um-content-area">
+      {activeSection === 'card-container' && (
       <section className="um-section">
         <h2>Card Container</h2>
         <p className="um-section-desc">
@@ -46,7 +68,10 @@ function UserManual() {
         {/* ---- Full annotated demo card ---- */}
         <div className="um-card-demo-wrapper">
           <span className="um-card-demo-label">Demo card — hover to explore</span>
-          <div className="um-card-container">
+          <div className="um-card-container" style={{ position: 'relative' }}>
+            <button className="card-grid-pin-btn" title="Pin to top" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faThumbtack} />
+            </button>
             <div className="card">
               {/* Favorite icon */}
               <span
@@ -242,7 +267,33 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 6. Card title */}
+          {/* 6. Pin to Top */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ gap: '14px' }}>
+                <button className="card-grid-pin-btn" style={{ position: 'static', pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faThumbtack} />
+                </button>
+                <button className="card-grid-pin-btn active" style={{ position: 'static', pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faThumbtack} />
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Pin to Top</p>
+              <p className="um-feature-desc">
+                The thumbtack icon in the upper-left corner of each card lets you pin that
+                card to the top of the card list. An unpinned button has a white background;
+                a pinned button turns gold. Pinned cards always appear first, regardless of
+                the current sort order. Click to toggle.
+              </p>
+              <span className="um-feature-note">
+                You must be logged in to use this feature. A login prompt will appear if you are not.
+              </span>
+            </div>
+          </div>
+
+          {/* 7. Card title */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-meta-row-demo">
@@ -384,8 +435,9 @@ function UserManual() {
 
         </div>
       </section>
+      )}
 
-      {/* ── Section 2: Card Panel Toolbar ── */}
+      {activeSection === 'toolbar' && (
       <section className="um-section">
         <h2>Card Panel Toolbar</h2>
         <p className="um-section-desc">
@@ -680,8 +732,9 @@ function UserManual() {
 
         </div>
       </section>
+      )}
 
-      {/* ── Section 3: Detail View (Learn More Modal) ── */}
+      {activeSection === 'detail-view' && (
       <section className="um-section">
         <h2>Detail View</h2>
         <p className="um-section-desc">
@@ -1132,7 +1185,10 @@ function UserManual() {
 
         </div>
       </section>
+      )}
 
+        </div>{/* um-content-area */}
+      </div>{/* um-layout */}
     </div>
   );
 }
