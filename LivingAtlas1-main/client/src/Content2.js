@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import './Content2.css';
 import './Sidebars.css';
 import Card from './Card.js';
@@ -30,6 +31,8 @@ function Content2(props) {
     const [openMenuCardID, setOpenMenuCardID] = useState(null);
     const menuRef = useRef(null);
 
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => { setIsModalOpen(false); setPendingPolygonData(null); };
 
@@ -37,7 +40,7 @@ function Content2(props) {
     useEffect(() => {
         const handler = (e) => {
             if (!props.isLoggedIn) {
-                alert('Please log in to upload a data card.');
+                setShowLoginPrompt(true);
                 return;
             }
             setPendingPolygonData(e.detail);
@@ -172,7 +175,7 @@ function Content2(props) {
 
     const handleFavoritesToggle = () => {
         if (!props.isLoggedIn) {
-            alert("Please log in first.");
+            setShowLoginPrompt(true);
             return;
         }
         setShowFavoritesOnly(prev => !prev);
@@ -858,7 +861,7 @@ function Content2(props) {
                                 title={props.isLoggedIn ? 'Add Card' : 'Log in to add a card'}
                                 onClick={() => {
                                     if (!props.isLoggedIn) {
-                                        alert('Please log in to upload a data card.');
+                                        setShowLoginPrompt(true);
                                         return;
                                     }
                                     openModal();
@@ -1047,7 +1050,7 @@ function Content2(props) {
                                                             className={`card-list-menu-item${bookmarkedCardIDs.has(card.cardID) ? ' active-fav' : ''}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                if (!props.isLoggedIn) { alert('Please log in to use favorites.'); setOpenMenuCardID(null); return; }
+                                                                if (!props.isLoggedIn) { setShowLoginPrompt(true); setOpenMenuCardID(null); return; }
                                                                 const endpoint = bookmarkedCardIDs.has(card.cardID) ? '/unbookmarkCard' : '/bookmarkCard';
                                                                 const fd = new FormData();
                                                                 fd.append('username', resolvedUsername);
@@ -1131,6 +1134,31 @@ function Content2(props) {
                     <p className="card-container-loading">Loading Cards...</p>
                 )}
             </section>
+
+            {/* Login Required Prompt */}
+            {showLoginPrompt && ReactDOM.createPortal(
+                <div
+                    className="login-prompt-overlay"
+                    onClick={() => setShowLoginPrompt(false)}
+                >
+                    <div
+                        className="login-prompt-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <p>Please log in to use this feature.</p>
+                        <div className="login-prompt-actions">
+                            <a href="/login" className="login-prompt-btn login-prompt-btn--primary">Log In</a>
+                            <button
+                                className="login-prompt-btn login-prompt-btn--secondary"
+                                onClick={() => setShowLoginPrompt(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </>
     );
 }

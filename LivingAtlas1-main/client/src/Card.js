@@ -77,6 +77,7 @@ function Card(props) {
     });
     const [loading, setLoading] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [linkedArcgisItems, setLinkedArcgisItems] = useState([]);
     const [arcgisLegends, setArcgisLegends] = useState({}); // { serviceKey: legendData }
     const [isArcgisPickerOpen, setIsArcgisPickerOpen] = useState(false);
@@ -221,6 +222,11 @@ function Card(props) {
     const handleDelete = (e) => {
         e.stopPropagation();
 
+        if (!props.isLoggedIn) {
+            setShowLoginPrompt(true);
+            return;
+        }
+
         if (!formData.username || !formData.title) {
             alert("Missing username or title — cannot delete card.");
             return;
@@ -258,6 +264,10 @@ function Card(props) {
     };
 
     const handleDownloadPdf = async () => {
+        if (!props.isLoggedIn) {
+            setShowLoginPrompt(true);
+            return;
+        }
         const doc = new jsPDF({ unit: 'pt', format: 'a4' });
         const pageW = doc.internal.pageSize.getWidth();
         const margin = 40;
@@ -450,6 +460,11 @@ function Card(props) {
 
     const handleFavoriteClick = async (e) => {
         e.stopPropagation();
+
+        if (!props.isLoggedIn) {
+            setShowLoginPrompt(true);
+            return;
+        }
 
         const cardID = formData.cardID || props.cardID;
         const username = formData.viewerUsername || formData.username || props.username;
@@ -861,6 +876,12 @@ function Card(props) {
 
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
+
+        if (!props.isLoggedIn) {
+            setShowLoginPrompt(true);
+            return;
+        }
+
         const _viewerEmail = localStorage.getItem('email') || '';
         const _cardOwnerEmail = formData.email || '';
         const _isAdmin = (() => { try { return JSON.parse(localStorage.getItem('isAdmin')); } catch { return false; } })();
@@ -2497,6 +2518,31 @@ function Card(props) {
                     </button>
                 </form>
             </Modal>
+
+            {/* Login Required Prompt */}
+            {showLoginPrompt && ReactDOM.createPortal(
+                <div
+                    className="login-prompt-overlay"
+                    onClick={() => setShowLoginPrompt(false)}
+                >
+                    <div
+                        className="login-prompt-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <p>Please log in to use this feature.</p>
+                        <div className="login-prompt-actions">
+                            <a href="/login" className="login-prompt-btn login-prompt-btn--primary">Log In</a>
+                            <button
+                                className="login-prompt-btn login-prompt-btn--secondary"
+                                onClick={() => setShowLoginPrompt(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {/* Polygon Editing Modal (from learn-more edit) */}
             {/* Wrap in a click-stopper so portal events don't bubble to the card's onClick */}
