@@ -15,12 +15,12 @@ function ChangelogModal({ isOpen, onClose }) {
             </div>
             <div className="changelog-modal-body">
 
-                <h3>Update Date: 5/5/2026</h3>
-                <p>Added a PDF download button next to the Edit button in the Learn More modal toolbar, allowing users to export the full card content as a PDF directly from the detail view.</p>
-                <p>Added a screenshot button to the Mapbox map toolbar. Clicking it captures the current map view and downloads it as a PNG image.</p>
-                <p>Added an Update History page (accessible from the top navbar) that shows all past release notes. The "What's New" popup now shows only the most recent update instead of the full history.</p>
-                <p>Improved the display and behavior of the embedded map info modal: better layout, cleaner interactions, and more consistent styling.</p>
-                <p>Fixed a bug where searching in the card container using the same keyword more than once would not re-trigger the search.</p>
+                <h3>Update Date: 5/6/2026</h3>
+                <p>Added a User Manual page (accessible from the top navbar) covering card container features, the Card Detail View modal, and the ArcGIS Upload Panel.</p>
+                <p>The card container and cards now adapt to different screen sizes automatically, switching to a two-column layout as needed while keeping card dimensions fixed.</p>
+                <p>Added a login prompt modal that appears when a non-logged-in user attempts to use Add Card, Pin, Favorite, Show Favorites, or any action button inside the Card Detail View.</p>
+                <p>Fixed a bug where search results in the ArcGIS Upload Panel were not displaying correctly.</p>
+                <p>Removed the local/DB data source toggle from the Upload Panel — it now always loads services from the database.</p>
 
             </div>
             <div className="changelog-modal-footer">
