@@ -158,33 +158,18 @@ function ArcgisUploadPanel({
     // Track selected state
     const [selectedState, setSelectedState] = useState('WA');
 
-    // Data source selection: 'database' or 'local'
-    const [dataSource, setDataSource] = useState('database');
-
-    // Services fetched from DB for selected state
+    // Services fetched from DB
     const [servicesFromDb, setServicesFromDb] = useState({});
     const [isLoadingServices, setIsLoadingServices] = useState(false);
     const [servicesError, setServicesError] = useState(null);
     const [usingFallback, setUsingFallback] = useState(false);
 
-    // Use services based on data source selection
-    // OLD single-state logic (kept for reference):
-    // const ARCGIS_SERVICES = dataSource === 'local' 
-    //     ? (ARCGIS_SERVICES_BY_STATE[selectedState] || [])
-    //     : (servicesFromDb.length > 0 
-    //         ? servicesFromDb 
-    //         : (ARCGIS_SERVICES_BY_STATE[selectedState] || []));
-
-    // NEW: Combine all states into a single list
+    // Combine all states; prefer DB data, fall back to local JSON when DB is unavailable
     const ALL_SERVICES_BY_STATE = {};
     STATE_CODES.forEach(code => {
-        if (dataSource === 'local') {
-            ALL_SERVICES_BY_STATE[code] = ARCGIS_SERVICES_BY_STATE[code] || [];
-        } else {
-            ALL_SERVICES_BY_STATE[code] = (servicesFromDb[code] && servicesFromDb[code].length > 0)
-                ? servicesFromDb[code]
-                : (ARCGIS_SERVICES_BY_STATE[code] || []);
-        }
+        ALL_SERVICES_BY_STATE[code] = (servicesFromDb[code] && servicesFromDb[code].length > 0)
+            ? servicesFromDb[code]
+            : (ARCGIS_SERVICES_BY_STATE[code] || []);
     });
     const ARCGIS_SERVICES = STATE_CODES.flatMap(code => ALL_SERVICES_BY_STATE[code]);
 
@@ -261,6 +246,8 @@ function ArcgisUploadPanel({
     const userEmail = localStorage.getItem('email') || '';
     const pinnedWriteInitializedRef = useRef(false);
     const activeSearchRef = useRef(null); // { keyword, searchType } — tracks active search for auto re-run when layers load
+    const getScopedServicesRef = useRef(null);   // Latest getScopedServices closure — updated each render so effects can use current data
+    const getScopedStateCodesRef = useRef(null); // Latest getScopedStateCodes closure
     const [pinnedItems, setPinnedItems] = useState([]);
     const [pinnedPreferencesLoaded, setPinnedPreferencesLoaded] = useState(false);
     const [localPinnedPreferencesReady, setLocalPinnedPreferencesReady] = useState(false);
@@ -325,56 +312,31 @@ function ArcgisUploadPanel({
     const [updateProgress, setUpdateProgress] = useState('');
     const [updateResults, setUpdateResults] = useState(null);
 
-    // Handle data source switching with user feedback
-    const handleDataSourceChange = (newDataSource) => {
-        if (newDataSource === dataSource) return;
-        
-        console.log(`[ArcgisUploadPanel] Switching data source from ${dataSource} to ${newDataSource}`);
-        setDataSource(newDataSource);
-        
-        // Show temporary message about the switch
-        if (newDataSource === 'local') {
-            showFinishedMessage('Switched to local JSON data');
-        } else {
-            showFinishedMessage('Switched to database data');
-        }
-    };
-
-    // Fetch services from DB whenever panel opens or data source changes
+    // Fetch services from DB whenever panel opens
     useEffect(() => {
         if (!isOpen) return;
-        
-        // If local data source is selected, skip database fetch
-        if (dataSource === 'local') {
-            setServicesFromDb({});
-            setIsLoadingServices(false);
-            setServicesError(null);
-            setUsingFallback(false);
-            return;
-        }
 
         let active = true;
-        
+
         (async () => {
             setIsLoadingServices(true);
             setServicesError(null);
             setUsingFallback(false);
-            
+
             try {
-                console.log(`[ArcgisUploadPanel] Attempting to fetch services from backend for all states...`);
+                console.log(`[ArcgisUploadPanel] Fetching services from backend for all states...`);
                 const stateMap = await fetchServicesByStateMap(STATE_CODES, { type: 'MapServer' });
-                
+
                 if (active) {
                     const totalCount = STATE_CODES.reduce((sum, c) => sum + (stateMap[c] || []).length, 0);
                     if (totalCount > 0) {
                         setServicesFromDb(stateMap);
                         setUsingFallback(false);
-                        console.log(`[ArcgisUploadPanel] Loaded ${totalCount} services from backend for all states`);
+                        console.log(`[ArcgisUploadPanel] Loaded ${totalCount} services from backend`);
                     } else {
                         console.warn(`[ArcgisUploadPanel] Backend returned no services, using local fallback`);
                         setServicesFromDb({});
                         setUsingFallback(true);
-                        setDataSource('local');
                     }
                 }
             } catch (error) {
@@ -383,7 +345,6 @@ function ArcgisUploadPanel({
                     setServicesFromDb({});
                     setUsingFallback(true);
                     setServicesError(`Backend unavailable (using local data): ${error.message || 'Network error'}`);
-                    setDataSource('local');
                 }
             } finally {
                 if (active) {
@@ -391,28 +352,26 @@ function ArcgisUploadPanel({
                 }
             }
         })();
-        
+
         return () => { active = false; };
-    }, [isOpen, dataSource]);
+    }, [isOpen]);
 
     // Show data source status as bottom notification
     useEffect(() => {
         const msgId = 'data-source-status';
-        if (isLoadingServices && dataSource === 'database') {
+        if (isLoadingServices) {
             addLoadingMessage(msgId, `🔄 Loading ArcGIS services from database...`);
         } else {
             removeLoadingMessage(msgId);
-            if (dataSource === 'local' && !usingFallback) {
-                showFinishedMessage(msgId, `📂 Using local JSON data (${ARCGIS_SERVICES.length} services)`);
-            } else if (dataSource === 'database' && usingFallback) {
+            if (usingFallback) {
                 showFinishedMessage(msgId, `📂 Database unavailable, using local data`);
-            } else if (dataSource === 'database' && !isLoadingServices && ARCGIS_SERVICES.length > 0) {
+            } else if (ARCGIS_SERVICES.length > 0) {
                 showFinishedMessage(msgId, `🌐 Loaded from database: ${ARCGIS_SERVICES.length} services`);
             }
         }
-    }, [isLoadingServices, dataSource, usingFallback, ARCGIS_SERVICES.length]);
+    }, [isLoadingServices, usingFallback, ARCGIS_SERVICES.length]);
 
-    // Reset state when data source changes (but not when panel just opens/closes)
+    // Reset state when data source TYPE changes (local ↔ database toggle)
     useEffect(() => {
         // Reset per-datasource caches/UI
         setServiceLayers({});
@@ -434,7 +393,26 @@ function ArcgisUploadPanel({
         selectionsLoadedRef.current = false;
         activeSearchRef.current = null;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dataSource, ARCGIS_SERVICES.length]); // Only reset when datasource changes
+    }, []); // Run once on mount to initialise caches
+
+    // When the services list changes (e.g. DB finishes loading), re-run any active search
+    // so results don't silently disappear or become stale.
+    useEffect(() => {
+        if (!activeSearchRef.current || !getScopedServicesRef.current) return;
+        const { keyword, searchType: type } = activeSearchRef.current;
+        const newScopedServices = getScopedServicesRef.current();
+        const newScopedCodes = getScopedStateCodesRef.current();
+        activeSearchRef.current = { keyword, searchType: type, scopedServices: newScopedServices, scopedStateCodes: newScopedCodes };
+        const result = filterUploadPanelData({ services: newScopedServices, serviceLayers, searchType: type, keyword });
+        setSearchResult(result);
+        setExpandedStates(new Set(newScopedCodes));
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: newScopedCodes, serviceLayers });
+        initNav(mList.length);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ARCGIS_SERVICES.length]); // Re-run search when services list changes (DB loaded)
 
     useEffect(() => {
         if (!isOpen) {
@@ -492,8 +470,14 @@ function ArcgisUploadPanel({
     // Re-run filter (and refresh nav count) when layers load in during an active search
     useEffect(() => {
         if (!activeSearchRef.current) return;
-        const { keyword, searchType: type, scopedServices, scopedStateCodes } = activeSearchRef.current;
-        const result = filterUploadPanelData({ services: scopedServices, serviceLayers, searchType: type, keyword });
+        const { keyword, searchType: type, scopedStateCodes } = activeSearchRef.current;
+        // Always use latest scoped services so filteredFolders and servicesByStateAndFolder
+        // are built from the same data source, preventing key/url mismatch in stateFoldersToShow.
+        const latestScopedServices = getScopedServicesRef.current
+            ? getScopedServicesRef.current()
+            : activeSearchRef.current.scopedServices;
+        activeSearchRef.current.scopedServices = latestScopedServices;
+        const result = filterUploadPanelData({ services: latestScopedServices, serviceLayers, searchType: type, keyword });
         setSearchResult(result);
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
@@ -1749,6 +1733,9 @@ function ArcgisUploadPanel({
         }
         return STATE_CODES;
     };
+    // Keep refs up-to-date so effects (which have stale closures) can call the latest version
+    getScopedServicesRef.current = getScopedServices;
+    getScopedStateCodesRef.current = getScopedStateCodes;
 
     // Trigger loading layers for services in scope that are not yet loaded (used when searching for layers)
     const triggerLayerLoadForSearch = (type, scopedServicesList) => {
@@ -1932,12 +1919,13 @@ function ArcgisUploadPanel({
             let visibleServices = baseByFolder[folder] || [];
 
             // Apply search filter by intersecting with searched services for this folder.
+            // Match by key only (not key::url) to be robust against minor URL formatting
+            // differences between local JSON and DB (e.g. trailing slash), which would cause
+            // buildMatchList (key-only) and stateFoldersToShow (key::url) to disagree.
             if (searchResult) {
                 const searchedServices = searchResult.filteredFolders?.[folder] || [];
-                const searchedKeys = new Set(
-                    searchedServices.map(s => `${s.key}::${s.url}`)
-                );
-                visibleServices = visibleServices.filter(s => searchedKeys.has(`${s.key}::${s.url}`));
+                const searchedKeys = new Set(searchedServices.map(s => s.key));
+                visibleServices = visibleServices.filter(s => searchedKeys.has(s.key));
             }
 
             // Apply "show added only" after search filter.
@@ -2041,25 +2029,6 @@ function ArcgisUploadPanel({
                 ))}
             </div> */}
             
-            {/* Data source toggle */}
-            <div className="arcgis-upload-datasource-toggle">
-                <button
-                    className={`arcgis-upload-datasource-btn${dataSource === 'database' ? ' active' : ''}`}
-                    onClick={() => handleDataSourceChange('database')}
-                    title="Load services from database (live data with user modifications)"
-                    disabled={isLoadingServices}
-                >
-                    🌐 DB
-                </button>
-                <button
-                    className={`arcgis-upload-datasource-btn${dataSource === 'local' ? ' active' : ''}`}
-                    onClick={() => handleDataSourceChange('local')}
-                    title="Load services from local JSON files (original data)"
-                    disabled={isLoadingServices}
-                >
-                    📂 Local
-                </button>
-            </div>
         </div>
     );
 
@@ -2177,7 +2146,7 @@ function ArcgisUploadPanel({
                     </button>
                 </div>
                 {/* Only show search bar and services when not loading database data */}
-                {!(isLoadingServices && dataSource === 'database') && (
+                {!isLoadingServices && (
                     <>
                         <div className="upload-panel-sticky-toolbar">
                             {renderSearchBar()}
@@ -2196,16 +2165,6 @@ function ArcgisUploadPanel({
                                 <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
                             </div>
                             <div className="upload-panel-controls-row">
-                                <label className="upload-panel-datasource-switch" title={dataSource === 'database' ? 'Using database (click to switch to local)' : 'Using local JSON (click to switch to database)'}>
-                                    <span className={`upload-panel-ds-label${dataSource === 'local' ? ' active' : ''}`}>Local</span>
-                                    <span
-                                        className={`upload-panel-ds-track${dataSource === 'database' ? ' db' : ''}`}
-                                        onClick={() => !isLoadingServices && handleDataSourceChange(dataSource === 'database' ? 'local' : 'database')}
-                                    >
-                                        <span className="upload-panel-ds-thumb" />
-                                    </span>
-                                    <span className={`upload-panel-ds-label${dataSource === 'database' ? ' active' : ''}`}>DB</span>
-                                </label>
                                 <button 
                                     className="upload-panel-update-btn"
                                     onClick={handleUpdateServices}
