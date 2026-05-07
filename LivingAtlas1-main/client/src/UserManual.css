@@ -559,3 +559,24 @@ nav.um-nav-sidebar {
   flex-shrink: 0;
 }
 
+/* ---- Basemap Panel demo ---- */
+.um-basemap-demo-wrapper {
+  max-width: 380px;
+  margin: 0 auto 32px;
+  border: 1px solid #d0d7e2;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  background: #fff;
+  font-size: 0.86rem;
+}
+
+/* Override fixed positioning when used inside the demo wrapper */
+.um-basemap-demo-wrapper .basemap-switcher-panel {
+  position: static;
+  width: 100%;
+  height: auto;
+  box-shadow: none;
+  animation: none;
+}
+

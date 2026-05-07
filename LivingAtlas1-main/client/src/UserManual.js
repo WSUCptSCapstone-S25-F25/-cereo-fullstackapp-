@@ -21,6 +21,7 @@ import {
   faChevronUp,
   faChevronDown,
   faFolderPlus,
+  faMap,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart, faFolder } from '@fortawesome/free-regular-svg-icons';
 import './Card.css';
@@ -33,6 +34,7 @@ import './ArcGISPickerModal.css';
 import './ArcgisUploadPanel.css';
 import './CustomLayersPanel.css';
 import './LayerContextMenu.css';
+import './BasemapSwitcher.css';
 
 const SECTIONS = [
   { id: 'home',          label: '🏠  Overview' },
@@ -43,6 +45,7 @@ const SECTIONS = [
   { id: 'detail-view',   label: 'Card Detail View' },
   { id: 'arcgis-panel',     label: 'ArcGIS Upload Panel' },
   { id: 'custom-layers',    label: 'Custom Layers Panel' },
+  { id: 'basemap-panel',     label: 'Basemap Panel' },
 ];
 
 function UserManual() {
@@ -93,6 +96,7 @@ function UserManual() {
                 'arcgis-picker':  'Browse and select ArcGIS services and layers to link directly to a card — opened from the Add Card form.',
                 'arcgis-panel':   'Browse and toggle ArcGIS REST map layers organized by state, folder, and service.',
                 'custom-layers':  'Manage your personal saved layers with custom folders, drag-and-drop ordering, and pinned auto-load items.',
+                'basemap-panel':   'Switch between six Mapbox map styles while preserving your ArcGIS layers, camera position, and zoom level.',
               }[s.id]}
             </button>
           ))}
@@ -2303,6 +2307,163 @@ function UserManual() {
               <span className="um-feature-note">
                 You must be logged in to save layers. A login prompt will appear if you are not.
               </span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'basemap-panel' && (
+      <section className="um-section">
+        <h2>Basemap Panel</h2>
+        <p className="um-section-desc">
+          The Basemap Panel lets you switch between six Mapbox map styles directly from the
+          map view. Click the map icon on the left sidebar to open or close it. Switching
+          styles preserves all custom ArcGIS layers, the current camera position, zoom,
+          bearing, and pitch.
+        </p>
+
+        {/* ---- Overview demo ---- */}
+        <div className="um-basemap-demo-wrapper">
+          <div className="basemap-switcher-header">
+            <span className="basemap-switcher-title">Map Style</span>
+            <button className="basemap-switcher-close" style={{ pointerEvents: 'none' }}>✕</button>
+          </div>
+          <div className="basemap-switcher-list" style={{ maxHeight: '260px', overflowY: 'auto' }}>
+            {[
+              { id: 'streets-v12',         label: 'streets-v12',         bg: '#c8d8e8', active: true },
+              { id: 'outdoors-v12',        label: 'outdoors-v12',        bg: '#c3d9be' },
+              { id: 'satellite-v9',        label: 'satellite-v9',        bg: '#3a4a3a' },
+              { id: 'satellite-streets-v12', label: 'satellite-streets-v12', bg: '#4a5a4a' },
+              { id: 'navigation-day-v1',   label: 'navigation-day-v1',   bg: '#dce8f2' },
+              { id: 'navigation-night-v1', label: 'navigation-night-v1', bg: '#1e2433' },
+            ].map(bm => (
+              <div
+                key={bm.id}
+                className={`basemap-switcher-item${bm.active ? ' basemap-switcher-item--active' : ''}`}
+                style={{ pointerEvents: 'none' }}
+              >
+                <div
+                  className="basemap-switcher-thumb"
+                  style={{ background: bm.bg }}
+                />
+                <span className="basemap-switcher-label">{bm.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ---- Feature rows ---- */}
+        <div className="um-feature-list">
+
+          {/* 1. Opening */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <button
+                  type="button"
+                  style={{
+                    pointerEvents: 'none', background: '#fff', border: '1px solid #ccc',
+                    borderRadius: '6px', padding: '8px 14px', fontSize: '14px',
+                    color: '#1976d2', display: 'flex', alignItems: 'center', gap: '8px',
+                    cursor: 'default',
+                  }}
+                >
+                  <FontAwesomeIcon icon={faMap} />
+                  <span>Change Basemap</span>
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Opening the Panel</p>
+              <p className="um-feature-desc">
+                Click the <strong>map icon</strong> on the left sidebar to toggle the
+                Basemap Panel. Click it again, or press the <strong>✕</strong> in the panel
+                header, to close it.
+              </p>
+            </div>
+          </div>
+
+          {/* 2. Six styles */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 0, minWidth: '240px' }}>
+                {[
+                  { label: 'streets-v12',  bg: '#c8d8e8' },
+                  { label: 'outdoors-v12', bg: '#c3d9be' },
+                  { label: 'satellite-v9', bg: '#3a4a3a' },
+                ].map(bm => (
+                  <div key={bm.label} className="basemap-switcher-item" style={{ pointerEvents: 'none' }}>
+                    <div style={{ width: '72px', height: '48px', borderRadius: '4px', border: '1px solid #ddd', background: bm.bg, flexShrink: 0 }} />
+                    <span className="basemap-switcher-label">{bm.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Six Built-in Styles</p>
+              <p className="um-feature-desc">
+                The panel lists six Mapbox basemap styles:{' '}
+                <em>streets-v12</em>, <em>outdoors-v12</em>, <em>satellite-v9</em>,{' '}
+                <em>satellite-streets-v12</em>, <em>navigation-day-v1</em>, and{' '}
+                <em>navigation-night-v1</em>. Each entry shows a color preview thumbnail
+                and the style name.
+              </p>
+            </div>
+          </div>
+
+          {/* 3. Active selection */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 0, minWidth: '240px' }}>
+                <div className="basemap-switcher-item" style={{ pointerEvents: 'none', opacity: 0.55 }}>
+                  <div style={{ width: '72px', height: '48px', borderRadius: '4px', border: '1px solid #ddd', background: '#c8d8e8', flexShrink: 0 }} />
+                  <span className="basemap-switcher-label">streets-v12</span>
+                </div>
+                <div className="basemap-switcher-item basemap-switcher-item--active" style={{ pointerEvents: 'none' }}>
+                  <div style={{ width: '72px', height: '48px', borderRadius: '4px', border: '1px solid #ddd', background: '#c3d9be', flexShrink: 0 }} />
+                  <span className="basemap-switcher-label">outdoors-v12</span>
+                </div>
+                <div className="basemap-switcher-item" style={{ pointerEvents: 'none', opacity: 0.55 }}>
+                  <div style={{ width: '72px', height: '48px', borderRadius: '4px', border: '1px solid #ddd', background: '#3a4a3a', flexShrink: 0 }} />
+                  <span className="basemap-switcher-label">satellite-v9</span>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Active Style Indicator</p>
+              <p className="um-feature-desc">
+                The currently active style is highlighted with a light-blue background and a
+                blue left border. Clicking any other style immediately applies it to the map
+                without a page reload.
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Layer & state preservation */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', gap: '8px', minWidth: '190px' }}>
+                {[
+                  'ArcGIS layers preserved',
+                  'Zoom & position kept',
+                  'Bearing & pitch restored',
+                ].map(txt => (
+                  <div key={txt} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#2a6b2a' }}>
+                    <span style={{ fontSize: '15px', lineHeight: 1 }}>✓</span>
+                    {txt}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Layer &amp; State Preservation</p>
+              <p className="um-feature-desc">
+                When you switch styles, the map automatically saves your camera position
+                (center, zoom, bearing, pitch) and all active custom ArcGIS layers, then
+                restores them once the new style finishes loading.
+              </p>
             </div>
           </div>
 
