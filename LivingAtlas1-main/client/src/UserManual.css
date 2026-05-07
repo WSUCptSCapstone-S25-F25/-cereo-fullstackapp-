@@ -1,0 +1,237 @@
+/* ========================================
+   User Manual — page & layout styles only.
+   Card element styles come from Card.css.
+   ======================================== */
+
+.user-manual {
+  font-family: 'Roboto', sans-serif;
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 24px 60px;
+  color: #333;
+}
+
+.user-manual h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin-bottom: 8px;
+}
+
+.user-manual-intro {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.7;
+  margin-bottom: 36px;
+  border-bottom: 1px solid #e0e8f0;
+  padding-bottom: 20px;
+}
+
+/* ---- Section ---- */
+.um-section {
+  margin-bottom: 52px;
+}
+
+.um-section > h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin: 0 0 4px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #dce6f0;
+}
+
+.um-section-desc {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.6;
+  margin: 10px 0 28px;
+}
+
+/* ---- Full card demo ---- */
+.um-card-demo-wrapper {
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.um-card-demo-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* constrains the card to a realistic column width */
+.um-card-container {
+  width: 270px;
+}
+
+/* ---- Feature rows ---- */
+.um-feature-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.um-feature-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 22px 0;
+  border-bottom: 1px solid #f0f4f8;
+}
+
+.um-feature-row:last-child {
+  border-bottom: none;
+}
+
+/* demo side */
+.um-feature-demo {
+  flex: 0 0 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* info side */
+.um-feature-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.um-feature-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin: 0 0 6px;
+}
+
+.um-feature-desc {
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.um-feature-note {
+  display: block;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  font-style: italic;
+  margin-top: 7px;
+}
+
+/* ---- Isolated demo helpers ---- */
+
+/* generic light-bg container for small demos */
+.um-isolated-demo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #f5f8fb;
+  border: 1px solid #e0e8f0;
+  border-radius: 8px;
+}
+
+/* mini thumbnail container for nav-arrow & dots demos */
+.um-thumb-demo {
+  width: 200px;
+  height: 120px;
+  position: relative;
+  border-radius: 7px 7px 0 0;
+  overflow: hidden;
+  background-color: #d9dde3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.um-thumb-demo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Force nav arrows visible for the navigation demo */
+.um-thumb-demo .card-image-nav {
+  opacity: 1 !important;
+}
+
+/* Dots demo: .card-image-indicators is normally absolute inside
+   the thumbnail container. Override for standalone display. */
+.um-dots-demo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  background: #4b5563;
+  border-radius: 8px;
+}
+
+.um-dots-demo .card-image-indicators {
+  position: static;
+  transform: none;
+}
+
+/* Meta row demo: constrain width so it mirrors a real card column */
+.um-meta-row-demo {
+  width: 200px;
+}
+
+/* Map-selected demo: mini card-like box */
+.um-selected-card-demo {
+  width: 200px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .um-feature-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .um-feature-demo {
+    flex: none;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ── Toolbar section helpers ── */
+
+/* Wrapper for the full card-panel-top preview demo */
+.um-toolbar-demo-wrapper {
+  margin: 0 0 28px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+}
+
+/* Stop the full-page Content2.css fixed panel styles leaking into the demo */
+.um-toolbar-demo-wrapper .card-panel-top {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Search bar demo wrapper: give it a constrained width */
+.um-searchbar-demo {
+  width: 280px;
+  background: #fff;
+  border: 1px solid #e0e7ef;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+/* Make sure sort-dropdown inside isolated demo doesn't stretch */
+.um-isolated-demo .sort-dropdown {
+  width: auto !important;
+  min-width: auto !important;
+}

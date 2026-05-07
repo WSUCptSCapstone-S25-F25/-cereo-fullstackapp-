@@ -12,6 +12,7 @@ import Administration from './Administration';
 import Reset from './Reset';
 import SwitchAccount from './SwitchAccount';
 import ChangelogHistory from './ChangelogHistory';
+import UserManual from './UserManual';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
@@ -170,6 +171,7 @@ function App() {
           )}
         </Route>
         <Route path="/update-history" component={ChangelogHistory} />
+        <Route path="/user-manual" component={UserManual} />
         <Route path="/reset-password" component={Reset} />
         <Route path="*">
           <h1>404 - Page Not Found</h1>

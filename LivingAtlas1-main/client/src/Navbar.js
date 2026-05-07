@@ -50,6 +50,9 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
         <li>
           <Link to="/update-history" className={location.pathname === '/update-history' ? 'active' : ''}>Updates</Link>
         </li>
+        <li>
+          <Link to="/user-manual" className={location.pathname === '/user-manual' ? 'active' : ''}>User Manual</Link>
+        </li>
         {!isLoggedIn && (
           <li>
             <Link to="/signup" className={location.pathname === '/signup' ? 'active' : ''}>Register</Link>
