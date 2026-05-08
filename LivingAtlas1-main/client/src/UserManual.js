@@ -977,6 +977,52 @@ function UserManual() {
             </div>
           </div>
 
+          {/* 5b. Polygon Area sub-options */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '240px', gap: '10px', pointerEvents: 'none' }}>
+                {/* tabs — polygon active */}
+                <div className="form-modal-location-tabs">
+                  <button type="button" className="form-modal-location-tab">Single Point</button>
+                  <button type="button" className="form-modal-location-tab active">Polygon Area</button>
+                </div>
+                {/* polygon section */}
+                <div className="form-modal-polygon-section">
+                  <button type="button" className="location_button" style={{ marginBottom: 0 }}>
+                    <FontAwesomeIcon icon={faDrawPolygon} style={{ marginRight: '6px' }} />
+                    Draw Polygon on Map
+                  </button>
+                  <div className="form-modal-polygon-summary">
+                    <span className="form-modal-polygon-check">&#10003;</span>
+                    Polygon saved: 5 points
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Polygon Area Mode</p>
+              <p className="um-feature-desc">
+                After switching to <strong>Polygon Area</strong>, click{' '}
+                <strong>Draw Polygon on Map</strong> to open the Draw Polygon Panel
+                floating on the map. Place vertices by clicking the map, then click{' '}
+                <strong>Save</strong> in the panel to confirm. The form shows a
+                confirmation summary (e.g. "Polygon saved: 5 points"). You can click{' '}
+                <strong>Redraw Polygon</strong> at any time to replace the shape.
+              </p>
+              <p className="um-feature-desc" style={{ marginTop: '8px' }}>
+                For a full breakdown of the drawing tools, styles, and transform modes,
+                see the{' '}
+                <button
+                  type="button"
+                  className="um-inline-link"
+                  onClick={() => setActiveSection('polygon-draw')}
+                >
+                  Draw Polygon Panel
+                </button>{' '}tab.
+              </p>
+            </div>
+          </div>
+
           {/* 6. Images & Files */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
