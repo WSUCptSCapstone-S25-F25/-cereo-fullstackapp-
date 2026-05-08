@@ -17,7 +17,7 @@ import ArcgisRenameItem from './ArcgisRenameItem';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import ClearAllLayersButton from './ClearAllLayersButton';
 
@@ -1001,9 +1001,14 @@ function CustomLayersPanel({
             <div className={`custom-layers-panel${splitBottom ? ' custom-layers-panel--split-bottom' : ''}`}>
                 <div className="custom-layers-panel-header">
                     <h3>Custom Layers</h3>
-                    <button className="custom-layers-panel-close-btn" onClick={onClose}>
-                        <FontAwesomeIcon icon={faTimes} />
-                    </button>
+                    <div className="custom-layers-panel-header-actions">
+                        <button className="custom-layers-panel-close-btn" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
+                            <FontAwesomeIcon icon={faQuestion} />
+                        </button>
+                        <button className="custom-layers-panel-close-btn" onClick={onClose}>
+                            <FontAwesomeIcon icon={faTimes} />
+                        </button>
+                    </div>
                 </div>
                 <div className="custom-layers-panel-empty">
                     Please log in to use custom layers.
@@ -1017,16 +1022,21 @@ function CustomLayersPanel({
              onContextMenu={e => e.preventDefault()}>
             <div className="custom-layers-panel-header">
                 <h3>Custom Layers</h3>
-                <button
-                    className="custom-layers-panel-new-folder-btn"
-                    onClick={handleCreateFolder}
-                    title="New Folder"
-                >
-                    <FontAwesomeIcon icon={faFolderPlus} />
-                </button>
-                <button className="custom-layers-panel-close-btn" onClick={onClose}>
-                    <FontAwesomeIcon icon={faTimes} />
-                </button>
+                <div className="custom-layers-panel-header-actions">
+                    <button
+                        className="custom-layers-panel-new-folder-btn"
+                        onClick={handleCreateFolder}
+                        title="New Folder"
+                    >
+                        <FontAwesomeIcon icon={faFolderPlus} />
+                    </button>
+                    <button className="custom-layers-panel-close-btn" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
+                        <FontAwesomeIcon icon={faQuestion} />
+                    </button>
+                    <button className="custom-layers-panel-close-btn" onClick={onClose}>
+                        <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                </div>
             </div>
 
             {/* Sticky toolbar: search bar, opacity, show-added-only */}

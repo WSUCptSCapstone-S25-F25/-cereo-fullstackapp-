@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faHeart as solidHeart,
@@ -71,6 +71,13 @@ const SECTIONS = [
 
 function UserManual() {
   const [activeSection, setActiveSection] = useState('home');
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sec = params.get('section');
+    if (sec && SECTIONS.some(s => s.id === sec)) {
+      setActiveSection(sec);
+    }
+  }, []);
   const navTo = (id) => { setActiveSection(id); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   return (
     <div className="user-manual">

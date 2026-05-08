@@ -39,7 +39,7 @@ import {
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faSync, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import {
     useArcgisLoadingMessages,
@@ -2141,9 +2141,14 @@ function ArcgisUploadPanel({
             <div className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}`} onContextMenu={e => e.preventDefault()}>
                 <div className="upload-panel-header">
                     <h3>Browse ArcGIS Services</h3>
-                    <button className="upload-panel-header-close-btn" onClick={onClose}>
-                        <FontAwesomeIcon icon={faTimes} />
-                    </button>
+                    <div className="upload-panel-header-actions">
+                        <button className="upload-panel-header-close-btn" title="Help" onClick={() => window.open('/user-manual?section=arcgis-panel', '_blank')}>
+                            <FontAwesomeIcon icon={faQuestion} />
+                        </button>
+                        <button className="upload-panel-header-close-btn" onClick={onClose}>
+                            <FontAwesomeIcon icon={faTimes} />
+                        </button>
+                    </div>
                 </div>
                 {/* Only show search bar and services when not loading database data */}
                 {!isLoadingServices && (
