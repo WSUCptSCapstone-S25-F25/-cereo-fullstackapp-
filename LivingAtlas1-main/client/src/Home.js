@@ -59,6 +59,7 @@ function Home(props) {
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     const [arcgisNavigateTarget, setArcgisNavigateTarget] = useState(null);
     const [isCustomLayerPanelOpen, setIsCustomLayerPanelOpen] = useState(false);
+    const [customLayersRefreshKey, setCustomLayersRefreshKey] = useState(0);
     const [cardPanelSide, setCardPanelSide] = useState('right');
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
@@ -460,6 +461,7 @@ function Home(props) {
                     handleAreaCheckbox={handleAreaCheckbox}
                     navigateToItem={arcgisNavigateTarget}
                     onNavigateToItemDone={() => setArcgisNavigateTarget(null)}
+                    onCustomLayerSaved={() => setCustomLayersRefreshKey(k => k + 1)}
                 />
 
                 {/* Custom Layers Button */}
@@ -477,6 +479,7 @@ function Home(props) {
                     onClose={() => setIsCustomLayerPanelOpen(false)}
                     splitBottom={cardPanelSide === 'left' && !isCollapsed}
                     mapInstance={getMapboxMap}
+                    refreshKey={customLayersRefreshKey}
                 />
 
                 {/* Basemap Switcher Button */}

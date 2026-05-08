@@ -37,6 +37,15 @@ export function buildMatchList({ searchResult, allServicesByState, stateCodes, s
             const filteredServices = searchResult.filteredFolders?.[folder] || [];
             if (filteredServices.length === 0) return;
 
+            // Only process folders where at least one filtered service actually belongs to
+            // this state. Without this check, a shared folder name (e.g. "Root") in a
+            // non-scoped state would match the scoped state's filteredFolders entries and
+            // inflate the total count with invisible matches.
+            const hasLocalService = filteredServices.some(
+                fs => stateServices.some(s => s.key === fs.key)
+            );
+            if (!hasLocalService) return;
+
             // Folder-level match
             if (searchResult.matchedFolderNames?.has(folder)) {
                 matches.push({ id: `folder-${stateCode}-${folder}`, type: 'folder', stateCode, folder });
@@ -79,12 +88,15 @@ export function buildMatchList({ searchResult, allServicesByState, stateCodes, s
  * React hook for search result navigation.
  * Scrolls to DOM elements via [data-search-match-id] attributes.
  *
+ * Tracks the current match by stable ID rather than by list position, so async
+ * layer insertions that shift positions never corrupt navigation direction.
+ *
  * Usage:
  *   const matchList = buildMatchList({ ... });
  *   const { currentIndex, total, currentMatchId, goToNext, goToPrev, initNav, resetNav } = useSearchNav(matchList);
  *
- *   // After search completes (call with the NEW match count):
- *   initNav(mList.length);
+ *   // After search completes (call with the NEW match list):
+ *   initNav(mList);
  *
  *   // After clear:
  *   resetNav();
@@ -95,16 +107,20 @@ export function buildMatchList({ searchResult, allServicesByState, stateCodes, s
  * @param {Array} matchList - From buildMatchList
  */
 export function useSearchNav(matchList) {
-    const [currentIndex, setCurrentIndex] = useState(-1);
+    // Track by stable match ID, not by position. Positions shift when async layers
+    // load and insert entries; IDs do not.
+    const [currentId, setCurrentId] = useState(null);
     const shouldScrollRef = useRef(false);
 
-    // Scroll to the current match after each render where scroll was requested
+    // Derive the positional index on each render (O(n) but list is small).
+    const currentIndex = currentId ? matchList.findIndex(m => m.id === currentId) : -1;
+
+    // Scroll to the current match after each render where scroll was requested.
     useEffect(() => {
         if (shouldScrollRef.current) {
             shouldScrollRef.current = false;
-            if (currentIndex >= 0 && currentIndex < matchList.length) {
-                const match = matchList[currentIndex];
-                const el = document.querySelector(`[data-search-match-id="${match.id}"]`);
+            if (currentId) {
+                const el = document.querySelector(`[data-search-match-id="${currentId}"]`);
                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
@@ -113,39 +129,47 @@ export function useSearchNav(matchList) {
     // When layers load in asynchronously after a search that found 0 results,
     // auto-navigate to the first result once the match list becomes non-empty.
     useEffect(() => {
-        if (currentIndex === -1 && matchList.length > 0) {
+        if (!currentId && matchList.length > 0) {
             shouldScrollRef.current = true;
-            setCurrentIndex(0);
+            setCurrentId(matchList[0].id);
         }
     }, [matchList.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const goToNext = useCallback(() => {
         if (matchList.length === 0) return;
         shouldScrollRef.current = true;
-        setCurrentIndex(prev => (prev + 1) % matchList.length);
-    }, [matchList.length]);
+        setCurrentId(prevId => {
+            const idx = prevId ? matchList.findIndex(m => m.id === prevId) : -1;
+            const next = idx === -1 ? 0 : (idx + 1) % matchList.length;
+            return matchList[next].id;
+        });
+    }, [matchList]);
 
     const goToPrev = useCallback(() => {
         if (matchList.length === 0) return;
         shouldScrollRef.current = true;
-        setCurrentIndex(prev => (prev - 1 + matchList.length) % matchList.length);
-    }, [matchList.length]);
+        setCurrentId(prevId => {
+            const idx = prevId ? matchList.findIndex(m => m.id === prevId) : -1;
+            const next = idx === -1 ? matchList.length - 1 : (idx - 1 + matchList.length) % matchList.length;
+            return matchList[next].id;
+        });
+    }, [matchList]);
 
     /**
-     * Call with the count of the NEW matchList (obtained before React re-renders)
-     * so the initial index is set correctly.
+     * Call with the NEW matchList (obtained before React re-renders) so the initial
+     * match ID is recorded correctly from the start.
      */
-    const initNav = useCallback((newMatchCount) => {
-        if (newMatchCount > 0) {
+    const initNav = useCallback((newMatchList) => {
+        if (newMatchList.length > 0) {
             shouldScrollRef.current = true;
-            setCurrentIndex(0);
+            setCurrentId(newMatchList[0].id);
         } else {
-            setCurrentIndex(-1);
+            setCurrentId(null);
         }
     }, []);
 
     const resetNav = useCallback(() => {
-        setCurrentIndex(-1);
+        setCurrentId(null);
         shouldScrollRef.current = false;
     }, []);
 

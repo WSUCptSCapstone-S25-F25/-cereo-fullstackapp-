@@ -154,6 +154,7 @@ function ArcgisUploadPanel({
     handleAreaCheckbox,
     navigateToItem = null,
     onNavigateToItemDone,
+    onCustomLayerSaved,
 }) {
     // Track selected state
     const [selectedState, setSelectedState] = useState('WA');
@@ -410,7 +411,7 @@ function ArcgisUploadPanel({
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
         const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: newScopedCodes, serviceLayers });
-        initNav(mList.length);
+        initNav(mList);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ARCGIS_SERVICES.length]); // Re-run search when services list changes (DB loaded)
 
@@ -483,7 +484,7 @@ function ArcgisUploadPanel({
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
         const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: scopedStateCodes, serviceLayers });
-        initNav(mList.length);
+        initNav(mList);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serviceLayers]);
 
@@ -1788,7 +1789,7 @@ function ArcgisUploadPanel({
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
         const mList = buildMatchList({ searchResult: result, allServicesByState: ALL_SERVICES_BY_STATE, stateCodes: scopedCodes, serviceLayers });
-        initNav(mList.length);
+        initNav(mList);
         // Kick off loading unloaded service layers so layer-name matches aren’t missed
         triggerLayerLoadForSearch(type, scopedServicesList);
     };
@@ -2059,6 +2060,7 @@ function ArcgisUploadPanel({
         try {
             await saveCustomLayer(email, data.service);
             showFinishedMessage(`Saved "${data.service.label}" to Custom Layers`);
+            onCustomLayerSaved?.();
         } catch (err) {
             alert(`Failed to save: ${err.message}`);
         }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, unstable_batchedUpdates } from "react-dom";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
@@ -26,6 +26,7 @@ function CustomLayersPanel({
     onClose,
     splitBottom = false,
     mapInstance,
+    refreshKey = 0,
 }) {
     const userEmail = localStorage.getItem('email') || '';
 
@@ -65,6 +66,7 @@ function CustomLayersPanel({
 
     const prevCheckedLayerIds = useRef({});
     const activeSearchRef = useRef(null); // { keyword, searchType } — tracks active search for auto re-run when layers load
+    const loadedKeyRef = useRef(null); // tracks "userEmail:refreshKey" for which data is loaded
 
     // Rename state
     const [renamingItem, setRenamingItem] = useState(null);
@@ -111,29 +113,34 @@ function CustomLayersPanel({
         statusTimer.current = setTimeout(() => setStatusMsg(null), 3000);
     };
 
-    // Load custom layers + folders from backend when panel opens
+    // Load custom layers + folders from backend — once per user+refreshKey, not on every panel open/close
     useEffect(() => {
         if (!isOpen || !userEmail) return;
+        const loadKey = `${userEmail}:${refreshKey}`;
+        if (loadedKeyRef.current === loadKey) return; // already loaded for this user/version
+        setIsLoading(true);
         let active = true;
         (async () => {
-            setIsLoading(true);
             try {
                 const [layers, folders] = await Promise.all([
                     fetchCustomLayers(userEmail),
                     fetchCustomFolders(userEmail),
                 ]);
                 if (active) {
-                    setCustomServices(layers);
-                    setDbFolders(folders);
+                    unstable_batchedUpdates(() => {
+                        setCustomServices(layers);
+                        setDbFolders(folders);
+                        setIsLoading(false);
+                    });
+                    loadedKeyRef.current = loadKey;
                 }
             } catch (err) {
                 console.warn('[CustomLayersPanel] Failed to load custom layers:', err);
-            } finally {
-                setIsLoading(false);
+                if (active) setIsLoading(false);
             }
         })();
         return () => { active = false; };
-    }, [isOpen, userEmail]);
+    }, [isOpen, userEmail, refreshKey]);
 
     // Group services by folder (preserving sort_order from DB)
     const servicesByFolder = {};
@@ -206,7 +213,7 @@ function CustomLayersPanel({
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
         const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: customServices }, stateCodes: ['CUSTOM'], serviceLayers });
-        initNav(mList.length);
+        initNav(mList);
         triggerLayerLoadForSearch(searchType);
     };
 
