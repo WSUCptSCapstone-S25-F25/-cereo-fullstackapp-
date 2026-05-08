@@ -64,6 +64,10 @@
     box-shadow: 0 4px 12px rgba(25,118,210,0.12);
 }
 
+.custom-layers-panel-close-btn--help {
+    font-size: 11px;
+}
+
 .custom-layers-panel-header-actions {
     display: flex;
     align-items: center;

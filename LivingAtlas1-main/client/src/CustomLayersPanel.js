@@ -1002,7 +1002,7 @@ function CustomLayersPanel({
                 <div className="custom-layers-panel-header">
                     <h3>Custom Layers</h3>
                     <div className="custom-layers-panel-header-actions">
-                        <button className="custom-layers-panel-close-btn" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
+                        <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
                             <FontAwesomeIcon icon={faQuestion} />
                         </button>
                         <button className="custom-layers-panel-close-btn" onClick={onClose}>
@@ -1030,7 +1030,7 @@ function CustomLayersPanel({
                     >
                         <FontAwesomeIcon icon={faFolderPlus} />
                     </button>
-                    <button className="custom-layers-panel-close-btn" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
+                    <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
                         <FontAwesomeIcon icon={faQuestion} />
                     </button>
                     <button className="custom-layers-panel-close-btn" onClick={onClose}>

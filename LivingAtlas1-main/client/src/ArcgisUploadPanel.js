@@ -2142,7 +2142,7 @@ function ArcgisUploadPanel({
                 <div className="upload-panel-header">
                     <h3>Browse ArcGIS Services</h3>
                     <div className="upload-panel-header-actions">
-                        <button className="upload-panel-header-close-btn" title="Help" onClick={() => window.open('/user-manual?section=arcgis-panel', '_blank')}>
+                        <button className="upload-panel-header-close-btn upload-panel-header-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=arcgis-panel', '_blank')}>
                             <FontAwesomeIcon icon={faQuestion} />
                         </button>
                         <button className="upload-panel-header-close-btn" onClick={onClose}>

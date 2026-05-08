@@ -12,7 +12,7 @@ import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js
 import { allMarkers } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip, faRightLeft, faThumbtack, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip, faRightLeft, faThumbtack, faEllipsisV, faQuestion } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
@@ -854,6 +854,28 @@ function Content2(props) {
                 />
 
                 <div className="card-panel-top">
+                    <div className="card-panel-titlebar">
+                        <div className="card-panel-titlebar-text-group">
+                            <span className="card-panel-titlebar-text">Cards</span>
+                            <span className="card-panel-titlebar-subtitle">{cardsInViewByType.length} {scopeSubtitle}</span>
+                        </div>
+                        <div className="card-panel-titlebar-actions">
+                            <button
+                                className="card-panel-titlebar-btn"
+                                title="Help"
+                                onClick={() => window.open('/user-manual?section=card-container', '_blank')}
+                            >
+                                <FontAwesomeIcon icon={faQuestion} />
+                            </button>
+                            <button
+                                className="card-panel-titlebar-btn"
+                                title="Close panel"
+                                onClick={() => props.setIsCollapsed?.(true)}
+                            >
+                                <FontAwesomeIcon icon={faTimes} />
+                            </button>
+                        </div>
+                    </div>
                     <div className="card-panel-toolbar">
                             <button
                                 type="button"
@@ -983,11 +1005,6 @@ function Content2(props) {
                         >
                             <FontAwesomeIcon icon={faTimes} />
                         </button>
-                    </div>
-
-                    <div className="card-panel-info-bar">
-                        <span className="card-panel-title">Cards</span>
-                        <span className="card-panel-subtitle">{cardsInViewByType.length} {scopeSubtitle}</span>
                     </div>
                 </div>
 
