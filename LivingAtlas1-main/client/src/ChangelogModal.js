@@ -15,12 +15,11 @@ function ChangelogModal({ isOpen, onClose }) {
             </div>
             <div className="changelog-modal-body">
 
-                <h3>Update Date: 5/6/2026</h3>
-                <p>Added a User Manual page (accessible from the top navbar) covering card container features, the Card Detail View modal, and the ArcGIS Upload Panel.</p>
-                <p>The card container and cards now adapt to different screen sizes automatically, switching to a two-column layout as needed while keeping card dimensions fixed.</p>
-                <p>Added a login prompt modal that appears when a non-logged-in user attempts to use Add Card, Pin, Favorite, Show Favorites, or any action button inside the Card Detail View.</p>
-                <p>Fixed a bug where search results in the ArcGIS Upload Panel were not displaying correctly.</p>
-                <p>Removed the local/DB data source toggle from the Upload Panel — it now always loads services from the database.</p>
+                <h3>Update Date: 5/7/2026</h3>
+                <p>Expanded the User Manual to cover all app features, including all panels and workflows.</p>
+                <p>Added help (?) buttons to the main panels on the home page; clicking one opens the corresponding section in the User Manual.</p>
+                <p>Fixed a bug where navigating to a layer via a linked item in the ArcGIS Upload Panel would jump to the wrong location, caused by a loading order issue.</p>
+                <p>Fixed a bug where the Custom Layers Panel displayed incorrect content after being opened, caused by a loading order issue.</p>
 
             </div>
             <div className="changelog-modal-footer">

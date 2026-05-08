@@ -7,6 +7,13 @@ function ChangelogHistory() {
             <h1>Update History</h1>
             <div className="changelog-history-body">
 
+                <h3>Update Date: 5/7/2026</h3>
+                <p>Expanded the User Manual to cover all app features, including all panels and workflows.</p>
+                <p>Added help (?) buttons to the main panels on the home page; clicking one opens the corresponding section in the User Manual.</p>
+                <p>Fixed a bug where navigating to a layer via a linked item in the ArcGIS Upload Panel would jump to the wrong location, caused by a loading order issue.</p>
+                <p>Fixed a bug where the Custom Layers Panel displayed incorrect content after being opened, caused by a loading order issue.</p>
+                <hr />
+
                 <h3>Update Date: 5/6/2026</h3>
                 <p>Added a User Manual page (accessible from the top navbar) covering card container features, the Card Detail View modal, and the ArcGIS Upload Panel.</p>
                 <p>The card container and cards now adapt to different screen sizes automatically, switching to a two-column layout as needed while keeping card dimensions fixed.</p>
