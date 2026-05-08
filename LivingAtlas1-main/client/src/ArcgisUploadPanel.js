@@ -244,6 +244,9 @@ function ArcgisUploadPanel({
     // Persistence: track whether saved selections have been loaded for current state/datasource
     const selectionsLoadedRef = useRef(false);
     const saveTimerRef = useRef(null);
+    // Cache flags: prevent re-fetching on subsequent panel opens
+    const servicesLoadedRef = useRef(false);
+    const preferencesLoadedRef = useRef(false);
     const userEmail = localStorage.getItem('email') || '';
     const pinnedWriteInitializedRef = useRef(false);
     const activeSearchRef = useRef(null); // { keyword, searchType } — tracks active search for auto re-run when layers load
@@ -313,9 +316,11 @@ function ArcgisUploadPanel({
     const [updateProgress, setUpdateProgress] = useState('');
     const [updateResults, setUpdateResults] = useState(null);
 
-    // Fetch services from DB whenever panel opens
+    // Fetch services from DB on first panel open; skip on subsequent opens unless fallback was used
     useEffect(() => {
         if (!isOpen) return;
+        // Skip if already successfully loaded from backend
+        if (servicesLoadedRef.current) return;
 
         let active = true;
 
@@ -333,11 +338,13 @@ function ArcgisUploadPanel({
                     if (totalCount > 0) {
                         setServicesFromDb(stateMap);
                         setUsingFallback(false);
+                        servicesLoadedRef.current = true;
                         console.log(`[ArcgisUploadPanel] Loaded ${totalCount} services from backend`);
                     } else {
                         console.warn(`[ArcgisUploadPanel] Backend returned no services, using local fallback`);
                         setServicesFromDb({});
                         setUsingFallback(true);
+                        // Don't set servicesLoadedRef — retry on next open
                     }
                 }
             } catch (error) {
@@ -346,6 +353,7 @@ function ArcgisUploadPanel({
                     setServicesFromDb({});
                     setUsingFallback(true);
                     setServicesError(`Backend unavailable (using local data): ${error.message || 'Network error'}`);
+                    // Don't set servicesLoadedRef — retry on next open
                 }
             } finally {
                 if (active) {
@@ -559,6 +567,8 @@ function ArcgisUploadPanel({
     // --- Pinned items: user preference-backed auto-load ---
     useEffect(() => {
         if (!isOpen) return;
+        // Skip if preferences were already successfully loaded
+        if (preferencesLoadedRef.current) return;
 
         let cancelled = false;
 
@@ -588,6 +598,7 @@ function ArcgisUploadPanel({
                     setPinnedItems(extractPinnedItemsFromPreferences(localPreferences));
                     setPinnedPreferencesLoaded(false);
                     setLocalPinnedPreferencesReady(true);
+                    preferencesLoadedRef.current = true;
                 }
                 return;
             }
@@ -616,6 +627,7 @@ function ArcgisUploadPanel({
             } finally {
                 if (!cancelled) {
                     setPinnedPreferencesLoaded(true);
+                    preferencesLoadedRef.current = true;
                 }
             }
         };
