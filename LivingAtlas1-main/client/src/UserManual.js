@@ -1075,6 +1075,41 @@ function UserManual() {
             </div>
           </div>
 
+          {/* 8. Card marker / polygon map popup */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '260px', maxWidth: '300px', alignItems: 'stretch' }}>
+                <div className="um-card-popup-demo-wrapper">
+                  <div className="card-pin-popup-panel">
+                    {/* thumbnail area */}
+                    <div className="card-pin-popup-media">
+                      <div style={{ width: '100%', height: '120px', background: '#d9dde3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ color: '#9ca3af', fontSize: '12px' }}>Card thumbnail</span>
+                      </div>
+                    </div>
+                    {/* info panel */}
+                    <div className="card-pin-popup-info-panel" style={{ cursor: 'default' }}>
+                      <h3 className="card-pin-popup-title">Palouse Riparian Study</h3>
+                      <p className="card-pin-popup-category">Hydrology</p>
+                      <p className="card-pin-popup-tags">Tags: riparian, stream, ecology</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Card Marker / Polygon Popup</p>
+              <p className="um-feature-desc">
+                Clicking a card marker pin or a card polygon on the map opens a rich popup.
+                The top section shows the card's thumbnail image — if multiple images are
+                attached, <strong>❮ ❯</strong> arrows appear on hover to cycle through them;
+                clicking the image opens a fullscreen lightbox. The bottom section shows the
+                card <strong>title</strong>, <strong>category</strong>, and <strong>tags</strong>.
+                Clicking anywhere on the info area opens the full <strong>Card Detail View</strong>.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
       )}
@@ -2056,6 +2091,77 @@ function UserManual() {
                 appears with <strong>▲ / ▼</strong> arrows to jump between matches. The
                 panel automatically scrolls to bring each highlighted match into view.
                 "0 results" is shown when nothing matched the keyword.
+              </p>
+            </div>
+          </div>
+
+          {/* 10. Map click popup */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '260px', alignItems: 'stretch' }}>
+                <div className="arcgis-popup-wrapper" style={{ border: '1px solid #d0d7e2', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+                  <div className="arcgis-popup-header">
+                    <h3 style={{ margin: 0, fontSize: '0.95em' }}>WA Rivers and Streams</h3>
+                  </div>
+                  <div className="arcgis-popup-body" style={{ pointerEvents: 'none', fontSize: '12px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                      <tbody>
+                        {[['GNIS_NAME','Palouse River'],['LENGTHKM','42.3'],['FTYPE','StreamRiver'],['FCODE','46006']].map(([k,v]) => (
+                          <tr key={k}>
+                            <td style={{ fontWeight: 700, paddingRight: '6px', verticalAlign: 'top', whiteSpace: 'nowrap', color: '#333' }}>{k}</td>
+                            <td style={{ wordBreak: 'break-word', color: '#555' }}>{v}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Map Click Popup (Layer Features)</p>
+              <p className="um-feature-desc">
+                When a visible ArcGIS layer is active on the map, clicking any feature on it
+                opens a Mapbox popup with a property table. The popup header shows the layer
+                name; the body lists all feature attributes (e.g. GNIS_NAME, geometry type,
+                length). Long descriptions are collapsed with a <strong>Show more</strong>{' '}
+                link. Multiple features can be open simultaneously — each new popup is
+                stacked offset from the previous one.
+              </p>
+            </div>
+          </div>
+
+          {/* 11. Service / Layer info modal */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '260px', alignItems: 'stretch' }}>
+                <div className="um-svcinfo-demo-wrapper">
+                  <div className="arcgis-service-info-modal">
+                    <div className="arcgis-service-info-modal-header">
+                      <strong style={{ fontSize: '13px' }}>Service info</strong>
+                      <button type="button" className="arcgis-service-info-modal-close" style={{ pointerEvents: 'none' }}>&times;</button>
+                    </div>
+                    <div className="arcgis-service-info-modal-content" style={{ pointerEvents: 'none' }}>
+                      <div className="arcgis-service-info-row"><strong>Service Description:</strong>
+                        <div className="arcgis-service-info-description">WA Dept of Ecology hydrography layer.</div>
+                      </div>
+                      <div className="arcgis-service-info-row"><strong>Spatial Reference:</strong> WKID 4326</div>
+                      <div className="arcgis-service-info-row"><strong>Copyright Text:</strong> © WA Ecology 2024</div>
+                      <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #ddd', fontSize: '12px', color: '#1976d2' }}>View ArcGIS Service Page →</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Service / Layer Info Modal</p>
+              <p className="um-feature-desc">
+                Right-clicking a service or layer row and selecting <strong>Learn More</strong>,
+                or clicking the info (ℹ) button on a row, opens a floating info panel beside
+                the ArcGIS Upload Panel. It shows the service description, spatial reference,
+                copyright text, and a direct link to the ArcGIS REST endpoint. A similar
+                panel opens for individual layers showing their geometry type, description,
+                and a link to the layer endpoint.
               </p>
             </div>
           </div>
