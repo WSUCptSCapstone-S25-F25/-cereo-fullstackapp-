@@ -20,6 +20,7 @@ function ChangelogModal({ isOpen, onClose }) {
                 <p>Added help (?) buttons to the main panels on the home page; clicking one opens the corresponding section in the User Manual.</p>
                 <p>Fixed a bug where navigating to a layer via a linked item in the ArcGIS Upload Panel would jump to the wrong location, caused by a loading order issue.</p>
                 <p>Fixed a bug where the Custom Layers Panel displayed incorrect content after being opened, caused by a loading order issue.</p>
+                <p>This app's new URL: <a href="https://rwc-living-atlas.netlify.app/" target="_blank" rel="noopener noreferrer">https://rwc-living-atlas.netlify.app/</a></p>
 
             </div>
             <div className="changelog-modal-footer">
