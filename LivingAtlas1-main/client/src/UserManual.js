@@ -71,6 +71,7 @@ const SECTIONS = [
 
 function UserManual() {
   const [activeSection, setActiveSection] = useState('home');
+  const navTo = (id) => { setActiveSection(id); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   return (
     <div className="user-manual">
       <h1>User Manual</h1>
@@ -1015,7 +1016,7 @@ function UserManual() {
                 <button
                   type="button"
                   className="um-inline-link"
-                  onClick={() => setActiveSection('polygon-draw')}
+                  onClick={() => navTo('polygon-draw')}
                 >
                   Draw Polygon Panel
                 </button>{' '}tab.
@@ -2577,7 +2578,9 @@ function UserManual() {
           <div className="um-mapctrl-corner um-mapctrl-tr">
             <div className="um-mapctrl-label">Top-right</div>
             <div className="um-mapctrl-group">
-              <button className="um-mapctrl-btn" title="Draw Polygon"><FontAwesomeIcon icon={faDrawPolygon} /></button>
+              <button className="um-mapctrl-btn" title="Draw Polygon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="m15 12.3v-4.6c.6-.3 1-1 1-1.7 0-1.1-.9-2-2-2-.7 0-1.4.4-1.7 1h-4.6c-.3-.6-1-1-1.7-1-1.1 0-2 .9-2 2 0 .7.4 1.4 1 1.7v4.6c-.6.3-1 1-1 1.7 0 1.1.9 2 2 2 .7 0 1.4-.4 1.7-1h4.6c.3.6 1 1 1.7 1 1.1 0 2-.9 2-2 0-.7-.4-1.4-1-1.7zm-8-.3v-4l1-1h4l1 1v4l-1 1h-4z"/></svg>
+              </button>
               <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Toggle Markers"><FontAwesomeIcon icon={faEye} /></button>
               <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Reset View">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2688,7 +2691,7 @@ function UserManual() {
               <div className="um-isolated-demo">
                 <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
                   <button className="um-mapctrl-btn" title="Draw Polygon">
-                    <FontAwesomeIcon icon={faDrawPolygon} />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="m15 12.3v-4.6c.6-.3 1-1 1-1.7 0-1.1-.9-2-2-2-.7 0-1.4.4-1.7 1h-4.6c-.3-.6-1-1-1.7-1-1.1 0-2 .9-2 2 0 .7.4 1.4 1 1.7v4.6c-.6.3-1 1-1 1.7 0 1.1.9 2 2 2 .7 0 1.4-.4 1.7-1h4.6c.3.6 1 1 1.7 1 1.1 0 2-.9 2-2 0-.7-.4-1.4-1-1.7zm-8-.3v-4l1-1h4l1 1v4l-1 1h-4z"/></svg>
                   </button>
                 </div>
               </div>
@@ -2700,6 +2703,12 @@ function UserManual() {
                 vertices and close the shape. Cards whose location markers fall inside the
                 polygon are shown; all others are hidden. The polygon can be deleted from
                 the drawing panel that opens after completing the shape.
+              </p>
+              <p className="um-feature-desc" style={{ marginTop: '8px' }}>
+                For all drawing tools, shape presets, style options, and transform modes, see the{' '}
+                <button type="button" className="um-inline-link" onClick={() => navTo('polygon-draw')}>
+                  Draw Polygon Panel
+                </button>{' '}tab.
               </p>
             </div>
           </div>
