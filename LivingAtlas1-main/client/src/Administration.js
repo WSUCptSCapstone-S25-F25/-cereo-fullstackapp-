@@ -30,6 +30,17 @@ function Administration() {
         return isCurrentUserLoggedIn && userEmail !== '' && userEmail === currentEmail;
     };
 
+    const formatJoinedDate = (rawDate) => {
+        if (!rawDate) return 'N/A';
+        const date = new Date(rawDate);
+        if (Number.isNaN(date.getTime())) return 'N/A';
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+        });
+    };
+
     useEffect(() => {
         if (activeTab === 'manage-users') {
             fetchUsers();
@@ -234,6 +245,7 @@ function Administration() {
                             <tr>
                                 <th>Name</th>
                                 <th>Email</th>
+                                <th>Date Joined</th>
                                 <th>Status</th>
                                 <th>Role</th>
                                 <th>Edit</th>
@@ -245,6 +257,7 @@ function Administration() {
                                 <tr key={user.email}>
                                     <td>{user.name}</td>
                                     <td>{user.email}</td>
+                                    <td>{formatJoinedDate(user.created_at)}</td>
                                     <td>
                                         <span className={`admin-status ${getUserOnlineState(user) ? 'admin-status-online' : 'admin-status-offline'}`}>
                                             <span className="admin-status-dot" aria-hidden="true" />

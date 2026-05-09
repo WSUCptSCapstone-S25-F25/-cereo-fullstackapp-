@@ -118,6 +118,11 @@ def _ensure_schema():
             ALTER TABLE Cards ADD COLUMN IF NOT EXISTS LinkText VARCHAR(255);
         """)
 
+        # Migration 009 — user account creation timestamp for admin Date Joined column
+        cur.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+        """)
+
         conn.commit()
         print("[MIGRATIONS] Schema is up-to-date.")
     except Exception as e:

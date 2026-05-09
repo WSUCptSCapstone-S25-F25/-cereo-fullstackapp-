@@ -344,12 +344,12 @@ def hash_password(password: str, salt: bytes) -> str:
 @account_router.post("/list_database")
 async def list_database():
     try:
-        # Query the database to retrieve the names, emails, and Is_Admin status of all users
-        cur.execute("SELECT username, email, COALESCE(is_admin, false) FROM users")
+        # Query user basics plus account creation time for admin table display
+        cur.execute("SELECT username, email, COALESCE(is_admin, false), created_at FROM users")
         rows = cur.fetchall()
 
         # Convert the query result into a list of dictionaries
-        users = [{"name": row[0], "email": row[1], "is_admin": row[2]} for row in rows]
+        users = [{"name": row[0], "email": row[1], "is_admin": row[2], "created_at": row[3]} for row in rows]
         
 
         return {"users": users}
