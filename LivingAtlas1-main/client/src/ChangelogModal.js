@@ -15,12 +15,10 @@ function ChangelogModal({ isOpen, onClose }) {
             </div>
             <div className="changelog-modal-body">
 
-                <h3>Update Date: 5/7/2026</h3>
-                <p>Expanded the User Manual to cover all app features, including all panels and workflows.</p>
-                <p>Added help (?) buttons to the main panels on the home page; clicking one opens the corresponding section in the User Manual.</p>
-                <p>Fixed a bug where navigating to a layer via a linked item in the ArcGIS Upload Panel would jump to the wrong location, caused by a loading order issue.</p>
-                <p>Fixed a bug where the Custom Layers Panel displayed incorrect content after being opened, caused by a loading order issue.</p>
-                <p>This app's new URL: <a href="https://rwc-living-atlas.netlify.app/" target="_blank" rel="noopener noreferrer">https://rwc-living-atlas.netlify.app/</a></p>
+                <h3>Update Date: 5/8/2026</h3>
+                <p>Added onboarding tours for the Card Container Panel and the Learn More modal, triggered by the Play button at the top-right.</p>
+                <p>Enhanced the Admin page User Management table with new columns for online status, account creation time, and last online time, plus sorting by Name and Date Joined.</p>
+                <p>Added a Learn More button to services in both the ArcGIS Upload Panel and Custom Layers Panel; clicking it opens that service's Learn More modal.</p>
 
             </div>
             <div className="changelog-modal-footer">

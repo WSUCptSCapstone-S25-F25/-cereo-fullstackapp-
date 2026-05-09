@@ -7,6 +7,12 @@ function ChangelogHistory() {
             <h1>Update History</h1>
             <div className="changelog-history-body">
 
+                <h3>Update Date: 5/8/2026</h3>
+                <p>Added onboarding tours for the Card Container Panel and the Learn More modal, triggered by the Play button at the top-right.</p>
+                <p>Enhanced the Admin page User Management table with new columns for online status, account creation time, and last online time, plus sorting by Name and Date Joined.</p>
+                <p>Added a Learn More button to services in both the ArcGIS Upload Panel and Custom Layers Panel; clicking it opens that service's Learn More modal.</p>
+                <hr />
+
                 <h3>Update Date: 5/7/2026</h3>
                 <p>Expanded the User Manual to cover all app features, including all panels and workflows.</p>
                 <p>Added help (?) buttons to the main panels on the home page; clicking one opens the corresponding section in the User Manual.</p>
