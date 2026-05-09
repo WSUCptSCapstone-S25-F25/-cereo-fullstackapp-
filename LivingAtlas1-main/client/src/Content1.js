@@ -11,8 +11,9 @@ import updateMarkers from './PolygonFiltering.js';
 import { showAll } from './Filter';
 import api from './api.js';
 import PolygonDrawingModal from './PolygonDrawingModal';
+import html2canvas from 'html2canvas';
 import { icon } from '@fortawesome/fontawesome-svg-core';
-import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faCamera } from '@fortawesome/free-solid-svg-icons';
 
 // Mapbox Token
 mapboxgl.accessToken =
@@ -46,6 +47,7 @@ const Content1 = (props) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerPopupRef = useRef(null);
+  const openMarkerIdRef = useRef(null);
   const [creditPortalHost, setCreditPortalHost] = useState(null);
   const { setSearchCondition, onMarkerCardSelect } = props;
   const [lng, setLng] = useState(-120);
@@ -61,6 +63,7 @@ const Content1 = (props) => {
       markerPopupRef.current.remove();
       markerPopupRef.current = null;
     }
+    openMarkerIdRef.current = null;
     marker_clicked = false;
     setSearchCondition("");
     onMarkerCardSelect?.(null);
@@ -358,8 +361,13 @@ const Content1 = (props) => {
     return root;
   }, [resolveImageUrl]);
 
-  const openMarkerPopup = useCallback((feature, markerInstance, mapInstance) => {
+  const openMarkerPopup = useCallback((feature, lngLatOrMarker, mapInstance) => {
     closeMarkerPopup();
+    openMarkerIdRef.current = feature.cardID;
+
+    const lngLat = lngLatOrMarker && typeof lngLatOrMarker.getLngLat === 'function'
+      ? lngLatOrMarker.getLngLat()
+      : lngLatOrMarker;
 
     const popupContent = buildMarkerPopupContent(feature);
 
@@ -370,7 +378,7 @@ const Content1 = (props) => {
       offset: [12, -8],
       className: 'card-pin-rich-popup'
     })
-      .setLngLat(markerInstance.getLngLat())
+      .setLngLat(lngLat)
       .setDOMContent(popupContent)
       .addTo(mapInstance);
 
@@ -378,6 +386,7 @@ const Content1 = (props) => {
       popupContent.cleanupImageOverlay?.();
       if (markerPopupRef.current === popup) {
         markerPopupRef.current = null;
+        openMarkerIdRef.current = null;
       }
       marker_clicked = false;
       setSearchCondition("");
@@ -428,7 +437,6 @@ const Content1 = (props) => {
     props.isCollapsed,
     props.cardPanelWidth,
     props.isUploadPanelOpen,
-    props.isRemovedPanelOpen,
     props.isSidebarOpen
   ]);
 
@@ -452,12 +460,14 @@ const Content1 = (props) => {
   useEffect(() => {
     let isActive = true;
     let markersFetchInFlight = false;
+    let preventGenericClickClose = false;
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [lng, lat],
-      zoom: zoom
+      zoom: zoom,
+      preserveDrawingBuffer: true
     });
 
     window.atlasMapInstance = map;
@@ -559,6 +569,43 @@ const Content1 = (props) => {
           }
         });
         drawGroup.appendChild(toggleBtn);
+
+        const resetViewBtn = document.createElement('button');
+        resetViewBtn.className = 'mapbox-gl-draw_ctrl-draw-btn reset-view-btn';
+        resetViewBtn.title = 'Reset Map View';
+        resetViewBtn.type = 'button';
+        resetViewBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="1.5" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="14.5" y2="8"/><circle cx="8" cy="8" r="2"/></svg>';
+        resetViewBtn.addEventListener('click', () => {
+          map.flyTo({ center: [-120, 46], zoom: 5.5 });
+        });
+        drawGroup.appendChild(resetViewBtn);
+
+        const screenshotBtn = document.createElement('button');
+        screenshotBtn.className = 'mapbox-gl-draw_ctrl-draw-btn screenshot-btn';
+        screenshotBtn.title = 'Screenshot Map';
+        screenshotBtn.type = 'button';
+        screenshotBtn.innerHTML = icon(faCamera).html[0];
+        screenshotBtn.addEventListener('click', () => {
+          const container = map.getContainer();
+          html2canvas(container, {
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: null,
+            scale: window.devicePixelRatio || 1,
+            ignoreElements: (el) => el.classList.contains('mapboxgl-ctrl-top-right') || el.classList.contains('mapboxgl-ctrl-top-left') || el.classList.contains('mapboxgl-ctrl-bottom-right') || el.classList.contains('mapboxgl-ctrl-bottom-left'),
+          }).then((snapshotCanvas) => {
+            snapshotCanvas.toBlob((blob) => {
+              if (!blob) return;
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `map-screenshot-${Date.now()}.png`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }, 'image/png');
+          });
+        });
+        drawGroup.appendChild(screenshotBtn);
       }
     }
 
@@ -566,6 +613,17 @@ const Content1 = (props) => {
       if (e.mode === 'draw_polygon') {
         draw.changeMode('simple_select');
         setIsPolygonToolDrawing(true);
+      }
+    });
+
+    // Close popup when clicking on map background (not on markers or polygons)
+    map.on('click', () => {
+      if (preventGenericClickClose) {
+        preventGenericClickClose = false;
+        return;
+      }
+      if (markerPopupRef.current) {
+        closeMarkerPopup();
       }
     });
 
@@ -664,6 +722,10 @@ const Content1 = (props) => {
         marker.getElement().addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
+          if (markerPopupRef.current && openMarkerIdRef.current === feature.cardID) {
+            closeMarkerPopup();
+            return;
+          }
           marker_clicked = true;
           setSearchCondition(feature.title);
           openMarkerPopup(feature, marker, map);
@@ -750,33 +812,14 @@ const Content1 = (props) => {
         // Click handler for polygon fill — open card popup
         mapInstance.on('click', fillLayerId, (e) => {
           e.originalEvent.stopPropagation();
+          preventGenericClickClose = true;
+          if (markerPopupRef.current && openMarkerIdRef.current === feature.cardID) {
+            closeMarkerPopup();
+            return;
+          }
           marker_clicked = true;
           setSearchCondition(feature.title);
-
-          closeMarkerPopup();
-          const popupContent = buildMarkerPopupContent(feature);
-          const popup = new mapboxgl.Popup({
-            closeButton: true,
-            closeOnClick: false,
-            anchor: 'bottom-left',
-            offset: [12, -8],
-            className: 'card-pin-rich-popup'
-          })
-            .setLngLat(e.lngLat)
-            .setDOMContent(popupContent)
-            .addTo(mapInstance);
-
-          popup.on('close', () => {
-            popupContent.cleanupImageOverlay?.();
-            if (markerPopupRef.current === popup) {
-              markerPopupRef.current = null;
-            }
-            marker_clicked = false;
-            setSearchCondition("");
-            onMarkerCardSelect?.(null);
-          });
-          markerPopupRef.current = popup;
-          onMarkerCardSelect?.(feature.cardID);
+          openMarkerPopup(feature, e.lngLat, mapInstance);
         });
 
         // Cursor style on hover
@@ -991,7 +1034,7 @@ const Content1 = (props) => {
 
   // Compute styles for outer map container to respond to card panel state
   const leftSidebarWidth = props.isSidebarOpen ? 300 : 48;
-  const hasLeftPanel = props.isUploadPanelOpen || props.isRemovedPanelOpen;
+  const hasLeftPanel = props.isUploadPanelOpen;
   const cardPanelW = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
   const cardOnLeft = props.cardPanelSide === 'left';
   const bothOnLeft = cardOnLeft && !props.isCollapsed && hasLeftPanel;

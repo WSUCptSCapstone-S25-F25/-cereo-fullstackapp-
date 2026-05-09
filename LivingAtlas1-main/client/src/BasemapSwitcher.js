@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTimes, faQuestion } from '@fortawesome/free-solid-svg-icons';
 import './BasemapSwitcher.css';
 
 const SF_TILE_SAMPLE = { z: 12, y: 1583, x: 6542 };
@@ -200,7 +202,14 @@ export default function BasemapSwitcher({ isOpen, onClose, mapInstance, currentB
         <div className="basemap-switcher-panel">
             <div className="basemap-switcher-header">
                 <span className="basemap-switcher-title">Map Style</span>
-                <button className="basemap-switcher-close" onClick={onClose}>✕</button>
+                <div className="basemap-switcher-header-actions">
+                    <button className="basemap-switcher-icon-btn" title="Help" onClick={() => window.open('/user-manual?section=basemap-panel', '_blank')}>
+                        <FontAwesomeIcon icon={faQuestion} />
+                    </button>
+                    <button className="basemap-switcher-icon-btn" title="Close" onClick={onClose}>
+                        <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                </div>
             </div>
             <div className="basemap-switcher-list">
                 {BASEMAPS.map(basemap => (

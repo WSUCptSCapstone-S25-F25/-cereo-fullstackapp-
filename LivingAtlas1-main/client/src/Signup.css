@@ -1,6 +1,6 @@
 .signup-page {
-  --signup-bg-1: #f6fbff;
-  --signup-bg-2: #eaf3ff;
+  --signup-bg-1: #fafcff;
+  --signup-bg-2: #f2f8ff;
   --signup-card: #ffffff;
   --signup-border: #dce7f7;
   --signup-text: #173056;
@@ -8,14 +8,14 @@
   --signup-primary: #1f63d5;
   --signup-primary-hover: #1750b0;
 
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 50px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
   background:
-    radial-gradient(circle at 12% 18%, #d7e7ff 0%, transparent 33%),
-    radial-gradient(circle at 84% 80%, #d5f0ff 0%, transparent 36%),
+    radial-gradient(circle at 12% 18%, #e5efff 0%, transparent 33%),
+    radial-gradient(circle at 84% 80%, #e3f5ff 0%, transparent 36%),
     linear-gradient(160deg, var(--signup-bg-1) 0%, var(--signup-bg-2) 100%);
 }
 

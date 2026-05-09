@@ -6,7 +6,7 @@ function Administration() {
     const [users, setUsers] = useState([]);
     const [signUpRequests, setSignUpRequests] = useState([]);
     const [error, setError] = useState(null);
-    const [isManagingUsers, setIsManagingUsers] = useState(true); // Default view
+    const [activeTab, setActiveTab] = useState('statistics');
     const [roleModalUser, setRoleModalUser] = useState(null);
     const [selectedRole, setSelectedRole] = useState('regular');
     const [roleConfirmText, setRoleConfirmText] = useState('');
@@ -16,14 +16,90 @@ function Administration() {
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [deleteModalError, setDeleteModalError] = useState('');
     const [isDeletingUser, setIsDeletingUser] = useState(false);
+    const [sortBy, setSortBy] = useState('name');
+    const [sortOrder, setSortOrder] = useState('asc');
+
+    const currentEmail = (localStorage.getItem('email') || '').trim().toLowerCase();
+    const isCurrentUserLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+
+    const getUserOnlineState = (user) => {
+        if (typeof user?.is_online === 'boolean') return user.is_online;
+        if (typeof user?.online === 'boolean') return user.online;
+        if (typeof user?.status === 'string') {
+            return user.status.trim().toLowerCase() === 'online';
+        }
+        const userEmail = (user?.email || '').trim().toLowerCase();
+        return isCurrentUserLoggedIn && userEmail !== '' && userEmail === currentEmail;
+    };
+
+    const formatJoinedDate = (rawDate) => {
+        if (!rawDate) return 'N/A';
+        const date = new Date(rawDate);
+        if (Number.isNaN(date.getTime())) return 'N/A';
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+        });
+    };
+
+    const formatLastOnline = (rawDate) => {
+        if (!rawDate) return 'N/A';
+        const date = new Date(rawDate);
+        if (Number.isNaN(date.getTime())) return 'N/A';
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+        });
+    };
+
+    const handleSortChange = (column) => {
+        if (sortBy === column) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(column);
+            setSortOrder('asc');
+        }
+    };
+
+    const getSortedUsers = () => {
+        const sorted = [...users];
+        sorted.sort((a, b) => {
+            let aVal, bVal;
+            if (sortBy === 'name') {
+                aVal = (a.name || '').toLowerCase();
+                bVal = (b.name || '').toLowerCase();
+            } else if (sortBy === 'date_joined') {
+                aVal = new Date(a.created_at || 0).getTime();
+                bVal = new Date(b.created_at || 0).getTime();
+            }
+            if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    };
+
+    const renderSortIndicator = (column) => {
+        const direction = sortBy === column ? sortOrder : null;
+        return (
+            <span className="admin-sort-indicator" aria-hidden="true">
+                <span className={`admin-sort-triangle admin-sort-triangle-up ${direction === 'asc' ? 'is-active' : 'is-inactive'}`} />
+                <span className={`admin-sort-triangle admin-sort-triangle-down ${direction === 'desc' ? 'is-active' : 'is-inactive'}`} />
+            </span>
+        );
+    };
 
     useEffect(() => {
-        if (isManagingUsers) {
+        if (activeTab === 'manage-users') {
             fetchUsers();
-        } else {
+        } else if (activeTab === 'sign-up-requests') {
             fetchSignUpRequests();
         }
-    }, [isManagingUsers]);
+    }, [activeTab]);
 
     const fetchUsers = async () => {
         try {
@@ -177,20 +253,41 @@ function Administration() {
 
     
 
-    const toggleView = () => {
-        setIsManagingUsers(prevState => !prevState);
-    };
-
     return (
         <div className="admin-page">
             <div className="admin-header">
                 <h2 className="admin-title">Administration</h2>
-                <button className="admin-toggle-btn" onClick={toggleView}>
-                    {isManagingUsers ? 'View Sign Up Requests' : 'Manage Users'}
-                </button>
             </div>
 
-            {isManagingUsers ? (
+            <nav className="admin-nav-tabs">
+                <button
+                    className={`admin-nav-tab${activeTab === 'statistics' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('statistics')}
+                >
+                    Statistics
+                </button>
+                <button
+                    className={`admin-nav-tab${activeTab === 'manage-users' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('manage-users')}
+                >
+                    Manage Users
+                </button>
+                <button
+                    className={`admin-nav-tab${activeTab === 'sign-up-requests' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('sign-up-requests')}
+                >
+                    Sign Up Requests
+                </button>
+            </nav>
+
+            {activeTab === 'statistics' && (
+                <section className="admin-card">
+                    <h3 className="admin-section-title">Statistics</h3>
+                    <p className="admin-stats-placeholder">Statistics will be available here in a future update.</p>
+                </section>
+            )}
+
+            {activeTab === 'manage-users' && (
                 <section className="admin-card">
                     <h3 className="admin-section-title">User Management</h3>
                     {error && <p className="admin-error">Error: {error}</p>}
@@ -198,18 +295,47 @@ function Administration() {
                     <table className="admin-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
+                                <th
+                                    className="admin-table-header-sortable"
+                                    onClick={() => handleSortChange('name')}
+                                    title="Click to sort"
+                                >
+                                    <span className="admin-sort-header-content">
+                                        Name
+                                        {renderSortIndicator('name')}
+                                    </span>
+                                </th>
                                 <th>Email</th>
+                                <th
+                                    className="admin-table-header-sortable"
+                                    onClick={() => handleSortChange('date_joined')}
+                                    title="Click to sort"
+                                >
+                                    <span className="admin-sort-header-content">
+                                        Date Joined
+                                        {renderSortIndicator('date_joined')}
+                                    </span>
+                                </th>
+                                <th>Status</th>
+                                <th>Last Online</th>
                                 <th>Role</th>
                                 <th>Edit</th>
                                 <th>Delete</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(user => (
+                            {getSortedUsers().map(user => (
                                 <tr key={user.email}>
                                     <td>{user.name}</td>
                                     <td>{user.email}</td>
+                                    <td>{formatJoinedDate(user.created_at)}</td>
+                                    <td>
+                                        <span className={`admin-status ${getUserOnlineState(user) ? 'admin-status-online' : 'admin-status-offline'}`}>
+                                            <span className="admin-status-dot" aria-hidden="true" />
+                                            {getUserOnlineState(user) ? 'Online' : 'Offline'}
+                                        </span>
+                                    </td>
+                                    <td>{formatLastOnline(user.last_online_at)}</td>
                                     <td>
                                         <span className={`admin-badge ${user.is_admin ? 'admin-badge-admin' : 'admin-badge-user'}`}>
                                             {user.is_admin ? 'Admin' : 'Regular User'}
@@ -235,10 +361,15 @@ function Administration() {
                     </table>
                     </div>
                 </section>
-            ) : (
+            )}
+
+            {activeTab === 'sign-up-requests' && (
                 <section className="admin-card">
                     <h3 className="admin-section-title">Sign Up Requests</h3>
                     {error && <p className="admin-error">Error: {error}</p>}
+                    {signUpRequests.length === 0 ? (
+                        <p className="admin-empty-state">No sign-up requests.</p>
+                    ) : (
                     <div className="admin-table-wrap">
                     <table className="admin-table">
                         <thead>
@@ -276,6 +407,7 @@ function Administration() {
                         </tbody>
                     </table>
                     </div>
+                    )}
                 </section>
             )}
 

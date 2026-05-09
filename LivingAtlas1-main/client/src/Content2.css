@@ -25,6 +25,9 @@
   z-index: 999;
   display: flex;
   flex-direction: column;
+  /* enable container queries so .card-container columns respond to panel drag-resize */
+  container-type: inline-size;
+  container-name: card-panel;
 }
 
 #content-2.collapsed {
@@ -82,11 +85,20 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* Always reserve scrollbar space so grid width stays stable when scrollbar appears */
+  scrollbar-gutter: stable;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 280px);
+  /*
+   * Card width = 20vw (viewport-relative, fixed to screen size).
+   * This means card absolute size never changes when the panel is drag-resized,
+   * because vw is tied to the viewport, not to the panel.
+   * auto-fill adds/removes columns automatically as the panel grows/shrinks.
+   * Panel default width is computed in JS as: 2 cols × 20vw + gap + padding.
+   */
+  grid-template-columns: repeat(auto-fill, 20vw);
   grid-gap: 16px;
   padding: 16px;
-  justify-content: center;
+  justify-content: start;
   align-content: start;
   z-index: 1;
 }
@@ -111,6 +123,12 @@
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.card-list-item.menu-open {
+  z-index: 10;
 }
 
 .card-list-item:hover {
@@ -137,6 +155,7 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .card-list-item-btn {
@@ -172,6 +191,144 @@
   fill: #e53935;
 }
 
+.card-list-item-btn.pin.active {
+  border-color: #f0c040;
+  color: #f0c040;
+}
+
+.card-list-item-btn.pin.active svg {
+  color: #f0c040;
+  fill: #f0c040;
+}
+
+/* List view: "..." more-options button */
+.card-list-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid rgba(0, 0, 0, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.82);
+  color: #555;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.card-list-more-btn:hover {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(0, 0, 0, 0.35);
+  color: #111;
+}
+
+/* Dropdown menu opened by "..." button */
+.card-list-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 200;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.13);
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+  min-width: 160px;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-list-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.87rem;
+  color: #222;
+  text-align: left;
+  width: 100%;
+  transition: background 0.13s;
+}
+
+.card-list-menu-item:hover {
+  background: #f3f4f6;
+}
+
+.card-list-menu-item.active-pin {
+  color: #d4a000;
+}
+
+.card-list-menu-item.active-pin svg {
+  color: #f0c040;
+}
+
+.card-list-menu-item.active-fav {
+  color: #e53935;
+}
+
+.card-list-menu-item.active-fav svg {
+  color: #e53935;
+}
+
+/* Pin button overlay on grid-view cards */
+.card-grid-wrapper {
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-grid-wrapper:hover {
+  transform: translateY(-4px);
+}
+
+.card-grid-wrapper .card:hover {
+  transform: none;
+}
+
+
+
+.card-grid-pin-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1.5px solid rgba(0, 0, 0, 0.18);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.2s, transform 0.15s, border-color 0.2s;
+  color: #111;
+}
+
+.card-grid-pin-btn:hover {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(0, 0, 0, 0.35);
+  transform: scale(1.12);
+}
+
+.card-grid-pin-btn.active {
+  border-color: #f0c040;
+  color: #f0c040;
+}
+
+.card-grid-pin-btn.active svg {
+  color: #f0c040;
+  fill: #f0c040;
+}
+
 .card-panel-top {
   z-index: 12;
   display: flex;
@@ -182,6 +339,72 @@
   background: rgba(248, 250, 252, 0.94);
   border-bottom: 1px solid #d8e1ea;
   backdrop-filter: blur(6px);
+}
+
+.card-panel-titlebar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 6px 0 2px !important;
+}
+
+.card-panel-titlebar-text-group {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: baseline !important;
+  gap: 6px !important;
+}
+
+.card-panel-titlebar-text {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #223244 !important;
+  letter-spacing: 0.2px !important;
+}
+
+.card-panel-titlebar-subtitle {
+  font-size: 12px !important;
+  color: #5c6f82 !important;
+  font-weight: 400 !important;
+}
+
+.card-panel-titlebar-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.card-panel-titlebar-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #fff !important;
+  border: 1px solid #bfd0e2 !important;
+  color: #27425d !important;
+  font-size: 13px !important;
+  font-weight: normal !important;
+  cursor: pointer !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.card-panel-titlebar-btn:hover {
+  border-color: #8eabc8 !important;
+  background: #f2f7fc !important;
+  box-shadow: 0 4px 12px rgba(25,118,210,0.12) !important;
+  color: #27425d !important;
+}
+
+.card-panel-titlebar-btn--onboarding svg {
+  transform: translateX(1px);
 }
 
 .card-panel-toolbar {
@@ -408,8 +631,10 @@
   }
 
   .card-container {
-    grid-template-columns: repeat(auto-fill, 280px);
-    grid-gap: 12px;
-    padding: 12px;
+    /* on small screens keep 2 fixed columns relative to mobile panel size */
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 10px;
+    padding: 10px;
   }
+
 }

@@ -49,10 +49,14 @@ export function readPendingLocalPreferences() {
 export function writePendingLocalPreferences(preferences) {
   try {
     const safePreferences = isPlainObject(preferences) ? preferences : {};
+    const mergedPreferences = deepMergePreferences(
+      readPendingLocalPreferences(),
+      safePreferences
+    );
     localStorage.setItem(
       LOCAL_PENDING_PREFERENCES_KEY,
       JSON.stringify({
-        preferences: safePreferences,
+        preferences: mergedPreferences,
         updatedAt: new Date().toISOString(),
       })
     );

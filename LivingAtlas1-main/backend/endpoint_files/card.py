@@ -109,7 +109,7 @@ async def create_card(
     return {"message": "Card created successfully", "thumbnail_link": thumbnail_link}
 
 @card_router.delete("/deleteCard")
-async def deleteCard(username: str, title: str):
+async def deleteCard(username: str, title: str, requester_email: str = None):
     if username is None or title is None:
         raise HTTPException(status_code=422, detail="Username and title must not be None")
     if not isinstance(username, str) or not isinstance(title, str):
@@ -117,7 +117,7 @@ async def deleteCard(username: str, title: str):
 
     try:
         cur.execute("""
-            SELECT Cards.CardID, Cards.thumbnail_link
+            SELECT Cards.CardID, Cards.thumbnail_link, Users.Email
             FROM Users
             JOIN Cards ON Users.UserID = Cards.UserID
             WHERE Users.Username = %s AND Cards.Title = %s
@@ -126,7 +126,16 @@ async def deleteCard(username: str, title: str):
         print(f"Card fetch result: {result}")
         if result is None:
             raise HTTPException(status_code=404, detail="Card not found")
-        cardID, thumbnail_link = result
+        cardID, thumbnail_link, card_owner_email = result
+
+        if requester_email:
+            cur.execute("SELECT Is_Admin FROM Users WHERE Email = %s", (requester_email,))
+            requester_row = cur.fetchone()
+            if requester_row is None:
+                raise HTTPException(status_code=403, detail="Requester account not found")
+            requester_is_admin = bool(requester_row[0])
+            if not requester_is_admin and requester_email.lower() != card_owner_email.lower():
+                raise HTTPException(status_code=403, detail="You do not have permission to delete this card")
 
         if thumbnail_link and thumbnail_link != DEFAULT_THUMBNAIL_URL:
             # Convert full URL to blob path by stripping bucket URL prefix:
@@ -156,6 +165,9 @@ async def deleteCard(username: str, title: str):
         cur.execute("DELETE FROM Cards WHERE CardID = %s", (cardID,))
         conn.commit()
         return {"Success": "The card is deleted"}
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         print(f"Failed to delete card: {e}")
@@ -330,6 +342,7 @@ def allCards():
                 c.Organization,
                 c.Funding,
                 c.Link,
+                COALESCE(c.LinkText, '') AS LinkText,
                 STRING_AGG(DISTINCT t.TagLabel, ', ') AS TagLabels,
                 c.Latitude,
                 c.Longitude,
@@ -395,7 +408,7 @@ def allCards():
 
         columns = [
             "username", "email", "name", "title", "cardID", "category", "date", "description",
-            "org", "funding", "link", "tags", "latitude", "longitude", "thumbnail_link",
+            "org", "funding", "link", "link_text", "tags", "latitude", "longitude", "thumbnail_link",
             "location_type", "polygon_fill_color", "polygon_line_style", "images", "files", "polygon_vertices"
         ]
 
@@ -428,6 +441,7 @@ async def upload_form(
     original_username: Optional[str] = Form(None),
     original_email: Optional[str] = Form(None),
     original_title: Optional[str] = Form(None),
+    requester_email: Optional[str] = Form(None),
     category: Optional[str] = Form("None"),
     latitude: Optional[str] = Form(None),
     longitude: Optional[str] = Form(None),
@@ -439,10 +453,12 @@ async def upload_form(
     funding: Optional[str] = Form(None),
     org: Optional[str] = Form(None),
     link: Optional[str] = Form(None),
+    link_text: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
     files: Optional[list[UploadFile]] = File(None),
     thumbnail: Optional[UploadFile] = File(None),
-    thumbnail_link: Optional[str] = Form(None)
+    thumbnail_link: Optional[str] = Form(None),
+    images: Optional[list[UploadFile]] = File(None)
 ):
     """
     Create or update a Card with metadata, thumbnail, and optional files.
@@ -478,6 +494,19 @@ async def upload_form(
         if not user_row:
             raise HTTPException(status_code=404, detail="User not found")
         userID = user_row[0]
+
+        # --------------------------------------------------
+        # Authorization check for updates
+        # --------------------------------------------------
+        if update and requester_email:
+            cur.execute("SELECT Is_Admin FROM Users WHERE Email = %s", (requester_email,))
+            req_row = cur.fetchone()
+            if req_row is None:
+                raise HTTPException(status_code=403, detail="Requester account not found")
+            req_is_admin = bool(req_row[0])
+            card_owner_email = original_email or email
+            if not req_is_admin and requester_email.lower() != card_owner_email.lower():
+                raise HTTPException(status_code=403, detail="You do not have permission to edit this card")
 
         # --------------------------------------------------
         # Map category name to ID
@@ -576,12 +605,12 @@ async def upload_form(
             cur.execute("""
                 UPDATE Cards
                 SET Name=%s, Latitude=%s, Longitude=%s, CategoryID=%s,
-                    Description=%s, Organization=%s, Funding=%s, Link=%s,
+                    Description=%s, Organization=%s, Funding=%s, Link=%s, LinkText=%s,
                     Thumbnail_Link=COALESCE(%s, Thumbnail_Link), UserID=%s,
                     LocationType=%s, PolygonFillColor=%s, PolygonLineStyle=%s
                 WHERE CardID=%s
             """, (name, latitude_val, longitude_val, categoryID, description, org,
-                  funding, link, thumbnail_url, userID, location_type or "point",
+                  funding, link, link_text, thumbnail_url, userID, location_type or "point",
                   polygon_fill_color or '#0077c0', polygon_line_style or 'solid', nextcardid))
             cur.execute("DELETE FROM CardTags WHERE CardID=%s", (nextcardid,))
             # Delete old polygon vertices on update
@@ -590,12 +619,12 @@ async def upload_form(
             cur.execute("""
                 INSERT INTO Cards
                     (CardID, UserID, Name, Title, Latitude, Longitude, CategoryID,
-                     Description, Organization, Funding, Link, Thumbnail_Link, LocationType,
+                     Description, Organization, Funding, Link, LinkText, Thumbnail_Link, LocationType,
                      PolygonFillColor, PolygonLineStyle)
                 VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (nextcardid, userID, name, title, latitude_val, longitude_val,
-                  categoryID, description, org, funding, link, thumbnail_url, location_type or "point",
+                  categoryID, description, org, funding, link, link_text, thumbnail_url, location_type or "point",
                   polygon_fill_color or '#0077c0', polygon_line_style or 'solid'))
 
         # --------------------------------------------------
@@ -723,6 +752,37 @@ async def upload_form(
         if enable_commits:
             conn.commit()
             print("[COMMIT] All changes committed successfully")
+
+        # --------------------------------------------------
+        # Populate CardImages for newly created cards
+        # --------------------------------------------------
+        if not update and thumbnail_url != DEFAULT_THUMBNAIL_URL:
+            try:
+                from endpoint_files.images import save_uploaded_file as _save_img
+                # Use the already-uploaded thumbnail as the first gallery image
+                cur.execute(
+                    "INSERT INTO CardImages (CardID, ImageURL, DisplayOrder, AltText) VALUES (%s, %s, 0, '')",
+                    (nextcardid, thumbnail_url)
+                )
+                # Upload and insert any additional images (index 1+ since index 0 == thumbnail)
+                if images and len(images) > 1:
+                    for idx, img_file in enumerate(images[1:], start=1):
+                        try:
+                            img_url = _save_img(img_file, require_gcs=True)
+                            cur.execute(
+                                "INSERT INTO CardImages (CardID, ImageURL, DisplayOrder, AltText) VALUES (%s, %s, %s, '')",
+                                (nextcardid, img_url, idx)
+                            )
+                        except Exception as img_err:
+                            print(f"[IMAGE] Failed to upload image at index {idx}: {img_err}")
+                conn.commit()
+                print(f"[IMAGES] Inserted CardImages for new card {nextcardid}")
+            except Exception as img_err:
+                print(f"[IMAGE] Failed to insert CardImages: {img_err}")
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
 
         return {"message": "Card uploaded successfully", "card_id": nextcardid}
 

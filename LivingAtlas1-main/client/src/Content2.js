@@ -1,17 +1,19 @@
 import React, { useEffect, useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import './Content2.css';
 import './Sidebars.css';
 import Card from './Card.js';
 import FormModal from './FormModal';
 import FilterDropdown from './FilterDropdown';
 import SortDropdown from './SortDropdown';
+import CardPanelOnboarding from './OnboardingCardPanel';
 import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
 import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js';
 import { allMarkers } from './Content1.js';
 import api from './api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip, faRightLeft } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDoubleLeft, faAngleDoubleRight, faHeart, faSearch, faTimes, faPlus, faMapMarkerAlt, faList, faGrip, faRightLeft, faThumbtack, faEllipsisV, faQuestion, faPlay } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 function Content2(props) {
@@ -27,15 +29,21 @@ function Content2(props) {
     const startWidth = useRef(500);
     const cardContainerRef = useRef(null);
     const lastHandledSidebarSearchRequestRef = useRef(0);
+    const [openMenuCardID, setOpenMenuCardID] = useState(null);
+    const menuRef = useRef(null);
+
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+    const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => { setIsModalOpen(false); setPendingPolygonData(null); };
+
 
     // Listen for polygon-tool-save from Content1's Polygon Tool
     useEffect(() => {
         const handler = (e) => {
             if (!props.isLoggedIn) {
-                alert('Please log in to upload a data card.');
+                setShowLoginPrompt(true);
                 return;
             }
             setPendingPolygonData(e.detail);
@@ -75,8 +83,18 @@ function Content2(props) {
                 ? e.clientX - startX.current
                 : startX.current - e.clientX;
             let newWidth = startWidth.current + dx;
-            const minWidth = Math.max(250, window.innerWidth * 0.25);
-            newWidth = Math.max(minWidth, Math.min(newWidth, 900));
+            // Derive min/max from the same card size formula used in CSS:
+            // card = 20vw, gap = 16px, padding = 32px, scrollbar-gutter ≈ 20px
+            // min = 1 col: 1 × 20vw + 0 gaps + padding + gutter
+            // max = 4 col: 4 × 20vw + 3 gaps + padding + gutter
+            const CARD_VW = 0.20;
+            const GRID_GAP = 16;
+            const GRID_PADDING = 32;
+            const SCROLLBAR_GUTTER = 20;
+            const vw = window.innerWidth;
+            const minWidth = Math.max(250, Math.floor(vw * CARD_VW * 1 + GRID_PADDING + SCROLLBAR_GUTTER));
+            const maxWidth = Math.ceil(vw * CARD_VW * 4 + GRID_GAP * 3 + GRID_PADDING + SCROLLBAR_GUTTER);
+            newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
             setCardPanelWidth?.(newWidth);
         };
         const onMouseUp = () => {
@@ -92,6 +110,24 @@ function Content2(props) {
         };
     }, [isDragging, setCardPanelWidth, isOnLeft]);
 
+    // Close card action menu when clicking outside
+    useEffect(() => {
+        if (!openMenuCardID) return;
+        const handleClickOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                setOpenMenuCardID(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [openMenuCardID]);
+
+    useEffect(() => {
+        if (props.isCollapsed && isOnboardingOpen) {
+            setIsOnboardingOpen(false);
+        }
+    }, [props.isCollapsed, isOnboardingOpen]);
+
     const location = useLocation();
     const resolvedUsername = props.username || location.state?.username || localStorage.getItem("username");
 
@@ -103,6 +139,27 @@ function Content2(props) {
     const [showOnlyInView, setShowOnlyInView] = useState(false);
     const [learnMoreRequest, setLearnMoreRequest] = useState(null);
     const [isListView, setIsListView] = useState((props.initialCardViewMode || 'grid') === 'list');
+    const [containerPanelSearchVersion, setContainerPanelSearchVersion] = useState(0);
+    const PINNED_CARDS_STORAGE_KEY = 'pinned_card_ids';
+    const [pinnedCardIDs, setPinnedCardIDs] = useState(() => {
+        try {
+            const raw = localStorage.getItem(PINNED_CARDS_STORAGE_KEY);
+            return raw ? new Set(JSON.parse(raw)) : new Set();
+        } catch {
+            return new Set();
+        }
+    });
+    const togglePin = (cardID) => {
+        setPinnedCardIDs(prev => {
+            const next = new Set(prev);
+            if (next.has(cardID)) next.delete(cardID);
+            else next.add(cardID);
+            try {
+                localStorage.setItem(PINNED_CARDS_STORAGE_KEY, JSON.stringify([...next]));
+            } catch {}
+            return next;
+        });
+    };
     const prevWidthBeforeList = useRef(null);
     const prevListViewBeforeBothLeft = useRef(null);
 
@@ -127,7 +184,7 @@ function Content2(props) {
 
     const handleFavoritesToggle = () => {
         if (!props.isLoggedIn) {
-            alert("Please log in first.");
+            setShowLoginPrompt(true);
             return;
         }
         setShowFavoritesOnly(prev => !prev);
@@ -147,6 +204,7 @@ function Content2(props) {
         props.setSearchTriggerSource?.('container-panel');
         props.setSearchCondition?.(cardSearchKeyword.trim().toLowerCase());
         props.setCategoryConditionCondition?.(cardTypeFilter);
+        setContainerPanelSearchVersion(prev => prev + 1);
     };
 
     const handleCardSearchClear = () => {
@@ -544,7 +602,7 @@ function Content2(props) {
             loadCardsByCriteria();
             props.setSearchTriggerSource?.('');
         }
-    }, [props.searchCondition, props.sidebarSearchRequestId]);
+    }, [props.searchCondition, props.sidebarSearchRequestId, containerPanelSearchVersion]);
 
     const fetchBookmarks = async () => {
         console.log("Fetching bookmarks for:", resolvedUsername);
@@ -693,18 +751,23 @@ function Content2(props) {
     );
 
     const prioritizedDisplayedCards = (() => {
-        if (!selectedCardIdFromMap || props.isCollapsed) {
-            return displayedCards;
+        const pinned = displayedCards.filter(card => pinnedCardIDs.has(card.cardID));
+        const unpinned = displayedCards.filter(card => !pinnedCardIDs.has(card.cardID));
+
+        let orderedUnpinned = unpinned;
+        if (selectedCardIdFromMap && !props.isCollapsed) {
+            const sel = unpinned.filter(card => String(card.cardID) === selectedCardIdFromMap);
+            if (sel.length > 0) {
+                orderedUnpinned = [...sel, ...unpinned.filter(card => String(card.cardID) !== selectedCardIdFromMap)];
+            }
         }
 
-        const selectedCards = displayedCards.filter(card => String(card.cardID) === selectedCardIdFromMap);
-        if (selectedCards.length === 0) {
-            return displayedCards;
-        }
-
-        const nonSelectedCards = displayedCards.filter(card => String(card.cardID) !== selectedCardIdFromMap);
-        return [...selectedCards, ...nonSelectedCards];
+        return [...pinned, ...orderedUnpinned];
     })();
+
+    const firstVisibleCardID = prioritizedDisplayedCards.length > 0
+        ? String(prioritizedDisplayedCards[0].cardID)
+        : null;
 
     useEffect(() => {
         if (!props.isCollapsed && selectedCardIdFromMap && cardContainerRef.current) {
@@ -723,10 +786,6 @@ function Content2(props) {
             const cardID = event?.detail?.cardID;
             if (cardID == null) return;
 
-            props.setIsCollapsed?.(false);
-            if (cardContainerRef.current) {
-                cardContainerRef.current.scrollTop = 0;
-            }
             setLearnMoreRequest({
                 cardID: String(cardID),
                 token: Date.now()
@@ -737,7 +796,7 @@ function Content2(props) {
         return () => {
             window.removeEventListener('atlas:open-card-learn-more', handleOpenLearnMoreFromMapPin);
         };
-    }, [props.setIsCollapsed]);
+    }, []);
 
     useEffect(() => {
         if (!learnMoreRequest) return;
@@ -808,14 +867,45 @@ function Content2(props) {
                 />
 
                 <div className="card-panel-top">
-                    <div className="card-panel-toolbar">
+                    <div className="card-panel-titlebar" data-onboarding-target="card-titlebar">
+                        <div className="card-panel-titlebar-text-group">
+                            <span className="card-panel-titlebar-text">Cards</span>
+                            <span className="card-panel-titlebar-subtitle">{cardsInViewByType.length} {scopeSubtitle}</span>
+                        </div>
+                        <div className="card-panel-titlebar-actions">
+                            <button
+                                className="card-panel-titlebar-btn"
+                                title="Help"
+                                data-onboarding-target="card-help-button"
+                                onClick={() => window.open('/user-manual?section=card-container', '_blank')}
+                            >
+                                <FontAwesomeIcon icon={faQuestion} />
+                            </button>
+                            <button
+                                className="card-panel-titlebar-btn card-panel-titlebar-btn--onboarding"
+                                title="Start onboarding"
+                                data-onboarding-target="card-onboarding-button"
+                                onClick={() => setIsOnboardingOpen(true)}
+                            >
+                                <FontAwesomeIcon icon={faPlay} />
+                            </button>
+                            <button
+                                className="card-panel-titlebar-btn"
+                                title="Close panel"
+                                onClick={() => props.setIsCollapsed?.(true)}
+                            >
+                                <FontAwesomeIcon icon={faTimes} />
+                            </button>
+                        </div>
+                    </div>
+                    <div className="card-panel-toolbar" data-onboarding-target="card-toolbar">
                             <button
                                 type="button"
                                 className="card-toolbar-button card-toolbar-button--icon"
                                 title={props.isLoggedIn ? 'Add Card' : 'Log in to add a card'}
                                 onClick={() => {
                                     if (!props.isLoggedIn) {
-                                        alert('Please log in to upload a data card.');
+                                        setShowLoginPrompt(true);
                                         return;
                                     }
                                     openModal();
@@ -909,7 +999,7 @@ function Content2(props) {
                             </button>
                     </div>
 
-                    <div className="card-panel-searchbar">
+                    <div className="card-panel-searchbar" data-onboarding-target="card-searchbar">
                         <input
                             type="text"
                             value={cardSearchKeyword}
@@ -938,17 +1028,13 @@ function Content2(props) {
                             <FontAwesomeIcon icon={faTimes} />
                         </button>
                     </div>
-
-                    <div className="card-panel-info-bar">
-                        <span className="card-panel-title">Cards</span>
-                        <span className="card-panel-subtitle">{cardsInViewByType.length} {scopeSubtitle}</span>
-                    </div>
                 </div>
 
 
                 {(!props.isLoggedIn || bookmarksLoaded) ? (
                     <div
                         className={`card-container ${isListView ? 'card-container--list' : ''}`}
+                        data-onboarding-target="card-list-area"
                         ref={cardContainerRef}
                         style={{ display: props.isCollapsed ? 'none' : (isListView ? 'flex' : 'grid') }}
                     >
@@ -963,7 +1049,11 @@ function Content2(props) {
 
                                 if (isListView) {
                                     return (
-                                        <div key={cardKey} className="card-list-item">
+                                        <div
+                                            key={cardKey}
+                                            className={`card-list-item${openMenuCardID === card.cardID ? ' menu-open' : ''}${pinnedCardIDs.has(card.cardID) ? ' pinned' : ''}`}
+                                            data-onboarding-target={index === 0 ? 'onboarding-single-card' : undefined}
+                                        >
                                             <span
                                                 className="card-list-item-title"
                                                 onClick={() => {
@@ -973,32 +1063,64 @@ function Content2(props) {
                                             >
                                                 {card.title}
                                             </span>
-                                            <div className="card-list-item-actions">
+                                            <div
+                                                className="card-list-item-actions"
+                                                data-onboarding-target={index === 0 ? 'onboarding-single-card-actions' : undefined}
+                                                ref={openMenuCardID === card.cardID ? menuRef : null}
+                                            >
                                                 <button
-                                                    className={`card-list-item-btn fav ${bookmarkedCardIDs.has(card.cardID) ? 'active' : ''}`}
-                                                    title={bookmarkedCardIDs.has(card.cardID) ? 'Remove from favorites' : 'Add to favorites'}
+                                                    className="card-list-more-btn"
+                                                    title="More options"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (!props.isLoggedIn) { alert('Please log in to use favorites.'); return; }
-                                                        const endpoint = bookmarkedCardIDs.has(card.cardID) ? '/unbookmarkCard' : '/bookmarkCard';
-                                                        const fd = new FormData();
-                                                        fd.append('username', resolvedUsername);
-                                                        fd.append('cardID', card.cardID);
-                                                        api.post(endpoint, fd).then(() => fetchBookmarks()).catch(err => console.error(err));
+                                                        setOpenMenuCardID(prev => prev === card.cardID ? null : card.cardID);
                                                     }}
                                                 >
-                                                    <FontAwesomeIcon icon={faHeart} />
+                                                    <FontAwesomeIcon icon={faEllipsisV} />
                                                 </button>
-                                                <button
-                                                    className="card-list-item-btn locate"
-                                                    title="Locate on map"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleCardClick(card);
-                                                    }}
-                                                >
-                                                    <FontAwesomeIcon icon={faMapMarkerAlt} />
-                                                </button>
+                                                {openMenuCardID === card.cardID && (
+                                                    <div className="card-list-menu">
+                                                        <button
+                                                            className={`card-list-menu-item${pinnedCardIDs.has(card.cardID) ? ' active-pin' : ''}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!props.isLoggedIn) { setShowLoginPrompt(true); setOpenMenuCardID(null); return; }
+                                                                togglePin(card.cardID);
+                                                                setOpenMenuCardID(null);
+                                                            }}
+                                                        >
+                                                            <FontAwesomeIcon icon={faThumbtack} />
+                                                            <span>{pinnedCardIDs.has(card.cardID) ? 'Unpin' : 'Pin to top'}</span>
+                                                        </button>
+                                                        <button
+                                                            className={`card-list-menu-item${bookmarkedCardIDs.has(card.cardID) ? ' active-fav' : ''}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!props.isLoggedIn) { setShowLoginPrompt(true); setOpenMenuCardID(null); return; }
+                                                                const endpoint = bookmarkedCardIDs.has(card.cardID) ? '/unbookmarkCard' : '/bookmarkCard';
+                                                                const fd = new FormData();
+                                                                fd.append('username', resolvedUsername);
+                                                                fd.append('cardID', card.cardID);
+                                                                api.post(endpoint, fd).then(() => fetchBookmarks()).catch(err => console.error(err));
+                                                                setOpenMenuCardID(null);
+                                                            }}
+                                                        >
+                                                            <FontAwesomeIcon icon={faHeart} />
+                                                            <span>{bookmarkedCardIDs.has(card.cardID) ? 'Unfavorite' : 'Favorite'}</span>
+                                                        </button>
+                                                        <button
+                                                            className="card-list-menu-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleCardClick(card);
+                                                                setOpenMenuCardID(null);
+                                                            }}
+                                                        >
+                                                            <FontAwesomeIcon icon={faMapMarkerAlt} />
+                                                            <span>Locate on map</span>
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                             {/* Hidden Card for learn-more modal */}
                                             <div style={{ display: 'none' }}>
@@ -1016,6 +1138,7 @@ function Content2(props) {
                                                     fetchBookmarks={fetchBookmarks}
                                                     isLoggedIn={props.isLoggedIn}
                                                     onZoom={() => handleCardClick(card)}
+                                                    onboardingTargetPrefix={index === 0 ? 'onboarding-single-card' : undefined}
                                                 />
                                             </div>
                                         </div>
@@ -1023,7 +1146,13 @@ function Content2(props) {
                                 }
 
                                 return (
-                                    <div key={cardKey} onClick={() => handleCardClick(card)}>
+                                    <div
+                                        key={cardKey}
+                                        className={`card-grid-wrapper${pinnedCardIDs.has(card.cardID) ? ' pinned' : ''}`}
+                                        data-onboarding-target={index === 0 ? 'onboarding-single-card' : undefined}
+                                        onClick={() => handleCardClick(card)}
+                                        onContextMenu={(e) => e.preventDefault()}
+                                    >
                                         <Card
                                             formData={{
                                                 ...card,
@@ -1038,16 +1167,61 @@ function Content2(props) {
                                             fetchBookmarks={fetchBookmarks}
                                             isLoggedIn={props.isLoggedIn}
                                             onZoom={() => handleCardClick(card)}
+                                            onboardingTargetPrefix={index === 0 ? 'onboarding-single-card' : undefined}
                                         />
+                                        <button
+                                            className={`card-grid-pin-btn ${pinnedCardIDs.has(card.cardID) ? 'active' : ''}`}
+                                            data-onboarding-target={index === 0 ? 'onboarding-single-card-actions' : undefined}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (!props.isLoggedIn) { setShowLoginPrompt(true); return; }
+                                                togglePin(card.cardID);
+                                            }}
+                                            title={pinnedCardIDs.has(card.cardID) ? 'Unpin card' : 'Pin to top'}
+                                        >
+                                            <FontAwesomeIcon icon={faThumbtack} />
+                                        </button>
                                     </div>
                                 );
                             });
                         })()}
                     </div>
                 ) : (
-                    <p className="card-container-loading">Loading Cards...</p>
+                    <p className="card-container-loading" data-onboarding-target="card-list-area">Loading Cards...</p>
                 )}
             </section>
+
+            <CardPanelOnboarding
+                isOpen={isOnboardingOpen}
+                onClose={() => setIsOnboardingOpen(false)}
+                isPanelCollapsed={props.isCollapsed}
+                firstCardId={firstVisibleCardID}
+            />
+
+            {/* Login Required Prompt */}
+            {showLoginPrompt && ReactDOM.createPortal(
+                <div
+                    className="login-prompt-overlay"
+                    onClick={() => setShowLoginPrompt(false)}
+                >
+                    <div
+                        className="login-prompt-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <p>Please log in to use this feature.</p>
+                        <div className="login-prompt-actions">
+                            <a href="/login" className="login-prompt-btn login-prompt-btn--primary">Log In</a>
+                            <button
+                                className="login-prompt-btn login-prompt-btn--secondary"
+                                onClick={() => setShowLoginPrompt(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </>
     );
 }

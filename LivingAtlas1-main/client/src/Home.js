@@ -11,10 +11,9 @@ import './Home.css';
 import './Sidebars.css';
 import ArcgisUploadPanel from './ArcgisUploadPanel';
 import CustomLayersPanel from './CustomLayersPanel';
-import RemovedServicesPanel from './RemovedServicesPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
-import { faLayerGroup, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { faBell, faMap, faObjectGroup } from '@fortawesome/free-solid-svg-icons';
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
@@ -41,12 +40,26 @@ function Home(props) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(true);
-    const [cardPanelWidth, setCardPanelWidth] = useState(() => 
-        Math.max(300, Math.min(900, Math.floor(window.innerWidth * 0.41)))
-    );
+    const [cardPanelWidth, setCardPanelWidth] = useState(() => {
+        // Derive default panel width from the card size formula so it always fits exactly 2 columns.
+        // Card width in CSS = 20vw, grid-gap = 16px, padding = 16px × 2 sides = 32px
+        // scrollbar-gutter: stable reserves ~17px for scrollbar even when hidden
+        // Panel for 2 cols = 2 × (20vw) + 1 × gap + padding + scrollbar_gutter
+        const CARD_VW = 0.20;
+        const GRID_GAP = 16;
+        const GRID_PADDING = 32;
+        const SCROLLBAR_GUTTER = 20; // matches scrollbar-gutter:stable reserved width
+        const SUBPIXEL_BUFFER = 4;  // absorbs browser subpixel rounding of vw values
+        const COLS = 2;
+        // Math.ceil avoids being 1px short when Windows display scaling (e.g. 125%) reduces vw
+        return Math.max(300, Math.ceil(
+            window.innerWidth * CARD_VW * COLS + GRID_GAP * (COLS - 1) + GRID_PADDING + SCROLLBAR_GUTTER + SUBPIXEL_BUFFER
+        ));
+    });
     const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
-    const [isRemovedPanelOpen, setIsRemovedPanelOpen] = useState(false);
+    const [arcgisNavigateTarget, setArcgisNavigateTarget] = useState(null);
     const [isCustomLayerPanelOpen, setIsCustomLayerPanelOpen] = useState(false);
+    const [customLayersRefreshKey, setCustomLayersRefreshKey] = useState(0);
     const [cardPanelSide, setCardPanelSide] = useState('right');
     const [folderExpanded, setFolderExpanded] = useState(false);
     const [itemExpanded, setItemExpanded] = useState(false);
@@ -54,11 +67,11 @@ function Home(props) {
     const [arcgisLegend, setArcgisLegend] = useState(null);
     const [arcgisLayerAdded, setArcgisLayerAdded] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
-        return !localStorage.getItem('changelog_seen_v13');
+        return !localStorage.getItem('changelog_seen_v14');
     });
 
     const closeChangelog = () => {
-        localStorage.setItem('changelog_seen_v13', 'true');
+        localStorage.setItem('changelog_seen_v14', 'true');
         setIsChangelogOpen(false);
     };
 
@@ -73,6 +86,17 @@ function Home(props) {
             document.body.style.overflow = previousOverflow;
             document.body.style.overscrollBehaviorY = previousOverscrollBehaviorY;
         };
+    }, []);
+
+    // Listen for card linked-ArcGIS-item clicks → open panel and navigate
+    useEffect(() => {
+        const handler = (e) => {
+            setIsUploadPanelOpen(true);
+            setIsCustomLayerPanelOpen(false);
+            setArcgisNavigateTarget(e.detail);
+        };
+        window.addEventListener('open-arcgis-panel', handler);
+        return () => window.removeEventListener('open-arcgis-panel', handler);
     }, []);
 
     // Fetch layers and legend for demo folder/item
@@ -151,7 +175,11 @@ function Home(props) {
                 ? uiPrefs.basemapId
                 : 'streets-v12'
         );
-        setCardViewModePreference(uiPrefs.cardViewMode === 'list' ? 'list' : 'grid');
+        const newCardViewMode = uiPrefs.cardViewMode === 'list' ? 'list' : 'grid';
+        setCardViewModePreference(newCardViewMode);
+        if (newCardViewMode === 'list') {
+            setCardPanelWidth(Math.round(window.innerWidth * 0.25));
+        }
         setCardPanelSide(uiPrefs.cardPanelSide === 'left' ? 'left' : 'right');
     };
 
@@ -405,7 +433,7 @@ function Home(props) {
 
                 {/* Card Container Toggle Button */}
                 <button
-                    className="left-sidebar-cards-button"
+                    className={`left-sidebar-cards-button${!isCollapsed ? ' active' : ''}`}
                     onClick={toggleCardContainer}
                     title={isCollapsed ? "Show Cards" : "Hide Cards"}
                 >
@@ -414,8 +442,8 @@ function Home(props) {
 
                 {/* GIS Services Button */}
                 <button
-                    className="left-sidebar-gis-button"
-                    onClick={() => setIsUploadPanelOpen(v => !v)}
+                    className={`left-sidebar-gis-button${isUploadPanelOpen ? ' active' : ''}`}
+                    onClick={() => { setIsUploadPanelOpen(v => !v); setIsCustomLayerPanelOpen(false); }}
                     title="Toggle Layers"
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
@@ -431,12 +459,15 @@ function Home(props) {
                     setArcgisLayerAdded={setArcgisLayerAdded}
                     areaVisibility={areaVisibility}
                     handleAreaCheckbox={handleAreaCheckbox}
+                    navigateToItem={arcgisNavigateTarget}
+                    onNavigateToItemDone={() => setArcgisNavigateTarget(null)}
+                    onCustomLayerSaved={() => setCustomLayersRefreshKey(k => k + 1)}
                 />
 
                 {/* Custom Layers Button */}
                 <button
-                    className="left-sidebar-customlayers-button"
-                    onClick={() => setIsCustomLayerPanelOpen(v => !v)}
+                    className={`left-sidebar-customlayers-button${isCustomLayerPanelOpen ? ' active' : ''}`}
+                    onClick={() => { setIsCustomLayerPanelOpen(v => !v); setIsUploadPanelOpen(false); }}
                     title="Custom Layers"
                 >
                     <FontAwesomeIcon icon={faObjectGroup} />
@@ -448,6 +479,7 @@ function Home(props) {
                     onClose={() => setIsCustomLayerPanelOpen(false)}
                     splitBottom={cardPanelSide === 'left' && !isCollapsed}
                     mapInstance={getMapboxMap}
+                    refreshKey={customLayersRefreshKey}
                 />
 
                 {/* Basemap Switcher Button */}
@@ -466,21 +498,6 @@ function Home(props) {
                     mapInstance={getMapboxMap}
                     currentBasemapId={preferredBasemapId}
                     onBasemapChange={setPreferredBasemapId}
-                />
-
-                {/* Trash button*/}
-                <button
-                    className="left-sidebar-trash-button"
-                    title="Removed Services"
-                    onClick={() => setIsRemovedPanelOpen(v => !v)}
-                >
-                    <FontAwesomeIcon icon={faTrash} />
-                </button>
-
-                {/* Removed Services Panel */}
-                <RemovedServicesPanel
-                    isOpen={isRemovedPanelOpen}
-                    onClose={() => setIsRemovedPanelOpen(false)}
                 />
 
                 {/* Spacer pushes bell to bottom */}
@@ -552,7 +569,6 @@ function Home(props) {
                 setIsCollapsed={setIsCollapsed}
                 isSidebarOpen={isSidebarOpen}
                 isUploadPanelOpen={isUploadPanelOpen}
-                isRemovedPanelOpen={isRemovedPanelOpen}
                 selectedCardCoords={selectedCardCoords}
                 onMarkerCardSelect={setSelectedCardIdFromMap}
                 cardPanelWidth={cardPanelWidth}

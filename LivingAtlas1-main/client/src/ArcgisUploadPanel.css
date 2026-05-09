@@ -53,6 +53,110 @@
     box-shadow: 0 4px 12px rgba(25,118,210,0.12);
 }
 
+.upload-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 4px 6px 4px;
+    border-bottom: 1px solid #d8e1ea;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+}
+
+.upload-panel-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.upload-panel-header-close-btn {
+    width: 28px;
+    height: 28px;
+    background: #fff;
+    border: 1px solid #bfd0e2;
+    color: #27425d !important;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-panel-header-close-btn:hover {
+    border-color: #8eabc8;
+    background: #f2f7fc;
+    box-shadow: 0 4px 12px rgba(25,118,210,0.12);
+}
+
+.upload-panel-header-close-btn--help {
+    font-size: 13px;
+}
+
+.upload-panel-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Breadcrumb navigation bar */
+.upload-panel-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #eef2f7;
+    border: 1px solid #d8e1ea;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 12.5px;
+    flex-shrink: 0;
+}
+
+.upload-panel-breadcrumb-back {
+    background: #fff;
+    border: 1px solid #bfd0e2;
+    border-radius: 5px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #27425d;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.upload-panel-breadcrumb-back:hover {
+    background: #dce8f5;
+    border-color: #8eabc8;
+}
+
+.upload-panel-breadcrumb-path {
+    font-weight: 600;
+    color: #223244;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.upload-panel-breadcrumb-sep {
+    color: #8eabc8;
+    margin: 0 2px;
+}
+
+.upload-panel-breadcrumb.drag-over {
+    background: #d6e8f7;
+    border-color: #5a9fd4;
+    box-shadow: 0 0 0 2px #a8ccea;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
 .upload-state-folder {
     all: revert;
     cursor: pointer;
@@ -398,6 +502,105 @@
     text-align: center;
 }
 
+/* Lazy-load spinner shown while a service's layers are being fetched */
+.upload-panel-layers-loading {
+    padding: 6px 14px;
+    font-size: 12px;
+    color: #1976d2;
+    font-style: italic;
+    opacity: 0.85;
+}
+
+/* Search-in-progress indicator shown below the search bar */
+.upload-panel-search-loading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #1565c0;
+    background: #e3f2fd;
+    border-radius: 4px;
+    margin: 3px 0 0 0;
+}
+
+.upload-panel-search-loading-spinner {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border: 2px solid #90caf9;
+    border-top-color: #1565c0;
+    border-radius: 50%;
+    animation: upload-panel-spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes upload-panel-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Folder area wrapper — provides positioning context for the floating nav mini modal */
+.upload-panel-folder-area-wrapper {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Search navigation floating mini modal */
+.panel-nav-mini {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #c0cfea;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+    padding: 4px 8px;
+    pointer-events: all;
+    user-select: none;
+}
+
+.panel-nav-mini-counter {
+    font-size: 0.78rem;
+    color: #27425d !important;
+    white-space: nowrap;
+    min-width: 52px;
+    text-align: center;
+}
+
+.panel-nav-mini-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    border: 1px solid #bfd0e2;
+    background: #fff;
+    color: #27425d !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+
+.panel-nav-mini-btn:hover:not(:disabled) {
+    border-color: #8eabc8;
+    background: #f2f7fc;
+}
+
+.panel-nav-mini-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .arcgis-loading-messages {
     position: fixed;
     left: 50%;
@@ -681,6 +884,49 @@
     padding: 0;
 }
 
+/* Clear All Layers button (shared by Upload Panel and Custom Layers Panel) */
+.clear-all-layers-btn {
+    all: revert;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #fff;
+    color: #27425d !important;
+    border: 1px solid #bfd0e2;
+    border-radius: 8px;
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.clear-all-layers-btn:hover {
+    border-color: #e05252;
+    background: #fff5f5;
+    color: #c0392b !important;
+}
+
+.clear-all-layers-btn:active {
+    background: #fde8e8;
+}
+
+.clear-all-layers-btn:disabled {
+    background: #f0f2f5;
+    border-color: #d8e1ea;
+    color: #a0adb8 !important;
+    cursor: not-allowed;
+}
+
+.clear-all-layers-btn:disabled:hover {
+    border-color: #d8e1ea;
+    background: #f0f2f5;
+    color: #a0adb8 !important;
+}
+
 /* Datasource toggle switch */
 .upload-panel-datasource-switch {
     all: revert;
@@ -861,3 +1107,30 @@
 }
 
 /* Context menu styles are now in LayerContextMenu.css */
+
+.arcgis-service-row-action-btn {
+    background: none;
+    border: none;
+    color: #5a7a8e;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    font-size: 14px;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    margin: 0 4px;
+}
+
+.arcgis-service-row-action-btn:hover {
+    background: rgba(90, 122, 142, 0.08);
+    color: #27425d;
+}
+
+.arcgis-service-row-action-btn:active {
+    background: rgba(90, 122, 142, 0.15);
+}

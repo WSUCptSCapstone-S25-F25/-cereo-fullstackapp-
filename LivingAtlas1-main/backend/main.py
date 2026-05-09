@@ -38,6 +38,7 @@ from fastapi.staticfiles import StaticFiles
 from database import conn, cur
 from account import account_router
 from endpoint_files.card import card_router
+from endpoint_files.card_arcgis_links import card_arcgis_links_router
 from endpoint_files import filterbar_router
 from endpoint_files import map_router
 from endpoint_files import arcgis_router
@@ -99,6 +100,7 @@ def test_cate():
 # Calling for the importing of endpoints from other files
 app.include_router(account_router)
 app.include_router(card_router)
+app.include_router(card_arcgis_links_router)
 app.include_router(filterbar_router)
 app.include_router(map_router)
 app.include_router(arcgis_router)
@@ -112,8 +114,10 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.on_event("shutdown")
 def shutdown_event():
-    cur.close()
-    conn.close()
+    if cur:
+        cur.close()
+    if conn:
+        conn.close()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))  # Render sets this PORT automatically

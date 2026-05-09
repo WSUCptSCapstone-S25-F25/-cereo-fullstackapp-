@@ -1,9 +1,9 @@
 .card {
     position: relative;
     background-color: #fff;
-    width: 280px;
-    min-width: 280px;
-    max-width: 280px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   height: auto;
   min-height: 0;
   max-height: none;
@@ -146,9 +146,10 @@
 .card .card-thumbnail {
     width: 100%;
     max-width: none;
-    height: 170px;
-    min-height: 170px;
-    max-height: 170px;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 280 / 170;
     margin-bottom: 10px;
     display: block;
     border-radius: 6px;
@@ -168,7 +169,8 @@
 .card-thumbnail-container {
     position: relative;
     width: calc(100% + 28px);
-    height: 170px;
+    height: auto;
+    aspect-ratio: 280 / 170;
     margin-top: -14px;
     margin-left: -14px;
     margin-right: -14px;
@@ -187,6 +189,11 @@
     height: 100%;
     border-radius: 0;
     background-color: transparent;
+}
+
+.card-thumbnail-container .card-thumbnail--cover {
+    object-fit: cover;
+    object-position: center;
 }
 
 /* Navigation arrows */
@@ -337,21 +344,6 @@
 
 .card button:not(.card-meta-zoom-btn):not(.favorite-icon):not(.card-image-nav):not(.card-image-dot):hover {
     background-color: #005fa3;
-}
-
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-see-all-images-btn):not(.learn-more-all-images-back-link):not(.learn-more-all-image-btn):not(.learn-more-all-image-delete-btn) {
-    margin-top: 20px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #007bff;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-.Modal button:not(.learn-more-gallery-tile):not(.learn-more-gallery-delete-btn):not(.learn-more-modal-edit-btn):not(.learn-more-modal-delete-btn):not(.learn-more-modal-close):not(.learn-more-modal-toolbar-btn):not(.learn-more-see-all-images-btn):not(.learn-more-all-images-back-link):not(.learn-more-all-image-btn):not(.learn-more-all-image-delete-btn):hover {
-    background-color: #0062cc;
 }
 
 .close-button {
@@ -621,6 +613,10 @@
   flex-direction: column;
 }
 
+.learn-more-modal-shell.onboarding-locked * {
+  pointer-events: none;
+}
+
 .learn-more-modal-close {
   position: static;
   width: 36px;
@@ -656,10 +652,36 @@
   flex-shrink: 0;
 }
 
+.learn-more-modal-toolbar-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .learn-more-modal-toolbar-right {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.learn-more-modal-download-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #c9d6e4;
+  background: #ffffff;
+  color: #1f4f7e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+.learn-more-modal-download-btn:hover {
+  background: #eef5fd;
+  border-color: #8fb0d1;
 }
 
 .learn-more-modal-delete-btn {
@@ -736,6 +758,17 @@
   background: #f1f5f9;
 }
 
+.learn-more-unsaved-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
 .learn-more-gallery {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -750,14 +783,13 @@
   border-radius: 7px;
   border: 1px solid #cbd5e1;
   background: #ffffff;
-  color: #1f4f7e;
+  color: #334155;
   cursor: pointer;
   font-weight: 600;
 }
 
 .learn-more-see-all-images-btn:hover {
-  background: #eef5fd;
-  border-color: #8fb0d1;
+  background: #f1f5f9;
 }
 
 .learn-more-all-images-view {
@@ -952,7 +984,7 @@
   border-radius: 7px;
   border: 1px solid #cbd5e1;
   background: #ffffff;
-  color: #1f4f7e;
+  color: #334155;
   font-weight: 600;
 }
 
@@ -1191,20 +1223,100 @@
   resize: vertical;
 }
 
+/* Multi-link section */
+.learn-more-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.learn-more-link-row .learn-more-inline-input {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.learn-more-link-row .learn-more-link-text-input {
+  flex: 0 0 38%;
+}
+
+.learn-more-link-remove-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #efb7b7;
+  background: #fff5f5;
+  color: #b42323;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.learn-more-link-remove-btn:hover {
+  background: #ffe9e9;
+  border-color: #e29595;
+}
+
+.learn-more-add-link-btn {
+  margin-top: 4px;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+}
+
+/* View mode multi-link list */
+.learn-more-links-view {
+  margin-bottom: 8px;
+}
+
+.learn-more-links-list {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 4px 0 0;
+}
+
+.learn-more-links-list li {
+  margin-bottom: 4px;
+}
+
+/* Edit/Create form link section */
+.edit-form-links-section {
+  margin-bottom: 10px;
+}
+
+.edit-form-links-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.edit-form-link-input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
 .learn-more-select-location-btn {
   display: inline-block;
   margin: 4px 0 12px;
-  padding: 6px 16px;
-  font-size: 0.9rem;
+  padding: 7px 12px;
   font-weight: 600;
   color: #fff;
-  background: #2563eb;
-  border: none;
-  border-radius: 6px;
+  background: #1d4ed8;
+  border: 1px solid transparent;
+  border-radius: 7px;
   cursor: pointer;
 }
 .learn-more-select-location-btn:hover {
-  background: #1d4ed8;
+  background: #1e40af;
 }
 
 .learn-more-location-btn-group {
@@ -1217,10 +1329,10 @@
   margin: 0;
 }
 .learn-more-change-to-polygon-btn {
-  background: #7c3aed !important;
+  background: #1d4ed8 !important;
 }
 .learn-more-change-to-polygon-btn:hover {
-  background: #6d28d9 !important;
+  background: #1e40af !important;
 }
 
 .learn-more-modal-body p {
@@ -1549,6 +1661,29 @@
   box-shadow: none !important;
 }
 
+.learn-more-modal-help-btn,
+.learn-more-modal-onboarding-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #c4d4e3;
+  background: #f8fbff;
+  color: #27425d;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.learn-more-modal-help-btn:hover,
+.learn-more-modal-onboarding-btn:hover {
+  background: #ecf5ff;
+  border-color: #9eb7d0;
+  transform: translateY(-1px);
+}
+
 .image-preview-close:hover {
   background: rgba(0, 0, 0, 0.75) !important;
 }
@@ -1655,4 +1790,239 @@
 
 .image-preview-bar.active {
   background: #fff !important;
+}
+
+/* Linked ArcGIS Services/Layers section in learn-more modal */
+.learn-more-arcgis-links-section {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid #e8edf2;
+}
+
+.learn-more-arcgis-links-section > p {
+    margin: 0 0 6px 0;
+}
+
+.learn-more-no-arcgis-links {
+    color: #888;
+    font-size: 0.88rem;
+    margin: 0 0 6px 0;
+    font-style: italic;
+}
+
+.learn-more-arcgis-links-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.learn-more-arcgis-link-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+}
+
+.learn-more-arcgis-link-checkbox {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: #2563eb;
+}
+
+/* Checkbox label wrapper for linked ArcGIS layer toggle */
+.learn-more-arcgis-layer-toggle-label {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.learn-more-arcgis-layer-toggle-cb {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: #2563eb;
+    margin: 0;
+    margin-right: 6px;
+}
+
+/* Single inline row: breadcrumb + legend img + name */
+.learn-more-arcgis-link-row {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 0;
+    row-gap: 0;
+}
+
+.learn-more-arcgis-row-text {
+    font-size: 0.85rem !important;
+    color: #4b5563 !important;
+    line-height: 1.4 !important;
+    white-space: nowrap !important;
+    font-weight: normal !important;
+    font-family: inherit !important;
+}
+
+.learn-more-arcgis-row-name {
+    font-weight: bold !important;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.learn-more-arcgis-row-sep {
+    font-size: 0.95rem !important;
+    color: #9ca3af !important;
+    line-height: 1.4 !important;
+    flex-shrink: 0 !important;
+    margin: 0 8px !important;
+    font-weight: normal !important;
+}
+
+.learn-more-arcgis-legend-img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 2px;
+    margin-right: 3px;
+}
+
+.learn-more-arcgis-goto-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: none !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #64748b !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    font-size: 1.1rem !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+    margin-top: 0 !important;
+    align-self: center !important;
+    transition: background 0.12s, color 0.12s, border-color 0.12s !important;
+    box-shadow: none !important;
+}
+
+.learn-more-arcgis-goto-btn:hover {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    border-color: #94a3b8 !important;
+}
+
+.learn-more-arcgis-link-delete-btn {
+    background: none !important;
+    border: 1px solid #ccc !important;
+    color: #888 !important;
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    transition: background 0.12s, color 0.12s !important;
+    box-shadow: none !important;
+}
+
+.learn-more-arcgis-link-delete-btn:hover {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+    border-color: #fca5a5 !important;
+}
+
+.learn-more-add-arcgis-btn {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    padding: 7px 12px !important;
+    border-radius: 7px !important;
+    cursor: pointer !important;
+    font-weight: 600 !important;
+    margin-top: 4px !important;
+    transition: background 0.15s !important;
+    box-shadow: none !important;
+}
+
+.learn-more-add-arcgis-btn:hover {
+    background: #f1f5f9 !important;
+}
+
+/* ── Login Required Prompt ─────────────────────────────────────────── */
+.login-prompt-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20000;
+}
+
+.login-prompt-modal {
+    background: #fff;
+    border-radius: 8px;
+    padding: 2rem 2.5rem;
+    min-width: 280px;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+
+.login-prompt-modal p {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.login-prompt-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.login-prompt-btn {
+    padding: 0.5rem 1.4rem;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.login-prompt-btn--primary {
+    background: #2563eb;
+    color: #fff;
+}
+
+.login-prompt-btn--primary:hover {
+    background: #1d4ed8;
+}
+
+.login-prompt-btn--secondary {
+    background: #e5e7eb;
+    color: #333;
+}
+
+.login-prompt-btn--secondary:hover {
+    background: #d1d5db;
 }

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { createPortal, unstable_batchedUpdates } from "react-dom";
 import { addArcgisVectorLayer } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
@@ -12,22 +12,26 @@ import {
 import { fetchCustomLayers, deleteCustomLayer, reorderCustomLayers, saveLayerOrder, fetchCustomFolders, createCustomFolder, deleteCustomFolder, renameCustomFolder } from './arcgisServicesDb';
 import { buildLayerTree, getAllLeafLayers, getDescendantLeafLayers, LayerTreeNode } from './LayerTree';
 import { filterUploadPanelData } from './arcgisUploadSearchUtils';
+import { buildMatchList, useSearchNav } from './arcgisSearchNavUtils';
 import ArcgisRenameItem from './ArcgisRenameItem';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSearch, faFolderPlus } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faFolder } from '@fortawesome/free-regular-svg-icons';
+import ClearAllLayersButton from './ClearAllLayersButton';
 
 function CustomLayersPanel({
     isOpen,
     onClose,
     splitBottom = false,
     mapInstance,
+    refreshKey = 0,
 }) {
     const userEmail = localStorage.getItem('email') || '';
 
     const [customServices, setCustomServices] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [dbFolders, setDbFolders] = useState([]); // user-created folders from DB
 
     // Per-service state
@@ -38,6 +42,7 @@ function CustomLayersPanel({
     const [serviceLayerAdded, setServiceLayerAdded] = useState({});
 
     const [expandedFolders, setExpandedFolders] = useState(new Set());
+    const [currentPath, setCurrentPath] = useState(''); // '' = root view, path string = inside a folder (nested via '/' separator)
     const [expandedServices, setExpandedServices] = useState(new Set());
     const [expandedLayers, setExpandedLayers] = useState(new Set());
 
@@ -48,10 +53,20 @@ function CustomLayersPanel({
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('any');
     const [searchResult, setSearchResult] = useState(null);
+    const [serviceLayersLoading, setServiceLayersLoading] = useState({}); // { key: bool } — tracks in-flight layer fetches triggered by search
+
+    // Search navigation
+    const matchList = useMemo(
+        () => buildMatchList({ searchResult, allServicesByState: { CUSTOM: customServices }, stateCodes: ['CUSTOM'], serviceLayers }),
+        [searchResult, serviceLayers] // eslint-disable-line react-hooks/exhaustive-deps
+    );
+    const { currentIndex: navIndex, total: matchTotal, currentMatchId, goToNext, goToPrev, initNav, resetNav } = useSearchNav(matchList);
     const [showAddedOnly, setShowAddedOnly] = useState(false);
     const statusTimer = useRef(null);
 
     const prevCheckedLayerIds = useRef({});
+    const activeSearchRef = useRef(null); // { keyword, searchType } — tracks active search for auto re-run when layers load
+    const loadedKeyRef = useRef(null); // tracks "userEmail:refreshKey" for which data is loaded
 
     // Rename state
     const [renamingItem, setRenamingItem] = useState(null);
@@ -98,29 +113,34 @@ function CustomLayersPanel({
         statusTimer.current = setTimeout(() => setStatusMsg(null), 3000);
     };
 
-    // Load custom layers + folders from backend when panel opens
+    // Load custom layers + folders from backend — once per user+refreshKey, not on every panel open/close
     useEffect(() => {
         if (!isOpen || !userEmail) return;
+        const loadKey = `${userEmail}:${refreshKey}`;
+        if (loadedKeyRef.current === loadKey) return; // already loaded for this user/version
+        setIsLoading(true);
         let active = true;
         (async () => {
-            setIsLoading(true);
             try {
                 const [layers, folders] = await Promise.all([
                     fetchCustomLayers(userEmail),
                     fetchCustomFolders(userEmail),
                 ]);
                 if (active) {
-                    setCustomServices(layers);
-                    setDbFolders(folders);
+                    unstable_batchedUpdates(() => {
+                        setCustomServices(layers);
+                        setDbFolders(folders);
+                        setIsLoading(false);
+                    });
+                    loadedKeyRef.current = loadKey;
                 }
             } catch (err) {
                 console.warn('[CustomLayersPanel] Failed to load custom layers:', err);
-            } finally {
                 if (active) setIsLoading(false);
             }
         })();
         return () => { active = false; };
-    }, [isOpen, userEmail]);
+    }, [isOpen, userEmail, refreshKey]);
 
     // Group services by folder (preserving sort_order from DB)
     const servicesByFolder = {};
@@ -142,12 +162,43 @@ function CustomLayersPanel({
     const folderNames = Object.keys(servicesByFolder).sort((a, b) => (folderFirstOrder[a] ?? 0) - (folderFirstOrder[b] ?? 0));
 
     // --- Search handler ---
+    const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
+
+    // Trigger loading of any not-yet-fetched service layers so layer-name matches aren't missed
+    const triggerLayerLoadForSearch = (type) => {
+        if (type !== 'any' && type !== 'layer') return;
+        customServices.forEach(service => {
+            if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
+            if (serviceLayers[service.key] !== undefined) return;
+            if (serviceLayersLoading[service.key]) return;
+            setServiceLayersLoading(prev => ({ ...prev, [service.key]: true }));
+            fetchArcgisLayers(service.url)
+                .then(layers => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
+                    setCheckedLayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: [] });
+                    setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
+                    setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
+                })
+                .catch(() => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
+                })
+                .finally(() => {
+                    setServiceLayersLoading(prev => {
+                        const next = { ...prev };
+                        delete next[service.key];
+                        return next;
+                    });
+                });
+        });
+    };
+
     const doSearch = () => {
         if (!searchKeyword) {
             setSearchResult(null);
             setExpandedFolders(new Set());
             setExpandedServices(new Set());
             setExpandedLayers(new Set());
+            resetNav();
             return;
         }
         const result = filterUploadPanelData({
@@ -157,21 +208,36 @@ function CustomLayersPanel({
             keyword: searchKeyword,
         });
         setSearchResult(result);
+        activeSearchRef.current = { keyword: searchKeyword, searchType };
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: customServices }, stateCodes: ['CUSTOM'], serviceLayers });
+        initNav(mList);
+        triggerLayerLoadForSearch(searchType);
     };
 
     const clearSearch = () => {
+        activeSearchRef.current = null;
         setSearchKeyword('');
         setSearchResult(null);
         setExpandedFolders(new Set());
         setExpandedServices(new Set());
         setExpandedLayers(new Set());
+        resetNav();
     };
 
+    // Helper: last segment of a path-based folder name
+    const folderDisplayName = (fullPath) => fullPath.includes('/') ? fullPath.slice(fullPath.lastIndexOf('/') + 1) : fullPath;
+
     // --- Compute display folders/services with search + showAddedOnly ---
-    let foldersToShow = searchResult ? Object.keys(searchResult.filteredFolders) : folderNames;
+    let foldersToShow = searchResult ? Object.keys(searchResult.filteredFolders) : (() => {
+        if (currentPath === '') return folderNames.filter(f => !f.includes('/'));
+        const childPrefix = currentPath + '/';
+        // current folder itself (for its direct services) + direct children at next level
+        const children = folderNames.filter(f => f.startsWith(childPrefix) && !f.slice(childPrefix.length).includes('/'));
+        return [currentPath, ...children];
+    })();
     let servicesByFolderToShow = searchResult ? searchResult.filteredFolders : servicesByFolder;
 
     if (showAddedOnly) {
@@ -188,25 +254,44 @@ function CustomLayersPanel({
         servicesByFolderToShow = filteredFolders;
     }
 
-    // Lazy-load layers/legends when a service is expanded
+    // Pre-load layers for ALL services when panel opens (needed so search works on first use)
     useEffect(() => {
         if (!isOpen) return;
         customServices.forEach(service => {
-            if (!expandedServices.has(service.key)) return;
             if (serviceLayers[service.key] !== undefined) return;
             if (!service.url || service.type !== 'MapServer') return;
-
             fetchArcgisLayers(service.url).then(layers => {
                 setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
                 setCheckedLayerIds(prev => prev[service.key] ? prev : { ...prev, [service.key]: [] });
                 setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
                 setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
             });
+        });
+    }, [isOpen, customServices]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Lazy-load legends when a service is expanded
+    useEffect(() => {
+        if (!isOpen) return;
+        customServices.forEach(service => {
+            if (!expandedServices.has(service.key)) return;
+            if (!service.url || service.type !== 'MapServer') return;
             fetchArcgisLegend(service.url).then(legend => {
                 setServiceLegends(prev => ({ ...prev, [service.key]: legend || {} }));
             });
         });
     }, [isOpen, customServices, expandedServices]);
+
+    // Re-run filter when layers load in (handles first-search case where serviceLayers was still empty)
+    useEffect(() => {
+        if (!activeSearchRef.current) return;
+        const { keyword, searchType: type } = activeSearchRef.current;
+        const result = filterUploadPanelData({ services: customServices, serviceLayers, searchType: type, keyword });
+        setSearchResult(result);
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serviceLayers]);
 
     // --- Map interaction: add/remove raster + vector layers per layer (matches ArcgisUploadPanel) ---
     useEffect(() => {
@@ -340,6 +425,13 @@ function CustomLayersPanel({
         // eslint-disable-next-line
     }, [checkedLayerIds, serviceLayers, checkedSublayerIds]);
 
+    // Clear all layers from map:
+    const handleClearAllLayers = () => {
+        setCheckedLayerIds({});
+        setServiceLayerAdded({});
+        setCheckedSublayerIds({});
+    };
+
     // Opacity change handler — update all custom raster + vector layers
     const handleOpacityChange = (newOpacity) => {
         setLayerOpacity(newOpacity);
@@ -392,11 +484,17 @@ function CustomLayersPanel({
 
     // Handlers
     const handleFolderClick = (folder) => {
-        setExpandedFolders(prev => {
-            const next = new Set(prev);
-            if (next.has(folder)) next.delete(folder); else next.add(folder);
-            return next;
-        });
+        if (searchResult) {
+            setSearchKeyword('');
+            setSearchResult(null);
+            activeSearchRef.current = null;
+            resetNav();
+        }
+        setCurrentPath(folder);
+    };
+
+    const handleNavBack = () => {
+        setCurrentPath(prev => prev.includes('/') ? prev.slice(0, prev.lastIndexOf('/')) : '');
     };
 
     const handleServiceClick = (serviceKey) => {
@@ -574,6 +672,7 @@ function CustomLayersPanel({
     // --- Drag-and-drop reorder ---
     const [dragItem, setDragItem] = useState(null); // { type: 'folder'|'service', key, folder? }
     const [dragOverItem, setDragOverItem] = useState(null); // same shape
+    const [breadcrumbDragOver, setBreadcrumbDragOver] = useState(false);
 
     const persistOrder = useCallback((services) => {
         const order = services.map((s, i) => ({
@@ -600,6 +699,7 @@ function CustomLayersPanel({
     const handleDragEnd = () => {
         setDragItem(null);
         setDragOverItem(null);
+        setBreadcrumbDragOver(false);
     };
 
     const handleFolderDrop = (e, targetFolder) => {
@@ -624,24 +724,47 @@ function CustomLayersPanel({
             handleDragEnd();
             return;
         }
-        // Folder-to-folder reorder
+        // Folder dragged onto another folder → nest: rename source path under target
         if (dragItem.type !== 'folder' || dragItem.key === targetFolder) {
             handleDragEnd();
             return;
         }
-        // Reorder folders by moving all services of dragItem.key folder before targetFolder
-        setCustomServices(prev => {
-            const dragServices = prev.filter(s => (s.folder || 'Root') === dragItem.key);
-            const rest = prev.filter(s => (s.folder || 'Root') !== dragItem.key);
-            // Find the index of first service of target folder
-            const targetIdx = rest.findIndex(s => (s.folder || 'Root') === targetFolder);
-            const result = [...rest];
-            result.splice(targetIdx >= 0 ? targetIdx : result.length, 0, ...dragServices);
-            // Reassign sort_order
-            const updated = result.map((s, i) => ({ ...s, sort_order: i }));
-            persistOrder(updated);
-            return updated;
+        const sourceFolder = dragItem.key;
+        // Prevent dropping a folder into its own descendant
+        if (targetFolder.startsWith(sourceFolder + '/')) {
+            handleDragEnd();
+            return;
+        }
+        const sourceName = folderDisplayName(sourceFolder);
+        const newBasePath = targetFolder + '/' + sourceName;
+        // Collect all folders that need renaming (source + its children)
+        const foldersToRename = dbFolders
+            .map(f => f.folder_name)
+            .filter(f => f === sourceFolder || f.startsWith(sourceFolder + '/'));
+        // Update local dbFolders
+        setDbFolders(prev => prev.map(f => {
+            if (f.folder_name === sourceFolder) return { ...f, folder_name: newBasePath };
+            if (f.folder_name.startsWith(sourceFolder + '/')) return { ...f, folder_name: newBasePath + f.folder_name.slice(sourceFolder.length) };
+            return f;
+        }));
+        // Update local services
+        setCustomServices(prev => prev.map(s => {
+            const sf = s.folder || 'Root';
+            if (sf === sourceFolder) return { ...s, folder: newBasePath };
+            if (sf.startsWith(sourceFolder + '/')) return { ...s, folder: newBasePath + sf.slice(sourceFolder.length) };
+            return s;
+        }));
+        // Persist renames via API
+        foldersToRename.forEach(oldName => {
+            const newName = oldName === sourceFolder ? newBasePath : newBasePath + oldName.slice(sourceFolder.length);
+            renameCustomFolder(userEmail, oldName, newName).catch(err =>
+                console.warn('[CustomLayersPanel] Failed to persist nested folder rename:', err)
+            );
         });
+        // If browsing inside the moved subtree, update currentPath
+        if (currentPath === sourceFolder || currentPath.startsWith(sourceFolder + '/')) {
+            setCurrentPath(newBasePath + currentPath.slice(sourceFolder.length));
+        }
         handleDragEnd();
     };
 
@@ -862,6 +985,7 @@ function CustomLayersPanel({
             checkedSublayerIds={checkedSublayerIds}
             expandedLayers={expandedLayers}
             searchResult={searchResult}
+            currentMatchId={currentMatchId}
             onLayerClick={handleLayerClick}
             onLayerCheckbox={handleLayerCheckbox}
             onGroupCheckbox={handleGroupLayerCheckbox}
@@ -884,9 +1008,14 @@ function CustomLayersPanel({
             <div className={`custom-layers-panel${splitBottom ? ' custom-layers-panel--split-bottom' : ''}`}>
                 <div className="custom-layers-panel-header">
                     <h3>Custom Layers</h3>
-                    <button className="custom-layers-panel-close-btn" onClick={onClose}>
-                        <FontAwesomeIcon icon={faTimes} />
-                    </button>
+                    <div className="custom-layers-panel-header-actions">
+                        <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
+                            <FontAwesomeIcon icon={faQuestion} />
+                        </button>
+                        <button className="custom-layers-panel-close-btn" onClick={onClose}>
+                            <FontAwesomeIcon icon={faTimes} />
+                        </button>
+                    </div>
                 </div>
                 <div className="custom-layers-panel-empty">
                     Please log in to use custom layers.
@@ -900,16 +1029,21 @@ function CustomLayersPanel({
              onContextMenu={e => e.preventDefault()}>
             <div className="custom-layers-panel-header">
                 <h3>Custom Layers</h3>
-                <button
-                    className="custom-layers-panel-new-folder-btn"
-                    onClick={handleCreateFolder}
-                    title="New Folder"
-                >
-                    <FontAwesomeIcon icon={faFolderPlus} />
-                </button>
-                <button className="custom-layers-panel-close-btn" onClick={onClose}>
-                    <FontAwesomeIcon icon={faTimes} />
-                </button>
+                <div className="custom-layers-panel-header-actions">
+                    <button
+                        className="custom-layers-panel-new-folder-btn"
+                        onClick={handleCreateFolder}
+                        title="New Folder"
+                    >
+                        <FontAwesomeIcon icon={faFolderPlus} />
+                    </button>
+                    <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
+                        <FontAwesomeIcon icon={faQuestion} />
+                    </button>
+                    <button className="custom-layers-panel-close-btn" onClick={onClose}>
+                        <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                </div>
             </div>
 
             {/* Sticky toolbar: search bar, opacity, show-added-only */}
@@ -921,7 +1055,7 @@ function CustomLayersPanel({
                         value={searchKeyword}
                         onChange={e => setSearchKeyword(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') doSearch(); }}
-                        placeholder="Search folders, services, or layers..."
+                        placeholder={currentPath ? `Search in "${currentPath.includes('/') ? currentPath.slice(currentPath.lastIndexOf('/') + 1) : currentPath}"…` : 'Search folders, services, or layers…'}
                     />
                     <select
                         value={searchType}
@@ -948,6 +1082,12 @@ function CustomLayersPanel({
                         <FontAwesomeIcon icon={faTimes} />
                     </button>
                 </div>
+                {isSearchLoadingLayers && (
+                    <div className="upload-panel-search-loading">
+                        <span className="upload-panel-search-loading-spinner" />
+                        Searching… loading more results ({Object.keys(serviceLayersLoading).length} remaining)
+                    </div>
+                )}
 
                 {/* Opacity slider */}
                 <div className="upload-panel-opacity-slider-row">
@@ -1000,48 +1140,130 @@ function CustomLayersPanel({
                         Show only services added to map
                     </label>
                 </div>
+                <ClearAllLayersButton
+                    onClick={handleClearAllLayers}
+                    disabled={!Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0)}
+                />
             </div>
 
             {isLoading && (
                 <div className="custom-layers-panel-empty">Loading custom layers...</div>
             )}
 
-            {!isLoading && customServices.length === 0 && (
+            {!isLoading && customServices.length === 0 && dbFolders.length === 0 && (
                 <div className="custom-layers-panel-empty">
                     No custom layers saved yet.<br />
                     Right-click a layer in the GIS Services panel and select "Save to Custom Layers".
                 </div>
             )}
 
-            {!isLoading && customServices.length > 0 && (
+            {!isLoading && (customServices.length > 0 || dbFolders.length > 0) && (
+                <div className="custom-layers-panel-folder-area-wrapper">
+                    {searchResult && (
+                        <div className="panel-nav-mini">
+                            <span className="panel-nav-mini-counter">
+                                {matchTotal > 0 ? `${navIndex + 1} / ${matchTotal}` : '0 results'}
+                            </span>
+                            <button
+                                className="panel-nav-mini-btn"
+                                title="Previous match"
+                                onClick={goToPrev}
+                                disabled={matchTotal === 0}
+                            >
+                                <FontAwesomeIcon icon={faChevronUp} />
+                            </button>
+                            <button
+                                className="panel-nav-mini-btn"
+                                title="Next match"
+                                onClick={goToNext}
+                                disabled={matchTotal === 0}
+                            >
+                                <FontAwesomeIcon icon={faChevronDown} />
+                            </button>
+                        </div>
+                    )}
                 <div className="custom-layers-panel-folder-area">
+                    {/* Breadcrumb — shown when inside a folder in navigation mode */}
+                    {!searchResult && currentPath !== '' && (
+                        <div
+                            className={`upload-panel-breadcrumb${breadcrumbDragOver && dragItem?.type === 'folder' ? ' drag-over' : ''}`}
+                            onDragEnter={(e) => { e.preventDefault(); if (dragItem?.type === 'folder') setBreadcrumbDragOver(true); }}
+                            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setBreadcrumbDragOver(false); }}
+                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                            onDrop={(e) => {
+                                setBreadcrumbDragOver(false);
+                                e.preventDefault();
+                                if (!dragItem || dragItem.type !== 'folder') return;
+                                const sourceFolder = dragItem.key;
+                                const sourceName = folderDisplayName(sourceFolder);
+                                // Move dragged folder to the parent of the current directory
+                                const targetParent = currentPath.includes('/') ? currentPath.slice(0, currentPath.lastIndexOf('/')) : '';
+                                const newBasePath = targetParent === '' ? sourceName : targetParent + '/' + sourceName;
+                                if (newBasePath === sourceFolder) { handleDragEnd(); return; }
+                                const foldersToRename = dbFolders
+                                    .map(f => f.folder_name)
+                                    .filter(f => f === sourceFolder || f.startsWith(sourceFolder + '/'));
+                                setDbFolders(prev => prev.map(f => {
+                                    if (f.folder_name === sourceFolder) return { ...f, folder_name: newBasePath };
+                                    if (f.folder_name.startsWith(sourceFolder + '/')) return { ...f, folder_name: newBasePath + f.folder_name.slice(sourceFolder.length) };
+                                    return f;
+                                }));
+                                setCustomServices(prev => prev.map(s => {
+                                    const sf = s.folder || 'Root';
+                                    if (sf === sourceFolder) return { ...s, folder: newBasePath };
+                                    if (sf.startsWith(sourceFolder + '/')) return { ...s, folder: newBasePath + sf.slice(sourceFolder.length) };
+                                    return s;
+                                }));
+                                foldersToRename.forEach(oldName => {
+                                    const newName = oldName === sourceFolder ? newBasePath : newBasePath + oldName.slice(sourceFolder.length);
+                                    renameCustomFolder(userEmail, oldName, newName).catch(err =>
+                                        console.warn('[CustomLayersPanel] Failed to persist folder move-out rename:', err)
+                                    );
+                                });
+                                handleDragEnd();
+                            }}
+                        >
+                            <button
+                                className="upload-panel-breadcrumb-back"
+                                onClick={handleNavBack}
+                                onDragOver={(e) => e.stopPropagation()}
+                                title="Back"
+                            >←</button>
+                            <span className="upload-panel-breadcrumb-path">
+                                {currentPath.split('/').map((seg, i, arr) => (
+                                    <span key={i}>
+                                        {i > 0 && <span className="upload-panel-breadcrumb-sep"> / </span>}
+                                        {seg}
+                                    </span>
+                                ))}
+                            </span>
+                        </div>
+                    )}
                     {foldersToShow.map(folder => {
                         const services = servicesByFolderToShow[folder] || [];
-                        const isFolderExpanded = expandedFolders.has(folder);
+                        const isFolderExpanded = searchResult ? expandedFolders.has(folder) : currentPath === folder;
                         const isFolderDragging = dragItem?.type === 'folder' && dragItem?.key === folder;
                         const isFolderDragOver = dragOverItem?.type === 'folder' && dragOverItem?.key === folder && (dragItem?.type === 'folder' || dragItem?.type === 'service');
                         return (
                             <div key={folder}
                                 style={{ opacity: isFolderDragging ? 0.4 : 1 }}
                             >
-                                <div
+                                {/* Folder header: shown in search mode, at nav root, or for direct children of currentPath */}
+                                {(searchResult || currentPath === '' || folder.startsWith(currentPath + '/')) && <div
                                     className={`custom-layers-folder${isFolderDragOver ? ' drag-over' : ''}`}
+                                    data-search-match-id={searchResult?.matchedFolderNames?.has(folder) ? `folder-CUSTOM-${folder}` : undefined}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, 'folder', folder)}
                                     onClick={() => handleFolderClick(folder)}
                                     onContextMenu={(e) => handleContextMenu(e, 'folder', { folder })}
                                     onDragOver={(e) => handleDragOver(e, 'folder', folder)}
                                     onDrop={(e) => handleFolderDrop(e, folder)}
                                     onDragEnd={handleDragEnd}
                                 >
-                                    <span
-                                        className="drag-handle"
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, 'folder', folder)}
-                                        onClick={(e) => e.stopPropagation()}
-                                        title="Drag to reorder"
-                                    >⠿</span>
+                                    <FontAwesomeIcon icon={faFolder} style={{ flexShrink: 0, verticalAlign: 0 }} />
                                     <ArcgisRenameItem
                                         value={folder}
-                                        displayValue={`${isFolderExpanded ? '▼' : '►'} ${folder}`}
+                                        displayValue={folderDisplayName(folder)}
                                         onSave={(newName) => handleFolderRename(folder, newName)}
                                         placeholder="Enter folder name..."
                                         isFolder={true}
@@ -1052,7 +1274,7 @@ function CustomLayersPanel({
                                     <span style={{ color: '#999', fontSize: '10px', marginLeft: 'auto' }}>
                                         ({services.length})
                                     </span>
-                                </div>
+                                </div>}
                                 {isFolderExpanded && (
                                     <div className="custom-layers-folder-content">
                                         {services.map(service => {
@@ -1077,7 +1299,8 @@ function CustomLayersPanel({
                                             return (
                                                 <div key={service.key} style={{ opacity: isServiceDragging ? 0.4 : 1 }}>
                                                     <div
-                                                        className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}`}
+                                                        className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
+                                                        data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                         onClick={() => handleServiceClick(service.key)}
                                                         onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                                         onDragOver={(e) => handleDragOver(e, 'service', service.key, folder)}
@@ -1116,10 +1339,17 @@ function CustomLayersPanel({
                                                             onEditingDone={() => setRenamingItem(null)}
                                                         />
                                                         {service.state && (
-                                                            <span style={{ color: '#999', fontSize: '10px', marginLeft: 'auto' }}>
+                                                            <span style={{ color: '#999', fontSize: '10px' }}>
                                                                 {service.state.substring(0, 2).toUpperCase()}
                                                             </span>
                                                         )}
+                                                        <button
+                                                            className="custom-layers-service-row-action-btn"
+                                                            onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
+                                                            title="Learn more"
+                                                        >
+                                                            <FontAwesomeIcon icon={faEllipsisV} />
+                                                        </button>
                                                     </div>
                                                     {isServiceExpanded && layerTree.length > 0 && (
                                                         <div className="tree-children" style={{ paddingLeft: 16 }}>
@@ -1141,6 +1371,7 @@ function CustomLayersPanel({
                             </div>
                         );
                     })}
+                </div>
                 </div>
             )}
 

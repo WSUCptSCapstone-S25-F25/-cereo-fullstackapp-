@@ -4,6 +4,7 @@ Provides APIs to manage images in the CardImages table
 """
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Body
+from fastapi.responses import Response
 from database import conn, cur
 from typing import Optional
 import os
@@ -11,6 +12,7 @@ import uuid
 import datetime
 import base64
 import tempfile
+import requests as _requests
 from pathlib import Path
 
 images_router = APIRouter()
@@ -422,3 +424,50 @@ async def get_card_images(cardID: int):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
+
+
+_MIME_MAP = {
+    'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+    'gif': 'image/gif', 'webp': 'image/webp', 'bmp': 'image/bmp',
+}
+
+@images_router.get("/cardImageProxy/{image_id}")
+async def proxy_card_image(image_id: int):
+    """Fetch a card image by ID and return its bytes, bypassing client CORS restrictions."""
+    cur.execute("SELECT ImageURL FROM CardImages WHERE ImageID = %s", (image_id,))
+    row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    image_url = row[0]
+
+    if image_url.startswith("http://") or image_url.startswith("https://"):
+        try:
+            resp = _requests.get(image_url, timeout=15)
+            resp.raise_for_status()
+            content_type = resp.headers.get("content-type", "image/jpeg").split(";")[0]
+            return Response(content=resp.content, media_type=content_type)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Failed to fetch image: {e}")
+    else:
+        filepath = image_url.lstrip("/")
+        if not os.path.exists(filepath):
+            raise HTTPException(status_code=404, detail="Image file not found")
+        ext = filepath.rsplit(".", 1)[-1].lower()
+        content_type = _MIME_MAP.get(ext, "image/jpeg")
+        with open(filepath, "rb") as f:
+            return Response(content=f.read(), media_type=content_type)
+
+
+@images_router.get("/imageUrlProxy")
+async def proxy_image_by_url(url: str):
+    """Fetch an image from an arbitrary URL and return its bytes, bypassing client CORS restrictions."""
+    if not url or not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="Invalid or missing url parameter")
+    try:
+        resp = _requests.get(url, timeout=15)
+        resp.raise_for_status()
+        content_type = resp.headers.get("content-type", "image/jpeg").split(";")[0]
+        return Response(content=resp.content, media_type=content_type)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch image: {e}")

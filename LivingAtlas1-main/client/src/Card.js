@@ -1,17 +1,60 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import Modal from 'react-modal';
 import mapboxgl from 'mapbox-gl';
 import api from './api.js';
+import { fetchArcgisLegend } from './arcgisDataUtils';
 import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons';
-import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
+import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { jsPDF } from 'jspdf';
+import { faHeart as regularHeart, faQuestionCircle, faCirclePlay } from '@fortawesome/free-regular-svg-icons';
 import PolygonDrawingModal from './PolygonDrawingModal';
+import ArcGISPickerModal from './ArcGISPickerModal';
+import LearnMoreOnboarding, { LEARN_MORE_EDIT_MODE_STEP } from './OnboardingLearnMore';
+import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
+import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
+import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
 
 const CARD_CATEGORIES = ['River', 'Watershed', 'Places', 'Other'];
 
+const ARCGIS_STATE_FULL_NAMES = {
+    WA: 'Washington State ArcGIS Services',
+    ID: 'Idaho ArcGIS Services',
+    OR: 'Oregon ArcGIS Services',
+};
+
+// Build a lookup map from service_key -> service label for breadcrumb display
+const _allArcgisServices = [
+    ...(WA_ARCGIS_SERVICES || []),
+    ...(ID_ARCGIS_SERVICES || []),
+    ...(OR_ARCGIS_SERVICES || []),
+];
+const ARCGIS_SERVICE_LABEL_BY_KEY = {};
+const ARCGIS_SERVICE_URL_BY_KEY = {};
+_allArcgisServices.forEach(s => {
+    ARCGIS_SERVICE_LABEL_BY_KEY[s.key] = s.label || s.key;
+    ARCGIS_SERVICE_URL_BY_KEY[s.key] = s.url || null;
+});
+
+function parseLinks(link, linkText) {
+    if (!link) return [{ url: '', text: '' }];
+    try {
+        const parsed = JSON.parse(link);
+        if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : [{ url: '', text: '' }];
+    } catch {}
+    return [{ url: link, text: linkText || '' }];
+}
+
+function serializeLinks(links) {
+    const filtered = links.filter(l => l.url.trim() !== '');
+    if (filtered.length === 0) return '';
+    return JSON.stringify(filtered);
+}
+
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLearnMoreOnboardingOpen, setIsLearnMoreOnboardingOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
     const [isLearnMoreEditMode, setIsLearnMoreEditMode] = useState(false);
@@ -36,6 +79,16 @@ function Card(props) {
     });
     const [loading, setLoading] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+    const [linkedArcgisItems, setLinkedArcgisItems] = useState([]);
+    const [arcgisLegends, setArcgisLegends] = useState({}); // { serviceKey: legendData }
+    const [isArcgisPickerOpen, setIsArcgisPickerOpen] = useState(false);
+    // Track which linked items have their layer shown on the map (keyed by item.id)
+    const [linkedArcgisChecked, setLinkedArcgisChecked] = useState({});
+    const linkedItemsLoadedRef = useRef(null); // tracks which cardID was last loaded
+    const linkedArcgisItemsBackupRef = useRef(null); // backup of linkedArcgisItems when edit mode starts
+    const [learnMoreLinks, setLearnMoreLinks] = useState([{ url: '', text: '' }]);
+    const [editFormLinks, setEditFormLinks] = useState([{ url: '', text: '' }]);
     const [thumbnail, setThumbnail] = useState(null);
     const [preview, setPreview] = useState(
         formData.thumbnail_link && formData.thumbnail_link.trim() !== ""
@@ -78,8 +131,32 @@ function Card(props) {
     useEffect(() => {
         if (props.forceOpenLearnMoreSignal) {
             setIsModalOpen(true);
+            const cardId = formData.cardID;
+            if (cardId) {
+                refreshCardImages().catch(() => {});
+                if (linkedItemsLoadedRef.current !== cardId) {
+                    linkedItemsLoadedRef.current = cardId;
+                    api.get(`/cardArcGISLinks?card_id=${cardId}`)
+                        .then(res => setLinkedArcgisItems(res.data.data || []))
+                        .catch(() => {});
+                }
+            }
         }
-    }, [props.forceOpenLearnMoreSignal]);
+    }, [props.forceOpenLearnMoreSignal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Fetch ArcGIS legend data for all service keys in linkedArcgisItems
+    useEffect(() => {
+        if (linkedArcgisItems.length === 0) return;
+        const uniqueKeys = [...new Set(linkedArcgisItems.map(i => i.service_key))];
+        uniqueKeys.forEach(key => {
+            if (arcgisLegends[key] !== undefined) return;
+            const serviceUrl = ARCGIS_SERVICE_URL_BY_KEY[key];
+            if (!serviceUrl) return;
+            fetchArcgisLegend(serviceUrl)
+                .then(legend => setArcgisLegends(prev => ({ ...prev, [key]: legend || {} })))
+                .catch(() => setArcgisLegends(prev => ({ ...prev, [key]: {} })));
+        });
+    }, [linkedArcgisItems]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Ensure username and name always have safe defaults
     // Now handled by handleEdit
@@ -101,7 +178,54 @@ function Card(props) {
         setIsAllImagesView(false);
         setIsModalOpen(true);
         if (props.onLearnMore) props.onLearnMore();
+        const cardId = formData.cardID;
+        if (cardId) {
+            refreshCardImages().catch(() => {});
+            if (linkedItemsLoadedRef.current !== cardId) {
+                linkedItemsLoadedRef.current = cardId;
+                api.get(`/cardArcGISLinks?card_id=${cardId}`)
+                    .then(res => setLinkedArcgisItems(res.data.data || []))
+                    .catch(() => {});
+            }
+        }
     };
+
+    const isLearnMoreModalVisible = isModalOpen && !isSelectingLocation && !isEditingPolygon;
+
+    useEffect(() => {
+        if (!isLearnMoreModalVisible && isLearnMoreOnboardingOpen) {
+            setIsLearnMoreOnboardingOpen(false);
+        }
+    }, [isLearnMoreModalVisible, isLearnMoreOnboardingOpen]);
+
+    const [learnMoreOnboardingStep, setLearnMoreOnboardingStep] = useState(0);
+
+    // Enter edit mode at step 5 (index 4+), exit when onboarding closes
+    useEffect(() => {
+        if (!isLearnMoreOnboardingOpen || !isLearnMoreModalVisible) {
+            // Exit edit mode when onboarding closes
+            if (isLearnMoreEditMode) {
+                setIsLearnMoreEditMode(false);
+                isEditingRef.current = false;
+            }
+            return;
+        }
+        const shouldBeInEditMode = learnMoreOnboardingStep >= LEARN_MORE_EDIT_MODE_STEP;
+        if (shouldBeInEditMode && !isLearnMoreEditMode) {
+            isEditingRef.current = true;
+            setEditFormLinks(parseLinks(formData.link, formData.link_text));
+            setFormData((prev) => ({
+                ...prev,
+                original_username: prev.username,
+                original_email: prev.email,
+                original_title: prev.title,
+            }));
+            setIsLearnMoreEditMode(true);
+        } else if (!shouldBeInEditMode && isLearnMoreEditMode) {
+            setIsLearnMoreEditMode(false);
+            isEditingRef.current = false;
+        }
+    }, [isLearnMoreOnboardingOpen, isLearnMoreModalVisible, learnMoreOnboardingStep]);
 
     const handleZoom = (e) => {
         e.stopPropagation();
@@ -116,9 +240,10 @@ function Card(props) {
     const handleEdit = (e) => {
         e.stopPropagation();
         isEditingRef.current = true; // Lock editing state
-        setFormData({ 
+        setEditFormLinks(parseLinks(props.formData.link, props.formData.link_text));
+        setFormData({
             ...props.formData,
-            original_username: props.formData.username, 
+            original_username: props.formData.username,
             original_email: props.formData.email,
             original_title: props.formData.title,
         });
@@ -136,8 +261,21 @@ function Card(props) {
     const handleDelete = (e) => {
         e.stopPropagation();
 
+        if (!props.isLoggedIn && !isLearnMoreOnboardingOpen) {
+            setShowLoginPrompt(true);
+            return;
+        }
+
         if (!formData.username || !formData.title) {
             alert("Missing username or title — cannot delete card.");
+            return;
+        }
+
+        const viewerEmail = localStorage.getItem('email') || '';
+        const cardOwnerEmail = formData.email || '';
+        const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('isAdmin')); } catch { return false; } })();
+        if (!isAdmin && viewerEmail && cardOwnerEmail && viewerEmail !== cardOwnerEmail) {
+            alert("You don't have permission to delete this card. Only the card's creator or an admin can delete it.");
             return;
         }
 
@@ -147,6 +285,7 @@ function Card(props) {
             params: {
                 username: formData.username,
                 title: formData.title,
+                requester_email: viewerEmail,
             }
         })
         .then(() => {
@@ -163,8 +302,208 @@ function Card(props) {
         });
     };
 
+    const handleDownloadPdf = async () => {
+        if (!props.isLoggedIn && !isLearnMoreOnboardingOpen) {
+            setShowLoginPrompt(true);
+            return;
+        }
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const pageW = doc.internal.pageSize.getWidth();
+        const margin = 40;
+        const maxW = pageW - margin * 2;
+        let y = margin;
+
+        const addText = (text, opts = {}) => {
+            const { fontSize = 12, bold = false, color = [33, 33, 33], wrap = true } = opts;
+            doc.setFontSize(fontSize);
+            doc.setFont('helvetica', bold ? 'bold' : 'normal');
+            doc.setTextColor(...color);
+            if (wrap) {
+                const lines = doc.splitTextToSize(String(text || ''), maxW);
+                lines.forEach(line => {
+                    if (y > doc.internal.pageSize.getHeight() - margin) {
+                        doc.addPage();
+                        y = margin;
+                    }
+                    doc.text(line, margin, y);
+                    y += fontSize * 1.4;
+                });
+            } else {
+                if (y > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); y = margin; }
+                doc.text(String(text || ''), margin, y);
+                y += fontSize * 1.4;
+            }
+        };
+
+        const addField = (label, value) => {
+            if (!value && value !== 0) return;
+            const str = String(value).trim();
+            if (!str) return;
+            addText(`${label}: ${str}`, { fontSize: 11 });
+        };
+
+        const addDivider = () => {
+            if (y > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); y = margin; }
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, y, pageW - margin, y);
+            y += 10;
+        };
+
+        // Title
+        addText(formData.title || 'Untitled', { fontSize: 20, bold: true });
+        y += 6;
+        addDivider();
+
+        // Meta fields
+        addField('Uploaded by', formData.username);
+        addField('Category', formData.category);
+        addField('Organization', formData.org);
+        addField('Funding', formData.funding);
+        addField('Tags', formData.tags);
+        if (formData.created_date) addField('Created', new Date(formData.created_date).toLocaleDateString());
+
+        // Location
+        const isPolygonCard = Array.isArray(formData.polygon_coords) && formData.polygon_coords.length > 0;
+        if (isPolygonCard) {
+            addField('Location type', 'Polygon area');
+        } else if (formData.lat !== undefined && formData.lat !== null && formData.lon !== undefined && formData.lon !== null) {
+            addField('Latitude', formData.lat);
+            addField('Longitude', formData.lon);
+        }
+
+        // Description
+        if (formData.description) {
+            y += 6;
+            addDivider();
+            addText('Description', { fontSize: 13, bold: true });
+            addText(formData.description, { fontSize: 11 });
+        }
+
+        // Links
+        const links = parseLinks(formData.link, formData.link_text).filter(l => l.url && l.url.trim());
+        if (links.length > 0) {
+            y += 6;
+            addDivider();
+            addText('Links', { fontSize: 13, bold: true });
+            links.forEach(l => {
+                const label = l.text ? `${l.text} — ${l.url}` : l.url;
+                addText(label, { fontSize: 11, color: [37, 99, 235] });
+            });
+        }
+
+        // Attached files
+        if (formData.files && formData.files.length > 0) {
+            y += 6;
+            addDivider();
+            addText('Attached Files', { fontSize: 13, bold: true });
+            formData.files.forEach(f => addText(`• ${f.filename || 'File'}`, { fontSize: 11 }));
+        }
+
+        // Helper: load an image URL through the backend URL proxy (avoids GCS CORS)
+        const loadImageViaUrlProxy = async (url) => {
+            const response = await api.get('/imageUrlProxy', {
+                params: { url },
+                responseType: 'arraybuffer'
+            });
+            const bytes = new Uint8Array(response.data);
+            let binary = '';
+            bytes.forEach(b => { binary += String.fromCharCode(b); });
+            const base64Str = btoa(binary);
+            const contentType = (response.headers['content-type'] || 'image/jpeg').split(';')[0];
+            const dataUrl = `data:${contentType};base64,${base64Str}`;
+            const imgProps = doc.getImageProperties(dataUrl);
+            return {
+                dataUrl,
+                format: contentType.includes('png') ? 'PNG' : 'JPEG',
+                width: imgProps.width,
+                height: imgProps.height
+            };
+        };
+        // Helper: embed one image (dataUrl) into the PDF at current y position
+        const embedImageInPdf = (dataUrl, format, width, height) => {
+            const imgAspect = width / height;
+            const imgW = Math.min(maxW, 400);
+            const imgH = imgW / imgAspect;
+            if (y + imgH > doc.internal.pageSize.getHeight() - margin) {
+                doc.addPage();
+                y = margin;
+            }
+            doc.addImage(dataUrl, format, margin, y, imgW, imgH);
+            y += imgH + 14;
+        };
+
+        // Images — try backend proxy first (avoids CORS), fall back to canvas
+        const imageRecords = (formData.images && Array.isArray(formData.images) && formData.images.length > 0)
+            ? formData.images.filter(img => img.imageID != null)
+            : [];
+
+        // For cards with no CardImages entries, fall back to thumbnail_link
+        const thumbnailFallbackUrl = (imageRecords.length === 0 && formData.thumbnail_link
+            && formData.thumbnail_link.trim() !== ''
+            && !formData.thumbnail_link.includes('CEREO-logo'))
+            ? formData.thumbnail_link.trim()
+            : null;
+
+        if (imageRecords.length > 0 || thumbnailFallbackUrl) {
+            y += 6;
+            addDivider();
+            addText('Images', { fontSize: 13, bold: true });
+            y += 4;
+
+            for (const imgRecord of imageRecords) {
+                let embedded = false;
+                // 1. Try backend proxy (returns raw bytes, bypasses GCS CORS)
+                try {
+                    const response = await api.get(`/cardImageProxy/${imgRecord.imageID}`, { responseType: 'arraybuffer' });
+                    const bytes = new Uint8Array(response.data);
+                    let binary = '';
+                    bytes.forEach(b => { binary += String.fromCharCode(b); });
+                    const base64Str = btoa(binary);
+                    const contentType = (response.headers['content-type'] || 'image/jpeg').split(';')[0];
+                    const dataUrl = `data:${contentType};base64,${base64Str}`;
+                    const imgProps = doc.getImageProperties(dataUrl);
+                    const fmt = contentType.includes('png') ? 'PNG' : 'JPEG';
+                    embedImageInPdf(dataUrl, fmt, imgProps.width, imgProps.height);
+                    embedded = true;
+                } catch (_proxyErr) { /* fall through to canvas */ }
+
+                // 2. Fall back to URL proxy (image ID proxy may have failed; try fetching image URL via backend)
+                if (!embedded) {
+                    try {
+                        const normalized = normalizeImageRecord(imgRecord);
+                        const { dataUrl, format, width, height } = await loadImageViaUrlProxy(normalized.url);
+                        embedImageInPdf(dataUrl, format, width, height);
+                        embedded = true;
+                    } catch (_urlProxyErr) { /* fall through */ }
+                }
+
+                if (!embedded) {
+                    addText('[Image could not be embedded]', { fontSize: 10, color: [150, 150, 150] });
+                }
+            }
+
+            // Thumbnail fallback for cards without CardImages entries
+            if (thumbnailFallbackUrl) {
+                try {
+                    const { dataUrl, format, width, height } = await loadImageViaUrlProxy(thumbnailFallbackUrl);
+                    embedImageInPdf(dataUrl, format, width, height);
+                } catch (_err) {
+                    addText('[Image could not be embedded]', { fontSize: 10, color: [150, 150, 150] });
+                }
+            }
+        }
+
+        const safeName = (formData.title || 'card').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        doc.save(`${safeName}.pdf`);
+    };
+
     const handleFavoriteClick = async (e) => {
         e.stopPropagation();
+
+        if (!props.isLoggedIn) {
+            setShowLoginPrompt(true);
+            return;
+        }
 
         const cardID = formData.cardID || props.cardID;
         const username = formData.viewerUsername || formData.username || props.username;
@@ -227,7 +566,7 @@ function Card(props) {
     };
 
     const saveEdits = async (options = {}) => {
-     const { skipReload = false, closeEditModal = true } = options;
+     const { skipReload = false, closeEditModal = true, linkOverride } = options;
     if (!validateForm()) return;
 
     // Extra guard for username and name
@@ -271,9 +610,14 @@ function Card(props) {
             key !== "category" &&
             formData[key] !== undefined && formData[key] !== null
         ) {
+            if (linkOverride && (key === 'link' || key === 'link_text')) return;
             formDataToSend.append(key, formData[key]);
         }
     });
+    if (linkOverride) {
+        formDataToSend.append('link', linkOverride.link ?? '');
+        formDataToSend.append('link_text', linkOverride.link_text ?? '');
+    }
     formDataToSend.append('category', formData.category || 'None');
 
     // Send polygon vertices as JSON string if polygon card
@@ -317,6 +661,11 @@ function Card(props) {
         formData.filesToUpload.forEach((file) => {
             formDataToSend.append("files", file);
         });
+    }
+
+    const requesterEmail = localStorage.getItem('email') || '';
+    if (requesterEmail) {
+        formDataToSend.append('requester_email', requesterEmail);
     }
 
     setLoading(true);
@@ -375,6 +724,7 @@ function Card(props) {
         if (!map) { console.error('Map not found'); return; }
 
         setIsSelectingLocation(true);
+        map.getCanvas().style.cursor = 'crosshair';
 
         const onMapClick = (e) => {
             const { lat, lng } = e.lngLat;
@@ -409,6 +759,7 @@ function Card(props) {
                 marker.remove();
                 selectLocationMarker.current = null;
                 setIsSelectingLocation(false);
+                map.getCanvas().style.cursor = '';
                 map.off('click', onMapClick);
             });
 
@@ -424,12 +775,15 @@ function Card(props) {
 
     const cancelSelectLocation = () => {
         const map = window.atlasMapInstance;
-        if (map && selectLocationMarker.current) {
-            if (selectLocationMarker.current._onMapClick) {
-                map.off('click', selectLocationMarker.current._onMapClick);
+        if (map) {
+            map.getCanvas().style.cursor = '';
+            if (selectLocationMarker.current) {
+                if (selectLocationMarker.current._onMapClick) {
+                    map.off('click', selectLocationMarker.current._onMapClick);
+                }
+                selectLocationMarker.current.remove();
+                selectLocationMarker.current = null;
             }
-            selectLocationMarker.current.remove();
-            selectLocationMarker.current = null;
         }
         setIsSelectingLocation(false);
     };
@@ -561,7 +915,22 @@ function Card(props) {
 
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
+
+        if (!props.isLoggedIn && !isLearnMoreOnboardingOpen) {
+            setShowLoginPrompt(true);
+            return;
+        }
+
+        const _viewerEmail = localStorage.getItem('email') || '';
+        const _cardOwnerEmail = formData.email || '';
+        const _isAdmin = (() => { try { return JSON.parse(localStorage.getItem('isAdmin')); } catch { return false; } })();
+        if (!_isAdmin && _viewerEmail && _cardOwnerEmail && _viewerEmail !== _cardOwnerEmail) {
+            alert("You don't have permission to edit this card. Only the card's creator or an admin can edit it.");
+            return;
+        }
         setLearnMoreBackup({ ...formData });
+        setLearnMoreLinks(parseLinks(formData.link, formData.link_text));
+        linkedArcgisItemsBackupRef.current = linkedArcgisItems.map(i => ({ ...i }));
         setSessionUploadedImageIDs([]);
         setSelectedAllImageIDs([]);
         setPendingDeletedImageIDs([]);
@@ -607,6 +976,10 @@ function Card(props) {
 
         if (learnMoreBackup) {
             setFormData(learnMoreBackup);
+        }
+        if (linkedArcgisItemsBackupRef.current !== null) {
+            setLinkedArcgisItems(linkedArcgisItemsBackupRef.current);
+            linkedArcgisItemsBackupRef.current = null;
         }
 
         isEditingRef.current = false;
@@ -657,7 +1030,12 @@ function Card(props) {
 
     const handleLearnMoreEditSave = async (e) => {
         e.stopPropagation();
-        const success = await saveEdits({ skipReload: true, closeEditModal: false });
+        const serializedLink = serializeLinks(learnMoreLinks);
+        const success = await saveEdits({
+            skipReload: true,
+            closeEditModal: false,
+            linkOverride: { link: serializedLink, link_text: '' },
+        });
         if (success) {
             try {
                 await applyPendingImageDeletes();
@@ -681,8 +1059,47 @@ function Card(props) {
         }
     };
 
+    // Compute whether there are unsaved changes in edit mode
+    const hasUnsavedChanges = useMemo(() => {
+        if (!isLearnMoreEditMode || !learnMoreBackup) return false;
+
+        // Compare tracked formData fields
+        const trackedFields = [
+            'title', 'description', 'category', 'username', 'name',
+            'latitude', 'longitude', 'location_type',
+            'polygon_vertices', 'polygon_fill_color', 'polygon_line_style', 'polygon_fill_opacity',
+            'website_link', 'thumbnail_link', 'files',
+        ];
+        for (const field of trackedFields) {
+            if (JSON.stringify(formData[field]) !== JSON.stringify(learnMoreBackup[field])) return true;
+        }
+
+        // Compare images (order + identity)
+        if (JSON.stringify((formData.images || []).map(i => i.imageID ?? i.id)) !==
+            JSON.stringify((learnMoreBackup.images || []).map(i => i.imageID ?? i.id))) return true;
+
+        // Compare links
+        const backupLinks = parseLinks(learnMoreBackup.link, learnMoreBackup.link_text);
+        if (JSON.stringify(learnMoreLinks) !== JSON.stringify(backupLinks)) return true;
+
+        // Compare linked ArcGIS items
+        const backup = linkedArcgisItemsBackupRef.current;
+        if (backup !== null) {
+            const currentIds = linkedArcgisItems.map(i => i.id).sort().join(',');
+            const backupIds = backup.map(i => i.id).sort().join(',');
+            if (currentIds !== backupIds) return true;
+        }
+
+        return false;
+    }, [isLearnMoreEditMode, learnMoreBackup, formData, linkedArcgisItems, learnMoreLinks]);
+
     const handleLearnMoreClose = async (e) => {
         if (e?.stopPropagation) e.stopPropagation();
+
+        if (isLearnMoreEditMode && hasUnsavedChanges) {
+            const confirmed = window.confirm('You have unsaved changes. Discard them and close?');
+            if (!confirmed) return;
+        }
 
         if (isLearnMoreEditMode) {
             await handleLearnMoreEditCancel(e);
@@ -961,6 +1378,13 @@ function Card(props) {
     const currentImage = imageList[currentImageIndex] || imageList[0];
     const cardCurrentImage = cardImageList[currentImageIndex] || cardImageList[0];
     const hasMultipleImages = cardImageList.length > 1;
+    const isCardCurrentImageDefault = (() => {
+        const url = cardCurrentImage?.url;
+        if (!url || typeof url !== 'string') return true;
+        if (url === '/CEREO-logo.png' || url.endsWith('/CEREO-logo.png')) return true;
+        if (url.includes('default_cereo_thumbnail')) return true;
+        return false;
+    })();
     const totalIndicatorCount = cardImageList.length;
     const visibleIndicatorCount = Math.min(5, totalIndicatorCount);
     const indicatorWindowStart = Math.max(
@@ -982,8 +1406,11 @@ function Card(props) {
             })
             .slice(0, 2)
     );
-    const isDefaultFallbackImage = (img) => !img?.imageID && (img?.url === '/CEREO-logo.png' || img?.url === cardThumbnailSrc);
-    const learnMoreGalleryImages = imageList.filter(img => !isDefaultFallbackImage(img)).slice(0, 5);
+    const learnMoreGalleryImages = (Array.isArray(formData.images) && formData.images.length > 0)
+        ? formData.images.map((img, idx) => normalizeImageRecord(img, idx)).slice(0, 5)
+        : (displayCardData.thumbnail_link && displayCardData.thumbnail_link.trim() !== ""
+            ? [{ url: cardThumbnailSrc, id: 0, imageID: null }]
+            : []);
     const learnMoreGallerySlots = Array.from({ length: 5 }, (_, index) => learnMoreGalleryImages[index] || null);
 
     const goToPrevImage = (e) => {
@@ -1010,6 +1437,7 @@ function Card(props) {
     return (
         <div
             className={`card ${props.isSelectedFromMap ? 'card--map-selected' : ''}`}
+            data-onboarding-target={props.onboardingTargetPrefix ? props.onboardingTargetPrefix : undefined}
             onClick={handleLearnMore}
             role="button"
             tabIndex={0}
@@ -1018,6 +1446,7 @@ function Card(props) {
             {/* Favorite Heart Icon */}
             <span
                 className={`favorite-icon ${isFavorited ? 'filled' : ''}`}
+                data-onboarding-target={props.onboardingTargetPrefix ? `${props.onboardingTargetPrefix}-actions` : undefined}
                 onClick={handleFavoriteClick}
                 title={isFavorited ? "Remove from favorites" : "Add to favorites"}
             >
@@ -1028,7 +1457,7 @@ function Card(props) {
                 <img
                     src={cardCurrentImage.url}
                     alt={cardCurrentImage.alt || "Card Thumbnail"}
-                    className="card-thumbnail"
+                    className={`card-thumbnail${isCardCurrentImageDefault ? '' : ' card-thumbnail--cover'}`}
                     onClick={handleOpenImagePreview}
                     onError={(e) => { e.target.onerror = null; e.target.src = '/CEREO-logo.png'; }}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenImagePreview(e); }}
@@ -1079,6 +1508,7 @@ function Card(props) {
                 <p className="card-meta">{displayCardData.category || "Uncategorized"}</p>
                 <button
                     className="card-meta-zoom-btn"
+                    data-onboarding-target={props.onboardingTargetPrefix ? `${props.onboardingTargetPrefix}-actions` : undefined}
                     onClick={handleZoom}
                     title="Locate on map"
                     aria-label="Locate on map"
@@ -1088,57 +1518,78 @@ function Card(props) {
             </div>
 
             {/* Floating hint when selecting location from learn-more */}
-            {isSelectingLocation && (
+            {isSelectingLocation && ReactDOM.createPortal(
                 <div className="location-select-hint">
                     <span>Click on the map to select a location</span>
                     <button type="button" onClick={cancelSelectLocation}>Cancel</button>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Learn More Modal */}
             <Modal
-                isOpen={isModalOpen && !isSelectingLocation && !isEditingPolygon}
+                isOpen={isLearnMoreModalVisible}
                 onRequestClose={handleLearnMoreClose}
+                shouldCloseOnOverlayClick={!isLearnMoreOnboardingOpen}
                 className="Modal Modal--learn-more"
                 overlayClassName="ModalOverlay ModalOverlay--learn-more"
             >
                 <div
-                    className="learn-more-modal-shell"
+                    className={`learn-more-modal-shell${isLearnMoreOnboardingOpen ? ' onboarding-locked' : ''}`}
+                    data-onboarding-target="learn-more-modal-shell"
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
                     onKeyUp={(e) => e.stopPropagation()}
                 >
-                <div className="learn-more-modal-toolbar">
-                    {isLearnMoreEditMode ? (
-                        <div className="learn-more-modal-toolbar-actions">
+                <div className="learn-more-modal-toolbar" data-onboarding-target="learn-more-toolbar">
+                    <div className="learn-more-modal-toolbar-left">
+                        {isLearnMoreEditMode ? (
+                            <div className="learn-more-modal-toolbar-actions">
+                                <button
+                                    className="learn-more-modal-toolbar-btn save"
+                                    onClick={handleLearnMoreEditSave}
+                                    disabled={loading || isImageMutationLoading}
+                                >
+                                    {loading ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                    className="learn-more-modal-toolbar-btn cancel"
+                                    onClick={async (e) => {
+                                        if (hasUnsavedChanges) {
+                                            const confirmed = window.confirm('You have unsaved changes. Discard them?');
+                                            if (!confirmed) return;
+                                        }
+                                        await handleLearnMoreEditCancel(e);
+                                    }}
+                                    disabled={loading || isImageMutationLoading}
+                                >
+                                    Cancel
+                                </button>
+                                {hasUnsavedChanges && (
+                                    <span className="learn-more-unsaved-badge">You have unsaved changes</span>
+                                )}
+                            </div>
+                        ) : (
                             <button
-                                className="learn-more-modal-toolbar-btn save"
-                                onClick={handleLearnMoreEditSave}
-                                disabled={loading || isImageMutationLoading}
+                                className="learn-more-modal-edit-btn"
+                                onClick={handleLearnMoreEditStart}
+                                aria-label="Edit card in Learn More modal"
+                                title="Edit"
                             >
-                                {loading ? 'Saving...' : 'Save'}
+                                <FontAwesomeIcon icon={faPenToSquare} />
                             </button>
-                            <button
-                                className="learn-more-modal-toolbar-btn cancel"
-                                onClick={handleLearnMoreEditCancel}
-                                disabled={loading || isImageMutationLoading}
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            className="learn-more-modal-edit-btn"
-                            onClick={handleLearnMoreEditStart}
-                            aria-label="Edit card in Learn More modal"
-                            title="Edit"
-                        >
-                            <FontAwesomeIcon icon={faPenToSquare} />
-                        </button>
-                    )}
+                        )}
 
-                    <div className="learn-more-modal-toolbar-right">
+                        <button
+                            className="learn-more-modal-download-btn"
+                            onClick={handleDownloadPdf}
+                            aria-label="Download card as PDF"
+                            title="Download as PDF"
+                        >
+                            <FontAwesomeIcon icon={faDownload} />
+                        </button>
+
                         <button
                             className="learn-more-modal-delete-btn"
                             onClick={handleDelete}
@@ -1147,7 +1598,25 @@ function Card(props) {
                         >
                             <FontAwesomeIcon icon={faTrashCan} />
                         </button>
+                    </div>
 
+                    <div className="learn-more-modal-toolbar-right">
+                        <button
+                            className="learn-more-modal-help-btn"
+                            onClick={() => window.open('/user-manual?section=detail-view', '_blank')}
+                            aria-label="Open card detail help"
+                            title="Help"
+                        >
+                            <FontAwesomeIcon icon={faQuestionCircle} />
+                        </button>
+                        <button
+                            className="learn-more-modal-onboarding-btn"
+                            onClick={() => setIsLearnMoreOnboardingOpen(true)}
+                            aria-label="Start detail view onboarding"
+                            title="Onboarding"
+                        >
+                            <FontAwesomeIcon icon={faCirclePlay} />
+                        </button>
                         <button
                             className="learn-more-modal-close"
                             onClick={handleLearnMoreClose}
@@ -1158,7 +1627,7 @@ function Card(props) {
                     </div>
                 </div>
 
-                <div className="learn-more-modal-body">
+                <div className="learn-more-modal-body" data-onboarding-target="learn-more-modal-content">
                     <input
                         ref={learnMoreImageInputRef}
                         type="file"
@@ -1270,6 +1739,8 @@ function Card(props) {
                     ) : (
                         <>
 
+                    <div data-onboarding-target="learn-more-image-area">
+
                     <div className="learn-more-gallery">
                         <button
                             type="button"
@@ -1355,6 +1826,9 @@ function Card(props) {
                     >
                         {`See all ${allImagesList.length} image${allImagesList.length === 1 ? '' : 's'}`}
                     </button>
+                    </div>
+
+                    <div data-onboarding-target="learn-more-text-area">
 
                     <div className="learn-more-modal-title-section">
                         {isLearnMoreEditMode ? (
@@ -1428,8 +1902,41 @@ function Card(props) {
                                 )}
                             </div>
 
-                            <p><strong>Link:</strong></p>
-                            <input className="learn-more-inline-input" type="text" name="link" value={formData.link || ''} onChange={handleInputChange} />
+                            <p><strong>Links:</strong></p>
+                            {learnMoreLinks.map((linkItem, idx) => (
+                                <div key={idx} className="learn-more-link-row">
+                                    <input
+                                        className="learn-more-inline-input"
+                                        type="text"
+                                        placeholder="URL"
+                                        value={linkItem.url}
+                                        onChange={e => setLearnMoreLinks(learnMoreLinks.map((l, i) => i === idx ? { ...l, url: e.target.value } : l))}
+                                    />
+                                    <input
+                                        className="learn-more-inline-input learn-more-link-text-input"
+                                        type="text"
+                                        placeholder="Display text (optional)"
+                                        value={linkItem.text}
+                                        onChange={e => setLearnMoreLinks(learnMoreLinks.map((l, i) => i === idx ? { ...l, text: e.target.value } : l))}
+                                    />
+                                    {learnMoreLinks.length > 1 && (
+                                        <button
+                                            type="button"
+                                            className="learn-more-link-remove-btn"
+                                            onClick={() => setLearnMoreLinks(learnMoreLinks.filter((_, i) => i !== idx))}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                className="learn-more-modal-toolbar-btn cancel learn-more-add-link-btn"
+                                onClick={() => setLearnMoreLinks([...learnMoreLinks, { url: '', text: '' }])}
+                            >
+                                + Add More Links
+                            </button>
 
                             <p><strong>Description:</strong></p>
                             <textarea className="learn-more-inline-textarea" name="description" value={formData.description || ''} onChange={handleInputChange} />
@@ -1437,20 +1944,22 @@ function Card(props) {
                             <p><strong>Tags:</strong></p>
                             <input className="learn-more-inline-input" type="text" name="tags" value={formData.tags || ''} onChange={handleInputChange} />
 
-                            {isPolygonCard ? (
-                                <button type="button" className="learn-more-select-location-btn" onClick={handleEditPolygon}>
-                                    Edit Polygon
-                                </button>
-                            ) : (
-                                <div className="learn-more-location-btn-group">
-                                    <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
-                                        Select Location
+                            <div data-onboarding-target="learn-more-coordinates-polygon">
+                                {isPolygonCard ? (
+                                    <button type="button" className="learn-more-select-location-btn" onClick={handleEditPolygon}>
+                                        Edit Polygon
                                     </button>
-                                    <button type="button" className="learn-more-select-location-btn learn-more-change-to-polygon-btn" onClick={handleChangeToPolygon}>
-                                        Change to Polygon
-                                    </button>
-                                </div>
-                            )}
+                                ) : (
+                                    <div className="learn-more-location-btn-group">
+                                        <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
+                                            Select Location
+                                        </button>
+                                        <button type="button" className="learn-more-select-location-btn learn-more-change-to-polygon-btn" onClick={handleChangeToPolygon}>
+                                            Change to Polygon
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </>
                     ) : (
                         <>
@@ -1458,8 +1967,8 @@ function Card(props) {
                                 <p><strong>Author:</strong> {formData.name}</p>
                                 <p><strong>Card Creator:</strong> {formData.username}</p>
                                 <p><strong>Email:</strong> {formData.email}</p>
-                                <p><strong>Funding:</strong> {formData.funding}</p>
-                                <p><strong>Organization:</strong> {formData.org}</p>
+                                <p><strong>Funding:</strong> {formData.funding || 'N/A'}</p>
+                                <p><strong>Organization:</strong> {formData.org || 'N/A'}</p>
                                 {!isPolygonCard && (
                                     <p className="learn-more-coordinate-readonly">
                                         <strong>Latitude:</strong> {formData.latitude}
@@ -1468,16 +1977,24 @@ function Card(props) {
                                     </p>
                                 )}
                             </div>
-                            <p>
-                                <strong>Link:</strong>{' '}
-                                {formData.link ? (
-                                    <a href={formData.link} target="_blank" rel="noopener noreferrer">
-                                        {formData.link}
-                                    </a>
-                                ) : (
-                                    <span>N/A</span>
-                                )}
-                            </p>
+                            <div className="learn-more-links-view">
+                                <strong>Links:</strong>
+                                {(() => {
+                                    const links = parseLinks(formData.link, formData.link_text).filter(l => l.url.trim() !== '');
+                                    if (links.length === 0) return <span> N/A</span>;
+                                    return (
+                                        <ul className="learn-more-links-list">
+                                            {links.map((l, i) => (
+                                                <li key={i}>
+                                                    <a href={l.url} target="_blank" rel="noopener noreferrer">
+                                                        {l.text || l.url}
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    );
+                                })()}
+                            </div>
                             <p className="learn-more-modal-description"><strong>Description:</strong> {formData.description}</p>
                             <p><strong>Tags:</strong> {formData.tags}</p>
                         </>
@@ -1555,6 +2072,156 @@ function Card(props) {
                             </div>
                         )
                     )}
+
+                    {/* Linked ArcGIS Services/Layers Section */}
+                    {(isLearnMoreEditMode || linkedArcgisItems.length > 0) && (
+                    <div className="learn-more-arcgis-links-section" data-onboarding-target="learn-more-arcgis-section">
+                        <p><strong>Linked ArcGIS Services/Layers:</strong></p>
+                        {linkedArcgisItems.length === 0 ? (
+                            <p className="learn-more-no-arcgis-links">No linked ArcGIS items.</p>
+                        ) : (
+                            <ul className="learn-more-arcgis-links-list">
+                                {linkedArcgisItems.map(item => {
+                                    const stateLabel = ARCGIS_STATE_FULL_NAMES[item.state_code] || item.state_code;
+                                    const isServiceLevel = item.item_type === 'service';
+                                    const serviceLabel = ARCGIS_SERVICE_LABEL_BY_KEY[item.service_key] || item.service_key;
+                                    const isLayerChecked = !!linkedArcgisChecked[item.id];
+
+                                    // Resolve legend image for this item
+                                    const legendImg = (() => {
+                                        if (item.layer_id == null) return null;
+                                        const legend = arcgisLegends[item.service_key];
+                                        if (!legend?.layers) return null;
+                                        const legendLayer = legend.layers.find(l => l.layerId === item.layer_id);
+                                        if (!legendLayer?.legend?.length) return null;
+                                        const entries = legendLayer.legend;
+                                        let entry;
+                                        if (item.sublayer_index != null && entries[item.sublayer_index]) {
+                                            entry = entries[item.sublayer_index];
+                                        } else if (entries.length === 1) {
+                                            entry = entries[0];
+                                        } else {
+                                            return null;
+                                        }
+                                        if (!entry.imageData || !entry.contentType) return null;
+                                        return `data:${entry.contentType};base64,${entry.imageData}`;
+                                    })();
+
+                                    return (
+                                        <li key={item.id} className="learn-more-arcgis-link-item">
+                                            <label className="learn-more-arcgis-layer-toggle-label" title="Show/hide this layer on the map">
+                                                <input
+                                                    type="checkbox"
+                                                    className="learn-more-arcgis-layer-toggle-cb"
+                                                    checked={isLayerChecked}
+                                                    onChange={() => {
+                                                        const nowChecked = !isLayerChecked;
+                                                        setLinkedArcgisChecked(prev => ({ ...prev, [item.id]: nowChecked }));
+                                                        window.dispatchEvent(new CustomEvent('arcgis-layer-toggle', {
+                                                            detail: {
+                                                                serviceKey: item.service_key,
+                                                                layerId: item.layer_id,
+                                                                checked: nowChecked,
+                                                            }
+                                                        }));
+                                                    }}
+                                                />
+                                            </label>
+                                            <span className="learn-more-arcgis-link-row">
+                                                <span className="learn-more-arcgis-row-text">{stateLabel}</span>
+                                                <span className="learn-more-arcgis-row-sep"> › </span>
+                                                <span className="learn-more-arcgis-row-text">{item.folder_name}</span>
+                                                {!isServiceLevel && (
+                                                    <>
+                                                        <span className="learn-more-arcgis-row-sep"> › </span>
+                                                        <span className="learn-more-arcgis-row-text">{serviceLabel}</span>
+                                                    </>
+                                                )}
+                                                <span className="learn-more-arcgis-row-sep"> › </span>
+                                                {legendImg && (
+                                                    <img
+                                                        src={legendImg}
+                                                        alt=""
+                                                        className="learn-more-arcgis-legend-img"
+                                                    />
+                                                )}
+                                                <span className="learn-more-arcgis-row-text learn-more-arcgis-row-name">{item.display_name}</span>
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className="learn-more-arcgis-goto-btn"
+                                                onClick={() => {
+                                                    window.dispatchEvent(new CustomEvent('open-arcgis-panel', {
+                                                        detail: {
+                                                            serviceKey: item.service_key,
+                                                            layerId: item.layer_id,
+                                                            stateCode: item.state_code,
+                                                            folderName: item.folder_name,
+                                                        }
+                                                    }));
+                                                }}
+                                                title="Open in ArcGIS Upload Panel"
+                                            >
+                                                ›
+                                            </button>
+                                            {isLearnMoreEditMode && (
+                                                <button
+                                                    type="button"
+                                                    className="learn-more-arcgis-link-delete-btn"
+                                                    title="Remove link"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await api.delete(`/cardArcGISLinks/${item.id}`);
+                                                            setLinkedArcgisItems(prev => prev.filter(i => i.id !== item.id));
+                                                        } catch (err) {
+                                                            console.error('Failed to remove ArcGIS link:', err);
+                                                        }
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                        {isLearnMoreEditMode && (
+                            <button
+                                type="button"
+                                className="learn-more-add-arcgis-btn"
+                                onClick={() => setIsArcgisPickerOpen(true)}
+                            >
+                                + Add ArcGIS Item
+                            </button>
+                        )}
+                    </div>
+                    )}
+
+                    {/* ArcGIS Picker Modal */}
+                    {isArcgisPickerOpen && (
+                        <ArcGISPickerModal
+                            onAdd={async (links) => {
+                                const cardId = formData.cardID;
+                                if (!cardId) return;
+                                const newItems = [];
+                                for (const link of links) {
+                                    try {
+                                        const res = await api.post('/cardArcGISLinks', { card_id: cardId, ...link });
+                                        newItems.push({ id: res.data.id, card_id: cardId, ...link });
+                                    } catch (err) {
+                                        console.error('Failed to add ArcGIS link:', err);
+                                    }
+                                }
+                                if (newItems.length > 0) {
+                                    setLinkedArcgisItems(prev => [...prev, ...newItems]);
+                                }
+                                setIsArcgisPickerOpen(false);
+                            }}
+                            onClose={() => setIsArcgisPickerOpen(false)}
+                        />
+                    )}
+                    </div>
                         </>
                     )}
 
@@ -1565,6 +2232,13 @@ function Card(props) {
 
                 </div>
             </Modal>
+
+            <LearnMoreOnboarding
+                isOpen={isLearnMoreOnboardingOpen}
+                onClose={() => setIsLearnMoreOnboardingOpen(false)}
+                isModalOpen={isLearnMoreModalVisible}
+                onStepChange={setLearnMoreOnboardingStep}
+            />
 
             <Modal
                 isOpen={isImagePreviewOpen}
@@ -1619,10 +2293,11 @@ function Card(props) {
                 className="Modal"
             >
                 <h2>{formData.cardID ? "Edit Card" : "Create Card"}</h2>
-                <form onSubmit={(e) => { 
-                    e.preventDefault(); 
+                <form onSubmit={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
-                    saveEdits(); 
+                    const serializedLink = serializeLinks(editFormLinks);
+                    saveEdits({ linkOverride: { link: serializedLink, link_text: '' } });
                 }}>
                     <label>Card Creator:
                         <input type="text" name="username" value={formData.username || ''} readOnly required title="Card Creator cannot be edited" />
@@ -1686,15 +2361,43 @@ function Card(props) {
                             onChange={handleInputChange}
                         />
                     </label>
-                    <label>
-                        Link:
-                        <input
-                            type="text"
-                            name="link"
-                            value={formData.link || ""}
-                            onChange={handleInputChange}
-                        />
-                    </label>
+                    <div className="edit-form-links-section">
+                        <label className="edit-form-links-label">Links:</label>
+                        {editFormLinks.map((linkItem, idx) => (
+                            <div key={idx} className="learn-more-link-row">
+                                <input
+                                    type="text"
+                                    className="edit-form-link-input"
+                                    placeholder="URL"
+                                    value={linkItem.url}
+                                    onChange={e => setEditFormLinks(editFormLinks.map((l, i) => i === idx ? { ...l, url: e.target.value } : l))}
+                                />
+                                <input
+                                    type="text"
+                                    className="edit-form-link-input learn-more-link-text-input"
+                                    placeholder="Display text (optional)"
+                                    value={linkItem.text}
+                                    onChange={e => setEditFormLinks(editFormLinks.map((l, i) => i === idx ? { ...l, text: e.target.value } : l))}
+                                />
+                                {editFormLinks.length > 1 && (
+                                    <button
+                                        type="button"
+                                        className="learn-more-link-remove-btn"
+                                        onClick={() => setEditFormLinks(editFormLinks.filter((_, i) => i !== idx))}
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button
+                            type="button"
+                            className="learn-more-modal-toolbar-btn cancel learn-more-add-link-btn"
+                            onClick={() => setEditFormLinks([...editFormLinks, { url: '', text: '' }])}
+                        >
+                            + Add More Links
+                        </button>
+                    </div>
                     <label>
                         Category:
                         <select
@@ -1890,6 +2593,31 @@ function Card(props) {
                     </button>
                 </form>
             </Modal>
+
+            {/* Login Required Prompt */}
+            {showLoginPrompt && ReactDOM.createPortal(
+                <div
+                    className="login-prompt-overlay"
+                    onClick={() => setShowLoginPrompt(false)}
+                >
+                    <div
+                        className="login-prompt-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <p>Please log in to use this feature.</p>
+                        <div className="login-prompt-actions">
+                            <a href="/login" className="login-prompt-btn login-prompt-btn--primary">Log In</a>
+                            <button
+                                className="login-prompt-btn login-prompt-btn--secondary"
+                                onClick={() => setShowLoginPrompt(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {/* Polygon Editing Modal (from learn-more edit) */}
             {/* Wrap in a click-stopper so portal events don't bubble to the card's onClick */}

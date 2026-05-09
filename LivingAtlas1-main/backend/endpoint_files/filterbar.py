@@ -41,15 +41,22 @@ def allCards():
                 c.Thumbnail_Link
             ) AS Thumbnail_Link,
             COALESCE(
-                json_agg(
-                    DISTINCT jsonb_build_object(
-                        'imageID', ci.ImageID,
-                        'url', ci.ImageURL,
-                        'displayOrder', ci.DisplayOrder,
-                        'alt', ci.AltText
+                (
+                    SELECT json_agg(
+                        jsonb_build_object(
+                            'imageID', img_sub.ImageID,
+                            'url', img_sub.ImageURL,
+                            'displayOrder', img_sub.DisplayOrder,
+                            'alt', img_sub.AltText
+                        )
+                        ORDER BY img_sub.DisplayOrder ASC, img_sub.ImageID ASC
                     )
-                    ORDER BY ci.DisplayOrder ASC
-                ) FILTER (WHERE ci.ImageID IS NOT NULL),
+                    FROM (
+                        SELECT DISTINCT ci2.ImageID, ci2.ImageURL, ci2.DisplayOrder, ci2.AltText
+                        FROM CardImages ci2
+                        WHERE ci2.CardID = c.CardID
+                    ) img_sub
+                ),
                 '[]'
             ) AS images,
             COALESCE(
@@ -126,15 +133,22 @@ async def allCardsByTag(categoryString: str = None, tagString: str = None, sortS
                 c.Thumbnail_Link
             ) AS Thumbnail_Link,
             COALESCE(
-                json_agg(
-                    DISTINCT jsonb_build_object(
-                        'imageID', ci.ImageID,
-                        'url', ci.ImageURL,
-                        'displayOrder', ci.DisplayOrder,
-                        'alt', ci.AltText
+                (
+                    SELECT json_agg(
+                        jsonb_build_object(
+                            'imageID', img_sub.ImageID,
+                            'url', img_sub.ImageURL,
+                            'displayOrder', img_sub.DisplayOrder,
+                            'alt', img_sub.AltText
+                        )
+                        ORDER BY img_sub.DisplayOrder ASC, img_sub.ImageID ASC
                     )
-                    ORDER BY ci.DisplayOrder ASC
-                ) FILTER (WHERE ci.ImageID IS NOT NULL),
+                    FROM (
+                        SELECT DISTINCT ci2.ImageID, ci2.ImageURL, ci2.DisplayOrder, ci2.AltText
+                        FROM CardImages ci2
+                        WHERE ci2.CardID = c.CardID
+                    ) img_sub
+                ),
                 '[]'
             ) AS images,
             COALESCE(
@@ -246,15 +260,22 @@ def searchBar(titleSearch: str):
                     c.Thumbnail_Link
                 ) AS Thumbnail_Link,
                 COALESCE(
-                    json_agg(
-                        DISTINCT jsonb_build_object(
-                            'imageID', ci.ImageID,
-                            'url', ci.ImageURL,
-                            'displayOrder', ci.DisplayOrder,
-                            'alt', ci.AltText
+                    (
+                        SELECT json_agg(
+                            jsonb_build_object(
+                                'imageID', img_sub.ImageID,
+                                'url', img_sub.ImageURL,
+                                'displayOrder', img_sub.DisplayOrder,
+                                'alt', img_sub.AltText
+                            )
+                            ORDER BY img_sub.DisplayOrder ASC, img_sub.ImageID ASC
                         )
-                        ORDER BY ci.DisplayOrder ASC
-                    ) FILTER (WHERE ci.ImageID IS NOT NULL),
+                        FROM (
+                            SELECT DISTINCT ci2.ImageID, ci2.ImageURL, ci2.DisplayOrder, ci2.AltText
+                            FROM CardImages ci2
+                            WHERE ci2.CardID = c.CardID
+                        ) img_sub
+                    ),
                     '[]'
                 ) AS images,
                 COALESCE(

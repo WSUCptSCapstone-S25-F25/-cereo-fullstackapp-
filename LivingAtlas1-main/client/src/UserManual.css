@@ -1,0 +1,729 @@
+/* ========================================
+   User Manual — page & layout styles only.
+   Card element styles come from Card.css.
+   ======================================== */
+
+.user-manual {
+  font-family: 'Roboto', sans-serif;
+  /* Sidebar is 220px wide; center the remaining space */
+  margin-left: calc(220px + (100vw - 220px) / 2 - 460px);
+  width: min(900px, 100vw - 220px - 48px);
+  padding: 40px 24px 60px;
+  color: #333;
+}
+
+.user-manual h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin-bottom: 8px;
+}
+
+.user-manual-intro {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.7;
+  margin-bottom: 28px;
+  border-bottom: 1px solid #e0e8f0;
+  padding-bottom: 20px;
+}
+
+/* ---- Home landing cards ---- */
+.um-home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.um-home-card {
+  /* reset button */
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  border: 1.5px solid #dce6f0;
+  border-radius: 10px;
+  padding: 24px 20px;
+  background: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.88rem;
+  color: #4b5563;
+  line-height: 1.55;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+
+.um-home-card:hover {
+  background: #eaf1fb;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.12);
+  transform: translateY(-2px);
+}
+
+.um-home-card-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin-bottom: 8px;
+}
+
+/* ---- Sectioned layout ---- */
+.um-layout {
+  display: block;
+}
+
+/* Override global `nav { background: #333 }` from About.css */
+nav.um-nav-sidebar {
+  /* Fixed to the left edge of the viewport, below the navbar */
+  position: fixed;
+  top: 50px;
+  left: 0;
+  bottom: 0;
+  width: 220px;
+  z-index: 100;
+  /* layout */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 2px;
+  padding: 16px 0 24px;
+  overflow-y: auto;
+  /* visuals */
+  background: #f8fafc;
+  border-right: 1px solid #dce6f0;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+  /* reset About.css global nav styles */
+  color: inherit;
+}
+
+/* Use high-specificity to beat any global button/a resets */
+.um-nav-sidebar .um-nav-heading {
+  display: block;
+  padding: 0 14px 10px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  border-bottom: 1px solid #e5edf5;
+  margin-bottom: 6px;
+}
+
+/* Use high-specificity to beat any global button/a resets */
+.um-nav-sidebar .um-nav-item {
+  /* reset browser + any global button styles */
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 16px 9px 14px;
+  margin: 0;
+  /* borders */
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  outline: none;
+  /* colours */
+  background: transparent;
+  color: #4b5563;
+  /* typography */
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-decoration: none;
+  /* interaction */
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.um-nav-sidebar .um-nav-item:hover {
+  background: #f0f5fb;
+  color: #1a3a5c;
+}
+
+.um-nav-sidebar .um-nav-item.active {
+  background: #eaf1fb;
+  color: #1a3a5c;
+  font-weight: 700;
+  border-left-color: #3b82f6;
+}
+
+.um-content-area {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  nav.um-nav-sidebar {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-top: 1px solid #dce6f0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.07);
+    padding: 6px 4px;
+  }
+  .um-layout {
+    margin-left: 0;
+    margin-bottom: 60px; /* clear bottom nav */
+  }
+  .user-manual {
+    margin: 16px 16px 60px;
+    width: auto;
+  }
+  .um-nav-sidebar .um-nav-item {
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-bottom: 3px solid transparent;
+    padding: 7px 12px;
+    font-size: 0.82rem;
+  }
+  .um-nav-sidebar .um-nav-item.active {
+    border-bottom-color: #3b82f6;
+    border-left-color: transparent;
+  }
+}
+
+/* ---- Section ---- */
+.um-section {
+  margin-bottom: 52px;
+}
+
+.um-section > h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin: 0 0 4px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #dce6f0;
+}
+
+.um-section-desc {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.6;
+  margin: 10px 0 28px;
+}
+
+/* ---- Full card demo ---- */
+.um-card-demo-wrapper {
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.um-card-demo-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* constrains the card to a realistic column width */
+.um-card-container {
+  width: 270px;
+}
+
+/* ---- Feature rows ---- */
+.um-feature-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.um-feature-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 22px 0;
+  border-bottom: 1px solid #f0f4f8;
+}
+
+.um-feature-row:last-child {
+  border-bottom: none;
+}
+
+/* demo side */
+.um-feature-demo {
+  flex: 0 0 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* info side */
+.um-feature-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.um-feature-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin: 0 0 6px;
+}
+
+.um-feature-desc {
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.um-feature-note {
+  display: block;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  font-style: italic;
+  margin-top: 7px;
+}
+
+/* ---- Isolated demo helpers ---- */
+
+/* generic light-bg container for small demos */
+.um-isolated-demo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #f5f8fb;
+  border: 1px solid #e0e8f0;
+  border-radius: 8px;
+}
+
+/* mini thumbnail container for nav-arrow & dots demos */
+.um-thumb-demo {
+  width: 200px;
+  height: 120px;
+  position: relative;
+  border-radius: 7px 7px 0 0;
+  overflow: hidden;
+  background-color: #d9dde3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.um-thumb-demo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Force nav arrows visible for the navigation demo */
+.um-thumb-demo .card-image-nav {
+  opacity: 1 !important;
+}
+
+/* Dots demo: .card-image-indicators is normally absolute inside
+   the thumbnail container. Override for standalone display. */
+.um-dots-demo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  background: #4b5563;
+  border-radius: 8px;
+}
+
+.um-dots-demo .card-image-indicators {
+  position: static;
+  transform: none;
+}
+
+/* Meta row demo: constrain width so it mirrors a real card column */
+.um-meta-row-demo {
+  width: 200px;
+}
+
+/* Map-selected demo: mini card-like box */
+.um-selected-card-demo {
+  width: 200px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .um-feature-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .um-feature-demo {
+    flex: none;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ── Toolbar section helpers ── */
+
+/* Wrapper for the full card-panel-top preview demo */
+.um-toolbar-demo-wrapper {
+  margin: 0 0 28px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+}
+
+/* Stop the full-page Content2.css fixed panel styles leaking into the demo */
+.um-toolbar-demo-wrapper .card-panel-top {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Search bar demo wrapper: give it a constrained width */
+.um-searchbar-demo {
+  width: 280px;
+  background: #fff;
+  border: 1px solid #e0e7ef;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+/* Make sure sort-dropdown inside isolated demo doesn't stretch */
+.um-isolated-demo .sort-dropdown {
+  width: auto !important;
+  min-width: auto !important;
+}
+
+/* ── Detail View (learn-more modal) section helpers ── */
+
+/* Gallery demo: constrain width so tiles don't get huge */
+.um-gallery-demo {
+  width: 300px;
+  padding: 10px !important;
+}
+
+/* All Images demo: constrain width */
+.um-all-images-demo {
+  width: 300px;
+  padding: 10px !important;
+}
+
+/* Fields demo: constrain width to look like a real modal body */
+.um-fields-demo {
+  width: 320px;
+}
+
+/* ArcGIS demo: constrain width */
+.um-arcgis-demo {
+  width: 360px;
+  padding: 10px !important;
+}
+
+/* Image preview mockup */
+.um-image-preview-demo {
+  width: 260px;
+}
+
+/* Full modal body preview: limit height and scroll */
+.um-modal-body-preview {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+/* ── ArcGIS Panel overview demo ── */
+.um-arcgis-panel-mock {
+  background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
+  border: 1px solid #d8e1ea;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 13px;
+  color: #223244;
+  max-width: 380px;
+  margin: 0 auto 32px;
+}
+
+/* ---- Add Card form demo ---- */
+.um-form-demo-wrapper {
+  max-width: 420px;
+  margin: 0 auto 32px;
+  border: 1px solid #d8e1ea;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.um-form-demo-inner {
+  background: #fff;
+  padding: 20px 24px;
+  max-height: 380px;
+  overflow-y: auto;
+  font-size: 13px;
+}
+
+.um-form-demo-inner h2 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a2a3a;
+}
+
+.um-form-demo-inner label {
+  display: block;
+  margin-bottom: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374957;
+}
+
+.um-form-input-mock {
+  width: 100%;
+  padding: 6px 9px;
+  font-size: 13px;
+  border: 1px solid #c6d2df;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: #f9fafb;
+  box-sizing: border-box;
+  color: #374957;
+  pointer-events: none;
+  font-family: inherit;
+}
+
+/* ---- ArcGIS Picker demo ---- */
+.um-picker-demo-wrapper {
+  max-width: 480px;
+  margin: 0 auto 32px;
+  border: 1px solid #d0d7e2;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  background: #fff;
+  font-size: 0.86rem;
+}
+
+/* nav rows used in picker demo */
+.arcgis-picker-nav-state-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1565c0;
+  background: #eaf1fb;
+  border-top: 1px solid #d0dcea;
+  transition: background 0.1s;
+}
+
+.arcgis-picker-nav-state-row:hover {
+  background: #d6e6f8;
+}
+
+.arcgis-picker-nav-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 22px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  background: #f5f7fa;
+  border-top: 1px solid #ececec;
+  transition: background 0.1s;
+}
+
+.arcgis-picker-nav-folder-row:hover {
+  background: #eaecef;
+}
+
+.arcgis-picker-nav-folder-icon {
+  color: #5a7fa8;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ---- Basemap Panel demo ---- */
+.um-basemap-demo-wrapper {
+  max-width: 380px;
+  margin: 0 auto 32px;
+  border: 1px solid #d0d7e2;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  background: #fff;
+  font-size: 0.86rem;
+}
+
+/* Override fixed positioning when used inside the demo wrapper */
+.um-basemap-demo-wrapper .basemap-switcher-panel {
+  position: static;
+  width: 100%;
+  height: auto;
+  box-shadow: none;
+  animation: none;
+}
+
+/* ---- Map Controls demo ---- */
+.um-mapctrl-overview {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
+  background: #1a2435;
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin: 0 auto 32px;
+  max-width: 560px;
+}
+
+.um-mapctrl-corner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.um-mapctrl-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #8ba4c0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+/* Simulated mapboxgl ctrl group */
+.um-mapctrl-group {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.um-mapctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 29px;
+  height: 29px;
+  font-size: 15px;
+  background: #fff;
+  border: none;
+  cursor: default;
+  color: #333;
+  padding: 0;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.um-mapctrl-btn:hover {
+  background: #f0f0f0;
+}
+
+.um-mapctrl-btn--sep {
+  border-top: 1px solid #ddd;
+}
+
+/* Geocoder mock */
+.um-mapctrl-geocoder-mock {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #aaa;
+  min-width: 180px;
+  pointer-events: none;
+}
+
+/* ---- Draw Polygon Panel demo ---- */
+.um-polydraw-demo-wrapper {
+  max-width: 260px;
+  margin: 0 auto 32px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+  background: #fff;
+  overflow: visible;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #333;
+}
+
+/* The real panel has position:absolute — reset it inside the demo */
+.um-polydraw-demo-wrapper .polygon-draw-modal {
+  position: static;
+  width: 100%;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+/* Inline cross-tab link */
+.um-inline-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.um-inline-link:hover {
+  color: #1e40af;
+}
+
+/* ---- ArcGIS service info modal demo (override position:fixed) ---- */
+.um-svcinfo-demo-wrapper {
+  position: relative;
+  border: 1px solid #d0d7e2;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+.um-svcinfo-demo-wrapper .arcgis-service-info-modal {
+  position: static;
+  top: auto;
+  left: auto;
+  width: 100%;
+  max-height: none;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+  margin-top: 0;
+}
+
+/* ---- Card pin popup demo ---- */
+.um-card-popup-demo-wrapper {
+  border: 1px solid #d0d7e2;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: #fff;
+}
+.um-card-popup-demo-wrapper .card-pin-popup-panel {
+  overflow-y: visible !important;
+}
+
+
