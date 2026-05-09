@@ -1657,6 +1657,29 @@
   box-shadow: none !important;
 }
 
+.learn-more-modal-help-btn,
+.learn-more-modal-onboarding-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #c4d4e3;
+  background: #f8fbff;
+  color: #27425d;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.learn-more-modal-help-btn:hover,
+.learn-more-modal-onboarding-btn:hover {
+  background: #ecf5ff;
+  border-color: #9eb7d0;
+  transform: translateY(-1px);
+}
+
 .image-preview-close:hover {
   background: rgba(0, 0, 0, 0.75) !important;
 }

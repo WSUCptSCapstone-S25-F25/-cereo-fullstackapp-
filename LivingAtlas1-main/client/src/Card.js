@@ -8,9 +8,10 @@ import './Card.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart as solidHeart, faMagnifyingGlass, faPenToSquare, faTrashCan, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { jsPDF } from 'jspdf';
-import { faHeart as regularHeart } from '@fortawesome/free-regular-svg-icons';
+import { faHeart as regularHeart, faQuestionCircle, faCirclePlay } from '@fortawesome/free-regular-svg-icons';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import ArcGISPickerModal from './ArcGISPickerModal';
+import LearnMoreOnboarding from './LearnMoreOnboarding';
 import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
 import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
 import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
@@ -53,6 +54,7 @@ function serializeLinks(links) {
 
 function Card(props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLearnMoreOnboardingOpen, setIsLearnMoreOnboardingOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
     const [isLearnMoreEditMode, setIsLearnMoreEditMode] = useState(false);
@@ -187,6 +189,14 @@ function Card(props) {
             }
         }
     };
+
+    const isLearnMoreModalVisible = isModalOpen && !isSelectingLocation && !isEditingPolygon;
+
+    useEffect(() => {
+        if (!isLearnMoreModalVisible && isLearnMoreOnboardingOpen) {
+            setIsLearnMoreOnboardingOpen(false);
+        }
+    }, [isLearnMoreModalVisible, isLearnMoreOnboardingOpen]);
 
     const handleZoom = (e) => {
         e.stopPropagation();
@@ -1398,6 +1408,7 @@ function Card(props) {
     return (
         <div
             className={`card ${props.isSelectedFromMap ? 'card--map-selected' : ''}`}
+            data-onboarding-target={props.onboardingTargetPrefix ? props.onboardingTargetPrefix : undefined}
             onClick={handleLearnMore}
             role="button"
             tabIndex={0}
@@ -1406,6 +1417,7 @@ function Card(props) {
             {/* Favorite Heart Icon */}
             <span
                 className={`favorite-icon ${isFavorited ? 'filled' : ''}`}
+                data-onboarding-target={props.onboardingTargetPrefix ? `${props.onboardingTargetPrefix}-actions` : undefined}
                 onClick={handleFavoriteClick}
                 title={isFavorited ? "Remove from favorites" : "Add to favorites"}
             >
@@ -1467,6 +1479,7 @@ function Card(props) {
                 <p className="card-meta">{displayCardData.category || "Uncategorized"}</p>
                 <button
                     className="card-meta-zoom-btn"
+                    data-onboarding-target={props.onboardingTargetPrefix ? `${props.onboardingTargetPrefix}-actions` : undefined}
                     onClick={handleZoom}
                     title="Locate on map"
                     aria-label="Locate on map"
@@ -1486,19 +1499,20 @@ function Card(props) {
 
             {/* Learn More Modal */}
             <Modal
-                isOpen={isModalOpen && !isSelectingLocation && !isEditingPolygon}
+                isOpen={isLearnMoreModalVisible}
                 onRequestClose={handleLearnMoreClose}
                 className="Modal Modal--learn-more"
                 overlayClassName="ModalOverlay ModalOverlay--learn-more"
             >
                 <div
                     className="learn-more-modal-shell"
+                    data-onboarding-target="learn-more-modal-shell"
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
                     onKeyUp={(e) => e.stopPropagation()}
                 >
-                <div className="learn-more-modal-toolbar">
+                <div className="learn-more-modal-toolbar" data-onboarding-target="learn-more-toolbar">
                     <div className="learn-more-modal-toolbar-left">
                         {isLearnMoreEditMode ? (
                             <div className="learn-more-modal-toolbar-actions">
@@ -1558,6 +1572,22 @@ function Card(props) {
 
                     <div className="learn-more-modal-toolbar-right">
                         <button
+                            className="learn-more-modal-help-btn"
+                            onClick={() => window.open('/user-manual?section=detail-view', '_blank')}
+                            aria-label="Open card detail help"
+                            title="Help"
+                        >
+                            <FontAwesomeIcon icon={faQuestionCircle} />
+                        </button>
+                        <button
+                            className="learn-more-modal-onboarding-btn"
+                            onClick={() => setIsLearnMoreOnboardingOpen(true)}
+                            aria-label="Start detail view onboarding"
+                            title="Onboarding"
+                        >
+                            <FontAwesomeIcon icon={faCirclePlay} />
+                        </button>
+                        <button
                             className="learn-more-modal-close"
                             onClick={handleLearnMoreClose}
                             aria-label="Close learn more modal"
@@ -1567,7 +1597,7 @@ function Card(props) {
                     </div>
                 </div>
 
-                <div className="learn-more-modal-body">
+                <div className="learn-more-modal-body" data-onboarding-target="learn-more-modal-content">
                     <input
                         ref={learnMoreImageInputRef}
                         type="file"
@@ -1679,6 +1709,8 @@ function Card(props) {
                     ) : (
                         <>
 
+                    <div data-onboarding-target="learn-more-image-area">
+
                     <div className="learn-more-gallery">
                         <button
                             type="button"
@@ -1764,6 +1796,9 @@ function Card(props) {
                     >
                         {`See all ${allImagesList.length} image${allImagesList.length === 1 ? '' : 's'}`}
                     </button>
+                    </div>
+
+                    <div data-onboarding-target="learn-more-text-area">
 
                     <div className="learn-more-modal-title-section">
                         {isLearnMoreEditMode ? (
@@ -2154,6 +2189,7 @@ function Card(props) {
                             onClose={() => setIsArcgisPickerOpen(false)}
                         />
                     )}
+                    </div>
                         </>
                     )}
 
@@ -2164,6 +2200,12 @@ function Card(props) {
 
                 </div>
             </Modal>
+
+            <LearnMoreOnboarding
+                isOpen={isLearnMoreOnboardingOpen}
+                onClose={() => setIsLearnMoreOnboardingOpen(false)}
+                isModalOpen={isLearnMoreModalVisible}
+            />
 
             <Modal
                 isOpen={isImagePreviewOpen}
