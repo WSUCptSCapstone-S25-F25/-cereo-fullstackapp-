@@ -43,6 +43,19 @@ function Administration() {
         });
     };
 
+    const formatLastOnline = (rawDate) => {
+        if (!rawDate) return 'N/A';
+        const date = new Date(rawDate);
+        if (Number.isNaN(date.getTime())) return 'N/A';
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+        });
+    };
+
     const handleSortChange = (column) => {
         if (sortBy === column) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -304,6 +317,7 @@ function Administration() {
                                     </span>
                                 </th>
                                 <th>Status</th>
+                                <th>Last Online</th>
                                 <th>Role</th>
                                 <th>Edit</th>
                                 <th>Delete</th>
@@ -321,6 +335,7 @@ function Administration() {
                                             {getUserOnlineState(user) ? 'Online' : 'Offline'}
                                         </span>
                                     </td>
+                                    <td>{formatLastOnline(user.last_online_at)}</td>
                                     <td>
                                         <span className={`admin-badge ${user.is_admin ? 'admin-badge-admin' : 'admin-badge-user'}`}>
                                             {user.is_admin ? 'Admin' : 'Regular User'}

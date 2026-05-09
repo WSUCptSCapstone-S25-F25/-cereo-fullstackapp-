@@ -123,6 +123,11 @@ def _ensure_schema():
             ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
         """)
 
+        # Migration 010 — user last online timestamp for admin User Management table
+        cur.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS last_online_at TIMESTAMP WITH TIME ZONE;
+        """)
+
         conn.commit()
         print("[MIGRATIONS] Schema is up-to-date.")
     except Exception as e:
