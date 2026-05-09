@@ -16,6 +16,8 @@ function Administration() {
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [deleteModalError, setDeleteModalError] = useState('');
     const [isDeletingUser, setIsDeletingUser] = useState(false);
+    const [sortBy, setSortBy] = useState('name');
+    const [sortOrder, setSortOrder] = useState('asc');
 
     const currentEmail = (localStorage.getItem('email') || '').trim().toLowerCase();
     const isCurrentUserLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -39,6 +41,43 @@ function Administration() {
             month: 'short',
             day: 'numeric',
         });
+    };
+
+    const handleSortChange = (column) => {
+        if (sortBy === column) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(column);
+            setSortOrder('asc');
+        }
+    };
+
+    const getSortedUsers = () => {
+        const sorted = [...users];
+        sorted.sort((a, b) => {
+            let aVal, bVal;
+            if (sortBy === 'name') {
+                aVal = (a.name || '').toLowerCase();
+                bVal = (b.name || '').toLowerCase();
+            } else if (sortBy === 'date_joined') {
+                aVal = new Date(a.created_at || 0).getTime();
+                bVal = new Date(b.created_at || 0).getTime();
+            }
+            if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    };
+
+    const renderSortIndicator = (column) => {
+        const direction = sortBy === column ? sortOrder : null;
+        return (
+            <span className="admin-sort-indicator" aria-hidden="true">
+                <span className={`admin-sort-triangle admin-sort-triangle-up ${direction === 'asc' ? 'is-active' : 'is-inactive'}`} />
+                <span className={`admin-sort-triangle admin-sort-triangle-down ${direction === 'desc' ? 'is-active' : 'is-inactive'}`} />
+            </span>
+        );
     };
 
     useEffect(() => {
@@ -243,9 +282,27 @@ function Administration() {
                     <table className="admin-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
+                                <th
+                                    className="admin-table-header-sortable"
+                                    onClick={() => handleSortChange('name')}
+                                    title="Click to sort"
+                                >
+                                    <span className="admin-sort-header-content">
+                                        Name
+                                        {renderSortIndicator('name')}
+                                    </span>
+                                </th>
                                 <th>Email</th>
-                                <th>Date Joined</th>
+                                <th
+                                    className="admin-table-header-sortable"
+                                    onClick={() => handleSortChange('date_joined')}
+                                    title="Click to sort"
+                                >
+                                    <span className="admin-sort-header-content">
+                                        Date Joined
+                                        {renderSortIndicator('date_joined')}
+                                    </span>
+                                </th>
                                 <th>Status</th>
                                 <th>Role</th>
                                 <th>Edit</th>
@@ -253,7 +310,7 @@ function Administration() {
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(user => (
+                            {getSortedUsers().map(user => (
                                 <tr key={user.email}>
                                     <td>{user.name}</td>
                                     <td>{user.email}</td>

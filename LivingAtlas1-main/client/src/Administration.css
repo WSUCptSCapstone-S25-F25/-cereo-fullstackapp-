@@ -334,3 +334,62 @@
     flex: 1;
   }
 }
+/* Sortable table header styles */
+.admin-table-header-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.admin-table-header-sortable:hover {
+  color: var(--admin-accent);
+  background-color: rgba(25, 118, 210, 0.05);
+}
+
+.admin-sort-header-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+}
+
+.admin-sort-indicator {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  width: 0.85rem;
+  height: 0.95rem;
+}
+
+.admin-sort-triangle {
+  width: 0;
+  height: 0;
+  border-left: 0.25rem solid transparent;
+  border-right: 0.25rem solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.admin-sort-triangle-up {
+  border-bottom: 0.34rem solid #bcc6d4;
+}
+
+.admin-sort-triangle-down {
+  border-top: 0.34rem solid #bcc6d4;
+}
+
+.admin-sort-triangle.is-active.admin-sort-triangle-up {
+  border-bottom-color: #223244;
+}
+
+.admin-sort-triangle.is-active.admin-sort-triangle-down {
+  border-top-color: #223244;
+}
+
+.admin-sort-triangle.is-inactive.admin-sort-triangle-up {
+  border-bottom-color: #cfd7e3;
+}
+
+.admin-sort-triangle.is-inactive.admin-sort-triangle-down {
+  border-top-color: #cfd7e3;
+}
