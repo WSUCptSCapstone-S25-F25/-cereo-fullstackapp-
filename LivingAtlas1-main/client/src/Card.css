@@ -613,6 +613,10 @@
   flex-direction: column;
 }
 
+.learn-more-modal-shell.onboarding-locked * {
+  pointer-events: none;
+}
+
 .learn-more-modal-close {
   position: static;
   width: 36px;

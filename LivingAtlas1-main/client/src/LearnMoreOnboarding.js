@@ -2,24 +2,79 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import './CardPanelOnboarding.css';
 
+// Steps at this index and beyond require edit mode in Card.js
+export const LEARN_MORE_EDIT_MODE_STEP = 4;
+
 const LEARN_MORE_STEPS = [
-    {
-        selector: '[data-onboarding-target="learn-more-toolbar"]',
-        title: 'Top Toolbar',
-        description: 'This toolbar contains actions to edit, export, delete, open help, start onboarding, and close the Detail View.',
-        placement: 'bottom',
-    },
     {
         selector: '[data-onboarding-target="learn-more-text-area"]',
         title: 'Text and Data Area',
         description: 'This section displays card fields and editable content, including coordinates or polygon settings and linked ArcGIS services.',
         placement: 'left',
+        scrollTo: '[data-onboarding-target="learn-more-text-area"]',
     },
     {
         selector: '[data-onboarding-target="learn-more-image-area"]',
         title: 'Image Area',
         description: 'In edit mode, click image slots to add images. You can also click "See n images" to enter the all-images screen for bulk management.',
         placement: 'left',
+        scrollTo: '[data-onboarding-target="learn-more-image-area"]',
+    },
+    {
+        selector: '[data-onboarding-target="learn-more-toolbar"]',
+        title: 'Top Toolbar',
+        description: 'This toolbar contains actions to edit, export, delete, open help, start onboarding, and close the Detail View.',
+        placement: 'bottom',
+        scrollTo: '[data-onboarding-target="learn-more-toolbar"]',
+    },
+    {
+        selector: '[data-onboarding-target="learn-more-toolbar"]',
+        title: 'Edit Mode - Enter',
+        description: 'Click the Edit button to enter edit mode. This allows you to make changes to the card details. Edit mode will now be entered for the following demonstration steps.',
+        placement: 'bottom',
+        scrollTo: '[data-onboarding-target="learn-more-toolbar"]',
+    },
+    {
+        selector: '[data-onboarding-target="learn-more-image-area"]',
+        title: 'Edit Mode - Adding Images',
+        description: 'In edit mode, click on any empty image field to add a new image. You can upload images from your computer or other sources.',
+        placement: 'left',
+        scrollTo: '[data-onboarding-target="learn-more-image-area"]',
+    },
+    {
+        selector: '[data-onboarding-target="learn-more-image-area"]',
+        title: 'Edit Mode - See All Images',
+        description: 'Click "See n images" to open the all-images management screen. This view allows you to manage, delete, reorder, and organize all images more easily.',
+        placement: 'left',
+        scrollTo: '[data-onboarding-target="learn-more-image-area"]',
+    },
+    {
+        selector: '[data-onboarding-target="learn-more-text-area"]',
+        title: 'Edit Mode - Fields Editing',
+        description: 'Edit text fields and metadata such as title, description, author, category, and other card information directly in this area. You can also add and manage related links here.',
+        placement: 'left',
+        scrollTo: '[data-onboarding-target="learn-more-text-area"]',
+    },
+    {
+        selector: '[data-onboarding-target="learn-more-coordinates-polygon"]',
+        title: 'Edit Mode - Coordinates & Polygon',
+        description: 'Set location information by entering coordinates or drawing a polygon boundary. This defines the geographic area covered by the card.',
+        placement: 'left',
+        scrollTo: '[data-onboarding-target="learn-more-coordinates-polygon"]',
+    },
+    {
+        selector: '[data-onboarding-target="learn-more-arcgis-section"]',
+        title: 'Edit Mode - ArcGIS Services',
+        description: 'Link to ArcGIS services in this section. Connect your card to ArcGIS map services, data services, or other ArcGIS resources.',
+        placement: 'left',
+        scrollTo: '[data-onboarding-target="learn-more-arcgis-section"]',
+    },
+    {
+        selector: '[data-onboarding-target="learn-more-toolbar"]',
+        title: 'Edit Mode - Save or Cancel',
+        description: 'After making edits, click the Save button to commit your changes. Click Cancel or Close to discard any unsaved changes.',
+        placement: 'bottom',
+        scrollTo: '[data-onboarding-target="learn-more-toolbar"]',
     },
 ];
 
@@ -77,7 +132,7 @@ function getTooltipLayout(targetRect, preferredPlacement = 'left') {
     };
 }
 
-function LearnMoreOnboarding({ isOpen, onClose, isModalOpen }) {
+function LearnMoreOnboarding({ isOpen, onClose, isModalOpen, onStepChange }) {
     const [stepIndex, setStepIndex] = useState(0);
     const [targetRect, setTargetRect] = useState(null);
 
@@ -93,16 +148,44 @@ function LearnMoreOnboarding({ isOpen, onClose, isModalOpen }) {
         setTargetRect(target.getBoundingClientRect());
     }, [isOpen, activeStep]);
 
+    const goPrev = useCallback(() => setStepIndex((prev) => Math.max(0, prev - 1)), []);
+    const goNext = useCallback(() => {
+        if (stepIndex >= LEARN_MORE_STEPS.length - 1) {
+            onClose?.();
+            return;
+        }
+        setStepIndex((prev) => Math.min(LEARN_MORE_STEPS.length - 1, prev + 1));
+    }, [stepIndex, onClose]);
+
     useEffect(() => {
         if (!isOpen) return;
         setStepIndex(0);
         setTargetRect(null);
     }, [isOpen]);
 
+    // Notify parent of step changes
+    useEffect(() => {
+        if (!isOpen) return;
+        onStepChange?.(stepIndex);
+    }, [isOpen, stepIndex, onStepChange]);
+
     useEffect(() => {
         if (!isOpen) return;
         if (!isModalOpen) onClose?.();
     }, [isOpen, isModalOpen, onClose]);
+
+    // Scroll the target element into view, then re-measure its rect
+    useEffect(() => {
+        if (!isOpen) return;
+        const scrollSelector = activeStep.scrollTo || activeStep.selector;
+        const el = document.querySelector(scrollSelector);
+        if (el) {
+            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+        // Delay rect measurement to allow scroll to settle
+        const timer = window.setTimeout(updateTargetRect, 350);
+        return () => window.clearTimeout(timer);
+    }, [isOpen, stepIndex, activeStep, updateTargetRect]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -131,22 +214,13 @@ function LearnMoreOnboarding({ isOpen, onClose, isModalOpen }) {
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
+        document.addEventListener('keydown', handleKeyDown, true);
+        return () => document.removeEventListener('keydown', handleKeyDown, true);
+    }, [isOpen, stepIndex, goPrev, goNext, onClose]);
 
     if (!isOpen) return null;
 
     const tooltipLayout = getTooltipLayout(targetRect, activeStep.placement);
-
-    const goPrev = () => setStepIndex((prev) => Math.max(0, prev - 1));
-    const goNext = () => {
-        if (stepIndex >= LEARN_MORE_STEPS.length - 1) {
-            onClose?.();
-            return;
-        }
-        setStepIndex((prev) => Math.min(LEARN_MORE_STEPS.length - 1, prev + 1));
-    };
 
     return ReactDOM.createPortal(
         <div className="card-onboarding-overlay" role="dialog" aria-modal="true">

@@ -189,7 +189,7 @@ function CardPanelOnboarding({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, goPrev, goNext, onClose]);
+    }, [isOpen, stepIndex, goPrev, goNext, onClose]);
 
     if (!isOpen) return null;
 

@@ -11,7 +11,7 @@ import { jsPDF } from 'jspdf';
 import { faHeart as regularHeart, faQuestionCircle, faCirclePlay } from '@fortawesome/free-regular-svg-icons';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import ArcGISPickerModal from './ArcGISPickerModal';
-import LearnMoreOnboarding from './LearnMoreOnboarding';
+import LearnMoreOnboarding, { LEARN_MORE_EDIT_MODE_STEP } from './LearnMoreOnboarding';
 import WA_ARCGIS_SERVICES from './arcgis_services_wa.json';
 import ID_ARCGIS_SERVICES from './arcgis_services_id.json';
 import OR_ARCGIS_SERVICES from './arcgis_services_or.json';
@@ -198,6 +198,35 @@ function Card(props) {
         }
     }, [isLearnMoreModalVisible, isLearnMoreOnboardingOpen]);
 
+    const [learnMoreOnboardingStep, setLearnMoreOnboardingStep] = useState(0);
+
+    // Enter edit mode at step 5 (index 4+), exit when onboarding closes
+    useEffect(() => {
+        if (!isLearnMoreOnboardingOpen || !isLearnMoreModalVisible) {
+            // Exit edit mode when onboarding closes
+            if (isLearnMoreEditMode) {
+                setIsLearnMoreEditMode(false);
+                isEditingRef.current = false;
+            }
+            return;
+        }
+        const shouldBeInEditMode = learnMoreOnboardingStep >= LEARN_MORE_EDIT_MODE_STEP;
+        if (shouldBeInEditMode && !isLearnMoreEditMode) {
+            isEditingRef.current = true;
+            setEditFormLinks(parseLinks(formData.link, formData.link_text));
+            setFormData((prev) => ({
+                ...prev,
+                original_username: prev.username,
+                original_email: prev.email,
+                original_title: prev.title,
+            }));
+            setIsLearnMoreEditMode(true);
+        } else if (!shouldBeInEditMode && isLearnMoreEditMode) {
+            setIsLearnMoreEditMode(false);
+            isEditingRef.current = false;
+        }
+    }, [isLearnMoreOnboardingOpen, isLearnMoreModalVisible, learnMoreOnboardingStep]);
+
     const handleZoom = (e) => {
         e.stopPropagation();
         props.onZoom?.();
@@ -232,7 +261,7 @@ function Card(props) {
     const handleDelete = (e) => {
         e.stopPropagation();
 
-        if (!props.isLoggedIn) {
+        if (!props.isLoggedIn && !isLearnMoreOnboardingOpen) {
             setShowLoginPrompt(true);
             return;
         }
@@ -274,7 +303,7 @@ function Card(props) {
     };
 
     const handleDownloadPdf = async () => {
-        if (!props.isLoggedIn) {
+        if (!props.isLoggedIn && !isLearnMoreOnboardingOpen) {
             setShowLoginPrompt(true);
             return;
         }
@@ -887,7 +916,7 @@ function Card(props) {
     const handleLearnMoreEditStart = (e) => {
         e.stopPropagation();
 
-        if (!props.isLoggedIn) {
+        if (!props.isLoggedIn && !isLearnMoreOnboardingOpen) {
             setShowLoginPrompt(true);
             return;
         }
@@ -1501,11 +1530,12 @@ function Card(props) {
             <Modal
                 isOpen={isLearnMoreModalVisible}
                 onRequestClose={handleLearnMoreClose}
+                shouldCloseOnOverlayClick={!isLearnMoreOnboardingOpen}
                 className="Modal Modal--learn-more"
                 overlayClassName="ModalOverlay ModalOverlay--learn-more"
             >
                 <div
-                    className="learn-more-modal-shell"
+                    className={`learn-more-modal-shell${isLearnMoreOnboardingOpen ? ' onboarding-locked' : ''}`}
                     data-onboarding-target="learn-more-modal-shell"
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
@@ -1914,20 +1944,22 @@ function Card(props) {
                             <p><strong>Tags:</strong></p>
                             <input className="learn-more-inline-input" type="text" name="tags" value={formData.tags || ''} onChange={handleInputChange} />
 
-                            {isPolygonCard ? (
-                                <button type="button" className="learn-more-select-location-btn" onClick={handleEditPolygon}>
-                                    Edit Polygon
-                                </button>
-                            ) : (
-                                <div className="learn-more-location-btn-group">
-                                    <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
-                                        Select Location
+                            <div data-onboarding-target="learn-more-coordinates-polygon">
+                                {isPolygonCard ? (
+                                    <button type="button" className="learn-more-select-location-btn" onClick={handleEditPolygon}>
+                                        Edit Polygon
                                     </button>
-                                    <button type="button" className="learn-more-select-location-btn learn-more-change-to-polygon-btn" onClick={handleChangeToPolygon}>
-                                        Change to Polygon
-                                    </button>
-                                </div>
-                            )}
+                                ) : (
+                                    <div className="learn-more-location-btn-group">
+                                        <button type="button" className="learn-more-select-location-btn" onClick={handleSelectLocation}>
+                                            Select Location
+                                        </button>
+                                        <button type="button" className="learn-more-select-location-btn learn-more-change-to-polygon-btn" onClick={handleChangeToPolygon}>
+                                            Change to Polygon
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </>
                     ) : (
                         <>
@@ -2043,7 +2075,7 @@ function Card(props) {
 
                     {/* Linked ArcGIS Services/Layers Section */}
                     {(isLearnMoreEditMode || linkedArcgisItems.length > 0) && (
-                    <div className="learn-more-arcgis-links-section">
+                    <div className="learn-more-arcgis-links-section" data-onboarding-target="learn-more-arcgis-section">
                         <p><strong>Linked ArcGIS Services/Layers:</strong></p>
                         {linkedArcgisItems.length === 0 ? (
                             <p className="learn-more-no-arcgis-links">No linked ArcGIS items.</p>
@@ -2205,6 +2237,7 @@ function Card(props) {
                 isOpen={isLearnMoreOnboardingOpen}
                 onClose={() => setIsLearnMoreOnboardingOpen(false)}
                 isModalOpen={isLearnMoreModalVisible}
+                onStepChange={setLearnMoreOnboardingStep}
             />
 
             <Modal
