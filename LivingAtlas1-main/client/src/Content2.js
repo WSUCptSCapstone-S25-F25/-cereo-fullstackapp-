@@ -882,7 +882,7 @@ function Content2(props) {
                                 <FontAwesomeIcon icon={faQuestion} />
                             </button>
                             <button
-                                className="card-panel-titlebar-btn"
+                                className="card-panel-titlebar-btn card-panel-titlebar-btn--onboarding"
                                 title="Start onboarding"
                                 data-onboarding-target="card-onboarding-button"
                                 onClick={() => setIsOnboardingOpen(true)}

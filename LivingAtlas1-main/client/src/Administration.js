@@ -17,6 +17,19 @@ function Administration() {
     const [deleteModalError, setDeleteModalError] = useState('');
     const [isDeletingUser, setIsDeletingUser] = useState(false);
 
+    const currentEmail = (localStorage.getItem('email') || '').trim().toLowerCase();
+    const isCurrentUserLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+
+    const getUserOnlineState = (user) => {
+        if (typeof user?.is_online === 'boolean') return user.is_online;
+        if (typeof user?.online === 'boolean') return user.online;
+        if (typeof user?.status === 'string') {
+            return user.status.trim().toLowerCase() === 'online';
+        }
+        const userEmail = (user?.email || '').trim().toLowerCase();
+        return isCurrentUserLoggedIn && userEmail !== '' && userEmail === currentEmail;
+    };
+
     useEffect(() => {
         if (activeTab === 'manage-users') {
             fetchUsers();
@@ -221,6 +234,7 @@ function Administration() {
                             <tr>
                                 <th>Name</th>
                                 <th>Email</th>
+                                <th>Status</th>
                                 <th>Role</th>
                                 <th>Edit</th>
                                 <th>Delete</th>
@@ -231,6 +245,12 @@ function Administration() {
                                 <tr key={user.email}>
                                     <td>{user.name}</td>
                                     <td>{user.email}</td>
+                                    <td>
+                                        <span className={`admin-status ${getUserOnlineState(user) ? 'admin-status-online' : 'admin-status-offline'}`}>
+                                            <span className="admin-status-dot" aria-hidden="true" />
+                                            {getUserOnlineState(user) ? 'Online' : 'Offline'}
+                                        </span>
+                                    </td>
                                     <td>
                                         <span className={`admin-badge ${user.is_admin ? 'admin-badge-admin' : 'admin-badge-user'}`}>
                                             {user.is_admin ? 'Admin' : 'Regular User'}

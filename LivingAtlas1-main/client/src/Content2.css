@@ -403,6 +403,10 @@
   color: #27425d !important;
 }
 
+.card-panel-titlebar-btn--onboarding svg {
+  transform: translateX(1px);
+}
+
 .card-panel-toolbar {
   display: flex;
   align-items: center;

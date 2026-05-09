@@ -140,6 +140,38 @@
   background: #edf1f7;
 }
 
+.admin-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.admin-status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.admin-status-online {
+  color: #1b7f3a;
+}
+
+.admin-status-online .admin-status-dot {
+  background: #2bb24c;
+  box-shadow: 0 0 0 2px rgba(43, 178, 76, 0.16);
+}
+
+.admin-status-offline {
+  color: #6a7485;
+}
+
+.admin-status-offline .admin-status-dot {
+  background: #9ca4b3;
+}
+
 .admin-actions-inline {
   display: flex;
   gap: 0.5rem;
