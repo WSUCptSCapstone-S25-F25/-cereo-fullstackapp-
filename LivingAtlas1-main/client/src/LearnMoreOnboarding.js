@@ -241,6 +241,9 @@ function LearnMoreOnboarding({ isOpen, onClose, isModalOpen, onStepChange }) {
             <div
                 className={`card-onboarding-tooltip placement-${tooltipLayout.placement}`}
                 style={{ top: tooltipLayout.top, left: tooltipLayout.left }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
             >
                 <div className="card-onboarding-progress">
                     Step {stepIndex + 1} of {LEARN_MORE_STEPS.length}
