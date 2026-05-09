@@ -17,7 +17,7 @@ import ArcgisRenameItem from './ArcgisRenameItem';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import ClearAllLayersButton from './ClearAllLayersButton';
 
@@ -1339,10 +1339,17 @@ function CustomLayersPanel({
                                                             onEditingDone={() => setRenamingItem(null)}
                                                         />
                                                         {service.state && (
-                                                            <span style={{ color: '#999', fontSize: '10px', marginLeft: 'auto' }}>
+                                                            <span style={{ color: '#999', fontSize: '10px' }}>
                                                                 {service.state.substring(0, 2).toUpperCase()}
                                                             </span>
                                                         )}
+                                                        <button
+                                                            className="custom-layers-service-row-action-btn"
+                                                            onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
+                                                            title="Learn more"
+                                                        >
+                                                            <FontAwesomeIcon icon={faEllipsisV} />
+                                                        </button>
                                                     </div>
                                                     {isServiceExpanded && layerTree.length > 0 && (
                                                         <div className="tree-children" style={{ paddingLeft: 16 }}>

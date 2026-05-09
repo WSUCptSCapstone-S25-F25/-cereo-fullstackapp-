@@ -1107,3 +1107,30 @@
 }
 
 /* Context menu styles are now in LayerContextMenu.css */
+
+.arcgis-service-row-action-btn {
+    background: none;
+    border: none;
+    color: #5a7a8e;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    font-size: 14px;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    margin: 0 4px;
+}
+
+.arcgis-service-row-action-btn:hover {
+    background: rgba(90, 122, 142, 0.08);
+    color: #27425d;
+}
+
+.arcgis-service-row-action-btn:active {
+    background: rgba(90, 122, 142, 0.15);
+}

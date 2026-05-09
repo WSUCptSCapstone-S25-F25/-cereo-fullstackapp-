@@ -39,7 +39,7 @@ import {
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import {
     useArcgisLoadingMessages,
@@ -2339,6 +2339,13 @@ function ArcgisUploadPanel({
                                                                                     {expandedServices.has(service.key) ? '▼' : '►'}
                                                                                     <ArcgisRenameItem value={service.label} displayValue={service.label} onSave={(newLabel) => handleServiceRename(service.key, newLabel)} placeholder="Enter service name..." isFolder={false} disabled={!isAdmin} startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key} onEditingDone={() => setRenamingItem(null)} />
                                                                                 </span>
+                                                                                <button
+                                                                                    className="arcgis-service-row-action-btn"
+                                                                                    onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
+                                                                                    title="Learn more"
+                                                                                >
+                                                                                    <FontAwesomeIcon icon={faEllipsisV} />
+                                                                                </button>
                                                                             </div>
                                                                             {expandedServices.has(service.key) && (
                                                                                 <div className="tree-children">
@@ -2475,6 +2482,13 @@ function ArcgisUploadPanel({
                                                         {expandedServices.has(service.key) ? '▼' : '►'}
                                                         <ArcgisRenameItem value={service.label} displayValue={service.label} onSave={(newLabel) => handleServiceRename(service.key, newLabel)} placeholder="Enter service name..." isFolder={false} disabled={!isAdmin} startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key} onEditingDone={() => setRenamingItem(null)} />
                                                     </span>
+                                                    <button
+                                                        className="arcgis-service-row-action-btn"
+                                                        onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
+                                                        title="Learn more"
+                                                    >
+                                                        <FontAwesomeIcon icon={faEllipsisV} />
+                                                    </button>
                                                 </div>
                                                 {expandedServices.has(service.key) && (
                                                     <div className="tree-children">
