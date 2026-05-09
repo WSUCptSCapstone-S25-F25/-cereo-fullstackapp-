@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
-import './CardPanelOnboarding.css';
+import './OnboardingCardPanel.css';
 
 const ONBOARDING_STEPS = [
     {

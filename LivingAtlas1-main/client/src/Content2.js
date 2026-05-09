@@ -6,7 +6,7 @@ import Card from './Card.js';
 import FormModal from './FormModal';
 import FilterDropdown from './FilterDropdown';
 import SortDropdown from './SortDropdown';
-import CardPanelOnboarding from './CardPanelOnboarding';
+import CardPanelOnboarding from './OnboardingCardPanel';
 import axios from 'axios';
 import { showAll, filterCategory, filterTag, filterCategoryAndTag } from "./Filter.js";
 import { curLocationCoordinates, searchLocationCoordinates } from './Content1.js';

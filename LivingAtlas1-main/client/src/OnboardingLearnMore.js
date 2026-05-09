@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
-import './CardPanelOnboarding.css';
+import './OnboardingCardPanel.css';
 
 // Steps at this index and beyond require edit mode in Card.js
 export const LEARN_MORE_EDIT_MODE_STEP = 4;
