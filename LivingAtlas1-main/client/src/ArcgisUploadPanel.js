@@ -39,7 +39,7 @@ import {
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import {
     useArcgisLoadingMessages,
@@ -47,6 +47,7 @@ import {
     getLoadingMsgText
 } from './arcgisUploadMessageUtils';
 import ClearAllLayersButton from './ClearAllLayersButton';
+import ArcgisUploadPanelOnboarding from './OnboardingArcgisUploadPanel';
 
 // --- State selector ---
 const STATE_CODES = ['WA', 'ID', 'OR'];
@@ -208,6 +209,9 @@ function ArcgisUploadPanel({
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('any'); // 'any', 'folder', 'service', 'layer'
     const [searchResult, setSearchResult] = useState(null);
+    const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+    const [onboardingStepIndex, setOnboardingStepIndex] = useState(0);
+    const onboardingSnapshotRef = useRef(null);
 
     // Search navigation
     const matchList = useMemo(
@@ -255,6 +259,148 @@ function ArcgisUploadPanel({
     const [pinnedItems, setPinnedItems] = useState([]);
     const [pinnedPreferencesLoaded, setPinnedPreferencesLoaded] = useState(false);
     const [localPinnedPreferencesReady, setLocalPinnedPreferencesReady] = useState(false);
+    const onboardingStateCode = 'WA';
+
+    const findFirstVisibleStateCode = useCallback(() => {
+        return STATE_CODES.find(code => (servicesByStateAndFolder[code]?.folderNames || []).length > 0) || null;
+    }, [servicesByStateAndFolder]);
+
+    const findFirstVisibleFolder = useCallback((stateCode) => {
+        if (!stateCode) return null;
+        return servicesByStateAndFolder[stateCode]?.folderNames?.[0] || null;
+    }, [servicesByStateAndFolder]);
+
+    const findFirstVisibleService = useCallback((stateCode, folderName) => {
+        if (!stateCode || !folderName) return null;
+        return servicesByStateAndFolder[stateCode]?.folders?.[folderName]?.[0] || null;
+    }, [servicesByStateAndFolder]);
+
+    const findFirstExpandableLayerKey = useCallback((service) => {
+        if (!service) return null;
+        const rawLayers = serviceLayers[service.key]?.length > 0 ? serviceLayers[service.key] : (service.layers || []);
+        const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+
+        const findInNodes = (nodes) => {
+            for (const node of nodes || []) {
+                if (node?.type === 'Group Layer' && Array.isArray(node.children) && node.children.length > 0) {
+                    return `${service.key}-${node.id}`;
+                }
+                const nested = findInNodes(node?.children || []);
+                if (nested) return nested;
+            }
+            return null;
+        };
+
+        return findInNodes(layerTree);
+    }, [serviceLayers]);
+
+    useEffect(() => {
+        if (isOnboardingOpen) {
+            onboardingSnapshotRef.current = {
+                searchKeyword,
+                searchResult,
+                currentPath,
+                showAddedOnly,
+                expandedStates,
+                expandedFolders,
+                expandedServices,
+                expandedLayers,
+            };
+
+            setSearchKeyword('');
+            setSearchResult(null);
+            setCurrentPath({ stateCode: null, folder: null });
+            setShowAddedOnly(false);
+            setExpandedStates(new Set());
+            setExpandedFolders(new Set());
+            setExpandedServices(new Set());
+            setExpandedLayers(new Set());
+            setServiceInfoOpenKey(null);
+            return;
+        }
+
+        const snapshot = onboardingSnapshotRef.current;
+        if (!snapshot) return;
+
+        setSearchKeyword(snapshot.searchKeyword);
+        setSearchResult(snapshot.searchResult);
+        setCurrentPath(snapshot.currentPath);
+        setShowAddedOnly(snapshot.showAddedOnly);
+        setExpandedStates(snapshot.expandedStates);
+        setExpandedFolders(snapshot.expandedFolders);
+        setExpandedServices(snapshot.expandedServices);
+        setExpandedLayers(snapshot.expandedLayers);
+        onboardingSnapshotRef.current = null;
+    }, [isOnboardingOpen]);
+
+    useEffect(() => {
+        if (!isOnboardingOpen) return;
+
+        const stateCode = findFirstVisibleStateCode();
+        const folderName = findFirstVisibleFolder(stateCode);
+        const service = findFirstVisibleService(stateCode, folderName);
+        const onboardingFolderName = findFirstVisibleFolder(onboardingStateCode);
+        const onboardingService = findFirstVisibleService(onboardingStateCode, onboardingFolderName);
+        const expandableLayerKey = findFirstExpandableLayerKey(service);
+
+        if (onboardingStepIndex >= 1 && stateCode) {
+            setExpandedStates(prev => {
+                const next = new Set(prev);
+                next.add(stateCode);
+                return next;
+            });
+        }
+
+        if (onboardingStepIndex >= 2) {
+            setCurrentPath({ stateCode: onboardingStateCode, folder: null });
+            setExpandedFolders(prev => {
+                const next = new Set(prev);
+                if (folderName) {
+                    next.add(folderName);
+                }
+                if (onboardingFolderName) {
+                    next.add(onboardingFolderName);
+                }
+                return next;
+            });
+            setExpandedStates(prev => {
+                const next = new Set(prev);
+                next.add(onboardingStateCode);
+                return next;
+            });
+        }
+
+        if (onboardingStepIndex >= 3 && service) {
+            setCurrentPath({ stateCode: onboardingStateCode, folder: onboardingFolderName || null });
+            setExpandedServices(prev => {
+                const next = new Set(prev);
+                next.add(service.key);
+                return next;
+            });
+            if (onboardingService) {
+                setExpandedServices(prev => {
+                    const next = new Set(prev);
+                    next.add(onboardingService.key);
+                    return next;
+                });
+            }
+        }
+
+        if (onboardingStepIndex >= 6 && expandableLayerKey) {
+            setExpandedLayers(prev => {
+                const next = new Set(prev);
+                next.add(expandableLayerKey);
+                return next;
+            });
+        }
+    }, [
+        isOnboardingOpen,
+        onboardingStepIndex,
+        findFirstVisibleStateCode,
+        findFirstVisibleFolder,
+        findFirstVisibleService,
+        findFirstExpandableLayerKey,
+    ]);
 
     const {
         messages,
@@ -1837,7 +1983,7 @@ function ArcgisUploadPanel({
 
         return (
         <div>
-            <div className="upload-panel-searchbar">
+            <div className="upload-panel-searchbar" data-onboarding-target="arcgis-search-area">
                 <input
                     type="text"
                     value={searchKeyword}
@@ -2152,12 +2298,15 @@ function ArcgisUploadPanel({
             {/* Map loading spinner overlay */}
             {spinnerPortal}
             {/* Upload Panel */}
-            <div className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}`} onContextMenu={e => e.preventDefault()}>
-                <div className="upload-panel-header">
+            <div className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}${isOnboardingOpen ? ' onboarding-locked' : ''}`} onContextMenu={e => e.preventDefault()}>
+                <div className="upload-panel-header" data-onboarding-target="arcgis-state-selector">
                     <h3>Browse ArcGIS Services</h3>
                     <div className="upload-panel-header-actions">
                         <button className="upload-panel-header-close-btn upload-panel-header-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=arcgis-panel', '_blank')}>
                             <FontAwesomeIcon icon={faQuestion} />
+                        </button>
+                        <button className="upload-panel-header-close-btn upload-panel-header-close-btn--play" title="Tutorial" onClick={() => setIsOnboardingOpen(true)}>
+                            <FontAwesomeIcon icon={faPlay} />
                         </button>
                         <button className="upload-panel-header-close-btn" onClick={onClose}>
                             <FontAwesomeIcon icon={faTimes} />
@@ -2169,7 +2318,7 @@ function ArcgisUploadPanel({
                     <>
                         <div className="upload-panel-sticky-toolbar">
                             {renderSearchBar()}
-                            <div className="upload-panel-opacity-slider-row">
+                            <div className="upload-panel-opacity-slider-row" data-onboarding-target="arcgis-opacity-slider">
                                 <label>Layer Opacity:</label>
                                 <input
                                     type="range"
@@ -2241,7 +2390,7 @@ function ArcgisUploadPanel({
                                     </button>
                                 </div>
                             )}
-                        <div className="upload-panel-folder-area" ref={folderAreaRef}>
+                        <div className="upload-panel-folder-area" ref={folderAreaRef} data-onboarding-target="arcgis-folder-area">
                         {searchResult ? (
                             /* ── SEARCH MODE: full filtered tree ── */
                             (() => {
@@ -2254,34 +2403,6 @@ function ArcgisUploadPanel({
                                 ? BUILTIN_FOLDER_NAME.toLowerCase().includes(_lk)
                                 : _matchBuiltinLayers.length > 0;
                             return (<>
-                            {/* Built-in Layers folder — only shown when there are matching results */}
-                            {_showBuiltin && <div>
-                                <div
-                                    className="upload-state-folder"
-                                    onClick={() => {
-                                        setExpandedStates(prev => {
-                                            const newSet = new Set(prev);
-                                            if (newSet.has('__builtin__')) newSet.delete('__builtin__');
-                                            else newSet.add('__builtin__');
-                                            return newSet;
-                                        });
-                                    }}
-                                >
-                                    <span>{BUILTIN_FOLDER_NAME}</span>
-                                </div>
-                                {expandedStates.has('__builtin__') && (
-                                    <div className="upload-state-folder-content">
-                                        {(searchType === 'folder' ? BUILTIN_LAYERS : _matchBuiltinLayers).map(layer => (
-                                            <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
-                                                <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
-                                                    <input type="checkbox" checked={!!areaVisibility[layer.id]} onChange={() => handleAreaCheckbox?.(layer.id)} style={{ marginRight: 4 }} />
-                                                    {layer.label}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>}
                             {STATE_CODES.map(stateCode => {
                                 const stateData = stateFoldersToShow[stateCode];
                                 if (!stateData || stateData.folders.length === 0) return null;
@@ -2335,12 +2456,13 @@ function ArcgisUploadPanel({
                                                                                 onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                                                             >
                                                                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', minWidth: 0, flex: 1 }}>
-                                                                                    <input type="checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
+                                                                                    <input type="checkbox" data-onboarding-target="arcgis-service-checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
                                                                                     {expandedServices.has(service.key) ? '▼' : '►'}
                                                                                     <ArcgisRenameItem value={service.label} displayValue={service.label} onSave={(newLabel) => handleServiceRename(service.key, newLabel)} placeholder="Enter service name..." isFolder={false} disabled={!isAdmin} startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key} onEditingDone={() => setRenamingItem(null)} />
                                                                                 </span>
                                                                                 <button
                                                                                     className="arcgis-service-row-action-btn"
+                                                                                    data-onboarding-target="arcgis-service-info-button"
                                                                                     onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
                                                                                     title="Learn more"
                                                                                 >
@@ -2348,7 +2470,7 @@ function ArcgisUploadPanel({
                                                                                 </button>
                                                                             </div>
                                                                             {expandedServices.has(service.key) && (
-                                                                                <div className="tree-children">
+                                                                                <div className="tree-children" data-onboarding-target="arcgis-layer-tree">
                                                                                     {serviceLayersLoading[service.key] ? (
                                                                                         <div className="upload-panel-layers-loading">Loading layers…</div>
                                                                                     ) : (
@@ -2373,6 +2495,34 @@ function ArcgisUploadPanel({
                                     </div>
                                 );
                             })}
+                            {/* Built-in Layers folder — only shown when there are matching results */}
+                            {_showBuiltin && <div>
+                                <div
+                                    className="upload-state-folder"
+                                    onClick={() => {
+                                        setExpandedStates(prev => {
+                                            const newSet = new Set(prev);
+                                            if (newSet.has('__builtin__')) newSet.delete('__builtin__');
+                                            else newSet.add('__builtin__');
+                                            return newSet;
+                                        });
+                                    }}
+                                >
+                                    <span>{BUILTIN_FOLDER_NAME}</span>
+                                </div>
+                                {expandedStates.has('__builtin__') && (
+                                    <div className="upload-state-folder-content">
+                                        {(searchType === 'folder' ? BUILTIN_LAYERS : _matchBuiltinLayers).map(layer => (
+                                            <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
+                                                <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
+                                                    <input type="checkbox" checked={!!areaVisibility[layer.id]} onChange={() => handleAreaCheckbox?.(layer.id)} style={{ marginRight: 4 }} />
+                                                    {layer.label}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>}
                             </>);})()
                         ) : (
                             /* ── NAVIGATION MODE ── */
@@ -2395,15 +2545,6 @@ function ArcgisUploadPanel({
                             {/* ROOT: list state folders + builtin */}
                             {currentPath.stateCode === null && (
                                 <>
-                                    <div
-                                        className="upload-state-folder"
-                                        onClick={() => setCurrentPath({ stateCode: '__builtin__', folder: '__builtin__' })}
-                                        title="Click to open"
-                                    >
-                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                            <FontAwesomeIcon icon={faFolder} />{BUILTIN_FOLDER_NAME}
-                                        </span>
-                                    </div>
                                     {STATE_CODES.map(stateCode => {
                                         const stateData = stateFoldersToShow[stateCode];
                                         if (!stateData || stateData.folders.length === 0) return null;
@@ -2411,6 +2552,7 @@ function ArcgisUploadPanel({
                                             <div
                                                 key={stateCode}
                                                 className="upload-state-folder"
+                                                data-onboarding-target="arcgis-state-folder"
                                                 onClick={() => handleStateDoubleClick(stateCode)}
                                                 title="Click to open"
                                             >
@@ -2420,6 +2562,16 @@ function ArcgisUploadPanel({
                                             </div>
                                         );
                                     })}
+                                    <div
+                                        className="upload-state-folder"
+                                        data-onboarding-target="arcgis-state-folder"
+                                        onClick={() => setCurrentPath({ stateCode: '__builtin__', folder: '__builtin__' })}
+                                        title="Click to open"
+                                    >
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                            <FontAwesomeIcon icon={faFolder} />{BUILTIN_FOLDER_NAME}
+                                        </span>
+                                    </div>
                                 </>
                             )}
 
@@ -2478,12 +2630,13 @@ function ArcgisUploadPanel({
                                                     onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                                 >
                                                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', minWidth: 0, flex: 1 }}>
-                                                        <input type="checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
+                                                        <input type="checkbox" data-onboarding-target="arcgis-service-checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
                                                         {expandedServices.has(service.key) ? '▼' : '►'}
                                                         <ArcgisRenameItem value={service.label} displayValue={service.label} onSave={(newLabel) => handleServiceRename(service.key, newLabel)} placeholder="Enter service name..." isFolder={false} disabled={!isAdmin} startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key} onEditingDone={() => setRenamingItem(null)} />
                                                     </span>
                                                     <button
                                                         className="arcgis-service-row-action-btn"
+                                                        data-onboarding-target="arcgis-service-info-button"
                                                         onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
                                                         title="Learn more"
                                                     >
@@ -2491,7 +2644,7 @@ function ArcgisUploadPanel({
                                                     </button>
                                                 </div>
                                                 {expandedServices.has(service.key) && (
-                                                    <div className="tree-children">
+                                                    <div className="tree-children" data-onboarding-target="arcgis-layer-tree">
                                                         {serviceLayersLoading[service.key] ? (
                                                             <div className="upload-panel-layers-loading">Loading layers…</div>
                                                         ) : (
@@ -2768,6 +2921,12 @@ function ArcgisUploadPanel({
                 </div>,
                 document.body
             )}
+            <ArcgisUploadPanelOnboarding
+                isOpen={isOnboardingOpen}
+                onClose={() => setIsOnboardingOpen(false)}
+                isPanelCollapsed={!isOpen}
+                onStepChange={setOnboardingStepIndex}
+            />
         </>
     );
 }

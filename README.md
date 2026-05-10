@@ -46,7 +46,7 @@ python manage.py loaddata seed_data.json <br>
 
 ### Usage Instructions
 - Launch the application by running the backend and frontend servers.
-- Access the application via `http://localhost:3000` locally or visit `https://willowy-twilight-157839.netlify.app/` in your browser.
+- Access the application via `http://localhost:3000` locally or visit `https://rwc-living-atlas.netlify.app/` in your browser.
 - Log in or create an account to contribute data.
 - Use the map interface to explore datasets or upload new geospatial information.
 - Click on 'Add Custom Filters' button add a new filter by tag

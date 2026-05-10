@@ -73,10 +73,14 @@
 .upload-panel-header-close-btn {
     width: 28px;
     height: 28px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
     background: #fff;
     border: 1px solid #bfd0e2;
     color: #27425d !important;
-    font-size: 18px;
+    font-size: 13px;
     cursor: pointer;
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -84,6 +88,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 .upload-panel-header-close-btn:hover {
@@ -94,6 +100,10 @@
 
 .upload-panel-header-close-btn--help {
     font-size: 13px;
+}
+
+.upload-panel-header-close-btn--play svg {
+    transform: translateX(1px);
 }
 
 .upload-panel-header-actions {
@@ -1133,4 +1143,14 @@
 
 .arcgis-service-row-action-btn:active {
     background: rgba(90, 122, 142, 0.15);
+}
+
+/* Onboarding locked state - disables interactions during tutorial */
+.upload-panel.onboarding-locked * {
+    pointer-events: none;
+}
+
+.upload-panel.onboarding-locked .upload-panel-header-close-btn--play,
+.upload-panel.onboarding-locked .upload-panel-header-close-btn--help {
+    pointer-events: auto;
 }
