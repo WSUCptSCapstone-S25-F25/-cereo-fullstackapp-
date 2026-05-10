@@ -88,14 +88,8 @@
   /* Always reserve scrollbar space so grid width stays stable when scrollbar appears */
   scrollbar-gutter: stable;
   display: grid;
-  /*
-   * Card width = 20vw (viewport-relative, fixed to screen size).
-   * This means card absolute size never changes when the panel is drag-resized,
-   * because vw is tied to the viewport, not to the panel.
-   * auto-fill adds/removes columns automatically as the panel grows/shrinks.
-   * Panel default width is computed in JS as: 2 cols × 20vw + gap + padding.
-   */
-  grid-template-columns: repeat(auto-fill, 20vw);
+  /* Always keep two columns and let each card size adapt to panel width. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-gap: 16px;
   padding: 16px;
   justify-content: start;

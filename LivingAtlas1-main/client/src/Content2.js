@@ -83,17 +83,16 @@ function Content2(props) {
                 ? e.clientX - startX.current
                 : startX.current - e.clientX;
             let newWidth = startWidth.current + dx;
-            // Derive min/max from the same card size formula used in CSS:
-            // card = 20vw, gap = 16px, padding = 32px, scrollbar-gutter ≈ 20px
-            // min = 1 col: 1 × 20vw + 0 gaps + padding + gutter
-            // max = 4 col: 4 × 20vw + 3 gaps + padding + gutter
-            const CARD_VW = 0.20;
+            // Keep two responsive columns: derive width limits from desired
+            // per-card min/max sizes under a fixed 2-column grid.
+            const COLUMNS = 2;
+            const CARD_MIN = 170;
+            const CARD_MAX = 360;
             const GRID_GAP = 16;
             const GRID_PADDING = 32;
             const SCROLLBAR_GUTTER = 20;
-            const vw = window.innerWidth;
-            const minWidth = Math.max(250, Math.floor(vw * CARD_VW * 1 + GRID_PADDING + SCROLLBAR_GUTTER));
-            const maxWidth = Math.ceil(vw * CARD_VW * 4 + GRID_GAP * 3 + GRID_PADDING + SCROLLBAR_GUTTER);
+            const minWidth = Math.max(300, Math.floor(COLUMNS * CARD_MIN + (COLUMNS - 1) * GRID_GAP + GRID_PADDING + SCROLLBAR_GUTTER));
+            const maxWidth = Math.ceil(COLUMNS * CARD_MAX + (COLUMNS - 1) * GRID_GAP + GRID_PADDING + SCROLLBAR_GUTTER);
             newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
             setCardPanelWidth?.(newWidth);
         };
