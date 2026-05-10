@@ -17,9 +17,10 @@ import ArcgisRenameItem from './ArcgisRenameItem';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import ClearAllLayersButton from './ClearAllLayersButton';
+import CustomLayersPanelOnboarding from './OnboardingCustomLayersPanel';
 
 function CustomLayersPanel({
     isOpen,
@@ -63,6 +64,9 @@ function CustomLayersPanel({
     const { currentIndex: navIndex, total: matchTotal, currentMatchId, goToNext, goToPrev, initNav, resetNav } = useSearchNav(matchList);
     const [showAddedOnly, setShowAddedOnly] = useState(false);
     const statusTimer = useRef(null);
+    const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+    const [onboardingStepIndex, setOnboardingStepIndex] = useState(0);
+    const onboardingSnapshotRef = useRef(null);
 
     const prevCheckedLayerIds = useRef({});
     const activeSearchRef = useRef(null); // { keyword, searchType } — tracks active search for auto re-run when layers load
@@ -160,6 +164,117 @@ function CustomLayersPanel({
         }
     });
     const folderNames = Object.keys(servicesByFolder).sort((a, b) => (folderFirstOrder[a] ?? 0) - (folderFirstOrder[b] ?? 0));
+
+    const findFirstRootFolder = useCallback(() => {
+        const rootFolders = folderNames.filter(folder => !folder.includes('/'));
+        return rootFolders.find(folder => (servicesByFolder[folder] || []).length > 0) || rootFolders[0] || folderNames[0] || null;
+    }, [folderNames, servicesByFolder]);
+
+    const findFirstServiceInFolder = useCallback((folder) => {
+        if (!folder) return null;
+        return servicesByFolder[folder]?.[0] || null;
+    }, [servicesByFolder]);
+
+    const findFirstExpandableLayerKey = useCallback((service) => {
+        if (!service) return null;
+        const rawLayers = serviceLayers[service.key]?.length > 0 ? serviceLayers[service.key] : [];
+        const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+
+        const findInNodes = (nodes) => {
+            for (const node of nodes || []) {
+                if (node?.type === 'Group Layer' && Array.isArray(node.children) && node.children.length > 0) {
+                    return `${service.key}-${node.id}`;
+                }
+                const nested = findInNodes(node?.children || []);
+                if (nested) return nested;
+            }
+            return null;
+        };
+
+        return findInNodes(layerTree);
+    }, [serviceLayers]);
+
+    useEffect(() => {
+        if (isOnboardingOpen) {
+            onboardingSnapshotRef.current = {
+                searchKeyword,
+                searchType,
+                searchResult,
+                currentPath,
+                showAddedOnly,
+                expandedFolders,
+                expandedServices,
+                expandedLayers,
+            };
+
+            setSearchKeyword('');
+            setSearchType('any');
+            setSearchResult(null);
+            setCurrentPath('');
+            setShowAddedOnly(false);
+            setExpandedFolders(new Set());
+            setExpandedServices(new Set());
+            setExpandedLayers(new Set());
+            setServiceInfoOpenKey(null);
+            return;
+        }
+
+        const snapshot = onboardingSnapshotRef.current;
+        if (!snapshot) return;
+
+        setSearchKeyword(snapshot.searchKeyword);
+        setSearchType(snapshot.searchType);
+        setSearchResult(snapshot.searchResult);
+        setCurrentPath(snapshot.currentPath);
+        setShowAddedOnly(snapshot.showAddedOnly);
+        setExpandedFolders(snapshot.expandedFolders);
+        setExpandedServices(snapshot.expandedServices);
+        setExpandedLayers(snapshot.expandedLayers);
+        onboardingSnapshotRef.current = null;
+    }, [isOnboardingOpen]);
+
+    useEffect(() => {
+        if (!isOnboardingOpen) return;
+
+        const firstFolder = findFirstRootFolder();
+        const firstService = findFirstServiceInFolder(firstFolder);
+        const expandableLayerKey = findFirstExpandableLayerKey(firstService);
+
+        if (onboardingStepIndex >= 2) {
+            setCurrentPath('');
+        }
+
+        if (onboardingStepIndex >= 3 && firstFolder) {
+            setCurrentPath(firstFolder);
+            setExpandedFolders(prev => {
+                const next = new Set(prev);
+                next.add(firstFolder);
+                return next;
+            });
+        }
+
+        if (onboardingStepIndex >= 5 && firstService) {
+            setExpandedServices(prev => {
+                const next = new Set(prev);
+                next.add(firstService.key);
+                return next;
+            });
+        }
+
+        if (onboardingStepIndex >= 6 && expandableLayerKey) {
+            setExpandedLayers(prev => {
+                const next = new Set(prev);
+                next.add(expandableLayerKey);
+                return next;
+            });
+        }
+    }, [
+        isOnboardingOpen,
+        onboardingStepIndex,
+        findFirstRootFolder,
+        findFirstServiceInFolder,
+        findFirstExpandableLayerKey,
+    ]);
 
     // --- Search handler ---
     const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
@@ -1025,13 +1140,14 @@ function CustomLayersPanel({
     }
 
     return (
-        <div className={`custom-layers-panel${splitBottom ? ' custom-layers-panel--split-bottom' : ''}`}
+        <div className={`custom-layers-panel${splitBottom ? ' custom-layers-panel--split-bottom' : ''}${isOnboardingOpen ? ' onboarding-locked' : ''}`}
              onContextMenu={e => e.preventDefault()}>
             <div className="custom-layers-panel-header">
                 <h3>Custom Layers</h3>
                 <div className="custom-layers-panel-header-actions">
                     <button
                         className="custom-layers-panel-new-folder-btn"
+                        data-onboarding-target="custom-layers-new-folder-button"
                         onClick={handleCreateFolder}
                         title="New Folder"
                     >
@@ -1039,6 +1155,9 @@ function CustomLayersPanel({
                     </button>
                     <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
                         <FontAwesomeIcon icon={faQuestion} />
+                    </button>
+                    <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--play" title="Tutorial" onClick={() => setIsOnboardingOpen(true)}>
+                        <FontAwesomeIcon icon={faPlay} />
                     </button>
                     <button className="custom-layers-panel-close-btn" onClick={onClose}>
                         <FontAwesomeIcon icon={faTimes} />
@@ -1049,7 +1168,7 @@ function CustomLayersPanel({
             {/* Sticky toolbar: search bar, opacity, show-added-only */}
             <div className="custom-layers-panel-sticky-toolbar">
                 {/* Search bar */}
-                <div className="upload-panel-searchbar">
+                <div className="upload-panel-searchbar" data-onboarding-target="custom-layers-search-area">
                     <input
                         type="text"
                         value={searchKeyword}
@@ -1090,7 +1209,7 @@ function CustomLayersPanel({
                 )}
 
                 {/* Opacity slider */}
-                <div className="upload-panel-opacity-slider-row">
+                <div className="upload-panel-opacity-slider-row" data-onboarding-target="custom-layers-opacity-slider">
                     <label>Layer Opacity:</label>
                     <input
                         type="range"
@@ -1182,7 +1301,7 @@ function CustomLayersPanel({
                             </button>
                         </div>
                     )}
-                <div className="custom-layers-panel-folder-area">
+                <div className="custom-layers-panel-folder-area" data-onboarding-target="custom-layers-folder-area">
                     {/* Breadcrumb — shown when inside a folder in navigation mode */}
                     {!searchResult && currentPath !== '' && (
                         <div
@@ -1300,6 +1419,7 @@ function CustomLayersPanel({
                                                 <div key={service.key} style={{ opacity: isServiceDragging ? 0.4 : 1 }}>
                                                     <div
                                                         className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
+                                                        data-onboarding-target="custom-layers-service-row"
                                                         data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                         onClick={() => handleServiceClick(service.key)}
                                                         onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
@@ -1345,6 +1465,7 @@ function CustomLayersPanel({
                                                         )}
                                                         <button
                                                             className="custom-layers-service-row-action-btn"
+                                                            data-onboarding-target="custom-layers-service-info-button"
                                                             onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
                                                             title="Learn more"
                                                         >
@@ -1352,7 +1473,7 @@ function CustomLayersPanel({
                                                         </button>
                                                     </div>
                                                     {isServiceExpanded && layerTree.length > 0 && (
-                                                        <div className="tree-children" style={{ paddingLeft: 16 }}>
+                                                        <div className="tree-children" style={{ paddingLeft: 16 }} data-onboarding-target="custom-layers-layer-tree">
                                                             {layerTree.map(node =>
                                                                 renderLayerNode(node, service, checkedIds, allFeatureLayers)
                                                             )}
@@ -1573,6 +1694,13 @@ function CustomLayersPanel({
                     </div>
                 </div>
             )}
+
+            <CustomLayersPanelOnboarding
+                isOpen={isOnboardingOpen}
+                onClose={() => setIsOnboardingOpen(false)}
+                isPanelCollapsed={!isOpen}
+                onStepChange={setOnboardingStepIndex}
+            />
         </div>
     );
 }
