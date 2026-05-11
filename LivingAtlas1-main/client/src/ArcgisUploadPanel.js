@@ -2698,18 +2698,6 @@ function ArcgisUploadPanel({
                                             </div>
                                         </div>
                                     ))}
-                                    <div>
-                                        <div
-                                            className="upload-folder"
-                                            onClick={() => setCurrentPath({ stateCode: currentPath.stateCode, folder: '__builtin__' })}
-                                            title="Click to open"
-                                        >
-                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                                <FontAwesomeIcon icon={faFolder} />
-                                                {BUILTIN_FOLDER_NAME}
-                                            </span>
-                                        </div>
-                                    </div>
                                     <div className="upload-panel-attribution" style={{ marginTop: 4, marginBottom: 2 }}>
                                         Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[currentPath.stateCode]?.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[currentPath.stateCode]?.name} ArcGIS Services</a>
                                     </div>
