@@ -4,7 +4,7 @@ import './ChatbotWidget.css';
 
 const WELCOME_MESSAGE = {
   role: 'assistant',
-  text: 'RWC Living Atlas Helper is not complete yet and is currently unavailable.',
+  text: 'RWC Living Atlas Helper is currently under development and is currently unavailable.',
 };
 
 export default function ChatbotWidget() {
