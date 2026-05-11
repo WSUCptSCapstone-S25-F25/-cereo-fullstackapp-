@@ -19,6 +19,7 @@ import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
 import ChangelogModal from './ChangelogModal';
 import { fetchUserPreferences, saveUserPreferences } from './userPreferencesApi';
+import ChatbotWidget from './ChatbotWidget';
 import {
     readPendingLocalPreferences,
     writePendingLocalPreferences,
@@ -606,6 +607,9 @@ function Home(props) {
 
             {/* Changelog Modal */}
             <ChangelogModal isOpen={isChangelogOpen} onClose={closeChangelog} />
+
+            {/* AI Chatbot floating widget */}
+            <ChatbotWidget />
 
         </div>
     );
