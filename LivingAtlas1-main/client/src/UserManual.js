@@ -39,6 +39,7 @@ import {
   faRotateLeft,
   faRotateRight,
   faTrash,
+  faEllipsisV,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart, faFolder } from '@fortawesome/free-regular-svg-icons';
 import './Card.css';
@@ -63,6 +64,7 @@ const SECTIONS = [
   { id: 'arcgis-picker',  label: 'ArcGIS Picker Modal' },
   { id: 'detail-view',   label: 'Card Detail View' },
   { id: 'arcgis-panel',     label: 'ArcGIS Upload Panel' },
+  { id: 'service-layer-info', label: 'Service / Layer Info Modal' },
   { id: 'custom-layers',    label: 'Custom Layers Panel' },
   { id: 'basemap-panel',     label: 'Basemap Panel' },
   { id: 'map-controls',      label: 'Map Controls' },
@@ -124,6 +126,7 @@ function UserManual() {
                 'add-card':       'Submit a new research entry with location, description, links, images, files, and optional ArcGIS service associations.',
                 'arcgis-picker':  'Browse and select ArcGIS services and layers to link directly to a card — opened from the Add Card form.',
                 'arcgis-panel':   'Browse and toggle ArcGIS REST map layers organized by state, folder, and service.',
+                'service-layer-info': 'Detailed guide for Service/Layer Info modal features: metadata, opacity, historical filters, links, and layer fields.',
                 'custom-layers':  'Manage your personal saved layers with custom folders, drag-and-drop ordering, and pinned auto-load items.',
                 'basemap-panel':   'Switch between six Mapbox map styles while preserving your ArcGIS layers, camera position, and zoom level.',
                 'map-controls':    'All interactive buttons on the map canvas — search, fullscreen, zoom, compass, geolocate, draw, and more.',
@@ -2067,11 +2070,11 @@ function UserManual() {
                 Each service or layer is shown as a row with a checkbox and name.
                 <strong> Right-click</strong> any row to open a context menu:
                 <br />• <strong>Rename</strong> — rename the service (admin only)
-                <br />• <strong>Learn More</strong> — open a popup with metadata from the ArcGIS REST endpoint (description, extent, layer details)
+                <br />• <strong>Learn More</strong> — open the Service / Layer Info modal with ArcGIS REST metadata
                 <br />• <strong>Pin (Auto-load)</strong> — pin the item so it loads automatically every time the panel opens; right-click again and choose <strong>Unpin</strong> to remove it
               </p>
               <span className="um-feature-note">
-                Check the checkbox next to a layer to toggle its visibility on the map.
+                You can also click the <strong>three-dot button</strong> on a service row (same as Learn More) to open Service info directly.
               </span>
             </div>
           </div>
@@ -2152,8 +2155,12 @@ function UserManual() {
                       <div className="arcgis-service-info-row"><strong>Service Description:</strong>
                         <div className="arcgis-service-info-description">WA Dept of Ecology hydrography layer.</div>
                       </div>
-                      <div className="arcgis-service-info-row"><strong>Spatial Reference:</strong> WKID 4326</div>
+                      <div className="arcgis-service-info-row"><strong>Service Item Id:</strong> 8f6b3e4f2a1c</div>
                       <div className="arcgis-service-info-row"><strong>Copyright Text:</strong> © WA Ecology 2024</div>
+                      <div className="arcgis-service-info-row"><strong>Spatial Reference:</strong> WKID 4326</div>
+                      <div className="arcgis-service-info-row"><strong>Service Opacity:</strong> 70%</div>
+                      <div className="arcgis-service-info-row"><strong>Historical View:</strong> Date Range / Timeline</div>
+                      <div className="arcgis-service-info-row"><strong>Layers / Sublayers:</strong> clickable layer links</div>
                       <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #ddd', fontSize: '12px', color: '#1976d2' }}>View ArcGIS Service Page →</div>
                     </div>
                   </div>
@@ -2163,12 +2170,245 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Service / Layer Info Modal</p>
               <p className="um-feature-desc">
-                Right-clicking a service or layer row and selecting <strong>Learn More</strong>,
-                or clicking the info (ℹ) button on a row, opens a floating info panel beside
-                the ArcGIS Upload Panel. It shows the service description, spatial reference,
-                copyright text, and a direct link to the ArcGIS REST endpoint. A similar
-                panel opens for individual layers showing their geometry type, description,
-                and a link to the layer endpoint.
+                This modal now has a dedicated tab in the manual with complete coverage of
+                each internal feature, including service metadata, service opacity,
+                historical filters (Date Range and Timeline), Layers / Sublayers links,
+                and layer-level metadata fields.
+              </p>
+              <p className="um-feature-desc" style={{ marginTop: '8px' }}>
+                Open the detailed guide here:{' '}
+                <button
+                  type="button"
+                  className="um-inline-link"
+                  onClick={() => navTo('service-layer-info')}
+                >
+                  Service / Layer Info Modal
+                </button>
+                .
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'service-layer-info' && (
+      <section className="um-section um-section--service-layer-info">
+        <h2>Service / Layer Info Modal</h2>
+        <p className="um-section-desc">
+          This tab documents the floating info modal used by the ArcGIS Upload Panel.
+          The modal appears on the right side and has two variants: <strong>Service info</strong>
+          and <strong>Layer Info</strong>. The content below follows the current implementation
+          in ArcGIS Upload Panel code.
+        </p>
+
+        <div className="um-feature-list">
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+                <div className="layer-context-menu" style={{ position: 'static', boxShadow: 'none' }}>
+                  <button style={{ pointerEvents: 'none' }}>Learn More</button>
+                </div>
+                <button className="arcgis-service-row-action-btn" style={{ pointerEvents: 'none' }} title="Learn more">
+                  <FontAwesomeIcon icon={faEllipsisV} />
+                </button>
+                <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none' }}>
+                  WA Major Rivers (Layer 2)
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">1) Ways to Open the Modal</p>
+              <p className="um-feature-desc">
+                There are three entry paths:
+                <br />• Right-click a service or layer row and choose <strong>Learn More</strong>.
+                <br />• Click the service row <strong>three-dot Learn more button</strong>.
+                <br />• In Service info, click a <strong>Layers / Sublayers</strong> link to open Layer Info directly.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '280px', alignItems: 'stretch' }}>
+                <div className="arcgis-service-info-modal" style={{ position: 'static' }}>
+                  <div className="arcgis-service-info-modal-header">
+                    <strong style={{ fontSize: '13px' }}>Service info</strong>
+                    <button type="button" className="arcgis-service-info-modal-close" style={{ pointerEvents: 'none' }}>&times;</button>
+                  </div>
+                  <div className="arcgis-service-info-modal-content" style={{ pointerEvents: 'none' }}>
+                    <div className="arcgis-service-info-row"><strong>Loading state:</strong> Loading service info…</div>
+                    <div className="arcgis-service-info-row"><strong>Empty state:</strong> No information available.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">2) Header, Close, Loading, and Empty States</p>
+              <p className="um-feature-desc">
+                The header title changes by mode (<strong>Service info</strong> vs <strong>Layer Info: &lt;name&gt;</strong>),
+                and the <strong>×</strong> button closes the current modal. While fetching REST metadata,
+                loading text is shown. If the endpoint returns no useful data, an empty message
+                is displayed and an endpoint link is still provided.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '280px', alignItems: 'stretch' }}>
+                <div className="arcgis-service-info-modal" style={{ position: 'static' }}>
+                  <div className="arcgis-service-info-modal-content" style={{ pointerEvents: 'none' }}>
+                    <div className="arcgis-service-info-row"><strong>Service Description:</strong> Hydrography base service.</div>
+                    <div className="arcgis-service-info-row"><strong>Service Item Id:</strong> 8f6b3e4f2a1c</div>
+                    <div className="arcgis-service-info-row"><strong>Copyright Text:</strong> © WA Ecology 2024</div>
+                    <div className="arcgis-service-info-row"><strong>Spatial Reference:</strong> WKID 4326</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">3) Service Metadata Block</p>
+              <p className="um-feature-desc">
+                Service info normalizes and shows core metadata from ArcGIS REST:
+                description/serviceDescription, service item id, copyright text,
+                and spatial reference (latest WKID, WKID, or WKT fallback).
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ minWidth: '280px' }}>
+                <div className="arcgis-service-info-row service-info-opacity-row" style={{ width: '100%' }}>
+                  <strong>Service Opacity:</strong>
+                  <div className="service-info-opacity-controls" style={{ flex: 1 }}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value="0.7"
+                      readOnly
+                      className="service-info-opacity-slider"
+                      style={{ background: 'linear-gradient(to right, #27425d 70%, #d8e1ea 70%)' }}
+                    />
+                    <span className="service-info-opacity-value">70%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">4) Per-Service Opacity Control</p>
+              <p className="um-feature-desc">
+                The <strong>Service Opacity</strong> slider adjusts map opacity only for the active
+                service key. Value is tracked per service in modal state and applied live to map layers.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px', gap: '8px' }}>
+                <div className="service-info-time-tabs" style={{ pointerEvents: 'none' }}>
+                  <button className="service-info-time-tab active">Date Range</button>
+                  <button className="service-info-time-tab">Timeline</button>
+                </div>
+                <div className="service-info-time-row" style={{ pointerEvents: 'none' }}>
+                  <label className="service-info-time-label">From</label>
+                  <input type="date" className="service-info-time-input" readOnly />
+                  <label className="service-info-time-label">To</label>
+                  <input type="date" className="service-info-time-input" readOnly />
+                </div>
+                <div className="service-info-time-actions" style={{ pointerEvents: 'none' }}>
+                  <button className="service-info-time-btn">Apply</button>
+                  <button className="service-info-time-btn service-info-time-btn-clear">Clear</button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">5) Historical View: Date Range + Timeline</p>
+              <p className="um-feature-desc">
+                Historical View contains two tabs:
+                <br />• <strong>Date Range</strong>: select From/To dates, Apply to filter, Clear to remove.
+                <br />• <strong>Timeline</strong>: year and month sliders with draggable handles.
+                <br />When active, the modal shows a time-filter summary line with the current date span.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', minWidth: '280px', gap: '8px' }}>
+                <div className="arcgis-service-info-row" style={{ width: '100%' }}>
+                  <strong>Layers / Sublayers:</strong>
+                  <div className="arcgis-service-info-layer-links" style={{ marginTop: '6px' }}>
+                    <div className="arcgis-service-info-layer-link-row">
+                      <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none' }}>Hydrology</button>
+                    </div>
+                    <div className="arcgis-service-info-layer-link-row" style={{ marginLeft: 12 }}>
+                      <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none' }}>Rivers</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">6) Layers / Sublayers Link Tree</p>
+              <p className="um-feature-desc">
+                Service info renders a hierarchical layer tree. Clicking a layer link opens
+                the corresponding Layer Info modal for that layer id. This is the fastest
+                path from service-level metadata to layer-level details.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '280px', alignItems: 'stretch' }}>
+                <div className="arcgis-service-info-modal" style={{ position: 'static' }}>
+                  <div className="arcgis-service-info-modal-header">
+                    <strong style={{ fontSize: '13px' }}>Layer Info: WA Rivers</strong>
+                    <button type="button" className="arcgis-service-info-modal-close" style={{ pointerEvents: 'none' }}>&times;</button>
+                  </div>
+                  <div className="arcgis-service-info-modal-content" style={{ pointerEvents: 'none' }}>
+                    <div className="arcgis-service-info-row"><strong>Layer Name:</strong> WA Rivers</div>
+                    <div className="arcgis-service-info-row"><strong>Geometry Type:</strong> esriGeometryPolyline</div>
+                    <div className="arcgis-service-info-row"><strong>Min Scale:</strong> 24,000</div>
+                    <div className="arcgis-service-info-row"><strong>Max Scale:</strong> 1,000,000</div>
+                    <div className="arcgis-service-info-row"><strong>Default Visibility:</strong> Visible</div>
+                    <div className="arcgis-service-info-row"><strong>Has Attachments:</strong> No</div>
+                    <div className="arcgis-service-info-row"><strong>Fields:</strong> 18 field(s)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">7) Layer Info Fields (Detailed)</p>
+              <p className="um-feature-desc">
+                Layer Info includes all available layer-level fields from REST metadata:
+                description, layer name, geometry type, copyright text,
+                min/max scale, default visibility, attachment support,
+                and fields summary (count + first few field names).
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                <div style={{ fontSize: '12px', color: '#1976d2' }}>View ArcGIS Service Page →</div>
+                <div style={{ fontSize: '12px', color: '#1976d2' }}>View ArcGIS Layer Page →</div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">8) Endpoint Links and Data Source Verification</p>
+              <p className="um-feature-desc">
+                Both modal types provide direct links to the corresponding ArcGIS REST pages.
+                Use these links to verify source metadata, inspect native JSON responses,
+                and cross-check map behavior against upstream service/layer definitions.
               </p>
             </div>
           </div>

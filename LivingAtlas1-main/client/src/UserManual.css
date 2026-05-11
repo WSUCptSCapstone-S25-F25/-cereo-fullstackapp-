@@ -726,4 +726,13 @@ nav.um-nav-sidebar {
   overflow-y: visible !important;
 }
 
+/* Keep Service/Layer Info tab demo layers below the main navbar (navbar z-index: 1000). */
+.um-section--service-layer-info .arcgis-service-info-modal,
+.um-section--service-layer-info .layer-context-menu,
+.um-section--service-layer-info .service-info-time-filter,
+.um-section--service-layer-info .service-info-time-tabs,
+.um-section--service-layer-info .service-info-timeline-handle-icon {
+  z-index: 900 !important;
+}
+
 
