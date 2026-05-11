@@ -1020,34 +1020,71 @@
 
 .service-info-timeline-slider {
     flex: 1;
-    height: 6px;
+    height: 4px;
+    width: 100%;
     -webkit-appearance: none;
     appearance: none;
-    border-radius: 3px;
+    border-radius: 2px;
     outline: none;
     cursor: pointer;
+}
+
+.service-info-timeline-slider-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
 }
 
 .service-info-timeline-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 14px;
-    height: 14px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: #fff;
-    border: 2px solid #27425d;
+    background: transparent;
+    border: none;
     cursor: pointer;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    box-shadow: none;
 }
 
 .service-info-timeline-slider::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: #fff;
-    border: 2px solid #27425d;
+    background: transparent;
+    border: none;
     cursor: pointer;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    box-shadow: none;
+}
+
+.service-info-timeline-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: transparent;
+}
+
+.service-info-timeline-handle-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-56%);
+    font-size: 13px;
+    color: #5f7f9e;
+    line-height: 1;
+    pointer-events: auto;
+    z-index: 2;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+.service-info-timeline-handle-icon svg {
+    transform: scaleX(0.58) scaleY(1.75);
+    transform-origin: center;
+}
+
+.service-info-timeline-handle-icon:active {
+    cursor: grabbing;
 }
 
 .service-info-timeline-value {
@@ -1058,31 +1095,68 @@
     font-size: 11px;
 }
 
-.service-info-timeline-endpoints {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: #999;
-    padding: 0 2px;
+.service-info-timeline-ticks {
+    display: grid;
+    align-items: center;
+    gap: 0;
     margin-top: -2px;
+    margin-left: 40px;
+    margin-right: 32px;
+}
+
+.service-info-timeline-tick {
+    justify-self: center;
+    width: 1px;
+    height: 7px;
+    background: #9fb2c6;
+    opacity: 0.95;
+}
+
+.service-info-timeline-year-labels {
+    display: grid;
+    gap: 0;
+    margin-top: 2px;
+    margin-left: 40px;
+    margin-right: 32px;
+}
+
+.service-info-timeline-year-labels span {
+    justify-self: center;
+    font-size: 10px;
+    color: #7a8c9f;
+    line-height: 1;
 }
 
 .service-info-timeline-months {
+    position: relative;
+    height: 18px;
+    margin-top: 2px;
+    margin-left: 40px;
+    margin-right: 38px;
+}
+
+.service-info-timeline-month-item {
+    position: absolute;
+    transform: translateX(-50%);
     display: flex;
-    justify-content: space-between;
-    font-size: 9px;
-    color: #aaa;
-    padding: 0 2px;
-    margin-top: -2px;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
 }
 
-.service-info-timeline-months span {
-    flex: 1;
-    text-align: center;
+.service-info-timeline-month-tick {
+    width: 1px;
+    height: 7px;
+    background: #9fb2c6;
+    opacity: 0.95;
 }
 
-.service-info-timeline-months span:first-child { text-align: left; }
-.service-info-timeline-months span:last-child  { text-align: right; }
+.service-info-timeline-month-label {
+    font-size: 10px;
+    color: #7a8c9f;
+    line-height: 1;
+    white-space: nowrap;
+}
 
 .arcgis-service-info-layer-links {
     margin-top: 6px;

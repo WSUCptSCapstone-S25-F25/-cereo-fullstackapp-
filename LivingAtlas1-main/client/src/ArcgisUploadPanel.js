@@ -39,7 +39,7 @@ import {
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faSquare } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import {
     useArcgisLoadingMessages,
@@ -87,7 +87,7 @@ const BUILTIN_LAYERS = [
 ];
 const BUILTIN_FOLDER_NAME = 'Built-in Layers';
 const EARLIEST_TIMELINE_YEAR = 2000;
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_VALUES = [1,2,3,4,5,6,7,8,9,10,11,12];
 const LEGACY_PINNED_STORAGE_KEY = 'arcgis_pinned_items';
 
 function normalizePinnedItems(items) {
@@ -2936,8 +2936,17 @@ function ArcgisUploadPanel({
                                         const activeTab = serviceTimeTabByKey[sKey] || 'range';
                                         const tl = serviceTimelineByKey[sKey] || {};
                                         const nowYear = new Date().getFullYear();
+                                        const yearValues = Array.from(
+                                            { length: nowYear - EARLIEST_TIMELINE_YEAR + 1 },
+                                            (_, i) => EARLIEST_TIMELINE_YEAR + i
+                                        );
                                         const tlYear = tl.year != null ? tl.year : null;
                                         const tlMonth = tl.month != null ? tl.month : null; // 1-based
+                                        const yearForSlider = tlYear != null ? tlYear : nowYear;
+                                        const monthForSlider = tlMonth != null ? tlMonth : 1;
+                                        const yearSpan = Math.max(1, nowYear - EARLIEST_TIMELINE_YEAR);
+                                        const yearPointerPct = ((yearForSlider - EARLIEST_TIMELINE_YEAR) / yearSpan) * 100;
+                                        const monthPointerPct = ((monthForSlider - 1) / 11) * 100;
 
                                         const applyTimeline = (year, month) => {
                                             if (year == null) { applyServiceTimeFilter(sKey, null); return; }
@@ -2948,6 +2957,49 @@ function ArcgisUploadPanel({
                                                 ? new Date(year, month, 0, 23, 59, 59).getTime()
                                                 : new Date(year, 11, 31, 23, 59, 59).getTime();
                                             applyServiceTimeFilter(sKey, { startMs, endMs });
+                                        };
+
+                                        const startTimelineIconDrag = (startEvent, wrapEl, min, max, onValue) => {
+                                            if (!wrapEl) return;
+
+                                            const clamp = (val, low, high) => Math.min(high, Math.max(low, val));
+                                            const resolveClientX = (evt) => {
+                                                if (evt.touches && evt.touches.length > 0) return evt.touches[0].clientX;
+                                                if (evt.changedTouches && evt.changedTouches.length > 0) return evt.changedTouches[0].clientX;
+                                                return evt.clientX;
+                                            };
+
+                                            const updateFromClientX = (clientX) => {
+                                                const rect = wrapEl.getBoundingClientRect();
+                                                if (!rect.width) return;
+                                                const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
+                                                const nextValue = Math.round(min + ratio * (max - min));
+                                                onValue(clamp(nextValue, min, max));
+                                            };
+
+                                            const onMouseMove = (moveEvent) => {
+                                                moveEvent.preventDefault();
+                                                updateFromClientX(resolveClientX(moveEvent));
+                                            };
+
+                                            const onTouchMove = (moveEvent) => {
+                                                moveEvent.preventDefault();
+                                                updateFromClientX(resolveClientX(moveEvent));
+                                            };
+
+                                            const stopDrag = () => {
+                                                window.removeEventListener('mousemove', onMouseMove);
+                                                window.removeEventListener('mouseup', stopDrag);
+                                                window.removeEventListener('touchmove', onTouchMove);
+                                                window.removeEventListener('touchend', stopDrag);
+                                            };
+
+                                            updateFromClientX(resolveClientX(startEvent));
+
+                                            window.addEventListener('mousemove', onMouseMove);
+                                            window.addEventListener('mouseup', stopDrag);
+                                            window.addEventListener('touchmove', onTouchMove, { passive: false });
+                                            window.addEventListener('touchend', stopDrag);
                                         };
 
                                         return (
@@ -3018,59 +3070,163 @@ function ArcgisUploadPanel({
                                                             {/* Year slider */}
                                                             <div className="service-info-timeline-row">
                                                                 <span className="service-info-timeline-label">Year</span>
-                                                                <input
-                                                                    type="range"
-                                                                    className="service-info-timeline-slider"
-                                                                    min={EARLIEST_TIMELINE_YEAR}
-                                                                    max={nowYear}
-                                                                    step={1}
-                                                                    value={tlYear != null ? tlYear : nowYear}
-                                                                    onChange={e => {
-                                                                        const y = parseInt(e.target.value, 10);
-                                                                        setServiceTimelineByKey(prev => ({
-                                                                            ...prev,
-                                                                            [sKey]: { ...(prev[sKey] || {}), year: y }
-                                                                        }));
-                                                                        applyTimeline(y, tlMonth);
-                                                                    }}
-                                                                    style={{
-                                                                        background: `linear-gradient(to right, #27425d ${((((tlYear != null ? tlYear : nowYear) - EARLIEST_TIMELINE_YEAR) / (nowYear - EARLIEST_TIMELINE_YEAR)) * 100)}%, #d8e1ea ${((((tlYear != null ? tlYear : nowYear) - EARLIEST_TIMELINE_YEAR) / (nowYear - EARLIEST_TIMELINE_YEAR)) * 100)}%)`
-                                                                    }}
-                                                                />
+                                                                <div className="service-info-timeline-slider-wrap">
+                                                                    <input
+                                                                        type="range"
+                                                                        className="service-info-timeline-slider"
+                                                                        min={EARLIEST_TIMELINE_YEAR}
+                                                                        max={nowYear}
+                                                                        step={1}
+                                                                        value={yearForSlider}
+                                                                        onChange={e => {
+                                                                            const y = parseInt(e.target.value, 10);
+                                                                            setServiceTimelineByKey(prev => ({
+                                                                                ...prev,
+                                                                                [sKey]: { ...(prev[sKey] || {}), year: y }
+                                                                            }));
+                                                                            applyTimeline(y, tlMonth);
+                                                                        }}
+                                                                        style={{
+                                                                            background: `linear-gradient(to right, #27425d ${yearPointerPct}%, #d8e1ea ${yearPointerPct}%)`
+                                                                        }}
+                                                                    />
+                                                                    <span
+                                                                        className="service-info-timeline-handle-icon"
+                                                                        style={{ left: `calc(${yearPointerPct}% - 6px)` }}
+                                                                        onMouseDown={(e) => {
+                                                                            e.preventDefault();
+                                                                            startTimelineIconDrag(
+                                                                                e,
+                                                                                e.currentTarget.closest('.service-info-timeline-slider-wrap'),
+                                                                                EARLIEST_TIMELINE_YEAR,
+                                                                                nowYear,
+                                                                                (y) => {
+                                                                                    setServiceTimelineByKey(prev => ({
+                                                                                        ...prev,
+                                                                                        [sKey]: { ...(prev[sKey] || {}), year: y }
+                                                                                    }));
+                                                                                    applyTimeline(y, tlMonth);
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        onTouchStart={(e) => {
+                                                                            e.preventDefault();
+                                                                            startTimelineIconDrag(
+                                                                                e,
+                                                                                e.currentTarget.closest('.service-info-timeline-slider-wrap'),
+                                                                                EARLIEST_TIMELINE_YEAR,
+                                                                                nowYear,
+                                                                                (y) => {
+                                                                                    setServiceTimelineByKey(prev => ({
+                                                                                        ...prev,
+                                                                                        [sKey]: { ...(prev[sKey] || {}), year: y }
+                                                                                    }));
+                                                                                    applyTimeline(y, tlMonth);
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        aria-hidden="true"
+                                                                    >
+                                                                        <FontAwesomeIcon icon={faSquare} />
+                                                                    </span>
+                                                                </div>
                                                                 <span className="service-info-timeline-value">{tlYear != null ? tlYear : nowYear}</span>
                                                             </div>
-                                                            <div className="service-info-timeline-endpoints">
-                                                                <span>{EARLIEST_TIMELINE_YEAR}</span>
-                                                                <span>{nowYear}</span>
+                                                            <div
+                                                                className="service-info-timeline-ticks"
+                                                                style={{ gridTemplateColumns: `repeat(${yearValues.length}, minmax(0, 1fr))` }}
+                                                                aria-hidden="true"
+                                                            >
+                                                                {yearValues.map(y => (
+                                                                    <span key={`year-tick-${y}`} className="service-info-timeline-tick" />
+                                                                ))}
+                                                            </div>
+                                                            <div
+                                                                className="service-info-timeline-year-labels"
+                                                                style={{ gridTemplateColumns: `repeat(${yearValues.length}, minmax(0, 1fr))` }}
+                                                            >
+                                                                {yearValues.map(y => (
+                                                                    <span key={`year-label-${y}`}>
+                                                                        {(y === EARLIEST_TIMELINE_YEAR || y % 5 === 0) ? y : ''}
+                                                                    </span>
+                                                                ))}
                                                             </div>
 
                                                             {/* Month slider — always visible once in timeline tab */}
                                                             <div className="service-info-timeline-row" style={{ marginTop: 8 }}>
                                                                 <span className="service-info-timeline-label">Month</span>
-                                                                <input
-                                                                    type="range"
-                                                                    className="service-info-timeline-slider"
-                                                                    min={1}
-                                                                    max={12}
-                                                                    step={1}
-                                                                    value={tlMonth != null ? tlMonth : 1}
-                                                                    onChange={e => {
-                                                                        const m = parseInt(e.target.value, 10);
-                                                                        const y = tlYear != null ? tlYear : nowYear;
-                                                                        setServiceTimelineByKey(prev => ({
-                                                                            ...prev,
-                                                                            [sKey]: { ...(prev[sKey] || {}), year: y, month: m }
-                                                                        }));
-                                                                        applyTimeline(y, m);
-                                                                    }}
-                                                                    style={{
-                                                                        background: `linear-gradient(to right, #27425d ${(((tlMonth != null ? tlMonth : 1) - 1) / 11 * 100)}%, #d8e1ea ${(((tlMonth != null ? tlMonth : 1) - 1) / 11 * 100)}%)`
-                                                                    }}
-                                                                />
-                                                                <span className="service-info-timeline-value">{MONTH_NAMES[(tlMonth != null ? tlMonth : 1) - 1]}</span>
+                                                                <div className="service-info-timeline-slider-wrap">
+                                                                    <input
+                                                                        type="range"
+                                                                        className="service-info-timeline-slider"
+                                                                        min={1}
+                                                                        max={12}
+                                                                        step={1}
+                                                                        value={monthForSlider}
+                                                                        onChange={e => {
+                                                                            const m = parseInt(e.target.value, 10);
+                                                                            const y = tlYear != null ? tlYear : nowYear;
+                                                                            setServiceTimelineByKey(prev => ({
+                                                                                ...prev,
+                                                                                [sKey]: { ...(prev[sKey] || {}), year: y, month: m }
+                                                                            }));
+                                                                            applyTimeline(y, m);
+                                                                        }}
+                                                                        style={{
+                                                                            background: `linear-gradient(to right, #27425d ${monthPointerPct}%, #d8e1ea ${monthPointerPct}%)`
+                                                                        }}
+                                                                    />
+                                                                    <span
+                                                                        className="service-info-timeline-handle-icon"
+                                                                        style={{ left: `calc(${monthPointerPct}% - 6px)` }}
+                                                                        onMouseDown={(e) => {
+                                                                            e.preventDefault();
+                                                                            startTimelineIconDrag(
+                                                                                e,
+                                                                                e.currentTarget.closest('.service-info-timeline-slider-wrap'),
+                                                                                1,
+                                                                                12,
+                                                                                (m) => {
+                                                                                    const y = tlYear != null ? tlYear : nowYear;
+                                                                                    setServiceTimelineByKey(prev => ({
+                                                                                        ...prev,
+                                                                                        [sKey]: { ...(prev[sKey] || {}), year: y, month: m }
+                                                                                    }));
+                                                                                    applyTimeline(y, m);
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        onTouchStart={(e) => {
+                                                                            e.preventDefault();
+                                                                            startTimelineIconDrag(
+                                                                                e,
+                                                                                e.currentTarget.closest('.service-info-timeline-slider-wrap'),
+                                                                                1,
+                                                                                12,
+                                                                                (m) => {
+                                                                                    const y = tlYear != null ? tlYear : nowYear;
+                                                                                    setServiceTimelineByKey(prev => ({
+                                                                                        ...prev,
+                                                                                        [sKey]: { ...(prev[sKey] || {}), year: y, month: m }
+                                                                                    }));
+                                                                                    applyTimeline(y, m);
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        aria-hidden="true"
+                                                                    >
+                                                                        <FontAwesomeIcon icon={faSquare} />
+                                                                    </span>
+                                                                </div>
+                                                                <span className="service-info-timeline-value">{tlMonth != null ? tlMonth : 1}</span>
                                                             </div>
                                                             <div className="service-info-timeline-months">
-                                                                {MONTH_NAMES.map(m => <span key={m}>{m}</span>)}
+                                                                {MONTH_VALUES.map((m, i) => (
+                                                                    <div key={m} className="service-info-timeline-month-item" style={{ left: `calc(${i} / 11 * 100%)` }}>
+                                                                        <div className="service-info-timeline-month-tick" />
+                                                                        <span className="service-info-timeline-month-label">{m}</span>
+                                                                    </div>
+                                                                ))}
                                                             </div>
 
                                                             <div className="service-info-time-actions" style={{ marginTop: 6 }}>
