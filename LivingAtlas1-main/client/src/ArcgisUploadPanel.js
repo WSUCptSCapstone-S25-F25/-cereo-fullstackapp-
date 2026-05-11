@@ -230,6 +230,8 @@ function ArcgisUploadPanel({
 
     // Opacity slider state (0 to 1)
     const [layerOpacity, setLayerOpacity] = useState(0.7);
+    const [serviceInfoOpacityByKey, setServiceInfoOpacityByKey] = useState({});
+    const panelRootRef = useRef(null);
 
     // Track previous checkedLayerIds for diffing
     const prevCheckedLayerIds = useRef({});
@@ -1868,6 +1870,42 @@ function ArcgisUploadPanel({
         });
     };
 
+    const applyServiceOpacity = useCallback((serviceKey, newOpacity) => {
+        const map = mapInstance && mapInstance();
+        if (!map || !map.getStyle || !serviceKey) return;
+        const style = map.getStyle();
+        if (!style || !Array.isArray(style.layers)) return;
+
+        style.layers.forEach(l => {
+            if (l.id.startsWith(`arcgis-raster-layer-${serviceKey}-`)) {
+                map.setPaintProperty(l.id, 'raster-opacity', newOpacity);
+            } else if (l.id.startsWith(`arcgis-vector-layer-${serviceKey}-`)) {
+                if (l.type === 'fill') {
+                    map.setPaintProperty(l.id, 'fill-opacity', newOpacity);
+                } else if (l.type === 'line') {
+                    map.setPaintProperty(l.id, 'line-opacity', newOpacity);
+                } else if (l.type === 'circle') {
+                    map.setPaintProperty(l.id, 'circle-opacity', newOpacity);
+                }
+            }
+        });
+    }, [mapInstance]);
+
+    const getInfoModalStyle = () => {
+        const panelEl = panelRootRef.current;
+        if (!panelEl || typeof window === 'undefined') return undefined;
+        const rect = panelEl.getBoundingClientRect();
+        const modalWidth = 380;
+        const left = Math.min(rect.right + 2, window.innerWidth - modalWidth - 8);
+        const top = Math.max(8, rect.top);
+        const maxHeight = Math.max(240, window.innerHeight - rect.top - 16);
+        return {
+            top: `${top}px`,
+            left: `${left}px`,
+            maxHeight: `${maxHeight}px`,
+        };
+    };
+
     // True while an active search is waiting for layer data from unloaded services
     const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
 
@@ -2227,6 +2265,25 @@ function ArcgisUploadPanel({
     // Open service info modal (fetch & cache)
     const openServiceInfo = async (service) => {
         setServiceInfoOpenKey(service.key);
+
+        if (service && service.key && serviceLayers[service.key] === undefined && service.url) {
+            setServiceLayersLoading(prev => ({ ...prev, [service.key]: true }));
+            fetchArcgisLayers(service.url).then(layers => {
+                setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
+                setCheckedLayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: [] });
+                setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
+                setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
+            }).catch(() => {
+                setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
+            }).finally(() => {
+                setServiceLayersLoading(prev => {
+                    const next = { ...prev };
+                    delete next[service.key];
+                    return next;
+                });
+            });
+        }
+
         if (serviceInfoCache[service.key]) return;
         setServiceInfoLoading(true);
         try {
@@ -2275,6 +2332,40 @@ function ArcgisUploadPanel({
         return text.replace(/\u00A0/g, ' ').trim();
     }
 
+    const renderServiceLayerLinks = (service) => {
+        const rawLayers = serviceLayers[service.key] || [];
+        if (!Array.isArray(rawLayers) || rawLayers.length === 0) {
+            return <div className="arcgis-service-info-empty">Loading layer links…</div>;
+        }
+
+        const layerTree = buildLayerTree(rawLayers);
+        const renderNodes = (nodes, depth = 0) => (
+            nodes.map(node => {
+                const layerId = node?.id;
+                const label = node?.name || `Layer ${layerId}`;
+                const hasLayerId = Number.isInteger(layerId);
+                return (
+                    <div key={`${service.key}-${layerId}-${depth}`} className="arcgis-service-info-layer-link-row" style={{ marginLeft: depth * 12 }}>
+                        {hasLayerId ? (
+                            <button
+                                type="button"
+                                className="arcgis-service-info-layer-link"
+                                onClick={() => openLayerInfo(service, { id: layerId, name: label })}
+                            >
+                                {label}
+                            </button>
+                        ) : (
+                            <span>{label}</span>
+                        )}
+                        {Array.isArray(node?.children) && node.children.length > 0 && renderNodes(node.children, depth + 1)}
+                    </div>
+                );
+            })
+        );
+
+        return <div className="arcgis-service-info-layer-links">{renderNodes(layerTree)}</div>;
+    };
+
     // Map loading spinner — rendered even when panel is closed (e.g. triggered from learn-more modal)
     const spinnerPortal = isMapLayerLoading && mapContainerEl && createPortal(
         <div className="arcgis-map-loading-overlay">
@@ -2298,7 +2389,7 @@ function ArcgisUploadPanel({
             {/* Map loading spinner overlay */}
             {spinnerPortal}
             {/* Upload Panel */}
-            <div className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}${isOnboardingOpen ? ' onboarding-locked' : ''}`} onContextMenu={e => e.preventDefault()}>
+            <div ref={panelRootRef} className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}${isOnboardingOpen ? ' onboarding-locked' : ''}`} onContextMenu={e => e.preventDefault()}>
                 <div className="upload-panel-header" data-onboarding-target="arcgis-state-selector">
                     <h3>Browse ArcGIS Services</h3>
                     <div className="upload-panel-header-actions">
@@ -2535,7 +2626,7 @@ function ArcgisUploadPanel({
                                         {currentPath.stateCode === '__builtin__'
                                             ? BUILTIN_FOLDER_NAME
                                             : currentPath.folder !== null
-                                                ? <>{STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode} <span className="upload-panel-breadcrumb-sep">/</span> {currentPath.folder}</>
+                                                ? <>{STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode} <span className="upload-panel-breadcrumb-sep">/</span> {currentPath.folder === '__builtin__' ? BUILTIN_FOLDER_NAME : currentPath.folder}</>
                                                 : STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode
                                         }
                                     </span>
@@ -2607,6 +2698,18 @@ function ArcgisUploadPanel({
                                             </div>
                                         </div>
                                     ))}
+                                    <div>
+                                        <div
+                                            className="upload-folder"
+                                            onClick={() => setCurrentPath({ stateCode: currentPath.stateCode, folder: '__builtin__' })}
+                                            title="Click to open"
+                                        >
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                <FontAwesomeIcon icon={faFolder} />
+                                                {BUILTIN_FOLDER_NAME}
+                                            </span>
+                                        </div>
+                                    </div>
                                     <div className="upload-panel-attribution" style={{ marginTop: 4, marginBottom: 2 }}>
                                         Data sources: {usingFallback ? 'Local JSON Files' : 'Backend Database'} • <a href={STATE_ATTRIBUTION[currentPath.stateCode]?.url} target="_blank" rel="noopener noreferrer">{STATE_ATTRIBUTION[currentPath.stateCode]?.name} ArcGIS Services</a>
                                     </div>
@@ -2616,7 +2719,20 @@ function ArcgisUploadPanel({
                             {/* FOLDER VIEW: list services */}
                             {currentPath.stateCode !== null && currentPath.stateCode !== '__builtin__' && currentPath.folder !== null && (
                                 <>
-                                    {(stateFoldersToShow[currentPath.stateCode]?.byFolder[currentPath.folder] || []).map(service => {
+                                    {currentPath.folder === '__builtin__' && (
+                                        <div className="upload-state-folder-content">
+                                            {BUILTIN_LAYERS.map(layer => (
+                                                <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
+                                                    <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
+                                                        <input type="checkbox" checked={!!areaVisibility[layer.id]} onChange={() => handleAreaCheckbox?.(layer.id)} style={{ marginRight: 4 }} />
+                                                        {layer.label}
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {currentPath.folder !== '__builtin__' && (stateFoldersToShow[currentPath.stateCode]?.byFolder[currentPath.folder] || []).map(service => {
                                         const layers = serviceLayers[service.key] || [];
                                         const checkedIds = checkedLayerIds[service.key] || [];
                                         const rawLayers = layers.length > 0 ? layers : (service.layers || []);
@@ -2693,7 +2809,7 @@ function ArcgisUploadPanel({
 
             {/* Service info modal (right side) */}
             {serviceInfoOpenKey && (
-                <div className="arcgis-service-info-modal">
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
                     <div className="arcgis-service-info-modal-header">
                         <strong>Service info</strong>
                         <button
@@ -2754,6 +2870,34 @@ function ArcgisUploadPanel({
                                     <div className="arcgis-service-info-row">
                                         <strong>Spatial Reference:</strong> {srText}
                                     </div>
+
+                                    <div className="arcgis-service-info-row service-info-opacity-row">
+                                        <strong>Service Opacity:</strong>
+                                        <div className="service-info-opacity-controls">
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.01"
+                                                value={serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity}
+                                                onChange={(e) => {
+                                                    const value = parseFloat(e.target.value);
+                                                    setServiceInfoOpacityByKey(prev => ({ ...prev, [serviceInfoOpenKey]: value }));
+                                                    applyServiceOpacity(serviceInfoOpenKey, value);
+                                                }}
+                                                className="service-info-opacity-slider"
+                                                style={{ background: `linear-gradient(to right, #27425d ${(serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100}%, #d8e1ea ${(serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100}%)` }}
+                                            />
+                                            <span className="service-info-opacity-value">{Math.round((serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100)}%</span>
+                                        </div>
+                                    </div>
+
+                                    {currentService && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Layers / Sublayers:</strong>
+                                            {renderServiceLayerLinks(currentService)}
+                                        </div>
+                                    )}
                                     
                                     {/* Add the ArcGIS service page link at the bottom */}
                                     {currentService && currentService.url && (
@@ -2777,7 +2921,7 @@ function ArcgisUploadPanel({
 
             {/* Layer Info Modal */}
             {layerInfoOpen && (
-                <div className="arcgis-service-info-modal">
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
                     <div className="arcgis-service-info-modal-header">
                         <strong>Layer Info: {layerInfoOpen.layerName}</strong>
                         <button

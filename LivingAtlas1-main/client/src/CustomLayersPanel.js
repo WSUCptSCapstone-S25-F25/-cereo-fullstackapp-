@@ -48,7 +48,9 @@ function CustomLayersPanel({
     const [expandedLayers, setExpandedLayers] = useState(new Set());
 
     const [layerOpacity, setLayerOpacity] = useState(0.7);
+    const [serviceInfoOpacityByKey, setServiceInfoOpacityByKey] = useState({});
     const [statusMsg, setStatusMsg] = useState(null);
+    const panelRootRef = useRef(null);
 
     // Search & filter state
     const [searchKeyword, setSearchKeyword] = useState('');
@@ -596,6 +598,42 @@ function CustomLayersPanel({
         });
     };
 
+    const applyServiceOpacity = useCallback((serviceKey, newOpacity) => {
+        const map = mapInstance && mapInstance();
+        if (!map || !map.getStyle || !serviceKey) return;
+        const style = map.getStyle();
+        if (!style || !Array.isArray(style.layers)) return;
+
+        style.layers.forEach(l => {
+            if (l.id.startsWith(`arcgis-raster-layer-custom-${serviceKey}-`)) {
+                map.setPaintProperty(l.id, 'raster-opacity', newOpacity);
+            } else if (l.id.startsWith(`arcgis-vector-layer-custom-${serviceKey}-`)) {
+                if (l.type === 'fill') {
+                    map.setPaintProperty(l.id, 'fill-opacity', newOpacity);
+                } else if (l.type === 'line') {
+                    map.setPaintProperty(l.id, 'line-opacity', newOpacity);
+                } else if (l.type === 'circle') {
+                    map.setPaintProperty(l.id, 'circle-opacity', newOpacity);
+                }
+            }
+        });
+    }, [mapInstance]);
+
+    const getInfoModalStyle = () => {
+        const panelEl = panelRootRef.current;
+        if (!panelEl || typeof window === 'undefined') return undefined;
+        const rect = panelEl.getBoundingClientRect();
+        const modalWidth = 380;
+        const left = Math.min(rect.right + 2, window.innerWidth - modalWidth - 8);
+        const top = Math.max(8, rect.top);
+        const maxHeight = Math.max(240, window.innerHeight - rect.top - 16);
+        return {
+            top: `${top}px`,
+            left: `${left}px`,
+            maxHeight: `${maxHeight}px`,
+        };
+    };
+
     // Helper to remove all map layers for a service
     const removeAllMapLayers = useCallback((service) => {
         const map = mapInstance && mapInstance();
@@ -1075,6 +1113,28 @@ function CustomLayersPanel({
     // Learn More handlers
     const openServiceInfo = async (service) => {
         setServiceInfoOpenKey(service.key);
+
+        if (service && service.key && serviceLayers[service.key] === undefined && service.url) {
+            setServiceLayersLoading(prev => ({ ...prev, [service.key]: true }));
+            fetchArcgisLayers(service.url)
+                .then(layers => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
+                    setCheckedLayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: [] });
+                    setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
+                    setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
+                })
+                .catch(() => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
+                })
+                .finally(() => {
+                    setServiceLayersLoading(prev => {
+                        const next = { ...prev };
+                        delete next[service.key];
+                        return next;
+                    });
+                });
+        }
+
         if (serviceInfoCache[service.key]) return;
         setServiceInfoLoading(true);
         try {
@@ -1114,6 +1174,40 @@ function CustomLayersPanel({
         const text = tmp.textContent || tmp.innerText || '';
         return text.replace(/\u00A0/g, ' ').trim();
     }
+
+    const renderServiceLayerLinks = (service) => {
+        const rawLayers = serviceLayers[service.key] || [];
+        if (!Array.isArray(rawLayers) || rawLayers.length === 0) {
+            return <div className="arcgis-service-info-empty">Loading layer links…</div>;
+        }
+
+        const layerTree = buildLayerTree(rawLayers);
+        const renderNodes = (nodes, depth = 0) => (
+            nodes.map(node => {
+                const layerId = node?.id;
+                const label = node?.name || `Layer ${layerId}`;
+                const hasLayerId = Number.isInteger(layerId);
+                return (
+                    <div key={`${service.key}-${layerId}-${depth}`} className="arcgis-service-info-layer-link-row" style={{ marginLeft: depth * 12 }}>
+                        {hasLayerId ? (
+                            <button
+                                type="button"
+                                className="arcgis-service-info-layer-link"
+                                onClick={() => openLayerInfo(service, { id: layerId, name: label })}
+                            >
+                                {label}
+                            </button>
+                        ) : (
+                            <span>{label}</span>
+                        )}
+                        {Array.isArray(node?.children) && node.children.length > 0 && renderNodes(node.children, depth + 1)}
+                    </div>
+                );
+            })
+        );
+
+        return <div className="arcgis-service-info-layer-links">{renderNodes(layerTree)}</div>;
+    };
 
     // Render a layer tree node using the shared component
     const renderLayerNode = (node, service, checkedIds, allFeatureLayers, depth = 0) => (
@@ -1167,7 +1261,7 @@ function CustomLayersPanel({
     }
 
     return (
-        <div className={`custom-layers-panel${splitBottom ? ' custom-layers-panel--split-bottom' : ''}${isOnboardingOpen ? ' onboarding-locked' : ''}`}
+        <div ref={panelRootRef} className={`custom-layers-panel${splitBottom ? ' custom-layers-panel--split-bottom' : ''}${isOnboardingOpen ? ' onboarding-locked' : ''}`}
              onContextMenu={e => e.preventDefault()}>
             <div className="custom-layers-panel-header">
                 <h3>Custom Layers</h3>
@@ -1553,7 +1647,7 @@ function CustomLayersPanel({
 
             {/* Service Info Modal */}
             {serviceInfoOpenKey && (
-                <div className="arcgis-service-info-modal">
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
                     <div className="arcgis-service-info-modal-header">
                         <strong>Service info</strong>
                         <button
@@ -1607,6 +1701,34 @@ function CustomLayersPanel({
                                     <div className="arcgis-service-info-row">
                                         <strong>Spatial Reference:</strong> {srText}
                                     </div>
+
+                                    <div className="arcgis-service-info-row service-info-opacity-row">
+                                        <strong>Service Opacity:</strong>
+                                        <div className="service-info-opacity-controls">
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.01"
+                                                value={serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity}
+                                                onChange={(e) => {
+                                                    const value = parseFloat(e.target.value);
+                                                    setServiceInfoOpacityByKey(prev => ({ ...prev, [serviceInfoOpenKey]: value }));
+                                                    applyServiceOpacity(serviceInfoOpenKey, value);
+                                                }}
+                                                className="service-info-opacity-slider"
+                                                style={{ background: `linear-gradient(to right, #27425d ${(serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100}%, #d8e1ea ${(serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100}%)` }}
+                                            />
+                                            <span className="service-info-opacity-value">{Math.round((serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100)}%</span>
+                                        </div>
+                                    </div>
+
+                                    {currentService && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Layers / Sublayers:</strong>
+                                            {renderServiceLayerLinks(currentService)}
+                                        </div>
+                                    )}
                                     {currentService && currentService.url && (
                                         <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
                                             <a href={currentService.url} target="_blank" rel="noopener noreferrer"
@@ -1624,7 +1746,7 @@ function CustomLayersPanel({
 
             {/* Layer Info Modal */}
             {layerInfoOpen && (
-                <div className="arcgis-service-info-modal">
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
                     <div className="arcgis-service-info-modal-header">
                         <strong>Layer Info: {layerInfoOpen.layerName}</strong>
                         <button

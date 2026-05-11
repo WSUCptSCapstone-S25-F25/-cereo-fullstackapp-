@@ -246,18 +246,17 @@
     cursor: pointer;
     font-weight: normal;
     margin: 2px 0;
-    padding: 2px 0 2px 4px;
+    padding: 5px 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-radius: 6px;
+    border-radius: 4px;
     background: #fff;
     border: 1px solid #e8edf3;
     transition: background 0.2s, border-color 0.2s;
     color: #223244 !important;
-    min-height: 24px;
-    font-size: 11px !important;
-    padding: 2px 0 2px 4px;
+    min-height: 28px;
+    font-size: 12.5px !important;
     flex-wrap: wrap;
 }
 
@@ -327,9 +326,9 @@
 }
 
 .upload-item {
-    min-height: 22px;
-    font-size: 11px !important;
-    padding: 2px 0 2px 4px;
+    min-height: 28px;
+    font-size: 12.5px !important;
+    padding: 5px 8px;
 }
 
 .upload-layer-row {
@@ -782,10 +781,10 @@
 }
 
 .arcgis-service-info-modal {
-    margin-top: 200px;
+    margin-top: 0;
     position: fixed;
     top: 50px;
-    left: calc(48px + 25vw + 12px);
+    left: calc(48px + 25vw + 2px);
     width: 380px;
     max-height: calc(100vh - 80px);
     overflow: auto;
@@ -840,6 +839,85 @@
     padding: 8px;
     border-radius: 4px;
     margin: 6px 0 0 0;
+}
+
+.service-info-opacity-row {
+    margin-top: 10px;
+}
+
+.service-info-opacity-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.service-info-opacity-slider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+.service-info-opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #27425d;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.service-info-opacity-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #27425d;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.service-info-opacity-value {
+    min-width: 36px;
+    text-align: right;
+    font-weight: 600;
+    color: #27425d !important;
+    font-size: 12px;
+}
+
+.arcgis-service-info-layer-links {
+    margin-top: 6px;
+    padding: 6px;
+    border: 1px solid #e1e7ef;
+    border-radius: 6px;
+    background: #f9fbff;
+    max-height: 220px;
+    overflow: auto;
+}
+
+.arcgis-service-info-layer-link-row {
+    margin-bottom: 4px;
+}
+
+.arcgis-service-info-layer-link {
+    border: none;
+    background: none;
+    color: #1976d2;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    font-size: 12px;
+}
+
+.arcgis-service-info-layer-link:hover {
+    text-decoration: underline;
 }
 
 .upload-panel-update-btn {
@@ -1129,11 +1207,11 @@
     justify-content: center;
     border-radius: 4px;
     transition: all 0.15s ease;
-    font-size: 14px;
+    font-size: 12px;
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
-    margin: 0 4px;
+    width: 24px;
+    height: 24px;
+    margin: 0 2px 0 auto;
 }
 
 .arcgis-service-row-action-btn:hover {
