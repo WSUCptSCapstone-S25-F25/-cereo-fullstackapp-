@@ -99,7 +99,8 @@
     .left-sidebar-trash-button,
     .left-sidebar-ai-button,
     .left-sidebar-tutorial-button,
-    .left-sidebar-changelog-button
+    .left-sidebar-changelog-button,
+    .left-sidebar-onboarding-button
 ) {
     appearance: none;
     background: transparent;
@@ -306,6 +307,10 @@
 }
 
 .left-sidebar-changelog-button {
+    margin-bottom: 8px;
+}
+
+.left-sidebar-onboarding-button {
     margin-bottom: 12px;
 }
 
@@ -321,7 +326,8 @@
     .left-sidebar-trash-button,
     .left-sidebar-ai-button,
     .left-sidebar-tutorial-button,
-    .left-sidebar-changelog-button
+    .left-sidebar-changelog-button,
+    .left-sidebar-onboarding-button
 ):hover {
     background-color: #444a53;
     color: #f5f8ff;
@@ -352,7 +358,8 @@
     .left-sidebar-trash-button,
     .left-sidebar-ai-button,
     .left-sidebar-tutorial-button,
-    .left-sidebar-changelog-button
+    .left-sidebar-changelog-button,
+    .left-sidebar-onboarding-button
 ):active {
     transform: translateY(0);
     background-color: #3d434c;
@@ -369,7 +376,8 @@
     .left-sidebar-trash-button,
     .left-sidebar-ai-button,
     .left-sidebar-tutorial-button,
-    .left-sidebar-changelog-button
+    .left-sidebar-changelog-button,
+    .left-sidebar-onboarding-button
 ):focus-visible {
     outline: 2px solid #8ab4ff;
     outline-offset: 2px;

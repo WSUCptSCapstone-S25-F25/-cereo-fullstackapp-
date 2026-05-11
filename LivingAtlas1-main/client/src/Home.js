@@ -14,10 +14,11 @@ import CustomLayersPanel from './CustomLayersPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
-import { faBell, faMap, faObjectGroup } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faMap, faObjectGroup, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
 import ChangelogModal from './ChangelogModal';
+import GeneralOnboardingModal from './GeneralOnboardingModal';
 import { fetchUserPreferences, saveUserPreferences } from './userPreferencesApi';
 import ChatbotWidget from './ChatbotWidget';
 import {
@@ -70,10 +71,15 @@ function Home(props) {
     const [isChangelogOpen, setIsChangelogOpen] = useState(() => {
         return !localStorage.getItem('changelog_seen_v14');
     });
+    const [isGeneralOnboardingOpen, setIsGeneralOnboardingOpen] = useState(false);
 
     const closeChangelog = () => {
         localStorage.setItem('changelog_seen_v14', 'true');
         setIsChangelogOpen(false);
+    };
+
+    const closeGeneralOnboarding = () => {
+        setIsGeneralOnboardingOpen(false);
     };
 
     useEffect(() => {
@@ -513,6 +519,14 @@ function Home(props) {
                     <FontAwesomeIcon icon={faBell} />
                 </button>
 
+                <button
+                    className="left-sidebar-onboarding-button"
+                    onClick={() => setIsGeneralOnboardingOpen(true)}
+                    title="App onboarding"
+                >
+                    <FontAwesomeIcon icon={faInfoCircle} />
+                </button>
+
                 {/* Expanded Left Sidebar Content */}
                 {isSidebarOpen && (
                     <div className="left-sidebar-content">
@@ -607,6 +621,9 @@ function Home(props) {
 
             {/* Changelog Modal */}
             <ChangelogModal isOpen={isChangelogOpen} onClose={closeChangelog} />
+
+            {/* App General Onboarding Modal */}
+            <GeneralOnboardingModal isOpen={isGeneralOnboardingOpen} onClose={closeGeneralOnboarding} />
 
             {/* AI Chatbot floating widget */}
             <ChatbotWidget />

@@ -115,6 +115,111 @@
     background: #1a252f;
 }
 
+/* General onboarding modal */
+.onboarding-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.onboarding-modal {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    width: 620px;
+    max-width: 92vw;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    outline: none;
+}
+
+.onboarding-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 12px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.onboarding-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.onboarding-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #666;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.onboarding-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.onboarding-modal-body {
+    overflow-y: auto;
+    padding: 18px 22px;
+    flex: 1;
+}
+
+.onboarding-modal-body h3 {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #444;
+    margin: 18px 0 6px;
+    border-bottom: 1px solid #ececec;
+    padding-bottom: 4px;
+}
+
+.onboarding-modal-body h3:first-child {
+    margin-top: 0;
+}
+
+.onboarding-modal-body p {
+    font-size: 14px;
+    color: #333;
+    margin: 4px 0;
+    line-height: 1.55;
+}
+
+.onboarding-modal-footer {
+    padding: 12px 22px 18px;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #e5e5e5;
+}
+
+.onboarding-modal-dismiss {
+    background: #2c3e50;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.onboarding-modal-dismiss:hover {
+    background: #1a252f;
+}
+
 
 
 .main {
