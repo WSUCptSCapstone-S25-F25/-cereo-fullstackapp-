@@ -57,6 +57,10 @@
     justify-content: center;
 }
 
+.basemap-switcher-icon-btn--play svg {
+    transform: translateX(1px);
+}
+
 .basemap-switcher-icon-btn:hover {
     border-color: #8eabc8;
     background: #f2f7fc;
@@ -119,4 +123,13 @@
     font-size: 15px;
     color: #333;
     font-weight: 500;
+}
+
+.basemap-switcher-panel.onboarding-locked * {
+    pointer-events: none;
+}
+
+.basemap-switcher-panel.onboarding-locked .basemap-switcher-icon-btn--play,
+.basemap-switcher-panel.onboarding-locked [data-onboarding-target="basemap-help-button"] {
+    pointer-events: auto;
 }

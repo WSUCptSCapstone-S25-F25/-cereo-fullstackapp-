@@ -73,10 +73,14 @@
 .upload-panel-header-close-btn {
     width: 28px;
     height: 28px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
     background: #fff;
     border: 1px solid #bfd0e2;
     color: #27425d !important;
-    font-size: 18px;
+    font-size: 13px;
     cursor: pointer;
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -84,6 +88,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 .upload-panel-header-close-btn:hover {
@@ -94,6 +100,10 @@
 
 .upload-panel-header-close-btn--help {
     font-size: 13px;
+}
+
+.upload-panel-header-close-btn--play svg {
+    transform: translateX(1px);
 }
 
 .upload-panel-header-actions {
@@ -202,6 +212,7 @@
     flex: 1;
     overflow-y: auto;
     min-height: 0;
+    scrollbar-gutter: stable;
 }
 
 .upload-folder {
@@ -236,18 +247,17 @@
     cursor: pointer;
     font-weight: normal;
     margin: 2px 0;
-    padding: 2px 0 2px 4px;
+    padding: 5px 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-radius: 6px;
+    border-radius: 4px;
     background: #fff;
     border: 1px solid #e8edf3;
     transition: background 0.2s, border-color 0.2s;
     color: #223244 !important;
-    min-height: 24px;
-    font-size: 11px !important;
-    padding: 2px 0 2px 4px;
+    min-height: 28px;
+    font-size: 12.5px !important;
     flex-wrap: wrap;
 }
 
@@ -317,9 +327,9 @@
 }
 
 .upload-item {
-    min-height: 22px;
-    font-size: 11px !important;
-    padding: 2px 0 2px 4px;
+    min-height: 28px;
+    font-size: 12.5px !important;
+    padding: 5px 8px;
 }
 
 .upload-layer-row {
@@ -772,10 +782,10 @@
 }
 
 .arcgis-service-info-modal {
-    margin-top: 200px;
+    margin-top: 0;
     position: fixed;
     top: 50px;
-    left: calc(48px + 25vw + 12px);
+    left: calc(48px + 25vw + 2px);
     width: 380px;
     max-height: calc(100vh - 80px);
     overflow: auto;
@@ -830,6 +840,351 @@
     padding: 8px;
     border-radius: 4px;
     margin: 6px 0 0 0;
+}
+
+.service-info-opacity-row {
+    margin-top: 10px;
+}
+
+.service-info-opacity-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.service-info-opacity-slider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+.service-info-opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #27425d;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.service-info-opacity-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #27425d;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.service-info-opacity-value {
+    min-width: 36px;
+    text-align: right;
+    font-weight: 600;
+    color: #27425d !important;
+    font-size: 12px;
+}
+
+/* Historical view time filter */
+.service-info-time-filter {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Tabs */
+.service-info-time-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #c0cfe0;
+    margin-bottom: 6px;
+}
+
+.service-info-time-tab {
+    padding: 3px 12px;
+    font-size: 11px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.12s, border-color 0.12s;
+    margin-bottom: -1px;
+}
+
+.service-info-time-tab:hover {
+    color: #27425d;
+}
+
+.service-info-time-tab.active {
+    color: #27425d;
+    border-bottom-color: #27425d;
+    font-weight: 600;
+}
+
+.service-info-time-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.service-info-time-label {
+    font-size: 11px;
+    color: #555;
+    white-space: nowrap;
+}
+
+.service-info-time-input {
+    flex: 1;
+    min-width: 120px;
+    font-size: 11px;
+    padding: 3px 5px;
+    border: 1px solid #c0cfe0;
+    border-radius: 4px;
+    color: #1f3348;
+    background: #f5f8fc;
+    outline: none;
+}
+
+.service-info-time-input:focus {
+    border-color: #27425d;
+    background: #fff;
+}
+
+.service-info-time-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.service-info-time-btn {
+    padding: 3px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+    border: 1px solid #27425d;
+    background: #27425d;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.service-info-time-btn:hover {
+    background: #1f3348;
+}
+
+.service-info-time-btn-clear {
+    background: #fff;
+    color: #27425d;
+}
+
+.service-info-time-btn-clear:hover {
+    background: #e8eef5;
+}
+
+.service-info-time-active {
+    font-size: 11px;
+    color: #1976d2;
+    background: #e3f0fd;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-weight: 500;
+}
+
+/* Timeline sliders */
+.service-info-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.service-info-timeline-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.service-info-timeline-label {
+    font-size: 11px;
+    color: #555;
+    min-width: 32px;
+    white-space: nowrap;
+}
+
+.service-info-timeline-slider {
+    flex: 1;
+    height: 4px;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.service-info-timeline-slider-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.service-info-timeline-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.service-info-timeline-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.service-info-timeline-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: transparent;
+}
+
+.service-info-timeline-handle-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-56%);
+    font-size: 13px;
+    color: #5f7f9e;
+    line-height: 1;
+    pointer-events: auto;
+    z-index: 2;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+.service-info-timeline-handle-icon svg {
+    transform: scaleX(0.58) scaleY(1.75);
+    transform-origin: center;
+}
+
+.service-info-timeline-handle-icon:active {
+    cursor: grabbing;
+}
+
+.service-info-timeline-value {
+    min-width: 30px;
+    text-align: right;
+    font-weight: 600;
+    color: #27425d;
+    font-size: 11px;
+}
+
+.service-info-timeline-ticks {
+    display: grid;
+    align-items: center;
+    gap: 0;
+    margin-top: -2px;
+    margin-left: 40px;
+    margin-right: 32px;
+}
+
+.service-info-timeline-tick {
+    justify-self: center;
+    width: 1px;
+    height: 7px;
+    background: #9fb2c6;
+    opacity: 0.95;
+}
+
+.service-info-timeline-year-labels {
+    display: grid;
+    gap: 0;
+    margin-top: 2px;
+    margin-left: 40px;
+    margin-right: 32px;
+}
+
+.service-info-timeline-year-labels span {
+    justify-self: center;
+    font-size: 10px;
+    color: #7a8c9f;
+    line-height: 1;
+}
+
+.service-info-timeline-months {
+    position: relative;
+    height: 18px;
+    margin-top: 2px;
+    margin-left: 40px;
+    margin-right: 38px;
+}
+
+.service-info-timeline-month-item {
+    position: absolute;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.service-info-timeline-month-tick {
+    width: 1px;
+    height: 7px;
+    background: #9fb2c6;
+    opacity: 0.95;
+}
+
+.service-info-timeline-month-label {
+    font-size: 10px;
+    color: #7a8c9f;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.arcgis-service-info-layer-links {
+    margin-top: 6px;
+    padding: 6px;
+    border: 1px solid #e1e7ef;
+    border-radius: 6px;
+    background: #f9fbff;
+    max-height: 220px;
+    overflow: auto;
+}
+
+.arcgis-service-info-layer-link-row {
+    margin-bottom: 4px;
+}
+
+.arcgis-service-info-layer-link {
+    border: none;
+    background: none;
+    color: #1976d2;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    font-size: 12px;
+}
+
+.arcgis-service-info-layer-link:hover {
+    text-decoration: underline;
 }
 
 .upload-panel-update-btn {
@@ -1119,11 +1474,11 @@
     justify-content: center;
     border-radius: 4px;
     transition: all 0.15s ease;
-    font-size: 14px;
+    font-size: 12px;
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
-    margin: 0 4px;
+    width: 24px;
+    height: 24px;
+    margin: 0 2px 0 auto;
 }
 
 .arcgis-service-row-action-btn:hover {
@@ -1133,4 +1488,14 @@
 
 .arcgis-service-row-action-btn:active {
     background: rgba(90, 122, 142, 0.15);
+}
+
+/* Onboarding locked state - disables interactions during tutorial */
+.upload-panel.onboarding-locked * {
+    pointer-events: none;
+}
+
+.upload-panel.onboarding-locked .upload-panel-header-close-btn--play,
+.upload-panel.onboarding-locked .upload-panel-header-close-btn--help {
+    pointer-events: auto;
 }

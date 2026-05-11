@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faQuestion } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faQuestion, faPlay } from '@fortawesome/free-solid-svg-icons';
 import './BasemapSwitcher.css';
+import BasemapPanelOnboarding from './OnboardingBasemapPanel';
 
 const SF_TILE_SAMPLE = { z: 12, y: 1583, x: 6542 };
 
@@ -87,6 +88,7 @@ function getAccessToken() {
 
 export default function BasemapSwitcher({ isOpen, onClose, mapInstance, currentBasemapId, onBasemapChange }) {
     const [currentBasemap, setCurrentBasemap] = useState(currentBasemapId || 'streets-v12');
+    const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
     const previousControlledBasemapRef = useRef(currentBasemapId || 'streets-v12');
     const token = getAccessToken();
 
@@ -196,26 +198,37 @@ export default function BasemapSwitcher({ isOpen, onClose, mapInstance, currentB
         onBasemapChange?.(basemap.id);
     };
 
+    useEffect(() => {
+        if (!isOpen && isOnboardingOpen) {
+            setIsOnboardingOpen(false);
+        }
+    }, [isOpen, isOnboardingOpen]);
+
     if (!isOpen) return null;
 
     return (
-        <div className="basemap-switcher-panel">
+        <>
+        <div className={`basemap-switcher-panel${isOnboardingOpen ? ' onboarding-locked' : ''}`}>
             <div className="basemap-switcher-header">
                 <span className="basemap-switcher-title">Map Style</span>
                 <div className="basemap-switcher-header-actions">
-                    <button className="basemap-switcher-icon-btn" title="Help" onClick={() => window.open('/user-manual?section=basemap-panel', '_blank')}>
+                    <button className="basemap-switcher-icon-btn" data-onboarding-target="basemap-help-button" title="Help" onClick={() => window.open('/user-manual?section=basemap-panel', '_blank')}>
                         <FontAwesomeIcon icon={faQuestion} />
+                    </button>
+                    <button className="basemap-switcher-icon-btn basemap-switcher-icon-btn--play" title="Tutorial" onClick={() => setIsOnboardingOpen(true)}>
+                        <FontAwesomeIcon icon={faPlay} />
                     </button>
                     <button className="basemap-switcher-icon-btn" title="Close" onClick={onClose}>
                         <FontAwesomeIcon icon={faTimes} />
                     </button>
                 </div>
             </div>
-            <div className="basemap-switcher-list">
+            <div className="basemap-switcher-list" data-onboarding-target="basemap-list">
                 {BASEMAPS.map(basemap => (
                     <div
                         key={basemap.id}
                         className={`basemap-switcher-item${currentBasemap === basemap.id ? ' basemap-switcher-item--active' : ''}`}
+                        data-onboarding-target={currentBasemap === basemap.id ? 'basemap-active-item' : 'basemap-item'}
                         onClick={() => handleSelect(basemap)}
                     >
                         <img
@@ -229,5 +242,11 @@ export default function BasemapSwitcher({ isOpen, onClose, mapInstance, currentB
                 ))}
             </div>
         </div>
+        <BasemapPanelOnboarding
+            isOpen={isOnboardingOpen}
+            onClose={() => setIsOnboardingOpen(false)}
+            isPanelCollapsed={!isOpen}
+        />
+        </>
     );
 }

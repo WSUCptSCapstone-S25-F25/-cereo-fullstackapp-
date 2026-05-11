@@ -39,7 +39,7 @@ import {
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faSquare } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import {
     useArcgisLoadingMessages,
@@ -47,6 +47,7 @@ import {
     getLoadingMsgText
 } from './arcgisUploadMessageUtils';
 import ClearAllLayersButton from './ClearAllLayersButton';
+import ArcgisUploadPanelOnboarding from './OnboardingArcgisUploadPanel';
 
 // --- State selector ---
 const STATE_CODES = ['WA', 'ID', 'OR'];
@@ -85,6 +86,8 @@ const BUILTIN_LAYERS = [
     { id: 'Places', label: 'City Limits' },
 ];
 const BUILTIN_FOLDER_NAME = 'Built-in Layers';
+const EARLIEST_TIMELINE_YEAR = 2000;
+const MONTH_VALUES = [1,2,3,4,5,6,7,8,9,10,11,12];
 const LEGACY_PINNED_STORAGE_KEY = 'arcgis_pinned_items';
 
 function normalizePinnedItems(items) {
@@ -208,6 +211,9 @@ function ArcgisUploadPanel({
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('any'); // 'any', 'folder', 'service', 'layer'
     const [searchResult, setSearchResult] = useState(null);
+    const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+    const [onboardingStepIndex, setOnboardingStepIndex] = useState(0);
+    const onboardingSnapshotRef = useRef(null);
 
     // Search navigation
     const matchList = useMemo(
@@ -226,6 +232,16 @@ function ArcgisUploadPanel({
 
     // Opacity slider state (0 to 1)
     const [layerOpacity, setLayerOpacity] = useState(0.7);
+    const [serviceInfoOpacityByKey, setServiceInfoOpacityByKey] = useState({});
+    // Time filter state per service: { [serviceKey]: { startMs, endMs } | null }
+    const [serviceTimeFilterByKey, setServiceTimeFilterByKey] = useState({});
+    // UI date inputs per service: { [serviceKey]: { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' } }
+    const [serviceTimeInputByKey, setServiceTimeInputByKey] = useState({});
+    // Which time-filter tab is active per service: 'range' | 'timeline'
+    const [serviceTimeTabByKey, setServiceTimeTabByKey] = useState({});
+    // Timeline slider state per service: { year: number|null, month: number|null }
+    const [serviceTimelineByKey, setServiceTimelineByKey] = useState({});
+    const panelRootRef = useRef(null);
 
     // Track previous checkedLayerIds for diffing
     const prevCheckedLayerIds = useRef({});
@@ -255,6 +271,148 @@ function ArcgisUploadPanel({
     const [pinnedItems, setPinnedItems] = useState([]);
     const [pinnedPreferencesLoaded, setPinnedPreferencesLoaded] = useState(false);
     const [localPinnedPreferencesReady, setLocalPinnedPreferencesReady] = useState(false);
+    const onboardingStateCode = 'WA';
+
+    const findFirstVisibleStateCode = useCallback(() => {
+        return STATE_CODES.find(code => (servicesByStateAndFolder[code]?.folderNames || []).length > 0) || null;
+    }, [servicesByStateAndFolder]);
+
+    const findFirstVisibleFolder = useCallback((stateCode) => {
+        if (!stateCode) return null;
+        return servicesByStateAndFolder[stateCode]?.folderNames?.[0] || null;
+    }, [servicesByStateAndFolder]);
+
+    const findFirstVisibleService = useCallback((stateCode, folderName) => {
+        if (!stateCode || !folderName) return null;
+        return servicesByStateAndFolder[stateCode]?.folders?.[folderName]?.[0] || null;
+    }, [servicesByStateAndFolder]);
+
+    const findFirstExpandableLayerKey = useCallback((service) => {
+        if (!service) return null;
+        const rawLayers = serviceLayers[service.key]?.length > 0 ? serviceLayers[service.key] : (service.layers || []);
+        const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+
+        const findInNodes = (nodes) => {
+            for (const node of nodes || []) {
+                if (node?.type === 'Group Layer' && Array.isArray(node.children) && node.children.length > 0) {
+                    return `${service.key}-${node.id}`;
+                }
+                const nested = findInNodes(node?.children || []);
+                if (nested) return nested;
+            }
+            return null;
+        };
+
+        return findInNodes(layerTree);
+    }, [serviceLayers]);
+
+    useEffect(() => {
+        if (isOnboardingOpen) {
+            onboardingSnapshotRef.current = {
+                searchKeyword,
+                searchResult,
+                currentPath,
+                showAddedOnly,
+                expandedStates,
+                expandedFolders,
+                expandedServices,
+                expandedLayers,
+            };
+
+            setSearchKeyword('');
+            setSearchResult(null);
+            setCurrentPath({ stateCode: null, folder: null });
+            setShowAddedOnly(false);
+            setExpandedStates(new Set());
+            setExpandedFolders(new Set());
+            setExpandedServices(new Set());
+            setExpandedLayers(new Set());
+            setServiceInfoOpenKey(null);
+            return;
+        }
+
+        const snapshot = onboardingSnapshotRef.current;
+        if (!snapshot) return;
+
+        setSearchKeyword(snapshot.searchKeyword);
+        setSearchResult(snapshot.searchResult);
+        setCurrentPath(snapshot.currentPath);
+        setShowAddedOnly(snapshot.showAddedOnly);
+        setExpandedStates(snapshot.expandedStates);
+        setExpandedFolders(snapshot.expandedFolders);
+        setExpandedServices(snapshot.expandedServices);
+        setExpandedLayers(snapshot.expandedLayers);
+        onboardingSnapshotRef.current = null;
+    }, [isOnboardingOpen]);
+
+    useEffect(() => {
+        if (!isOnboardingOpen) return;
+
+        const stateCode = findFirstVisibleStateCode();
+        const folderName = findFirstVisibleFolder(stateCode);
+        const service = findFirstVisibleService(stateCode, folderName);
+        const onboardingFolderName = findFirstVisibleFolder(onboardingStateCode);
+        const onboardingService = findFirstVisibleService(onboardingStateCode, onboardingFolderName);
+        const expandableLayerKey = findFirstExpandableLayerKey(service);
+
+        if (onboardingStepIndex >= 1 && stateCode) {
+            setExpandedStates(prev => {
+                const next = new Set(prev);
+                next.add(stateCode);
+                return next;
+            });
+        }
+
+        if (onboardingStepIndex >= 2) {
+            setCurrentPath({ stateCode: onboardingStateCode, folder: null });
+            setExpandedFolders(prev => {
+                const next = new Set(prev);
+                if (folderName) {
+                    next.add(folderName);
+                }
+                if (onboardingFolderName) {
+                    next.add(onboardingFolderName);
+                }
+                return next;
+            });
+            setExpandedStates(prev => {
+                const next = new Set(prev);
+                next.add(onboardingStateCode);
+                return next;
+            });
+        }
+
+        if (onboardingStepIndex >= 3 && service) {
+            setCurrentPath({ stateCode: onboardingStateCode, folder: onboardingFolderName || null });
+            setExpandedServices(prev => {
+                const next = new Set(prev);
+                next.add(service.key);
+                return next;
+            });
+            if (onboardingService) {
+                setExpandedServices(prev => {
+                    const next = new Set(prev);
+                    next.add(onboardingService.key);
+                    return next;
+                });
+            }
+        }
+
+        if (onboardingStepIndex >= 6 && expandableLayerKey) {
+            setExpandedLayers(prev => {
+                const next = new Set(prev);
+                next.add(expandableLayerKey);
+                return next;
+            });
+        }
+    }, [
+        isOnboardingOpen,
+        onboardingStepIndex,
+        findFirstVisibleStateCode,
+        findFirstVisibleFolder,
+        findFirstVisibleService,
+        findFirstExpandableLayerKey,
+    ]);
 
     const {
         messages,
@@ -1722,6 +1880,83 @@ function ArcgisUploadPanel({
         });
     };
 
+    const applyServiceOpacity = useCallback((serviceKey, newOpacity) => {
+        const map = mapInstance && mapInstance();
+        if (!map || !map.getStyle || !serviceKey) return;
+        const style = map.getStyle();
+        if (!style || !Array.isArray(style.layers)) return;
+
+        style.layers.forEach(l => {
+            if (l.id.startsWith(`arcgis-raster-layer-${serviceKey}-`)) {
+                map.setPaintProperty(l.id, 'raster-opacity', newOpacity);
+            } else if (l.id.startsWith(`arcgis-vector-layer-${serviceKey}-`)) {
+                if (l.type === 'fill') {
+                    map.setPaintProperty(l.id, 'fill-opacity', newOpacity);
+                } else if (l.type === 'line') {
+                    map.setPaintProperty(l.id, 'line-opacity', newOpacity);
+                } else if (l.type === 'circle') {
+                    map.setPaintProperty(l.id, 'circle-opacity', newOpacity);
+                }
+            }
+        });
+    }, [mapInstance]);
+
+    // Apply a time range filter to all active map layers of a given service.
+    // timeRange = { startMs, endMs } or null to clear.
+    const applyServiceTimeFilter = useCallback((serviceKey, timeRange) => {
+        setServiceTimeFilterByKey(prev => ({ ...prev, [serviceKey]: timeRange || null }));
+        const map = mapInstance && mapInstance();
+        if (!map || !map.getStyle || !serviceKey) return;
+        const style = map.getStyle();
+        if (!style || !Array.isArray(style.layers)) return;
+
+        const currentService = ARCGIS_SERVICES.find(s => s.key === serviceKey);
+        if (!currentService) return;
+
+        const sourcePrefix = `arcgis-raster-${serviceKey}-`;
+        const layerPrefix = `arcgis-raster-layer-${serviceKey}-`;
+
+        style.layers
+            .filter(l => l.id.startsWith(layerPrefix))
+            .forEach(mapLayer => {
+                const layerId = mapLayer.id;
+                const sourceId = mapLayer.source;
+                if (!map.getLayer(layerId) || !map.getSource(sourceId)) return;
+
+                // Extract ArcGIS numeric layer id from source id, e.g. "arcgis-raster-svc-5" → 5
+                const suffix = sourceId.slice(sourcePrefix.length); // "5" or "5-sub-0"
+                const arcgisLayerId = parseInt(suffix.split('-')[0], 10);
+                if (isNaN(arcgisLayerId)) return;
+
+                const opacity = map.getPaintProperty(layerId, 'raster-opacity') ?? layerOpacity;
+                map.removeLayer(layerId);
+                map.removeSource(sourceId);
+                map.addSource(sourceId, {
+                    type: 'raster',
+                    tiles: [getArcgisTileUrl(currentService.url, [arcgisLayerId], timeRange)],
+                    tileSize: 256,
+                    minzoom: 6,
+                    maxzoom: 12
+                });
+                map.addLayer({ id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': opacity } });
+            });
+    }, [mapInstance, layerOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const getInfoModalStyle = () => {
+        const panelEl = panelRootRef.current;
+        if (!panelEl || typeof window === 'undefined') return undefined;
+        const rect = panelEl.getBoundingClientRect();
+        const modalWidth = 380;
+        const left = Math.min(rect.right + 2, window.innerWidth - modalWidth - 8);
+        const top = Math.max(8, rect.top);
+        const maxHeight = Math.max(240, window.innerHeight - rect.top - 16);
+        return {
+            top: `${top}px`,
+            left: `${left}px`,
+            maxHeight: `${maxHeight}px`,
+        };
+    };
+
     // True while an active search is waiting for layer data from unloaded services
     const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
 
@@ -1837,7 +2072,7 @@ function ArcgisUploadPanel({
 
         return (
         <div>
-            <div className="upload-panel-searchbar">
+            <div className="upload-panel-searchbar" data-onboarding-target="arcgis-search-area">
                 <input
                     type="text"
                     value={searchKeyword}
@@ -2081,6 +2316,25 @@ function ArcgisUploadPanel({
     // Open service info modal (fetch & cache)
     const openServiceInfo = async (service) => {
         setServiceInfoOpenKey(service.key);
+
+        if (service && service.key && serviceLayers[service.key] === undefined && service.url) {
+            setServiceLayersLoading(prev => ({ ...prev, [service.key]: true }));
+            fetchArcgisLayers(service.url).then(layers => {
+                setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
+                setCheckedLayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: [] });
+                setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
+                setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
+            }).catch(() => {
+                setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
+            }).finally(() => {
+                setServiceLayersLoading(prev => {
+                    const next = { ...prev };
+                    delete next[service.key];
+                    return next;
+                });
+            });
+        }
+
         if (serviceInfoCache[service.key]) return;
         setServiceInfoLoading(true);
         try {
@@ -2129,6 +2383,40 @@ function ArcgisUploadPanel({
         return text.replace(/\u00A0/g, ' ').trim();
     }
 
+    const renderServiceLayerLinks = (service) => {
+        const rawLayers = serviceLayers[service.key] || [];
+        if (!Array.isArray(rawLayers) || rawLayers.length === 0) {
+            return <div className="arcgis-service-info-empty">Loading layer links…</div>;
+        }
+
+        const layerTree = buildLayerTree(rawLayers);
+        const renderNodes = (nodes, depth = 0) => (
+            nodes.map(node => {
+                const layerId = node?.id;
+                const label = node?.name || `Layer ${layerId}`;
+                const hasLayerId = Number.isInteger(layerId);
+                return (
+                    <div key={`${service.key}-${layerId}-${depth}`} className="arcgis-service-info-layer-link-row" style={{ marginLeft: depth * 12 }}>
+                        {hasLayerId ? (
+                            <button
+                                type="button"
+                                className="arcgis-service-info-layer-link"
+                                onClick={() => openLayerInfo(service, { id: layerId, name: label })}
+                            >
+                                {label}
+                            </button>
+                        ) : (
+                            <span>{label}</span>
+                        )}
+                        {Array.isArray(node?.children) && node.children.length > 0 && renderNodes(node.children, depth + 1)}
+                    </div>
+                );
+            })
+        );
+
+        return <div className="arcgis-service-info-layer-links">{renderNodes(layerTree)}</div>;
+    };
+
     // Map loading spinner — rendered even when panel is closed (e.g. triggered from learn-more modal)
     const spinnerPortal = isMapLayerLoading && mapContainerEl && createPortal(
         <div className="arcgis-map-loading-overlay">
@@ -2152,12 +2440,15 @@ function ArcgisUploadPanel({
             {/* Map loading spinner overlay */}
             {spinnerPortal}
             {/* Upload Panel */}
-            <div className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}`} onContextMenu={e => e.preventDefault()}>
-                <div className="upload-panel-header">
+            <div ref={panelRootRef} className={`upload-panel${splitBottom ? ' upload-panel--split-bottom' : ''}${isOnboardingOpen ? ' onboarding-locked' : ''}`} onContextMenu={e => e.preventDefault()}>
+                <div className="upload-panel-header" data-onboarding-target="arcgis-state-selector">
                     <h3>Browse ArcGIS Services</h3>
                     <div className="upload-panel-header-actions">
                         <button className="upload-panel-header-close-btn upload-panel-header-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=arcgis-panel', '_blank')}>
                             <FontAwesomeIcon icon={faQuestion} />
+                        </button>
+                        <button className="upload-panel-header-close-btn upload-panel-header-close-btn--play" title="Tutorial" onClick={() => setIsOnboardingOpen(true)}>
+                            <FontAwesomeIcon icon={faPlay} />
                         </button>
                         <button className="upload-panel-header-close-btn" onClick={onClose}>
                             <FontAwesomeIcon icon={faTimes} />
@@ -2169,7 +2460,7 @@ function ArcgisUploadPanel({
                     <>
                         <div className="upload-panel-sticky-toolbar">
                             {renderSearchBar()}
-                            <div className="upload-panel-opacity-slider-row">
+                            <div className="upload-panel-opacity-slider-row" data-onboarding-target="arcgis-opacity-slider">
                                 <label>Layer Opacity:</label>
                                 <input
                                     type="range"
@@ -2241,7 +2532,7 @@ function ArcgisUploadPanel({
                                     </button>
                                 </div>
                             )}
-                        <div className="upload-panel-folder-area" ref={folderAreaRef}>
+                        <div className="upload-panel-folder-area" ref={folderAreaRef} data-onboarding-target="arcgis-folder-area">
                         {searchResult ? (
                             /* ── SEARCH MODE: full filtered tree ── */
                             (() => {
@@ -2254,34 +2545,6 @@ function ArcgisUploadPanel({
                                 ? BUILTIN_FOLDER_NAME.toLowerCase().includes(_lk)
                                 : _matchBuiltinLayers.length > 0;
                             return (<>
-                            {/* Built-in Layers folder — only shown when there are matching results */}
-                            {_showBuiltin && <div>
-                                <div
-                                    className="upload-state-folder"
-                                    onClick={() => {
-                                        setExpandedStates(prev => {
-                                            const newSet = new Set(prev);
-                                            if (newSet.has('__builtin__')) newSet.delete('__builtin__');
-                                            else newSet.add('__builtin__');
-                                            return newSet;
-                                        });
-                                    }}
-                                >
-                                    <span>{BUILTIN_FOLDER_NAME}</span>
-                                </div>
-                                {expandedStates.has('__builtin__') && (
-                                    <div className="upload-state-folder-content">
-                                        {(searchType === 'folder' ? BUILTIN_LAYERS : _matchBuiltinLayers).map(layer => (
-                                            <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
-                                                <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
-                                                    <input type="checkbox" checked={!!areaVisibility[layer.id]} onChange={() => handleAreaCheckbox?.(layer.id)} style={{ marginRight: 4 }} />
-                                                    {layer.label}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>}
                             {STATE_CODES.map(stateCode => {
                                 const stateData = stateFoldersToShow[stateCode];
                                 if (!stateData || stateData.folders.length === 0) return null;
@@ -2335,12 +2598,13 @@ function ArcgisUploadPanel({
                                                                                 onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                                                             >
                                                                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', minWidth: 0, flex: 1 }}>
-                                                                                    <input type="checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
+                                                                                    <input type="checkbox" data-onboarding-target="arcgis-service-checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
                                                                                     {expandedServices.has(service.key) ? '▼' : '►'}
                                                                                     <ArcgisRenameItem value={service.label} displayValue={service.label} onSave={(newLabel) => handleServiceRename(service.key, newLabel)} placeholder="Enter service name..." isFolder={false} disabled={!isAdmin} startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key} onEditingDone={() => setRenamingItem(null)} />
                                                                                 </span>
                                                                                 <button
                                                                                     className="arcgis-service-row-action-btn"
+                                                                                    data-onboarding-target="arcgis-service-info-button"
                                                                                     onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
                                                                                     title="Learn more"
                                                                                 >
@@ -2348,7 +2612,7 @@ function ArcgisUploadPanel({
                                                                                 </button>
                                                                             </div>
                                                                             {expandedServices.has(service.key) && (
-                                                                                <div className="tree-children">
+                                                                                <div className="tree-children" data-onboarding-target="arcgis-layer-tree">
                                                                                     {serviceLayersLoading[service.key] ? (
                                                                                         <div className="upload-panel-layers-loading">Loading layers…</div>
                                                                                     ) : (
@@ -2373,6 +2637,34 @@ function ArcgisUploadPanel({
                                     </div>
                                 );
                             })}
+                            {/* Built-in Layers folder — only shown when there are matching results */}
+                            {_showBuiltin && <div>
+                                <div
+                                    className="upload-state-folder"
+                                    onClick={() => {
+                                        setExpandedStates(prev => {
+                                            const newSet = new Set(prev);
+                                            if (newSet.has('__builtin__')) newSet.delete('__builtin__');
+                                            else newSet.add('__builtin__');
+                                            return newSet;
+                                        });
+                                    }}
+                                >
+                                    <span>{BUILTIN_FOLDER_NAME}</span>
+                                </div>
+                                {expandedStates.has('__builtin__') && (
+                                    <div className="upload-state-folder-content">
+                                        {(searchType === 'folder' ? BUILTIN_LAYERS : _matchBuiltinLayers).map(layer => (
+                                            <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
+                                                <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
+                                                    <input type="checkbox" checked={!!areaVisibility[layer.id]} onChange={() => handleAreaCheckbox?.(layer.id)} style={{ marginRight: 4 }} />
+                                                    {layer.label}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>}
                             </>);})()
                         ) : (
                             /* ── NAVIGATION MODE ── */
@@ -2385,7 +2677,7 @@ function ArcgisUploadPanel({
                                         {currentPath.stateCode === '__builtin__'
                                             ? BUILTIN_FOLDER_NAME
                                             : currentPath.folder !== null
-                                                ? <>{STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode} <span className="upload-panel-breadcrumb-sep">/</span> {currentPath.folder}</>
+                                                ? <>{STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode} <span className="upload-panel-breadcrumb-sep">/</span> {currentPath.folder === '__builtin__' ? BUILTIN_FOLDER_NAME : currentPath.folder}</>
                                                 : STATE_FULL_NAMES[currentPath.stateCode] || currentPath.stateCode
                                         }
                                     </span>
@@ -2395,15 +2687,6 @@ function ArcgisUploadPanel({
                             {/* ROOT: list state folders + builtin */}
                             {currentPath.stateCode === null && (
                                 <>
-                                    <div
-                                        className="upload-state-folder"
-                                        onClick={() => setCurrentPath({ stateCode: '__builtin__', folder: '__builtin__' })}
-                                        title="Click to open"
-                                    >
-                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                            <FontAwesomeIcon icon={faFolder} />{BUILTIN_FOLDER_NAME}
-                                        </span>
-                                    </div>
                                     {STATE_CODES.map(stateCode => {
                                         const stateData = stateFoldersToShow[stateCode];
                                         if (!stateData || stateData.folders.length === 0) return null;
@@ -2411,6 +2694,7 @@ function ArcgisUploadPanel({
                                             <div
                                                 key={stateCode}
                                                 className="upload-state-folder"
+                                                data-onboarding-target="arcgis-state-folder"
                                                 onClick={() => handleStateDoubleClick(stateCode)}
                                                 title="Click to open"
                                             >
@@ -2420,6 +2704,16 @@ function ArcgisUploadPanel({
                                             </div>
                                         );
                                     })}
+                                    <div
+                                        className="upload-state-folder"
+                                        data-onboarding-target="arcgis-state-folder"
+                                        onClick={() => setCurrentPath({ stateCode: '__builtin__', folder: '__builtin__' })}
+                                        title="Click to open"
+                                    >
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                            <FontAwesomeIcon icon={faFolder} />{BUILTIN_FOLDER_NAME}
+                                        </span>
+                                    </div>
                                 </>
                             )}
 
@@ -2464,7 +2758,20 @@ function ArcgisUploadPanel({
                             {/* FOLDER VIEW: list services */}
                             {currentPath.stateCode !== null && currentPath.stateCode !== '__builtin__' && currentPath.folder !== null && (
                                 <>
-                                    {(stateFoldersToShow[currentPath.stateCode]?.byFolder[currentPath.folder] || []).map(service => {
+                                    {currentPath.folder === '__builtin__' && (
+                                        <div className="upload-state-folder-content">
+                                            {BUILTIN_LAYERS.map(layer => (
+                                                <div key={layer.id} className="tree-node" style={{ paddingLeft: 18 }}>
+                                                    <label className="upload-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 6, cursor: 'pointer' }}>
+                                                        <input type="checkbox" checked={!!areaVisibility[layer.id]} onChange={() => handleAreaCheckbox?.(layer.id)} style={{ marginRight: 4 }} />
+                                                        {layer.label}
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {currentPath.folder !== '__builtin__' && (stateFoldersToShow[currentPath.stateCode]?.byFolder[currentPath.folder] || []).map(service => {
                                         const layers = serviceLayers[service.key] || [];
                                         const checkedIds = checkedLayerIds[service.key] || [];
                                         const rawLayers = layers.length > 0 ? layers : (service.layers || []);
@@ -2478,12 +2785,13 @@ function ArcgisUploadPanel({
                                                     onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                                 >
                                                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden', minWidth: 0, flex: 1 }}>
-                                                        <input type="checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
+                                                        <input type="checkbox" data-onboarding-target="arcgis-service-checkbox" checked={checkedIds.length > 0 && checkedIds.length === allFeatureLayers.length} ref={el => { if (el) el.indeterminate = checkedIds.length > 0 && checkedIds.length < allFeatureLayers.length; }} onChange={(e) => { e.stopPropagation(); handleSelectAll(service, allFeatureLayers); }} onClick={(e) => e.stopPropagation()} style={{ marginRight: 4, flexShrink: 0 }} />
                                                         {expandedServices.has(service.key) ? '▼' : '►'}
                                                         <ArcgisRenameItem value={service.label} displayValue={service.label} onSave={(newLabel) => handleServiceRename(service.key, newLabel)} placeholder="Enter service name..." isFolder={false} disabled={!isAdmin} startEditing={renamingItem?.type === 'service' && renamingItem?.key === service.key} onEditingDone={() => setRenamingItem(null)} />
                                                     </span>
                                                     <button
                                                         className="arcgis-service-row-action-btn"
+                                                        data-onboarding-target="arcgis-service-info-button"
                                                         onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
                                                         title="Learn more"
                                                     >
@@ -2491,7 +2799,7 @@ function ArcgisUploadPanel({
                                                     </button>
                                                 </div>
                                                 {expandedServices.has(service.key) && (
-                                                    <div className="tree-children">
+                                                    <div className="tree-children" data-onboarding-target="arcgis-layer-tree">
                                                         {serviceLayersLoading[service.key] ? (
                                                             <div className="upload-panel-layers-loading">Loading layers…</div>
                                                         ) : (
@@ -2540,7 +2848,7 @@ function ArcgisUploadPanel({
 
             {/* Service info modal (right side) */}
             {serviceInfoOpenKey && (
-                <div className="arcgis-service-info-modal">
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
                     <div className="arcgis-service-info-modal-header">
                         <strong>Service info</strong>
                         <button
@@ -2601,6 +2909,355 @@ function ArcgisUploadPanel({
                                     <div className="arcgis-service-info-row">
                                         <strong>Spatial Reference:</strong> {srText}
                                     </div>
+
+                                    <div className="arcgis-service-info-row service-info-opacity-row">
+                                        <strong>Service Opacity:</strong>
+                                        <div className="service-info-opacity-controls">
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.01"
+                                                value={serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity}
+                                                onChange={(e) => {
+                                                    const value = parseFloat(e.target.value);
+                                                    setServiceInfoOpacityByKey(prev => ({ ...prev, [serviceInfoOpenKey]: value }));
+                                                    applyServiceOpacity(serviceInfoOpenKey, value);
+                                                }}
+                                                className="service-info-opacity-slider"
+                                                style={{ background: `linear-gradient(to right, #27425d ${(serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100}%, #d8e1ea ${(serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100}%)` }}
+                                            />
+                                            <span className="service-info-opacity-value">{Math.round((serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100)}%</span>
+                                        </div>
+                                    </div>
+
+                                    {currentService && (() => {
+                                        const sKey = serviceInfoOpenKey;
+                                        const activeTab = serviceTimeTabByKey[sKey] || 'range';
+                                        const tl = serviceTimelineByKey[sKey] || {};
+                                        const nowYear = new Date().getFullYear();
+                                        const yearValues = Array.from(
+                                            { length: nowYear - EARLIEST_TIMELINE_YEAR + 1 },
+                                            (_, i) => EARLIEST_TIMELINE_YEAR + i
+                                        );
+                                        const tlYear = tl.year != null ? tl.year : null;
+                                        const tlMonth = tl.month != null ? tl.month : null; // 1-based
+                                        const yearForSlider = tlYear != null ? tlYear : nowYear;
+                                        const monthForSlider = tlMonth != null ? tlMonth : 1;
+                                        const yearSpan = Math.max(1, nowYear - EARLIEST_TIMELINE_YEAR);
+                                        const yearPointerPct = ((yearForSlider - EARLIEST_TIMELINE_YEAR) / yearSpan) * 100;
+                                        const monthPointerPct = ((monthForSlider - 1) / 11) * 100;
+
+                                        const applyTimeline = (year, month) => {
+                                            if (year == null) { applyServiceTimeFilter(sKey, null); return; }
+                                            const startMs = month != null
+                                                ? new Date(year, month - 1, 1).getTime()
+                                                : new Date(year, 0, 1).getTime();
+                                            const endMs = month != null
+                                                ? new Date(year, month, 0, 23, 59, 59).getTime()
+                                                : new Date(year, 11, 31, 23, 59, 59).getTime();
+                                            applyServiceTimeFilter(sKey, { startMs, endMs });
+                                        };
+
+                                        const startTimelineIconDrag = (startEvent, wrapEl, min, max, onValue) => {
+                                            if (!wrapEl) return;
+
+                                            const clamp = (val, low, high) => Math.min(high, Math.max(low, val));
+                                            const resolveClientX = (evt) => {
+                                                if (evt.touches && evt.touches.length > 0) return evt.touches[0].clientX;
+                                                if (evt.changedTouches && evt.changedTouches.length > 0) return evt.changedTouches[0].clientX;
+                                                return evt.clientX;
+                                            };
+
+                                            const updateFromClientX = (clientX) => {
+                                                const rect = wrapEl.getBoundingClientRect();
+                                                if (!rect.width) return;
+                                                const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
+                                                const nextValue = Math.round(min + ratio * (max - min));
+                                                onValue(clamp(nextValue, min, max));
+                                            };
+
+                                            const onMouseMove = (moveEvent) => {
+                                                moveEvent.preventDefault();
+                                                updateFromClientX(resolveClientX(moveEvent));
+                                            };
+
+                                            const onTouchMove = (moveEvent) => {
+                                                moveEvent.preventDefault();
+                                                updateFromClientX(resolveClientX(moveEvent));
+                                            };
+
+                                            const stopDrag = () => {
+                                                window.removeEventListener('mousemove', onMouseMove);
+                                                window.removeEventListener('mouseup', stopDrag);
+                                                window.removeEventListener('touchmove', onTouchMove);
+                                                window.removeEventListener('touchend', stopDrag);
+                                            };
+
+                                            updateFromClientX(resolveClientX(startEvent));
+
+                                            window.addEventListener('mousemove', onMouseMove);
+                                            window.addEventListener('mouseup', stopDrag);
+                                            window.addEventListener('touchmove', onTouchMove, { passive: false });
+                                            window.addEventListener('touchend', stopDrag);
+                                        };
+
+                                        return (
+                                            <div className="arcgis-service-info-row">
+                                                <strong>Historical View:</strong>
+                                                <div className="service-info-time-filter">
+                                                    {/* ── Tabs ── */}
+                                                    <div className="service-info-time-tabs">
+                                                        <button
+                                                            className={`service-info-time-tab${activeTab === 'range' ? ' active' : ''}`}
+                                                            onClick={() => setServiceTimeTabByKey(prev => ({ ...prev, [sKey]: 'range' }))}
+                                                        >Date Range</button>
+                                                        <button
+                                                            className={`service-info-time-tab${activeTab === 'timeline' ? ' active' : ''}`}
+                                                            onClick={() => setServiceTimeTabByKey(prev => ({ ...prev, [sKey]: 'timeline' }))}
+                                                        >Timeline</button>
+                                                    </div>
+
+                                                    {/* ── Date Range tab ── */}
+                                                    {activeTab === 'range' && (<>
+                                                        <div className="service-info-time-row">
+                                                            <label className="service-info-time-label">From</label>
+                                                            <input
+                                                                type="date"
+                                                                className="service-info-time-input"
+                                                                value={(serviceTimeInputByKey[sKey] || {}).startDate || ''}
+                                                                onChange={e => setServiceTimeInputByKey(prev => ({
+                                                                    ...prev,
+                                                                    [sKey]: { ...(prev[sKey] || {}), startDate: e.target.value }
+                                                                }))}
+                                                            />
+                                                            <label className="service-info-time-label">To</label>
+                                                            <input
+                                                                type="date"
+                                                                className="service-info-time-input"
+                                                                value={(serviceTimeInputByKey[sKey] || {}).endDate || ''}
+                                                                onChange={e => setServiceTimeInputByKey(prev => ({
+                                                                    ...prev,
+                                                                    [sKey]: { ...(prev[sKey] || {}), endDate: e.target.value }
+                                                                }))}
+                                                            />
+                                                        </div>
+                                                        <div className="service-info-time-actions">
+                                                            <button
+                                                                className="service-info-time-btn"
+                                                                onClick={() => {
+                                                                    const inp = serviceTimeInputByKey[sKey] || {};
+                                                                    if (!inp.startDate || !inp.endDate) return;
+                                                                    const startMs = new Date(inp.startDate).getTime();
+                                                                    const endMs = new Date(inp.endDate + 'T23:59:59').getTime();
+                                                                    if (isNaN(startMs) || isNaN(endMs) || startMs > endMs) return;
+                                                                    applyServiceTimeFilter(sKey, { startMs, endMs });
+                                                                }}
+                                                            >Apply</button>
+                                                            <button
+                                                                className="service-info-time-btn service-info-time-btn-clear"
+                                                                onClick={() => {
+                                                                    setServiceTimeInputByKey(prev => ({ ...prev, [sKey]: {} }));
+                                                                    applyServiceTimeFilter(sKey, null);
+                                                                }}
+                                                            >Clear</button>
+                                                        </div>
+                                                    </>)}
+
+                                                    {/* ── Timeline tab ── */}
+                                                    {activeTab === 'timeline' && (
+                                                        <div className="service-info-timeline">
+                                                            {/* Year slider */}
+                                                            <div className="service-info-timeline-row">
+                                                                <span className="service-info-timeline-label">Year</span>
+                                                                <div className="service-info-timeline-slider-wrap">
+                                                                    <input
+                                                                        type="range"
+                                                                        className="service-info-timeline-slider"
+                                                                        min={EARLIEST_TIMELINE_YEAR}
+                                                                        max={nowYear}
+                                                                        step={1}
+                                                                        value={yearForSlider}
+                                                                        onChange={e => {
+                                                                            const y = parseInt(e.target.value, 10);
+                                                                            setServiceTimelineByKey(prev => ({
+                                                                                ...prev,
+                                                                                [sKey]: { ...(prev[sKey] || {}), year: y }
+                                                                            }));
+                                                                            applyTimeline(y, tlMonth);
+                                                                        }}
+                                                                        style={{
+                                                                            background: `linear-gradient(to right, #27425d ${yearPointerPct}%, #d8e1ea ${yearPointerPct}%)`
+                                                                        }}
+                                                                    />
+                                                                    <span
+                                                                        className="service-info-timeline-handle-icon"
+                                                                        style={{ left: `calc(${yearPointerPct}% - 6px)` }}
+                                                                        onMouseDown={(e) => {
+                                                                            e.preventDefault();
+                                                                            startTimelineIconDrag(
+                                                                                e,
+                                                                                e.currentTarget.closest('.service-info-timeline-slider-wrap'),
+                                                                                EARLIEST_TIMELINE_YEAR,
+                                                                                nowYear,
+                                                                                (y) => {
+                                                                                    setServiceTimelineByKey(prev => ({
+                                                                                        ...prev,
+                                                                                        [sKey]: { ...(prev[sKey] || {}), year: y }
+                                                                                    }));
+                                                                                    applyTimeline(y, tlMonth);
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        onTouchStart={(e) => {
+                                                                            e.preventDefault();
+                                                                            startTimelineIconDrag(
+                                                                                e,
+                                                                                e.currentTarget.closest('.service-info-timeline-slider-wrap'),
+                                                                                EARLIEST_TIMELINE_YEAR,
+                                                                                nowYear,
+                                                                                (y) => {
+                                                                                    setServiceTimelineByKey(prev => ({
+                                                                                        ...prev,
+                                                                                        [sKey]: { ...(prev[sKey] || {}), year: y }
+                                                                                    }));
+                                                                                    applyTimeline(y, tlMonth);
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        aria-hidden="true"
+                                                                    >
+                                                                        <FontAwesomeIcon icon={faSquare} />
+                                                                    </span>
+                                                                </div>
+                                                                <span className="service-info-timeline-value">{tlYear != null ? tlYear : nowYear}</span>
+                                                            </div>
+                                                            <div
+                                                                className="service-info-timeline-ticks"
+                                                                style={{ gridTemplateColumns: `repeat(${yearValues.length}, minmax(0, 1fr))` }}
+                                                                aria-hidden="true"
+                                                            >
+                                                                {yearValues.map(y => (
+                                                                    <span key={`year-tick-${y}`} className="service-info-timeline-tick" />
+                                                                ))}
+                                                            </div>
+                                                            <div
+                                                                className="service-info-timeline-year-labels"
+                                                                style={{ gridTemplateColumns: `repeat(${yearValues.length}, minmax(0, 1fr))` }}
+                                                            >
+                                                                {yearValues.map(y => (
+                                                                    <span key={`year-label-${y}`}>
+                                                                        {(y === EARLIEST_TIMELINE_YEAR || y % 5 === 0) ? y : ''}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Month slider — always visible once in timeline tab */}
+                                                            <div className="service-info-timeline-row" style={{ marginTop: 8 }}>
+                                                                <span className="service-info-timeline-label">Month</span>
+                                                                <div className="service-info-timeline-slider-wrap">
+                                                                    <input
+                                                                        type="range"
+                                                                        className="service-info-timeline-slider"
+                                                                        min={1}
+                                                                        max={12}
+                                                                        step={1}
+                                                                        value={monthForSlider}
+                                                                        onChange={e => {
+                                                                            const m = parseInt(e.target.value, 10);
+                                                                            const y = tlYear != null ? tlYear : nowYear;
+                                                                            setServiceTimelineByKey(prev => ({
+                                                                                ...prev,
+                                                                                [sKey]: { ...(prev[sKey] || {}), year: y, month: m }
+                                                                            }));
+                                                                            applyTimeline(y, m);
+                                                                        }}
+                                                                        style={{
+                                                                            background: `linear-gradient(to right, #27425d ${monthPointerPct}%, #d8e1ea ${monthPointerPct}%)`
+                                                                        }}
+                                                                    />
+                                                                    <span
+                                                                        className="service-info-timeline-handle-icon"
+                                                                        style={{ left: `calc(${monthPointerPct}% - 6px)` }}
+                                                                        onMouseDown={(e) => {
+                                                                            e.preventDefault();
+                                                                            startTimelineIconDrag(
+                                                                                e,
+                                                                                e.currentTarget.closest('.service-info-timeline-slider-wrap'),
+                                                                                1,
+                                                                                12,
+                                                                                (m) => {
+                                                                                    const y = tlYear != null ? tlYear : nowYear;
+                                                                                    setServiceTimelineByKey(prev => ({
+                                                                                        ...prev,
+                                                                                        [sKey]: { ...(prev[sKey] || {}), year: y, month: m }
+                                                                                    }));
+                                                                                    applyTimeline(y, m);
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        onTouchStart={(e) => {
+                                                                            e.preventDefault();
+                                                                            startTimelineIconDrag(
+                                                                                e,
+                                                                                e.currentTarget.closest('.service-info-timeline-slider-wrap'),
+                                                                                1,
+                                                                                12,
+                                                                                (m) => {
+                                                                                    const y = tlYear != null ? tlYear : nowYear;
+                                                                                    setServiceTimelineByKey(prev => ({
+                                                                                        ...prev,
+                                                                                        [sKey]: { ...(prev[sKey] || {}), year: y, month: m }
+                                                                                    }));
+                                                                                    applyTimeline(y, m);
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        aria-hidden="true"
+                                                                    >
+                                                                        <FontAwesomeIcon icon={faSquare} />
+                                                                    </span>
+                                                                </div>
+                                                                <span className="service-info-timeline-value">{tlMonth != null ? tlMonth : 1}</span>
+                                                            </div>
+                                                            <div className="service-info-timeline-months">
+                                                                {MONTH_VALUES.map((m, i) => (
+                                                                    <div key={m} className="service-info-timeline-month-item" style={{ left: `calc(${i} / 11 * 100%)` }}>
+                                                                        <div className="service-info-timeline-month-tick" />
+                                                                        <span className="service-info-timeline-month-label">{m}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            <div className="service-info-time-actions" style={{ marginTop: 6 }}>
+                                                                <button
+                                                                    className="service-info-time-btn service-info-time-btn-clear"
+                                                                    onClick={() => {
+                                                                        setServiceTimelineByKey(prev => ({ ...prev, [sKey]: {} }));
+                                                                        applyServiceTimeFilter(sKey, null);
+                                                                    }}
+                                                                >Clear</button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* ── Shared active-filter indicator ── */}
+                                                    {serviceTimeFilterByKey[sKey] && (
+                                                        <div className="service-info-time-active">
+                                                            Time filter active: {new Date(serviceTimeFilterByKey[sKey].startMs).toLocaleDateString()} – {new Date(serviceTimeFilterByKey[sKey].endMs).toLocaleDateString()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {currentService && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Layers / Sublayers:</strong>
+                                            {renderServiceLayerLinks(currentService)}
+                                        </div>
+                                    )}
                                     
                                     {/* Add the ArcGIS service page link at the bottom */}
                                     {currentService && currentService.url && (
@@ -2624,7 +3281,7 @@ function ArcgisUploadPanel({
 
             {/* Layer Info Modal */}
             {layerInfoOpen && (
-                <div className="arcgis-service-info-modal">
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
                     <div className="arcgis-service-info-modal-header">
                         <strong>Layer Info: {layerInfoOpen.layerName}</strong>
                         <button
@@ -2768,6 +3425,12 @@ function ArcgisUploadPanel({
                 </div>,
                 document.body
             )}
+            <ArcgisUploadPanelOnboarding
+                isOpen={isOnboardingOpen}
+                onClose={() => setIsOnboardingOpen(false)}
+                isPanelCollapsed={!isOpen}
+                onStepChange={setOnboardingStepIndex}
+            />
         </>
     );
 }

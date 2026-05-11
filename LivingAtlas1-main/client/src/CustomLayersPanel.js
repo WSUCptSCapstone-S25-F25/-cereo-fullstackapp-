@@ -17,9 +17,10 @@ import ArcgisRenameItem from './ArcgisRenameItem';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import ClearAllLayersButton from './ClearAllLayersButton';
+import CustomLayersPanelOnboarding from './OnboardingCustomLayersPanel';
 
 function CustomLayersPanel({
     isOpen,
@@ -47,7 +48,9 @@ function CustomLayersPanel({
     const [expandedLayers, setExpandedLayers] = useState(new Set());
 
     const [layerOpacity, setLayerOpacity] = useState(0.7);
+    const [serviceInfoOpacityByKey, setServiceInfoOpacityByKey] = useState({});
     const [statusMsg, setStatusMsg] = useState(null);
+    const panelRootRef = useRef(null);
 
     // Search & filter state
     const [searchKeyword, setSearchKeyword] = useState('');
@@ -63,6 +66,9 @@ function CustomLayersPanel({
     const { currentIndex: navIndex, total: matchTotal, currentMatchId, goToNext, goToPrev, initNav, resetNav } = useSearchNav(matchList);
     const [showAddedOnly, setShowAddedOnly] = useState(false);
     const statusTimer = useRef(null);
+    const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+    const [onboardingStepIndex, setOnboardingStepIndex] = useState(0);
+    const onboardingSnapshotRef = useRef(null);
 
     const prevCheckedLayerIds = useRef({});
     const activeSearchRef = useRef(null); // { keyword, searchType } — tracks active search for auto re-run when layers load
@@ -161,13 +167,130 @@ function CustomLayersPanel({
     });
     const folderNames = Object.keys(servicesByFolder).sort((a, b) => (folderFirstOrder[a] ?? 0) - (folderFirstOrder[b] ?? 0));
 
+    const findFirstRootFolder = useCallback(() => {
+        const rootFolders = folderNames.filter(folder => !folder.includes('/'));
+        return rootFolders.find(folder => (servicesByFolder[folder] || []).length > 0) || rootFolders[0] || folderNames[0] || null;
+    }, [folderNames, servicesByFolder]);
+
+    const findFirstServiceInFolder = useCallback((folder) => {
+        if (!folder) return null;
+        return servicesByFolder[folder]?.[0] || null;
+    }, [servicesByFolder]);
+
+    const findFirstExpandableLayerKey = useCallback((service) => {
+        if (!service) return null;
+        const rawLayers = serviceLayers[service.key]?.length > 0 ? serviceLayers[service.key] : [];
+        const layerTree = buildLayerTree(Array.isArray(rawLayers) ? rawLayers : []);
+
+        const findInNodes = (nodes) => {
+            for (const node of nodes || []) {
+                if (node?.type === 'Group Layer' && Array.isArray(node.children) && node.children.length > 0) {
+                    return `${service.key}-${node.id}`;
+                }
+                const nested = findInNodes(node?.children || []);
+                if (nested) return nested;
+            }
+            return null;
+        };
+
+        return findInNodes(layerTree);
+    }, [serviceLayers]);
+
+    useEffect(() => {
+        if (isOnboardingOpen) {
+            onboardingSnapshotRef.current = {
+                searchKeyword,
+                searchType,
+                searchResult,
+                currentPath,
+                showAddedOnly,
+                expandedFolders,
+                expandedServices,
+                expandedLayers,
+            };
+
+            setSearchKeyword('');
+            setSearchType('any');
+            setSearchResult(null);
+            setCurrentPath('');
+            setShowAddedOnly(false);
+            setExpandedFolders(new Set());
+            setExpandedServices(new Set());
+            setExpandedLayers(new Set());
+            setServiceInfoOpenKey(null);
+            return;
+        }
+
+        const snapshot = onboardingSnapshotRef.current;
+        if (!snapshot) return;
+
+        setSearchKeyword(snapshot.searchKeyword);
+        setSearchType(snapshot.searchType);
+        setSearchResult(snapshot.searchResult);
+        setCurrentPath(snapshot.currentPath);
+        setShowAddedOnly(snapshot.showAddedOnly);
+        setExpandedFolders(snapshot.expandedFolders);
+        setExpandedServices(snapshot.expandedServices);
+        setExpandedLayers(snapshot.expandedLayers);
+        onboardingSnapshotRef.current = null;
+    }, [isOnboardingOpen]);
+
+    useEffect(() => {
+        if (!isOnboardingOpen) return;
+
+        const firstFolder = findFirstRootFolder();
+        const firstService = findFirstServiceInFolder(firstFolder);
+        const expandableLayerKey = findFirstExpandableLayerKey(firstService);
+
+        if (onboardingStepIndex >= 2) {
+            setCurrentPath('');
+        }
+
+        if (onboardingStepIndex >= 3 && firstFolder) {
+            setCurrentPath(firstFolder);
+            setExpandedFolders(prev => {
+                const next = new Set(prev);
+                next.add(firstFolder);
+                return next;
+            });
+        }
+
+        if (onboardingStepIndex >= 5 && firstService) {
+            setExpandedServices(prev => {
+                const next = new Set(prev);
+                next.add(firstService.key);
+                return next;
+            });
+        }
+
+        if (onboardingStepIndex >= 6 && expandableLayerKey) {
+            setExpandedLayers(prev => {
+                const next = new Set(prev);
+                next.add(expandableLayerKey);
+                return next;
+            });
+        }
+    }, [
+        isOnboardingOpen,
+        onboardingStepIndex,
+        findFirstRootFolder,
+        findFirstServiceInFolder,
+        findFirstExpandableLayerKey,
+    ]);
+
     // --- Search handler ---
     const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
 
+    // Returns services scoped to current navigation path.
+    const getScopedServices = (path = currentPath) => {
+        if (!path) return customServices;
+        return customServices.filter(service => (service.folder || 'Root') === path);
+    };
+
     // Trigger loading of any not-yet-fetched service layers so layer-name matches aren't missed
-    const triggerLayerLoadForSearch = (type) => {
+    const triggerLayerLoadForSearch = (type, scopedServicesList) => {
         if (type !== 'any' && type !== 'layer') return;
-        customServices.forEach(service => {
+        scopedServicesList.forEach(service => {
             if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
             if (serviceLayers[service.key] !== undefined) return;
             if (serviceLayersLoading[service.key]) return;
@@ -194,6 +317,7 @@ function CustomLayersPanel({
 
     const doSearch = () => {
         if (!searchKeyword) {
+            activeSearchRef.current = null;
             setSearchResult(null);
             setExpandedFolders(new Set());
             setExpandedServices(new Set());
@@ -201,20 +325,21 @@ function CustomLayersPanel({
             resetNav();
             return;
         }
+        const scopedServicesList = getScopedServices();
         const result = filterUploadPanelData({
-            services: customServices,
+            services: scopedServicesList,
             serviceLayers,
             searchType,
             keyword: searchKeyword,
         });
         setSearchResult(result);
-        activeSearchRef.current = { keyword: searchKeyword, searchType };
+        activeSearchRef.current = { keyword: searchKeyword, searchType, scopedServices: scopedServicesList };
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
-        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: customServices }, stateCodes: ['CUSTOM'], serviceLayers });
+        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: scopedServicesList }, stateCodes: ['CUSTOM'], serviceLayers });
         initNav(mList);
-        triggerLayerLoadForSearch(searchType);
+        triggerLayerLoadForSearch(searchType, scopedServicesList);
     };
 
     const clearSearch = () => {
@@ -285,13 +410,32 @@ function CustomLayersPanel({
     useEffect(() => {
         if (!activeSearchRef.current) return;
         const { keyword, searchType: type } = activeSearchRef.current;
-        const result = filterUploadPanelData({ services: customServices, serviceLayers, searchType: type, keyword });
+        const scopedServicesList = activeSearchRef.current.scopedServices || getScopedServices();
+        const result = filterUploadPanelData({ services: scopedServicesList, serviceLayers, searchType: type, keyword });
         setSearchResult(result);
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: scopedServicesList }, stateCodes: ['CUSTOM'], serviceLayers });
+        initNav(mList);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serviceLayers]);
+
+    // Re-run active search when scoped services list changes (e.g. refresh / folder operations)
+    useEffect(() => {
+        if (!activeSearchRef.current) return;
+        const { keyword, searchType: type } = activeSearchRef.current;
+        const scopedServicesList = getScopedServices();
+        activeSearchRef.current = { keyword, searchType: type, scopedServices: scopedServicesList };
+        const result = filterUploadPanelData({ services: scopedServicesList, serviceLayers, searchType: type, keyword });
+        setSearchResult(result);
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: scopedServicesList }, stateCodes: ['CUSTOM'], serviceLayers });
+        initNav(mList);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [customServices, currentPath]);
 
     // --- Map interaction: add/remove raster + vector layers per layer (matches ArcgisUploadPanel) ---
     useEffect(() => {
@@ -452,6 +596,42 @@ function CustomLayersPanel({
                 }
             }
         });
+    };
+
+    const applyServiceOpacity = useCallback((serviceKey, newOpacity) => {
+        const map = mapInstance && mapInstance();
+        if (!map || !map.getStyle || !serviceKey) return;
+        const style = map.getStyle();
+        if (!style || !Array.isArray(style.layers)) return;
+
+        style.layers.forEach(l => {
+            if (l.id.startsWith(`arcgis-raster-layer-custom-${serviceKey}-`)) {
+                map.setPaintProperty(l.id, 'raster-opacity', newOpacity);
+            } else if (l.id.startsWith(`arcgis-vector-layer-custom-${serviceKey}-`)) {
+                if (l.type === 'fill') {
+                    map.setPaintProperty(l.id, 'fill-opacity', newOpacity);
+                } else if (l.type === 'line') {
+                    map.setPaintProperty(l.id, 'line-opacity', newOpacity);
+                } else if (l.type === 'circle') {
+                    map.setPaintProperty(l.id, 'circle-opacity', newOpacity);
+                }
+            }
+        });
+    }, [mapInstance]);
+
+    const getInfoModalStyle = () => {
+        const panelEl = panelRootRef.current;
+        if (!panelEl || typeof window === 'undefined') return undefined;
+        const rect = panelEl.getBoundingClientRect();
+        const modalWidth = 380;
+        const left = Math.min(rect.right + 2, window.innerWidth - modalWidth - 8);
+        const top = Math.max(8, rect.top);
+        const maxHeight = Math.max(240, window.innerHeight - rect.top - 16);
+        return {
+            top: `${top}px`,
+            left: `${left}px`,
+            maxHeight: `${maxHeight}px`,
+        };
     };
 
     // Helper to remove all map layers for a service
@@ -933,6 +1113,28 @@ function CustomLayersPanel({
     // Learn More handlers
     const openServiceInfo = async (service) => {
         setServiceInfoOpenKey(service.key);
+
+        if (service && service.key && serviceLayers[service.key] === undefined && service.url) {
+            setServiceLayersLoading(prev => ({ ...prev, [service.key]: true }));
+            fetchArcgisLayers(service.url)
+                .then(layers => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: layers || [] }));
+                    setCheckedLayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: [] });
+                    setServiceLayerAdded(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: false });
+                    setCheckedSublayerIds(prev => prev[service.key] !== undefined ? prev : { ...prev, [service.key]: {} });
+                })
+                .catch(() => {
+                    setServiceLayers(prev => ({ ...prev, [service.key]: [] }));
+                })
+                .finally(() => {
+                    setServiceLayersLoading(prev => {
+                        const next = { ...prev };
+                        delete next[service.key];
+                        return next;
+                    });
+                });
+        }
+
         if (serviceInfoCache[service.key]) return;
         setServiceInfoLoading(true);
         try {
@@ -972,6 +1174,40 @@ function CustomLayersPanel({
         const text = tmp.textContent || tmp.innerText || '';
         return text.replace(/\u00A0/g, ' ').trim();
     }
+
+    const renderServiceLayerLinks = (service) => {
+        const rawLayers = serviceLayers[service.key] || [];
+        if (!Array.isArray(rawLayers) || rawLayers.length === 0) {
+            return <div className="arcgis-service-info-empty">Loading layer links…</div>;
+        }
+
+        const layerTree = buildLayerTree(rawLayers);
+        const renderNodes = (nodes, depth = 0) => (
+            nodes.map(node => {
+                const layerId = node?.id;
+                const label = node?.name || `Layer ${layerId}`;
+                const hasLayerId = Number.isInteger(layerId);
+                return (
+                    <div key={`${service.key}-${layerId}-${depth}`} className="arcgis-service-info-layer-link-row" style={{ marginLeft: depth * 12 }}>
+                        {hasLayerId ? (
+                            <button
+                                type="button"
+                                className="arcgis-service-info-layer-link"
+                                onClick={() => openLayerInfo(service, { id: layerId, name: label })}
+                            >
+                                {label}
+                            </button>
+                        ) : (
+                            <span>{label}</span>
+                        )}
+                        {Array.isArray(node?.children) && node.children.length > 0 && renderNodes(node.children, depth + 1)}
+                    </div>
+                );
+            })
+        );
+
+        return <div className="arcgis-service-info-layer-links">{renderNodes(layerTree)}</div>;
+    };
 
     // Render a layer tree node using the shared component
     const renderLayerNode = (node, service, checkedIds, allFeatureLayers, depth = 0) => (
@@ -1025,13 +1261,14 @@ function CustomLayersPanel({
     }
 
     return (
-        <div className={`custom-layers-panel${splitBottom ? ' custom-layers-panel--split-bottom' : ''}`}
+        <div ref={panelRootRef} className={`custom-layers-panel${splitBottom ? ' custom-layers-panel--split-bottom' : ''}${isOnboardingOpen ? ' onboarding-locked' : ''}`}
              onContextMenu={e => e.preventDefault()}>
             <div className="custom-layers-panel-header">
                 <h3>Custom Layers</h3>
                 <div className="custom-layers-panel-header-actions">
                     <button
                         className="custom-layers-panel-new-folder-btn"
+                        data-onboarding-target="custom-layers-new-folder-button"
                         onClick={handleCreateFolder}
                         title="New Folder"
                     >
@@ -1039,6 +1276,9 @@ function CustomLayersPanel({
                     </button>
                     <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
                         <FontAwesomeIcon icon={faQuestion} />
+                    </button>
+                    <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--play" title="Tutorial" onClick={() => setIsOnboardingOpen(true)}>
+                        <FontAwesomeIcon icon={faPlay} />
                     </button>
                     <button className="custom-layers-panel-close-btn" onClick={onClose}>
                         <FontAwesomeIcon icon={faTimes} />
@@ -1049,7 +1289,7 @@ function CustomLayersPanel({
             {/* Sticky toolbar: search bar, opacity, show-added-only */}
             <div className="custom-layers-panel-sticky-toolbar">
                 {/* Search bar */}
-                <div className="upload-panel-searchbar">
+                <div className="upload-panel-searchbar" data-onboarding-target="custom-layers-search-area">
                     <input
                         type="text"
                         value={searchKeyword}
@@ -1090,7 +1330,7 @@ function CustomLayersPanel({
                 )}
 
                 {/* Opacity slider */}
-                <div className="upload-panel-opacity-slider-row">
+                <div className="upload-panel-opacity-slider-row" data-onboarding-target="custom-layers-opacity-slider">
                     <label>Layer Opacity:</label>
                     <input
                         type="range"
@@ -1182,7 +1422,7 @@ function CustomLayersPanel({
                             </button>
                         </div>
                     )}
-                <div className="custom-layers-panel-folder-area">
+                <div className="custom-layers-panel-folder-area" data-onboarding-target="custom-layers-folder-area">
                     {/* Breadcrumb — shown when inside a folder in navigation mode */}
                     {!searchResult && currentPath !== '' && (
                         <div
@@ -1300,6 +1540,7 @@ function CustomLayersPanel({
                                                 <div key={service.key} style={{ opacity: isServiceDragging ? 0.4 : 1 }}>
                                                     <div
                                                         className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
+                                                        data-onboarding-target="custom-layers-service-row"
                                                         data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                         onClick={() => handleServiceClick(service.key)}
                                                         onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
@@ -1345,6 +1586,7 @@ function CustomLayersPanel({
                                                         )}
                                                         <button
                                                             className="custom-layers-service-row-action-btn"
+                                                            data-onboarding-target="custom-layers-service-info-button"
                                                             onClick={(e) => { e.stopPropagation(); openServiceInfo(service); }}
                                                             title="Learn more"
                                                         >
@@ -1352,7 +1594,7 @@ function CustomLayersPanel({
                                                         </button>
                                                     </div>
                                                     {isServiceExpanded && layerTree.length > 0 && (
-                                                        <div className="tree-children" style={{ paddingLeft: 16 }}>
+                                                        <div className="tree-children" style={{ paddingLeft: 16 }} data-onboarding-target="custom-layers-layer-tree">
                                                             {layerTree.map(node =>
                                                                 renderLayerNode(node, service, checkedIds, allFeatureLayers)
                                                             )}
@@ -1405,7 +1647,7 @@ function CustomLayersPanel({
 
             {/* Service Info Modal */}
             {serviceInfoOpenKey && (
-                <div className="arcgis-service-info-modal">
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
                     <div className="arcgis-service-info-modal-header">
                         <strong>Service info</strong>
                         <button
@@ -1459,6 +1701,34 @@ function CustomLayersPanel({
                                     <div className="arcgis-service-info-row">
                                         <strong>Spatial Reference:</strong> {srText}
                                     </div>
+
+                                    <div className="arcgis-service-info-row service-info-opacity-row">
+                                        <strong>Service Opacity:</strong>
+                                        <div className="service-info-opacity-controls">
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.01"
+                                                value={serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity}
+                                                onChange={(e) => {
+                                                    const value = parseFloat(e.target.value);
+                                                    setServiceInfoOpacityByKey(prev => ({ ...prev, [serviceInfoOpenKey]: value }));
+                                                    applyServiceOpacity(serviceInfoOpenKey, value);
+                                                }}
+                                                className="service-info-opacity-slider"
+                                                style={{ background: `linear-gradient(to right, #27425d ${(serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100}%, #d8e1ea ${(serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100}%)` }}
+                                            />
+                                            <span className="service-info-opacity-value">{Math.round((serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100)}%</span>
+                                        </div>
+                                    </div>
+
+                                    {currentService && (
+                                        <div className="arcgis-service-info-row">
+                                            <strong>Layers / Sublayers:</strong>
+                                            {renderServiceLayerLinks(currentService)}
+                                        </div>
+                                    )}
                                     {currentService && currentService.url && (
                                         <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
                                             <a href={currentService.url} target="_blank" rel="noopener noreferrer"
@@ -1476,7 +1746,7 @@ function CustomLayersPanel({
 
             {/* Layer Info Modal */}
             {layerInfoOpen && (
-                <div className="arcgis-service-info-modal">
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
                     <div className="arcgis-service-info-modal-header">
                         <strong>Layer Info: {layerInfoOpen.layerName}</strong>
                         <button
@@ -1573,6 +1843,13 @@ function CustomLayersPanel({
                     </div>
                 </div>
             )}
+
+            <CustomLayersPanelOnboarding
+                isOpen={isOnboardingOpen}
+                onClose={() => setIsOnboardingOpen(false)}
+                isPanelCollapsed={!isOpen}
+                onStepChange={setOnboardingStepIndex}
+            />
         </div>
     );
 }
