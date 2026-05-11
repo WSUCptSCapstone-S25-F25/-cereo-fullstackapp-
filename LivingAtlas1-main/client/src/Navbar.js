@@ -30,42 +30,43 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
   console.log("Username:", username);
 
   return (
-    <nav className="navbar">
-      <Link to="/">
+    <nav className="navbar" data-onboarding-target="navbar-root">
+      <Link to="/" data-onboarding-target="navbar-brand">
         <h1>RWC Living Atlas</h1>
       </Link>
-      <a href="https://cereo.wsu.edu/">
+      <a href="https://cereo.wsu.edu/" data-onboarding-target="navbar-cereo-link">
         <img src="/CEREO-logo.png" alt="CEREO Logo" style={{ width: '140px', height: '50px', float: 'left' }}></img>
       </a>
       <ul>
         <li>
-          <Link to="/" className={location.pathname === '/' ? 'active' : ''}>Home</Link>
+          <Link to="/" data-onboarding-target="navbar-home-link" className={location.pathname === '/' ? 'active' : ''}>Home</Link>
         </li>
         <li>
-          <Link to="/about" className={location.pathname === '/about' ? 'active' : ''}>About</Link>
+          <Link to="/about" data-onboarding-target="navbar-about-link" className={location.pathname === '/about' ? 'active' : ''}>About</Link>
         </li>
         <li>
-          <Link to="/contact" className={location.pathname === '/contact' ? 'active' : ''}>Contact</Link>
+          <Link to="/contact" data-onboarding-target="navbar-contact-link" className={location.pathname === '/contact' ? 'active' : ''}>Contact</Link>
         </li>
         <li>
-          <Link to="/update-history" className={location.pathname === '/update-history' ? 'active' : ''}>Updates</Link>
+          <Link to="/update-history" data-onboarding-target="navbar-updates-link" className={location.pathname === '/update-history' ? 'active' : ''}>Updates</Link>
         </li>
         <li>
-          <Link to="/user-manual" className={location.pathname === '/user-manual' ? 'active' : ''}>User Manual</Link>
+          <Link to="/user-manual" data-onboarding-target="navbar-manual-link" className={location.pathname === '/user-manual' ? 'active' : ''}>User Manual</Link>
         </li>
         {!isLoggedIn && (
           <li>
-            <Link to="/signup" className={location.pathname === '/signup' ? 'active' : ''}>Register</Link>
+            <Link to="/signup" data-onboarding-target="navbar-auth-link" className={location.pathname === '/signup' ? 'active' : ''}>Register</Link>
           </li>
         )}
         {!isLoggedIn && (
           <li>
-            <Link to="/login" className={location.pathname === '/login' ? 'active' : ''}>Login</Link>
+            <Link to="/login" data-onboarding-target="navbar-auth-link" className={location.pathname === '/login' ? 'active' : ''}>Login</Link>
           </li>
         )}
         {isLoggedIn && (
           <li
               className={`profile-button ${isModalOpen ? 'active' : ''}`}
+              data-onboarding-target="navbar-auth-link"
               onClick={toggleModal}
           >
             <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />

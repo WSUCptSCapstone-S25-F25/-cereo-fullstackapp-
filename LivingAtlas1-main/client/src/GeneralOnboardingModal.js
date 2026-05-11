@@ -1,7 +1,9 @@
 import React from 'react';
 import Modal from 'react-modal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlay } from '@fortawesome/free-solid-svg-icons';
 
-function GeneralOnboardingModal({ isOpen, onClose }) {
+function GeneralOnboardingModal({ isOpen, onClose, onPlay }) {
     return (
         <Modal
             isOpen={isOpen}
@@ -22,8 +24,15 @@ function GeneralOnboardingModal({ isOpen, onClose }) {
 
                 <h3>Quick Help Tip</h3>
                 <p>In these panels, the <strong>question mark</strong> button opens the detailed user manual, and the <strong>play</strong> button starts the guided onboarding tour.</p>
+
+                <h3>General Onboarding Replay</h3>
+                <p>To replay this general onboarding flow anytime: click the left sidebar <strong>Onboarding</strong> button, then click <strong>Play General Onboarding</strong> in this modal.</p>
             </div>
             <div className="onboarding-modal-footer">
+                <button className="onboarding-modal-play" onClick={onPlay}>
+                    <FontAwesomeIcon icon={faPlay} />
+                    <span>Play General Onboarding</span>
+                </button>
                 <button className="onboarding-modal-dismiss" onClick={onClose}>Got it</button>
             </div>
         </Modal>

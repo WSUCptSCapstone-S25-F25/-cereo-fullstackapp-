@@ -19,6 +19,7 @@ import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
 import ChangelogModal from './ChangelogModal';
 import GeneralOnboardingModal from './GeneralOnboardingModal';
+import GeneralOnboarding from './OnboardingGeneral';
 import { fetchUserPreferences, saveUserPreferences } from './userPreferencesApi';
 import ChatbotWidget from './ChatbotWidget';
 import {
@@ -72,6 +73,7 @@ function Home(props) {
         return !localStorage.getItem('changelog_seen_v14');
     });
     const [isGeneralOnboardingOpen, setIsGeneralOnboardingOpen] = useState(false);
+    const [isGeneralOnboardingTourOpen, setIsGeneralOnboardingTourOpen] = useState(false);
 
     const closeChangelog = () => {
         localStorage.setItem('changelog_seen_v14', 'true');
@@ -80,6 +82,15 @@ function Home(props) {
 
     const closeGeneralOnboarding = () => {
         setIsGeneralOnboardingOpen(false);
+    };
+
+    const startGeneralOnboardingTour = () => {
+        setIsGeneralOnboardingOpen(false);
+        setIsGeneralOnboardingTourOpen(true);
+    };
+
+    const closeGeneralOnboardingTour = () => {
+        setIsGeneralOnboardingTourOpen(false);
     };
 
     useEffect(() => {
@@ -432,15 +443,16 @@ function Home(props) {
 
     return (
         <div className="home-container">
-            <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+            <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`} data-onboarding-target="left-sidebar-root">
                 {/* Left Sidebar Search Button */}
-                <button className="left-sidebar-search-button" onClick={toggleSearchModal}>
+                <button className="left-sidebar-search-button" data-onboarding-target="left-sidebar-search" onClick={toggleSearchModal}>
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
 
                 {/* Card Container Toggle Button */}
                 <button
                     className={`left-sidebar-cards-button${!isCollapsed ? ' active' : ''}`}
+                    data-onboarding-target="left-sidebar-cards"
                     onClick={toggleCardContainer}
                     title={isCollapsed ? "Show Cards" : "Hide Cards"}
                 >
@@ -450,6 +462,7 @@ function Home(props) {
                 {/* GIS Services Button */}
                 <button
                     className={`left-sidebar-gis-button${isUploadPanelOpen ? ' active' : ''}`}
+                    data-onboarding-target="left-sidebar-gis"
                     onClick={() => { setIsUploadPanelOpen(v => !v); setIsCustomLayerPanelOpen(false); }}
                     title="Toggle Layers"
                 >
@@ -474,6 +487,7 @@ function Home(props) {
                 {/* Custom Layers Button */}
                 <button
                     className={`left-sidebar-customlayers-button${isCustomLayerPanelOpen ? ' active' : ''}`}
+                    data-onboarding-target="left-sidebar-customlayers"
                     onClick={() => { setIsCustomLayerPanelOpen(v => !v); setIsUploadPanelOpen(false); }}
                     title="Custom Layers"
                 >
@@ -492,6 +506,7 @@ function Home(props) {
                 {/* Basemap Switcher Button */}
                 <button
                     className="left-sidebar-basemap-button"
+                    data-onboarding-target="left-sidebar-basemap"
                     onClick={() => setIsBasemapOpen(v => !v)}
                     title="Change Basemap"
                 >
@@ -513,6 +528,7 @@ function Home(props) {
                 {/* Changelog Bell Button */}
                 <button
                     className="left-sidebar-changelog-button"
+                    data-onboarding-target="left-sidebar-changelog"
                     onClick={() => setIsChangelogOpen(true)}
                     title="What's new"
                 >
@@ -521,6 +537,7 @@ function Home(props) {
 
                 <button
                     className="left-sidebar-onboarding-button"
+                    data-onboarding-target="left-sidebar-general-onboarding"
                     onClick={() => setIsGeneralOnboardingOpen(true)}
                     title="App onboarding"
                 >
@@ -623,7 +640,10 @@ function Home(props) {
             <ChangelogModal isOpen={isChangelogOpen} onClose={closeChangelog} />
 
             {/* App General Onboarding Modal */}
-            <GeneralOnboardingModal isOpen={isGeneralOnboardingOpen} onClose={closeGeneralOnboarding} />
+            <GeneralOnboardingModal isOpen={isGeneralOnboardingOpen} onClose={closeGeneralOnboarding} onPlay={startGeneralOnboardingTour} />
+
+            {/* App General Onboarding Tour */}
+            <GeneralOnboarding isOpen={isGeneralOnboardingTourOpen} onClose={closeGeneralOnboardingTour} />
 
             {/* AI Chatbot floating widget */}
             <ChatbotWidget />
