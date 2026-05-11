@@ -4,7 +4,7 @@ import './ChatbotWidget.css';
 
 const WELCOME_MESSAGE = {
   role: 'assistant',
-  text: 'Hi! I\'m the RWC Living Atlas Helper. Ask me anything about the datasets, layers, or features available on this map.\n\n⚠️ This feature is currently under development and may not always provide accurate or complete answers.',
+  text: 'RWC Living Atlas Helper is not complete yet and is currently unavailable.',
 };
 
 export default function ChatbotWidget() {
