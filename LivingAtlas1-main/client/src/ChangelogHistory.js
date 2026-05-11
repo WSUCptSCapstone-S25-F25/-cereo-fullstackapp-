@@ -7,6 +7,13 @@ function ChangelogHistory() {
             <h1>Update History</h1>
             <div className="changelog-history-body">
 
+                <h3>Update Date: 5/10/2026</h3>
+                <p>Added onboarding tours for the ArcGIS Upload Panel, Custom Layers Panel, and Basemap Panel.</p>
+                <p>Cards and card titles now adapt to different screen sizes automatically.</p>
+                <p>Updated the Custom Layers Panel search and navigate-to-result functionality to match the behavior of the Upload Panel.</p>
+                <p>Improved service row appearance; the service Learn More modal now includes an opacity control, links to open its layers directly, and a historical layer timeline view.</p>
+                <hr />
+
                 <h3>Update Date: 5/8/2026</h3>
                 <p>Added onboarding tours for the Card Container Panel and the Learn More modal, triggered by the Play button at the top-right.</p>
                 <p>Enhanced the Admin page User Management table with new columns for online status, account creation time, and last online time, plus sorting by Name and Date Joined.</p>
