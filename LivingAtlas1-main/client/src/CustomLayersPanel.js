@@ -279,10 +279,16 @@ function CustomLayersPanel({
     // --- Search handler ---
     const isSearchLoadingLayers = searchResult !== null && Object.keys(serviceLayersLoading).length > 0;
 
+    // Returns services scoped to current navigation path.
+    const getScopedServices = (path = currentPath) => {
+        if (!path) return customServices;
+        return customServices.filter(service => (service.folder || 'Root') === path);
+    };
+
     // Trigger loading of any not-yet-fetched service layers so layer-name matches aren't missed
-    const triggerLayerLoadForSearch = (type) => {
+    const triggerLayerLoadForSearch = (type, scopedServicesList) => {
         if (type !== 'any' && type !== 'layer') return;
-        customServices.forEach(service => {
+        scopedServicesList.forEach(service => {
             if (!service || service.type !== 'MapServer' || !service.url || !service.key) return;
             if (serviceLayers[service.key] !== undefined) return;
             if (serviceLayersLoading[service.key]) return;
@@ -309,6 +315,7 @@ function CustomLayersPanel({
 
     const doSearch = () => {
         if (!searchKeyword) {
+            activeSearchRef.current = null;
             setSearchResult(null);
             setExpandedFolders(new Set());
             setExpandedServices(new Set());
@@ -316,20 +323,21 @@ function CustomLayersPanel({
             resetNav();
             return;
         }
+        const scopedServicesList = getScopedServices();
         const result = filterUploadPanelData({
-            services: customServices,
+            services: scopedServicesList,
             serviceLayers,
             searchType,
             keyword: searchKeyword,
         });
         setSearchResult(result);
-        activeSearchRef.current = { keyword: searchKeyword, searchType };
+        activeSearchRef.current = { keyword: searchKeyword, searchType, scopedServices: scopedServicesList };
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
-        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: customServices }, stateCodes: ['CUSTOM'], serviceLayers });
+        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: scopedServicesList }, stateCodes: ['CUSTOM'], serviceLayers });
         initNav(mList);
-        triggerLayerLoadForSearch(searchType);
+        triggerLayerLoadForSearch(searchType, scopedServicesList);
     };
 
     const clearSearch = () => {
@@ -400,13 +408,32 @@ function CustomLayersPanel({
     useEffect(() => {
         if (!activeSearchRef.current) return;
         const { keyword, searchType: type } = activeSearchRef.current;
-        const result = filterUploadPanelData({ services: customServices, serviceLayers, searchType: type, keyword });
+        const scopedServicesList = activeSearchRef.current.scopedServices || getScopedServices();
+        const result = filterUploadPanelData({ services: scopedServicesList, serviceLayers, searchType: type, keyword });
         setSearchResult(result);
         setExpandedFolders(new Set(result.expandedFolders));
         setExpandedServices(new Set(result.expandedServices));
         setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: scopedServicesList }, stateCodes: ['CUSTOM'], serviceLayers });
+        initNav(mList);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serviceLayers]);
+
+    // Re-run active search when scoped services list changes (e.g. refresh / folder operations)
+    useEffect(() => {
+        if (!activeSearchRef.current) return;
+        const { keyword, searchType: type } = activeSearchRef.current;
+        const scopedServicesList = getScopedServices();
+        activeSearchRef.current = { keyword, searchType: type, scopedServices: scopedServicesList };
+        const result = filterUploadPanelData({ services: scopedServicesList, serviceLayers, searchType: type, keyword });
+        setSearchResult(result);
+        setExpandedFolders(new Set(result.expandedFolders));
+        setExpandedServices(new Set(result.expandedServices));
+        setExpandedLayers(new Set(result.expandedLayerKeys));
+        const mList = buildMatchList({ searchResult: result, allServicesByState: { CUSTOM: scopedServicesList }, stateCodes: ['CUSTOM'], serviceLayers });
+        initNav(mList);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [customServices, currentPath]);
 
     // --- Map interaction: add/remove raster + vector layers per layer (matches ArcgisUploadPanel) ---
     useEffect(() => {
