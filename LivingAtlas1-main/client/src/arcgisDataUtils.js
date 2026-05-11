@@ -81,12 +81,16 @@ export async function fetchArcgisLegend(serviceUrl) {
 }
 
 // Get tile URL for a given service and layer IDs
-export function getArcgisTileUrl(serviceUrl, layerIds = []) {
+export function getArcgisTileUrl(serviceUrl, layerIds = [], timeRange = null) {
     let layersParam = '';
     if (layerIds.length > 0) {
         layersParam = '&layers=show:' + layerIds.join(',');
     }
-    return `${serviceUrl}/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&transparent=true&f=image${layersParam}`;
+    let timeParam = '';
+    if (timeRange && timeRange.startMs != null && timeRange.endMs != null) {
+        timeParam = `&time=${timeRange.startMs},${timeRange.endMs}`;
+    }
+    return `${serviceUrl}/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&transparent=true&f=image${layersParam}${timeParam}`;
 }
 
 // Fetch the service info (service root page) from ArcGIS REST (e.g. .../MapServer?f=json)

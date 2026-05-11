@@ -86,6 +86,8 @@ const BUILTIN_LAYERS = [
     { id: 'Places', label: 'City Limits' },
 ];
 const BUILTIN_FOLDER_NAME = 'Built-in Layers';
+const EARLIEST_TIMELINE_YEAR = 2000;
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const LEGACY_PINNED_STORAGE_KEY = 'arcgis_pinned_items';
 
 function normalizePinnedItems(items) {
@@ -231,6 +233,14 @@ function ArcgisUploadPanel({
     // Opacity slider state (0 to 1)
     const [layerOpacity, setLayerOpacity] = useState(0.7);
     const [serviceInfoOpacityByKey, setServiceInfoOpacityByKey] = useState({});
+    // Time filter state per service: { [serviceKey]: { startMs, endMs } | null }
+    const [serviceTimeFilterByKey, setServiceTimeFilterByKey] = useState({});
+    // UI date inputs per service: { [serviceKey]: { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' } }
+    const [serviceTimeInputByKey, setServiceTimeInputByKey] = useState({});
+    // Which time-filter tab is active per service: 'range' | 'timeline'
+    const [serviceTimeTabByKey, setServiceTimeTabByKey] = useState({});
+    // Timeline slider state per service: { year: number|null, month: number|null }
+    const [serviceTimelineByKey, setServiceTimelineByKey] = useState({});
     const panelRootRef = useRef(null);
 
     // Track previous checkedLayerIds for diffing
@@ -1891,6 +1901,47 @@ function ArcgisUploadPanel({
         });
     }, [mapInstance]);
 
+    // Apply a time range filter to all active map layers of a given service.
+    // timeRange = { startMs, endMs } or null to clear.
+    const applyServiceTimeFilter = useCallback((serviceKey, timeRange) => {
+        setServiceTimeFilterByKey(prev => ({ ...prev, [serviceKey]: timeRange || null }));
+        const map = mapInstance && mapInstance();
+        if (!map || !map.getStyle || !serviceKey) return;
+        const style = map.getStyle();
+        if (!style || !Array.isArray(style.layers)) return;
+
+        const currentService = ARCGIS_SERVICES.find(s => s.key === serviceKey);
+        if (!currentService) return;
+
+        const sourcePrefix = `arcgis-raster-${serviceKey}-`;
+        const layerPrefix = `arcgis-raster-layer-${serviceKey}-`;
+
+        style.layers
+            .filter(l => l.id.startsWith(layerPrefix))
+            .forEach(mapLayer => {
+                const layerId = mapLayer.id;
+                const sourceId = mapLayer.source;
+                if (!map.getLayer(layerId) || !map.getSource(sourceId)) return;
+
+                // Extract ArcGIS numeric layer id from source id, e.g. "arcgis-raster-svc-5" → 5
+                const suffix = sourceId.slice(sourcePrefix.length); // "5" or "5-sub-0"
+                const arcgisLayerId = parseInt(suffix.split('-')[0], 10);
+                if (isNaN(arcgisLayerId)) return;
+
+                const opacity = map.getPaintProperty(layerId, 'raster-opacity') ?? layerOpacity;
+                map.removeLayer(layerId);
+                map.removeSource(sourceId);
+                map.addSource(sourceId, {
+                    type: 'raster',
+                    tiles: [getArcgisTileUrl(currentService.url, [arcgisLayerId], timeRange)],
+                    tileSize: 256,
+                    minzoom: 6,
+                    maxzoom: 12
+                });
+                map.addLayer({ id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': opacity } });
+            });
+    }, [mapInstance, layerOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const getInfoModalStyle = () => {
         const panelEl = panelRootRef.current;
         if (!panelEl || typeof window === 'undefined') return undefined;
@@ -2879,6 +2930,171 @@ function ArcgisUploadPanel({
                                             <span className="service-info-opacity-value">{Math.round((serviceInfoOpacityByKey[serviceInfoOpenKey] ?? layerOpacity) * 100)}%</span>
                                         </div>
                                     </div>
+
+                                    {currentService && (() => {
+                                        const sKey = serviceInfoOpenKey;
+                                        const activeTab = serviceTimeTabByKey[sKey] || 'range';
+                                        const tl = serviceTimelineByKey[sKey] || {};
+                                        const nowYear = new Date().getFullYear();
+                                        const tlYear = tl.year != null ? tl.year : null;
+                                        const tlMonth = tl.month != null ? tl.month : null; // 1-based
+
+                                        const applyTimeline = (year, month) => {
+                                            if (year == null) { applyServiceTimeFilter(sKey, null); return; }
+                                            const startMs = month != null
+                                                ? new Date(year, month - 1, 1).getTime()
+                                                : new Date(year, 0, 1).getTime();
+                                            const endMs = month != null
+                                                ? new Date(year, month, 0, 23, 59, 59).getTime()
+                                                : new Date(year, 11, 31, 23, 59, 59).getTime();
+                                            applyServiceTimeFilter(sKey, { startMs, endMs });
+                                        };
+
+                                        return (
+                                            <div className="arcgis-service-info-row">
+                                                <strong>Historical View:</strong>
+                                                <div className="service-info-time-filter">
+                                                    {/* ── Tabs ── */}
+                                                    <div className="service-info-time-tabs">
+                                                        <button
+                                                            className={`service-info-time-tab${activeTab === 'range' ? ' active' : ''}`}
+                                                            onClick={() => setServiceTimeTabByKey(prev => ({ ...prev, [sKey]: 'range' }))}
+                                                        >Date Range</button>
+                                                        <button
+                                                            className={`service-info-time-tab${activeTab === 'timeline' ? ' active' : ''}`}
+                                                            onClick={() => setServiceTimeTabByKey(prev => ({ ...prev, [sKey]: 'timeline' }))}
+                                                        >Timeline</button>
+                                                    </div>
+
+                                                    {/* ── Date Range tab ── */}
+                                                    {activeTab === 'range' && (<>
+                                                        <div className="service-info-time-row">
+                                                            <label className="service-info-time-label">From</label>
+                                                            <input
+                                                                type="date"
+                                                                className="service-info-time-input"
+                                                                value={(serviceTimeInputByKey[sKey] || {}).startDate || ''}
+                                                                onChange={e => setServiceTimeInputByKey(prev => ({
+                                                                    ...prev,
+                                                                    [sKey]: { ...(prev[sKey] || {}), startDate: e.target.value }
+                                                                }))}
+                                                            />
+                                                            <label className="service-info-time-label">To</label>
+                                                            <input
+                                                                type="date"
+                                                                className="service-info-time-input"
+                                                                value={(serviceTimeInputByKey[sKey] || {}).endDate || ''}
+                                                                onChange={e => setServiceTimeInputByKey(prev => ({
+                                                                    ...prev,
+                                                                    [sKey]: { ...(prev[sKey] || {}), endDate: e.target.value }
+                                                                }))}
+                                                            />
+                                                        </div>
+                                                        <div className="service-info-time-actions">
+                                                            <button
+                                                                className="service-info-time-btn"
+                                                                onClick={() => {
+                                                                    const inp = serviceTimeInputByKey[sKey] || {};
+                                                                    if (!inp.startDate || !inp.endDate) return;
+                                                                    const startMs = new Date(inp.startDate).getTime();
+                                                                    const endMs = new Date(inp.endDate + 'T23:59:59').getTime();
+                                                                    if (isNaN(startMs) || isNaN(endMs) || startMs > endMs) return;
+                                                                    applyServiceTimeFilter(sKey, { startMs, endMs });
+                                                                }}
+                                                            >Apply</button>
+                                                            <button
+                                                                className="service-info-time-btn service-info-time-btn-clear"
+                                                                onClick={() => {
+                                                                    setServiceTimeInputByKey(prev => ({ ...prev, [sKey]: {} }));
+                                                                    applyServiceTimeFilter(sKey, null);
+                                                                }}
+                                                            >Clear</button>
+                                                        </div>
+                                                    </>)}
+
+                                                    {/* ── Timeline tab ── */}
+                                                    {activeTab === 'timeline' && (
+                                                        <div className="service-info-timeline">
+                                                            {/* Year slider */}
+                                                            <div className="service-info-timeline-row">
+                                                                <span className="service-info-timeline-label">Year</span>
+                                                                <input
+                                                                    type="range"
+                                                                    className="service-info-timeline-slider"
+                                                                    min={EARLIEST_TIMELINE_YEAR}
+                                                                    max={nowYear}
+                                                                    step={1}
+                                                                    value={tlYear != null ? tlYear : nowYear}
+                                                                    onChange={e => {
+                                                                        const y = parseInt(e.target.value, 10);
+                                                                        setServiceTimelineByKey(prev => ({
+                                                                            ...prev,
+                                                                            [sKey]: { ...(prev[sKey] || {}), year: y }
+                                                                        }));
+                                                                        applyTimeline(y, tlMonth);
+                                                                    }}
+                                                                    style={{
+                                                                        background: `linear-gradient(to right, #27425d ${((((tlYear != null ? tlYear : nowYear) - EARLIEST_TIMELINE_YEAR) / (nowYear - EARLIEST_TIMELINE_YEAR)) * 100)}%, #d8e1ea ${((((tlYear != null ? tlYear : nowYear) - EARLIEST_TIMELINE_YEAR) / (nowYear - EARLIEST_TIMELINE_YEAR)) * 100)}%)`
+                                                                    }}
+                                                                />
+                                                                <span className="service-info-timeline-value">{tlYear != null ? tlYear : nowYear}</span>
+                                                            </div>
+                                                            <div className="service-info-timeline-endpoints">
+                                                                <span>{EARLIEST_TIMELINE_YEAR}</span>
+                                                                <span>{nowYear}</span>
+                                                            </div>
+
+                                                            {/* Month slider — always visible once in timeline tab */}
+                                                            <div className="service-info-timeline-row" style={{ marginTop: 8 }}>
+                                                                <span className="service-info-timeline-label">Month</span>
+                                                                <input
+                                                                    type="range"
+                                                                    className="service-info-timeline-slider"
+                                                                    min={1}
+                                                                    max={12}
+                                                                    step={1}
+                                                                    value={tlMonth != null ? tlMonth : 1}
+                                                                    onChange={e => {
+                                                                        const m = parseInt(e.target.value, 10);
+                                                                        const y = tlYear != null ? tlYear : nowYear;
+                                                                        setServiceTimelineByKey(prev => ({
+                                                                            ...prev,
+                                                                            [sKey]: { ...(prev[sKey] || {}), year: y, month: m }
+                                                                        }));
+                                                                        applyTimeline(y, m);
+                                                                    }}
+                                                                    style={{
+                                                                        background: `linear-gradient(to right, #27425d ${(((tlMonth != null ? tlMonth : 1) - 1) / 11 * 100)}%, #d8e1ea ${(((tlMonth != null ? tlMonth : 1) - 1) / 11 * 100)}%)`
+                                                                    }}
+                                                                />
+                                                                <span className="service-info-timeline-value">{MONTH_NAMES[(tlMonth != null ? tlMonth : 1) - 1]}</span>
+                                                            </div>
+                                                            <div className="service-info-timeline-months">
+                                                                {MONTH_NAMES.map(m => <span key={m}>{m}</span>)}
+                                                            </div>
+
+                                                            <div className="service-info-time-actions" style={{ marginTop: 6 }}>
+                                                                <button
+                                                                    className="service-info-time-btn service-info-time-btn-clear"
+                                                                    onClick={() => {
+                                                                        setServiceTimelineByKey(prev => ({ ...prev, [sKey]: {} }));
+                                                                        applyServiceTimeFilter(sKey, null);
+                                                                    }}
+                                                                >Clear</button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* ── Shared active-filter indicator ── */}
+                                                    {serviceTimeFilterByKey[sKey] && (
+                                                        <div className="service-info-time-active">
+                                                            Time filter active: {new Date(serviceTimeFilterByKey[sKey].startMs).toLocaleDateString()} – {new Date(serviceTimeFilterByKey[sKey].endMs).toLocaleDateString()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {currentService && (
                                         <div className="arcgis-service-info-row">
