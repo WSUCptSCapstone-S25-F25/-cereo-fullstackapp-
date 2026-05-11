@@ -125,6 +125,23 @@ async function withTimeout(promise, ms, label) {
     ]);
 }
 
+async function closeChangelogIfPresent(driver) {
+    const overlays = await driver.findElements(By.css('.changelog-modal-overlay'));
+    if (overlays.length === 0) return;
+
+    const dismissButtons = await driver.findElements(By.css('.changelog-modal-dismiss, .changelog-modal-close'));
+    if (dismissButtons.length > 0) {
+        await driver.executeScript('arguments[0].click()', dismissButtons[0]);
+    } else {
+        await driver.actions().sendKeys('\uE00C').perform(); // ESC
+    }
+
+    await driver.wait(async () => {
+        const stillOpen = await driver.findElements(By.css('.changelog-modal-overlay'));
+        return stillOpen.length === 0;
+    }, 5000, 'Changelog modal did not close');
+}
+
 // ─── Test Suite ───────────────────────────────────────────────────────────────
 
 describe('Historical View – Timeline Slider Tests', function () {
@@ -132,14 +149,17 @@ describe('Historical View – Timeline Slider Tests', function () {
 
     let driver;
 
-    // ── Setup: open panel, navigate to a MapServer service, add it to map,
-    //           then open the learn-more modal and switch to the Timeline tab ──
+    // ── Setup: open panel, navigate to a MapServer service, add a single layer
+    //           to the map, then open the learn-more modal and switch to Timeline ──
     before(async function () {
         console.log('[before] step 1: build driver');
         driver = await withTimeout(buildDriver(), 90000, 'build driver');
 
         console.log('[before] step 2: open app url');
         await withTimeout(driver.get(APP_URL), 45000, 'open app url');
+
+        console.log('[before] step 2b: close changelog modal if present');
+        await withTimeout(closeChangelogIfPresent(driver), 10000, 'close changelog modal');
 
         // 1. Open GIS Services panel
         console.log('[before] step 3: find GIS Services button');
@@ -197,48 +217,84 @@ describe('Historical View – Timeline Slider Tests', function () {
             'Service list did not appear'
         ), 25000, 'wait service list');
 
-        // 6. Expand the first service by clicking its row
-        console.log('[before] step 8: expand first service and enable checkbox');
-        const firstServiceRow = await driver.findElement(By.css('.upload-item'));
-        await firstServiceRow.click();
-        await sleep(1200);
+        console.log('[before] step 8: select a service with timeline support');
+        const serviceNodes = await driver.findElements(By.css('.tree-node[data-service-key]'));
+        let foundTimeline = false;
 
-        // 7. Check the service-level (select-all) checkbox to add its layers to the map.
-        //    The select-all checkbox is the first checkbox inside the first .upload-item.
-        const serviceCheckboxes = await driver.findElements(
-            By.css('.upload-item input[type="checkbox"]')
-        );
-        if (serviceCheckboxes.length > 0) {
-            await driver.executeScript('arguments[0].click()', serviceCheckboxes[0]);
-        }
+        for (const node of serviceNodes) {
+            const serviceRow = await node.findElement(By.css('.upload-item'));
+            await serviceRow.click();
+            await sleep(500);
 
-        // 8. Wait for layers to load / tile requests to fire
-        console.log('[before] step 9: wait tile load window');
-        await sleep(4000);
+            let firstLayerCheckbox = null;
+            try {
+                firstLayerCheckbox = await withTimeout(driver.wait(async () => {
+                    const layerCheckboxes = await node.findElements(By.css('.upload-layer-row input[type="checkbox"]'));
+                    return layerCheckboxes.length > 0 ? layerCheckboxes[0] : false;
+                }, 6000, 'Layer checkbox did not appear'), 8000, 'wait first layer checkbox');
+            } catch (error) {
+                console.log('[before] skipping service without quickly selectable layer');
+                continue;
+            }
 
-        // 9. Open service info modal via the learn-more (⋮) button of the first service
-        console.log('[before] step 10: open learn-more modal');
-        const infoBtn = await driver.findElement(By.css('.arcgis-service-row-action-btn'));
-        await driver.executeScript('arguments[0].click()', infoBtn);
+            await driver.executeScript('arguments[0].click()', firstLayerCheckbox);
 
-        await withTimeout(driver.wait(
-            until.elementLocated(By.css('.arcgis-service-info-modal')),
-            NAV_TIMEOUT,
-            'Service info modal did not open'
-        ), 25000, 'wait service info modal');
+            console.log('[before] step 9: wait tile load window');
+            await sleep(1500);
 
-        // 10. Switch to Timeline tab
-        console.log('[before] step 11: switch to timeline tab');
-        const tabs = await driver.findElements(By.css('.service-info-time-tab'));
-        clicked = false;
-        for (const tab of tabs) {
-            if ((await tab.getText()).includes('Timeline')) {
-                await tab.click();
-                clicked = true;
+            console.log('[before] step 10: open learn-more modal');
+            const infoBtn = await node.findElement(By.css('.arcgis-service-row-action-btn'));
+            await driver.executeScript('arguments[0].click()', infoBtn);
+
+            await withTimeout(driver.wait(
+                until.elementLocated(By.css('.arcgis-service-info-modal')),
+                NAV_TIMEOUT,
+                'Service info modal did not open'
+            ), 25000, 'wait service info modal');
+
+            let tabs = [];
+            try {
+                await withTimeout(driver.wait(
+                    until.elementsLocated(By.css('.service-info-time-tab')),
+                    8000,
+                    'Historical view tabs did not appear'
+                ), 10000, 'wait service info tabs');
+                tabs = await driver.findElements(By.css('.service-info-time-tab'));
+            } catch (error) {
+                const closeBtn = await driver.findElement(By.css('.arcgis-service-info-modal-close'));
+                await driver.executeScript('arguments[0].click()', closeBtn);
+                await sleep(200);
+
+                const selectedLayerCheckboxes = await node.findElements(By.css('.upload-layer-row input[type="checkbox"]'));
+                if (selectedLayerCheckboxes.length > 0) {
+                    await driver.executeScript('arguments[0].click()', selectedLayerCheckboxes[0]);
+                }
+                continue;
+            }
+
+            for (const tab of tabs) {
+                if ((await tab.getText()).includes('Timeline')) {
+                    await tab.click();
+                    foundTimeline = true;
+                    break;
+                }
+            }
+
+            if (foundTimeline) {
                 break;
             }
+
+            const closeBtn = await driver.findElement(By.css('.arcgis-service-info-modal-close'));
+            await driver.executeScript('arguments[0].click()', closeBtn);
+            await sleep(200);
+
+            const selectedLayerCheckboxes = await node.findElements(By.css('.upload-layer-row input[type="checkbox"]'));
+            if (selectedLayerCheckboxes.length > 0) {
+                await driver.executeScript('arguments[0].click()', selectedLayerCheckboxes[0]);
+            }
         }
-        assert.ok(clicked, 'Timeline tab not found in modal');
+
+        assert.ok(foundTimeline, 'No service modal with Timeline tab found');
 
         // 11. Wait for sliders to appear
         console.log('[before] step 12: wait timeline sliders');
@@ -297,6 +353,8 @@ describe('Historical View – Timeline Slider Tests', function () {
         await drainNetworkRequests(driver, '/export');
 
         const sliders = await driver.findElements(By.css('.service-info-timeline-slider'));
+        await setRangeValue(driver, sliders[0], '2014');
+        await sleep(500);
         await setRangeValue(driver, sliders[0], '2015');
         await sleep(TILE_TIMEOUT);
 

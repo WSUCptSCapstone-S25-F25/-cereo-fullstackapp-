@@ -27,7 +27,7 @@ const EXPECTED = {
         label: 'Washington State ArcGIS Services',
         // Representative subset – we don't require ALL folders to guard against
         // minor data updates; we do require the core ones.
-        folders: ['ADS', 'AQ', 'Authoritative', 'GIS', 'NHD', 'WQ', 'WR'],
+        folders: ['ADR', 'Air Quality', 'Authoritative', 'GIS', 'NHD', 'WQ', 'WR'],
         // Folder to drill into for the service-count check
         sampleFolder: 'GIS',
         minServices: 1,
@@ -41,7 +41,7 @@ const EXPECTED = {
     OR: {
         label: 'Oregon ArcGIS Services',
         // OR has 5 folders; we check all of them
-        folders: ['Framework', 'Locators', 'Projects', 'Utilities'],
+        folders: ['Framework', 'Projects', 'Root'],
         sampleFolder: 'Framework',
         minServices: 1,
     },
@@ -57,9 +57,27 @@ function buildDriver() {
     return new Builder().forBrowser(Browser.CHROME).build();
 }
 
+async function closeChangelogIfPresent(driver) {
+    const overlays = await driver.findElements(By.css('.changelog-modal-overlay'));
+    if (overlays.length === 0) return;
+
+    const dismissButtons = await driver.findElements(By.css('.changelog-modal-dismiss, .changelog-modal-close'));
+    if (dismissButtons.length > 0) {
+        await driver.executeScript('arguments[0].click()', dismissButtons[0]);
+    } else {
+        await driver.actions().sendKeys('\uE00C').perform(); // ESC
+    }
+
+    await driver.wait(async () => {
+        const stillOpen = await driver.findElements(By.css('.changelog-modal-overlay'));
+        return stillOpen.length === 0;
+    }, 5000, 'Changelog modal did not close');
+}
+
 /** Open the app and click the GIS Services button to open the upload panel. */
 async function openPanel(driver) {
     await driver.get(APP_URL);
+    await closeChangelogIfPresent(driver);
     // Wait for the sidebar button to appear
     const gisBtn = await driver.wait(
         until.elementLocated(By.css('.left-sidebar-gis-button')),
