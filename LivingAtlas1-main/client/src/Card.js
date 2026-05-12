@@ -1446,8 +1446,8 @@ function Card(props) {
         setSelectedAllImageIDs([]);
     };
 
-    const currentImage = imageList[currentImageIndex] || imageList[0];
-    const cardCurrentImage = cardImageList[currentImageIndex] || cardImageList[0];
+    const currentImage = imageList[currentImageIndex] || imageList[0] || { url: cardThumbnailSrc, id: 'fallback-preview', alt: 'Card preview' };
+    const cardCurrentImage = cardImageList[currentImageIndex] || cardImageList[0] || { url: cardThumbnailSrc, id: 'fallback-card', alt: 'Card thumbnail' };
     const hasMultipleImages = cardImageList.length > 1;
     const isCardCurrentImageDefault = (() => {
         const url = cardCurrentImage?.url;

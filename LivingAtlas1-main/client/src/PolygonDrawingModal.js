@@ -140,7 +140,7 @@ function normalizeHistorySnapshot(snapshot) {
     );
 }
 
-const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor, mode = 'polygon', initialImageUrl, title }) => {
+const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor, mode = 'polygon', initialImageUrl, initialImageDimensions, title }) => {
     const isImageMode = mode === 'image';
     const minimumVertexCount = isImageMode ? 4 : 3;
     const modalTitle = title || (isImageMode ? 'Place Image' : 'Draw Polygon');
@@ -197,6 +197,9 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const hasAutoStartedImagePlacementRef = useRef(false);
     const imageUrlRef = useRef(initialImageUrl || '');
     imageUrlRef.current = initialImageUrl || '';
+
+    const imageDimensionsRef = useRef(initialImageDimensions || null);
+    imageDimensionsRef.current = initialImageDimensions || null;
 
     const POLYGON_LINE_SOURCE = 'card-polygon-draw-line';
     const POLYGON_LINE_LAYER = 'card-polygon-draw-line-layer';
@@ -310,10 +313,10 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     imageSourceAdded.current = true;
                 } else {
                     const imageSource = map.getSource(IMAGE_SOURCE);
-                    if (typeof imageSource.updateImage === 'function') {
-                        imageSource.updateImage({ url: imageUrlRef.current, coordinates: imageCoords });
-                    } else if (typeof imageSource.setCoordinates === 'function') {
+                    if (typeof imageSource.setCoordinates === 'function') {
                         imageSource.setCoordinates(imageCoords);
+                    } else if (typeof imageSource.updateImage === 'function') {
+                        imageSource.updateImage({ url: imageUrlRef.current, coordinates: imageCoords });
                     }
                 }
 
@@ -323,7 +326,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         type: 'raster',
                         source: IMAGE_SOURCE,
                         paint: {
-                            'raster-opacity': 1
+                            'raster-opacity': 1,
+                            'raster-fade-duration': 0
                         }
                     });
                 }
@@ -433,14 +437,63 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         markersRef.current.forEach(m => m.remove());
         markersRef.current = [];
 
-        if (isImageMode) return;
+        if (isImageMode) {
+            if (verts.length < 4) return;
+            const map = window.atlasMapInstance;
+            if (!map) return;
+            const lats = verts.map(v => v.lat);
+            const lngs = verts.map(v => v.lng);
+            const cLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+            const cLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+            circleMetaRef.current = { center: { lat: cLat, lng: cLng } };
+            const el = document.createElement('div');
+            el.className = 'polygon-draw-vertex-marker';
+            const dot = document.createElement('div');
+            dot.className = 'polygon-draw-vertex-dot';
+            el.appendChild(dot);
+            let dragStartPos, dragStartVerts;
+            const marker = new mapboxgl.Marker({ element: el, draggable: true, anchor: 'center' })
+                .setLngLat([cLng, cLat])
+                .addTo(map);
+            marker.on('dragstart', () => {
+                saveToHistoryRef.current?.();
+                dragStartPos = marker.getLngLat();
+                dragStartVerts = [...verticesRef.current];
+            });
+            marker.on('drag', () => {
+                const pos = marker.getLngLat();
+                const dLat = pos.lat - dragStartPos.lat;
+                const dLng = pos.lng - dragStartPos.lng;
+                const newVerts = dragStartVerts.map(v => ({
+                    lat: parseFloat((v.lat + dLat).toFixed(6)),
+                    lng: parseFloat((v.lng + dLng).toFixed(6)),
+                }));
+                circleMetaRef.current = { center: { lat: pos.lat, lng: pos.lng } };
+                setVertices(newVerts);
+                updatePolygonOnMap(newVerts);
+            });
+            marker.on('dragend', () => {
+                const pos = marker.getLngLat();
+                const dLat = pos.lat - dragStartPos.lat;
+                const dLng = pos.lng - dragStartPos.lng;
+                const newVerts = dragStartVerts.map(v => ({
+                    lat: parseFloat((v.lat + dLat).toFixed(6)),
+                    lng: parseFloat((v.lng + dLng).toFixed(6)),
+                }));
+                circleMetaRef.current = { center: { lat: pos.lat, lng: pos.lng } };
+                setVertices(newVerts);
+                updatePolygonOnMap(newVerts);
+            });
+            markersRef.current.push(marker);
+            return;
+        }
 
         // Create new markers
         verts.forEach((v, i) => {
             const marker = createDraggableMarker(v, i, verts);
             if (marker) markersRef.current.push(marker);
         });
-    }, [createDraggableMarker, isImageMode]);
+    }, [createDraggableMarker, isImageMode, updatePolygonOnMap]);
 
     const rebuildCurveMarkers = useCallback((verts, ctrlPts) => {
         const map = window.atlasMapInstance;
@@ -692,11 +745,20 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             }));
             syncCurveGeometry(moved, { rebuildHandles: isCurveModeRef.current && !isImageMode });
             updatePolygonOnMap(moved);
-            moved.forEach((v, i) => {
-                if (markersRef.current[i]) {
-                    markersRef.current[i].setLngLat([v.lng, v.lat]);
-                }
-            });
+            if (isImageMode && circleMetaRef.current && markersRef.current.length === 1) {
+                const rLats = moved.map(v => v.lat);
+                const rLngs = moved.map(v => v.lng);
+                const cLat = (Math.min(...rLats) + Math.max(...rLats)) / 2;
+                const cLng = (Math.min(...rLngs) + Math.max(...rLngs)) / 2;
+                circleMetaRef.current = { center: { lat: cLat, lng: cLng } };
+                markersRef.current[0].setLngLat([cLng, cLat]);
+            } else {
+                moved.forEach((v, i) => {
+                    if (markersRef.current[i]) {
+                        markersRef.current[i].setLngLat([v.lng, v.lat]);
+                    }
+                });
+            }
         };
 
         const onMouseUp = (e) => {
@@ -714,11 +776,20 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             syncCurveGeometry(moved, { rebuildHandles: isCurveModeRef.current && !isImageMode });
             setVertices(moved);
             updatePolygonOnMap(moved);
-            moved.forEach((v, i) => {
-                if (markersRef.current[i]) {
-                    markersRef.current[i].setLngLat([v.lng, v.lat]);
-                }
-            });
+            if (isImageMode && circleMetaRef.current && markersRef.current.length === 1) {
+                const rLats = moved.map(v => v.lat);
+                const rLngs = moved.map(v => v.lng);
+                const cLat = (Math.min(...rLats) + Math.max(...rLats)) / 2;
+                const cLng = (Math.min(...rLngs) + Math.max(...rLngs)) / 2;
+                circleMetaRef.current = { center: { lat: cLat, lng: cLng } };
+                markersRef.current[0].setLngLat([cLng, cLat]);
+            } else {
+                moved.forEach((v, i) => {
+                    if (markersRef.current[i]) {
+                        markersRef.current[i].setLngLat([v.lng, v.lat]);
+                    }
+                });
+            }
         };
 
         dragHandlersRef.current = { onMouseDown, onMouseMove, onMouseUp };
@@ -796,9 +867,16 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             const rotated = rotateVertices(startVertices, centroid, delta);
             syncCurveGeometry(rotated, { rebuildHandles: isCurveModeRef.current && !isImageMode });
             updatePolygonOnMap(rotated);
-            rotated.forEach((v, i) => {
-                if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
-            });
+            if (isImageMode && markersRef.current.length === 1) {
+                const cLat = rotated.reduce((s, v) => s + v.lat, 0) / rotated.length;
+                const cLng = rotated.reduce((s, v) => s + v.lng, 0) / rotated.length;
+                circleMetaRef.current = { center: { lat: cLat, lng: cLng } };
+                markersRef.current[0].setLngLat([cLng, cLat]);
+            } else {
+                rotated.forEach((v, i) => {
+                    if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
+                });
+            }
         };
 
         const onMouseUp = (e) => {
@@ -813,9 +891,16 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             syncCurveGeometry(rotated, { rebuildHandles: isCurveModeRef.current && !isImageMode });
             setVertices(rotated);
             updatePolygonOnMap(rotated);
-            rotated.forEach((v, i) => {
-                if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
-            });
+            if (isImageMode && markersRef.current.length === 1) {
+                const cLat = rotated.reduce((s, v) => s + v.lat, 0) / rotated.length;
+                const cLng = rotated.reduce((s, v) => s + v.lng, 0) / rotated.length;
+                circleMetaRef.current = { center: { lat: cLat, lng: cLng } };
+                markersRef.current[0].setLngLat([cLng, cLat]);
+            } else {
+                rotated.forEach((v, i) => {
+                    if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
+                });
+            }
         };
 
         rotateHandlersRef.current = { onMouseDown, onMouseMove, onMouseUp };
@@ -1087,6 +1172,50 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isCurveMode, syncCurveGeometry, rebuildCurveMarkers, updatePolygonOnMap]);
 
+    // Click-to-place for image mode (single click, aspect-ratio-aware)
+    const startImageClickPlacement = useCallback(() => {
+        const map = window.atlasMapInstance;
+        if (!map) return;
+        if (isDragMode) { stopDragMode(); setIsDragMode(false); }
+        if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
+        if (isResizeMode) { stopResizeMode(); setIsResizeMode(false); }
+        if (mapClickHandlerRef.current) {
+            map.off('click', mapClickHandlerRef.current);
+            mapClickHandlerRef.current = null;
+        }
+        setIsDrawing(true);
+        setShowShapeMenu(false);
+        map.getCanvas().style.cursor = 'crosshair';
+
+        const onMapClick = (e) => {
+            const { lat, lng } = e.lngLat;
+            const bounds = map.getBounds();
+            const viewLngSpan = bounds.getEast() - bounds.getWest();
+            const halfW = viewLngSpan * 0.2;
+            const dims = imageDimensionsRef.current;
+            const aspect = dims && dims.height > 0 ? dims.width / dims.height : 1;
+            const cosLat = Math.cos(lat * Math.PI / 180) || 1;
+            const halfH = (halfW * cosLat) / aspect;
+            const finalVerts = [
+                { lat: parseFloat((lat + halfH).toFixed(6)), lng: parseFloat((lng - halfW).toFixed(6)) },
+                { lat: parseFloat((lat + halfH).toFixed(6)), lng: parseFloat((lng + halfW).toFixed(6)) },
+                { lat: parseFloat((lat - halfH).toFixed(6)), lng: parseFloat((lng + halfW).toFixed(6)) },
+                { lat: parseFloat((lat - halfH).toFixed(6)), lng: parseFloat((lng - halfW).toFixed(6)) },
+            ];
+            map.off('click', onMapClick);
+            mapClickHandlerRef.current = null;
+            map.getCanvas().style.cursor = '';
+            saveToHistoryRef.current?.();
+            setVertices(finalVerts);
+            syncCurveGeometry(finalVerts, { forceReset: true });
+            updatePolygonOnMap(finalVerts);
+            rebuildMarkers(finalVerts);
+            setIsDrawing(false);
+        };
+        mapClickHandlerRef.current = onMapClick;
+        map.on('click', onMapClick);
+    }, [isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode, syncCurveGeometry, updatePolygonOnMap, rebuildMarkers]);
+
     // Start shape placement mode
     const startShapePlacement = useCallback((shape) => {
         // Exit drag mode if active
@@ -1222,7 +1351,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
 
         if (isImageMode) {
             updatePolygonOnMap([]);
-            startShapePlacement('rectangle');
+            startImageClickPlacement();
             return;
         }
 
@@ -1276,7 +1405,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             });
             linesSourceAdded.current = true;
         }
-        if (!map.getLayer(POLYGON_LINE_LAYER)) {
+        if (!isImageMode && !map.getLayer(POLYGON_LINE_LAYER)) {
             map.addLayer({
                 id: POLYGON_LINE_LAYER,
                 type: 'line',
@@ -1434,8 +1563,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         if (hasAutoStartedImagePlacementRef.current) return;
 
         hasAutoStartedImagePlacementRef.current = true;
-        startShapePlacement('rectangle');
-    }, [isImageMode, initialImageUrl, initialVertices, minimumVertexCount, startShapePlacement]);
+        startImageClickPlacement();
+    }, [isImageMode, initialImageUrl, initialVertices, minimumVertexCount, startImageClickPlacement]);
 
     // Stop drawing mode (finish polygon)
     const handleFinishDrawing = () => {
@@ -1452,7 +1581,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     // Resume drawing
     const handleResumeDrawing = () => {
         if (isImageMode) {
-            startShapePlacement('rectangle');
+            startImageClickPlacement();
             return;
         }
         // Exit drag/rotate mode if active
@@ -1528,7 +1657,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                                 : activeShape
                                     ? `Click & drag on map to place ${activeShape}`
                                     : isImageMode
-                                        ? 'Click and drag on the map to place the image'
+                                        ? (isDrawing ? 'Click on the map to place the image' : 'Use toolbar to move, resize, or rotate')
                                         : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
                 </span>
             </div>
@@ -1762,7 +1891,16 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 {vertices.length === 0 && (
                     <div className="polygon-draw-modal-empty">No points yet</div>
                 )}
-                {circleMetaRef.current ? (
+                {circleMetaRef.current || (isImageMode && vertices.length >= 4) ? (
+                    (() => {
+                        const isImg = isImageMode && vertices.length >= 4;
+                        const cLat = isImg
+                            ? (Math.min(...vertices.map(v => v.lat)) + Math.max(...vertices.map(v => v.lat))) / 2
+                            : circleMetaRef.current.center.lat;
+                        const cLng = isImg
+                            ? (Math.min(...vertices.map(v => v.lng)) + Math.max(...vertices.map(v => v.lng))) / 2
+                            : circleMetaRef.current.center.lng;
+                        return (
                     <div className="polygon-draw-modal-vertex-row">
                         <span className="polygon-draw-modal-vertex-num">●</span>
                         <div className="polygon-draw-modal-vertex-coords polygon-draw-modal-vertex-inputs">
@@ -1770,19 +1908,18 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                                 type="number"
                                 step="any"
                                 className="polygon-draw-vertex-input"
-                                value={circleMetaRef.current.center.lat}
+                                value={parseFloat(cLat.toFixed(6))}
                                 onChange={(e) => {
                                     const newLat = parseFloat(e.target.value);
                                     if (isNaN(newLat)) return;
-                                    const meta = circleMetaRef.current;
-                                    const dLat = newLat - meta.center.lat;
+                                    const dLat = newLat - cLat;
                                     setVertices(prev => {
                                         const updated = prev.map(v => ({ ...v, lat: parseFloat((v.lat + dLat).toFixed(6)) }));
                                         updatePolygonOnMap(updated);
                                         return updated;
                                     });
-                                    circleMetaRef.current = { ...meta, center: { ...meta.center, lat: newLat } };
-                                    if (markersRef.current[0]) markersRef.current[0].setLngLat([meta.center.lng, newLat]);
+                                    if (circleMetaRef.current) circleMetaRef.current = { ...circleMetaRef.current, center: { ...circleMetaRef.current.center, lat: newLat } };
+                                    if (markersRef.current[0]) markersRef.current[0].setLngLat([cLng, newLat]);
                                 }}
                                 title="Latitude"
                             />
@@ -1791,24 +1928,25 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                                 type="number"
                                 step="any"
                                 className="polygon-draw-vertex-input"
-                                value={circleMetaRef.current.center.lng}
+                                value={parseFloat(cLng.toFixed(6))}
                                 onChange={(e) => {
                                     const newLng = parseFloat(e.target.value);
                                     if (isNaN(newLng)) return;
-                                    const meta = circleMetaRef.current;
-                                    const dLng = newLng - meta.center.lng;
+                                    const dLng = newLng - cLng;
                                     setVertices(prev => {
                                         const updated = prev.map(v => ({ ...v, lng: parseFloat((v.lng + dLng).toFixed(6)) }));
                                         updatePolygonOnMap(updated);
                                         return updated;
                                     });
-                                    circleMetaRef.current = { ...meta, center: { ...meta.center, lng: newLng } };
-                                    if (markersRef.current[0]) markersRef.current[0].setLngLat([newLng, meta.center.lat]);
+                                    if (circleMetaRef.current) circleMetaRef.current = { ...circleMetaRef.current, center: { ...circleMetaRef.current.center, lng: newLng } };
+                                    if (markersRef.current[0]) markersRef.current[0].setLngLat([newLng, cLat]);
                                 }}
                                 title="Longitude"
                             />
                         </div>
                     </div>
+                        );
+                    })()
                 ) : (
                     vertices.map((v, i) => (
                         <div key={i} className="polygon-draw-modal-vertex-row">

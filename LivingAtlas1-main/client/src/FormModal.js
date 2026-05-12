@@ -19,6 +19,7 @@ const FormModal = (props) => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
     const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
+    const [isPlacingImageOverlay, setIsPlacingImageOverlay] = useState(false);
     const [locationType, setLocationType] = useState('point'); // 'point' | 'polygon' | 'image'
     const [polygonVertices, setPolygonVertices] = useState([]);
     const [polygonFillColor, setPolygonFillColor] = useState('#0077c0');
@@ -50,6 +51,7 @@ const FormModal = (props) => {
             setPolygonVertices(vertices || []);
             setOverlayImageFile(imageFile || null);
             setOverlayImagePreview(previewUrl || '');
+            setIsPlacingImageOverlay(false);
             setFormData(prev => ({
                 ...prev,
                 latitude: centroid?.lat?.toFixed(6) || prev.latitude,
@@ -58,9 +60,19 @@ const FormModal = (props) => {
         }
     }, [props.initialImageOverlayData]);
 
+    useEffect(() => {
+        const handleImageToolCancel = () => {
+            setIsPlacingImageOverlay(false);
+        };
+
+        window.addEventListener('map-image-tool-cancel', handleImageToolCancel);
+        return () => window.removeEventListener('map-image-tool-cancel', handleImageToolCancel);
+    }, []);
+
     const handleCloseModal = () => {
         setModalIsOpen(false);
         setIsDrawingPolygon(false);
+        setIsPlacingImageOverlay(false);
         if (selectLocationMarker.current) {
             selectLocationMarker.current.remove();
             selectLocationMarker.current = null;
@@ -366,6 +378,11 @@ const FormModal = (props) => {
         setIsDrawingPolygon(true);
     };
 
+    const handleStartImageOverlayPlacement = () => {
+        setIsPlacingImageOverlay(true);
+        window.dispatchEvent(new CustomEvent('map-image-tool-start'));
+    };
+
     const handlePolygonSave = (vertices, centroid, style) => {
         setPolygonVertices(vertices);
         if (style) {
@@ -421,7 +438,7 @@ const FormModal = (props) => {
             )}
 
             <Modal
-                isOpen={isModalOpen && !isSelectingLocation && !isDrawingPolygon}
+                isOpen={isModalOpen && !isSelectingLocation && !isDrawingPolygon && !isPlacingImageOverlay}
                 onRequestClose={handleCloseModal}
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
@@ -566,22 +583,19 @@ const FormModal = (props) => {
 
                     {locationType === 'image' && (
                         <div className="form-modal-polygon-section">
-                            <div className="form-modal-polygon-summary">
-                                <span className="form-modal-polygon-check">&#10003;</span>
-                                {polygonVertices.length >= 4
-                                    ? `Image placement saved: ${polygonVertices.length} corners`
-                                    : 'Use the map image tool to place a PNG on the map.'}
-                            </div>
-                            <p style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
-                                The map representation image is managed separately from the Learn More gallery.
-                            </p>
-                            {overlayImagePreview && (
-                                <div className="form-modal-image-previews" style={{ marginTop: '12px' }}>
-                                    <div className="form-modal-image-preview-item">
-                                        <img src={overlayImagePreview} alt="Map overlay preview" />
+                            <button type="button" className="location_button" onClick={handleStartImageOverlayPlacement}>
+                                Add PNG Image to Map
+                            </button>
+                            {polygonVertices.length >= 4 && (() => {
+                                const cLat = polygonVertices.reduce((s, v) => s + v.lat, 0) / polygonVertices.length;
+                                const cLng = polygonVertices.reduce((s, v) => s + v.lng, 0) / polygonVertices.length;
+                                return (
+                                    <div className="form-modal-polygon-summary">
+                                        <span className="form-modal-polygon-check">&#10003;</span>
+                                        Image placed (center: {cLat.toFixed(4)}, {cLng.toFixed(4)})
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     )}
 
