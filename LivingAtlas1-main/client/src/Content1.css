@@ -102,6 +102,109 @@
   display: none !important;
 }
 
+/* Polygon tool is moved into the custom add-tools menu */
+.mapbox-gl-draw_polygon {
+  display: none !important;
+}
+
+.map-add-tools-group {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.map-add-tools-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 29px !important;
+  height: 29px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  color: #333 !important;
+  opacity: 1 !important;
+  text-indent: 0 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  overflow: hidden !important;
+}
+
+.map-add-tools-btn:hover,
+.map-add-tools-btn.active {
+  background-color: rgb(0 0 0 / 5%) !important;
+}
+
+.map-add-tools-btn svg {
+  width: 15px !important;
+  height: 15px !important;
+  fill: #333 !important;
+  pointer-events: none !important;
+}
+
+.map-add-tools-menu {
+  position: absolute;
+  top: 0;
+  right: 100%;
+  display: none;
+  flex-direction: column;
+  min-width: 168px;
+  background: #fff;
+  border: 1px solid #d7dde4;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 16%);
+  padding: 4px;
+  z-index: 20;
+}
+
+.map-add-tools-menu.open {
+  display: flex;
+}
+
+.map-add-tools-menu .map-add-tools-menu-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px;
+  width: 100% !important;
+  min-width: 160px !important;
+  height: 30px !important;
+  border: none !important;
+  border-radius: 6px;
+  background: transparent !important;
+  color: #223244 !important;
+  font: 600 12px/1 "Segoe UI", Arial, sans-serif !important;
+  text-align: left !important;
+  text-indent: 0 !important;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  overflow: visible !important;
+}
+
+.map-add-tools-menu-item:hover {
+  background: #eef4fb !important;
+}
+
+.map-add-tools-menu-item svg {
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0;
+  fill: #2f5d86 !important;
+  pointer-events: none !important;
+}
+
+.map-add-tools-menu .map-add-tools-menu-item span {
+  display: inline-block;
+  font: inherit;
+  color: inherit;
+  white-space: nowrap;
+}
+
 /* Marker/polygon visibility toggle button in draw control group */
 .marker-visibility-toggle {
   display: flex !important;

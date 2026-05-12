@@ -13,7 +13,7 @@ import api from './api.js';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import html2canvas from 'html2canvas';
 import { icon } from '@fortawesome/fontawesome-svg-core';
-import { faEye, faEyeSlash, faCamera, faImage, faLocationDot } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faCamera, faImage, faLocationDot, faPlus, faDrawPolygon } from '@fortawesome/free-solid-svg-icons';
 
 // Mapbox Token
 mapboxgl.accessToken =
@@ -573,25 +573,88 @@ const Content1 = (props) => {
     {
       const drawGroup = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-top-right .mapboxgl-ctrl-group');
       if (drawGroup) {
-        const pointBtn = document.createElement('button');
-        pointBtn.className = 'mapbox-gl-draw_ctrl-draw-btn point-select-btn';
-        pointBtn.title = 'Add single point card';
-        pointBtn.type = 'button';
-        pointBtn.innerHTML = icon(faLocationDot).html[0];
-        pointBtn.addEventListener('click', () => {
+        drawGroup.classList.add('map-add-tools-group');
+
+        let isAddToolsMenuOpen = false;
+
+        const addToolsBtn = document.createElement('button');
+        addToolsBtn.className = 'mapbox-gl-draw_ctrl-draw-btn map-add-tools-btn';
+        addToolsBtn.title = 'Add card from map';
+        addToolsBtn.type = 'button';
+        addToolsBtn.innerHTML = icon(faPlus).html[0];
+
+        const addToolsMenu = document.createElement('div');
+        addToolsMenu.className = 'map-add-tools-menu';
+
+        const pointOption = document.createElement('button');
+        pointOption.type = 'button';
+        pointOption.className = 'map-add-tools-menu-item';
+        pointOption.innerHTML = `${icon(faLocationDot).html[0]}<span>Add Single Point</span>`;
+
+        const polygonOption = document.createElement('button');
+        polygonOption.type = 'button';
+        polygonOption.className = 'map-add-tools-menu-item';
+        polygonOption.innerHTML = `${icon(faDrawPolygon).html[0]}<span>Polygon Tools</span>`;
+
+        const imageOption = document.createElement('button');
+        imageOption.type = 'button';
+        imageOption.className = 'map-add-tools-menu-item';
+        imageOption.innerHTML = `${icon(faImage).html[0]}<span>Add PNG</span>`;
+
+        addToolsMenu.appendChild(pointOption);
+        addToolsMenu.appendChild(polygonOption);
+        addToolsMenu.appendChild(imageOption);
+        drawGroup.appendChild(addToolsMenu);
+
+        const closeAddToolsMenu = () => {
+          isAddToolsMenuOpen = false;
+          addToolsMenu.classList.remove('open');
+          addToolsBtn.classList.remove('active');
+        };
+
+        const toggleAddToolsMenu = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          isAddToolsMenuOpen = !isAddToolsMenuOpen;
+          addToolsMenu.classList.toggle('open', isAddToolsMenuOpen);
+          addToolsBtn.classList.toggle('active', isAddToolsMenuOpen);
+        };
+
+        addToolsBtn.addEventListener('click', toggleAddToolsMenu);
+
+        pointOption.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeAddToolsMenu();
           window.dispatchEvent(new CustomEvent('map-point-tool-start'));
         });
-        drawGroup.insertBefore(pointBtn, drawGroup.firstChild);
 
-        const imageBtn = document.createElement('button');
-        imageBtn.className = 'mapbox-gl-draw_ctrl-draw-btn image-overlay-btn';
-        imageBtn.title = 'Add PNG image to map';
-        imageBtn.type = 'button';
-        imageBtn.innerHTML = icon(faImage).html[0];
-        imageBtn.addEventListener('click', () => {
+        polygonOption.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeAddToolsMenu();
+          setIsPolygonToolDrawing(true);
+        });
+
+        imageOption.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeAddToolsMenu();
           imageToolInputRef.current?.click();
         });
-        drawGroup.appendChild(imageBtn);
+
+        addToolsMenu.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+
+        const handleDocPointerDown = (e) => {
+          if (!drawGroup.contains(e.target)) {
+            closeAddToolsMenu();
+          }
+        };
+        document.addEventListener('mousedown', handleDocPointerDown);
+
+        drawGroup.insertBefore(addToolsBtn, drawGroup.firstChild);
 
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'mapbox-gl-draw_ctrl-draw-btn marker-visibility-toggle active';
@@ -664,6 +727,10 @@ const Content1 = (props) => {
           });
         });
         drawGroup.appendChild(screenshotBtn);
+
+        map.on('remove', () => {
+          document.removeEventListener('mousedown', handleDocPointerDown);
+        });
       }
     }
 

@@ -57,11 +57,17 @@ import './BasemapSwitcher.css';
 import './Content1.css';
 import './PolygonDrawingModal.css';
 
+const ADD_CARDS_FROM_MAP_SECTIONS = [
+  { id: 'add-single-point', label: 'Add Single Point' },
+  { id: 'polygon-tools',    label: 'Polygon Tools' },
+  { id: 'add-png',          label: 'Add PNG' },
+];
+
 const SECTIONS = [
   { id: 'home',          label: '🏠  Overview' },
   { id: 'card-container', label: 'Card Container' },
   { id: 'toolbar',        label: 'Card Panel Toolbar' },
-  { id: 'add-card',       label: 'Add Card Form' },
+  { id: 'add-card',       label: 'Card Creation Form' },
   { id: 'arcgis-picker',  label: 'ArcGIS Picker Modal' },
   { id: 'detail-view',   label: 'Card Detail View' },
   { id: 'arcgis-panel',     label: 'ArcGIS Upload Panel' },
@@ -69,16 +75,27 @@ const SECTIONS = [
   { id: 'custom-layers',    label: 'Custom Layers Panel' },
   { id: 'basemap-panel',     label: 'Basemap Panel' },
   { id: 'map-controls',      label: 'Map Controls' },
-  { id: 'polygon-draw',      label: 'Draw Polygon Panel' },
 ];
+
+const ALL_SECTIONS = [...SECTIONS, ...ADD_CARDS_FROM_MAP_SECTIONS];
+const SECTIONS_WITH_ADD_CARDS_FROM_MAP = SECTIONS.flatMap((section) => {
+  if (section.id === 'add-card') {
+    return [section, ...ADD_CARDS_FROM_MAP_SECTIONS];
+  }
+  return [section];
+});
 
 function UserManual() {
   const [activeSection, setActiveSection] = useState('home');
+  const [isAddCardsFromMapOpen, setIsAddCardsFromMapOpen] = useState(true);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sec = params.get('section');
-    if (sec && SECTIONS.some(s => s.id === sec)) {
+    if (sec && ALL_SECTIONS.some(s => s.id === sec)) {
       setActiveSection(sec);
+      if (ADD_CARDS_FROM_MAP_SECTIONS.some(s => s.id === sec)) {
+        setIsAddCardsFromMapOpen(true);
+      }
     }
   }, []);
   const navTo = (id) => { setActiveSection(id); window.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -89,15 +106,42 @@ function UserManual() {
       <div className="um-layout">
         <nav className="um-nav-sidebar">
           <span className="um-nav-heading">Sections</span>
-          {SECTIONS.map(s => (
-            <button
-              key={s.id}
-              className={`um-nav-item${activeSection === s.id ? ' active' : ''}`}
-              onClick={() => setActiveSection(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
+          {SECTIONS.map(s => {
+            const isAddCardAnchor = s.id === 'add-card';
+            return (
+              <React.Fragment key={s.id}>
+                <button
+                  className={`um-nav-item${activeSection === s.id ? ' active' : ''}`}
+                  onClick={() => setActiveSection(s.id)}
+                >
+                  {s.label}
+                </button>
+
+                {isAddCardAnchor && (
+                  <>
+                    <button
+                      className={`um-nav-item um-nav-item--group${isAddCardsFromMapOpen ? ' active' : ''}`}
+                      onClick={() => setIsAddCardsFromMapOpen(prev => !prev)}
+                      aria-expanded={isAddCardsFromMapOpen}
+                    >
+                      <span>Add Cards from Map</span>
+                      <FontAwesomeIcon icon={isAddCardsFromMapOpen ? faChevronDown : faChevronUp} />
+                    </button>
+
+                    {isAddCardsFromMapOpen && ADD_CARDS_FROM_MAP_SECTIONS.map(mapSection => (
+                      <button
+                        key={mapSection.id}
+                        className={`um-nav-item um-nav-item--child${activeSection === mapSection.id ? ' active' : ''}`}
+                        onClick={() => setActiveSection(mapSection.id)}
+                      >
+                        {mapSection.label}
+                      </button>
+                    ))}
+                  </>
+                )}
+              </React.Fragment>
+            );
+          })}
         </nav>
 
         <div className="um-content-area">
@@ -113,7 +157,7 @@ function UserManual() {
         </p>
 
         <div className="um-home-cards">
-          {SECTIONS.filter(s => s.id !== 'home').map(s => (
+          {SECTIONS_WITH_ADD_CARDS_FROM_MAP.filter(s => s.id !== 'home').map(s => (
             <button
               key={s.id}
               className="um-home-card"
@@ -124,14 +168,16 @@ function UserManual() {
                 'card-container': 'How cards are displayed, navigated, pinned, and favorited.',
                 'toolbar':        'Tools for adding cards, sorting, filtering, and switching views.',
                 'detail-view':    'The full-screen modal with editing, images, files, and ArcGIS layers.',
-                'add-card':       'Submit a new research entry with location, description, links, images, files, and optional ArcGIS service associations.',
-                'arcgis-picker':  'Browse and select ArcGIS services and layers to link directly to a card — opened from the Add Card form.',
+                'add-card':       'Create a new card with required metadata, location mode, images/files, and optional ArcGIS links.',
+                'arcgis-picker':  'Browse and select ArcGIS services and layers to link directly to a card — opened from the Card Creation form.',
                 'arcgis-panel':   'Browse and toggle ArcGIS REST map layers organized by state, folder, and service.',
                 'service-layer-info': 'Detailed guide for Service/Layer Info modal features: metadata, opacity, historical filters, links, and layer fields.',
                 'custom-layers':  'Manage your personal saved layers with custom folders, drag-and-drop ordering, and pinned auto-load items.',
                 'basemap-panel':   'Switch between six Mapbox map styles while preserving your ArcGIS layers, camera position, and zoom level.',
                 'map-controls':    'All interactive buttons on the map canvas — search, fullscreen, zoom, compass, geolocate, draw, and more.',
-                'polygon-draw':    'Draw freehand or preset-shape polygons to spatially filter cards, with style, transform, and history tools.',
+                'add-single-point': 'Open Add Card and immediately start point selection on the map.',
+                'polygon-tools':   'Draw and edit polygon-based card locations with style and transform controls.',
+                'add-png':         'Place a PNG overlay on map and create an image-overlay card from it.',
               }[s.id]}
             </button>
           ))}
@@ -819,13 +865,14 @@ function UserManual() {
 
       {activeSection === 'add-card' && (
       <section className="um-section">
-        <h2>Add Card Form</h2>
+        <h2>Card Creation Form</h2>
         <p className="um-section-desc">
-          The Add Card form lets you submit a new research entry to the atlas. Click the{' '}
+          The Card Creation form lets you submit a new research entry to the atlas. Click the{' '}
           <strong>+</strong> button in the card panel toolbar to open it. You must be logged
           in — a login prompt appears otherwise. You can also start location-first creation
-          from the map toolbar using the <strong>Single Point</strong>, <strong>Draw Polygon</strong>, and{' '}
-          <strong>Add PNG image to map</strong> buttons. Once submitted, the new card appears in the
+          from the map toolbar using <strong>Add Cards from Map</strong>, then choose
+          <strong> Add Single Point</strong>, <strong>Polygon Tools</strong>, or
+          <strong> Add PNG</strong>. Once submitted, the new card appears in the
           card container and is pinned to the map.
         </p>
 
@@ -1022,7 +1069,7 @@ function UserManual() {
               <p className="um-feature-title">Polygon Area Mode</p>
               <p className="um-feature-desc">
                 After switching to <strong>Polygon Area</strong>, click{' '}
-                <strong>Draw Polygon on Map</strong> to open the Draw Polygon Panel
+                <strong>Draw Polygon on Map</strong> to open Polygon Tools
                 floating on the map. Place vertices by clicking the map, then click{' '}
                 <strong>Save</strong> in the panel to confirm. The form shows a
                 confirmation summary (e.g. "Polygon saved: 5 points"). You can click{' '}
@@ -1034,10 +1081,41 @@ function UserManual() {
                 <button
                   type="button"
                   className="um-inline-link"
-                  onClick={() => navTo('polygon-draw')}
+                  onClick={() => navTo('polygon-tools')}
                 >
-                  Draw Polygon Panel
+                  Polygon Tools
                 </button>{' '}tab.
+              </p>
+            </div>
+          </div>
+
+          {/* 5c. Image Overlay sub-options */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '240px', gap: '10px', pointerEvents: 'none' }}>
+                <div className="form-modal-location-tabs">
+                  <button type="button" className="form-modal-location-tab">Single Point</button>
+                  <button type="button" className="form-modal-location-tab">Polygon Area</button>
+                  <button type="button" className="form-modal-location-tab active">Image Overlay</button>
+                </div>
+                <div className="form-modal-polygon-section">
+                  <button type="button" className="location_button" style={{ marginBottom: 0 }}>
+                    <FontAwesomeIcon icon={faImage} style={{ marginRight: '6px' }} />
+                    Add PNG image to map
+                  </button>
+                  <div className="form-modal-polygon-summary">
+                    <span className="form-modal-polygon-check">&#10003;</span>
+                    Overlay saved: 4 corners
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Image Overlay Mode</p>
+              <p className="um-feature-desc">
+                Switch to <strong>Image Overlay</strong>, then click <strong>Add PNG image to map</strong>
+                to upload and place a PNG. After placement, use move/rotate/resize and click
+                <strong> Save</strong>. The form stores four corner vertices and shows a saved summary.
               </p>
             </div>
           </div>
@@ -1140,7 +1218,7 @@ function UserManual() {
         <p className="um-section-desc">
           The ArcGIS Picker lets you search and select ArcGIS services or individual layers
           to link to a card. It opens from the <strong>+ Link ArcGIS Service / Layer</strong>{' '}
-          button inside the Add Card form. Selected items are attached to the card and can be
+          button inside the Card Creation form. Selected items are attached to the card and can be
           toggled on the map from the Card Detail View.
         </p>
 
@@ -1332,7 +1410,7 @@ function UserManual() {
               <p className="um-feature-desc">
                 The footer shows how many items are currently selected. <strong>Add</strong>{' '}
                 is enabled once at least one item is selected; clicking it inserts all
-                selected services and layers as linked items in the Add Card form.{' '}
+                selected services and layers as linked items in the Card Creation form.{' '}
                 <strong>Cancel</strong> closes the picker without changing the form.
               </p>
             </div>
@@ -2941,11 +3019,7 @@ function UserManual() {
           <div className="um-mapctrl-corner um-mapctrl-tr">
             <div className="um-mapctrl-label">Top-right</div>
             <div className="um-mapctrl-group">
-              <button className="um-mapctrl-btn" title="Add single point card"><FontAwesomeIcon icon={faLocationDot} /></button>
-              <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Draw Polygon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="m15 12.3v-4.6c.6-.3 1-1 1-1.7 0-1.1-.9-2-2-2-.7 0-1.4.4-1.7 1h-4.6c-.3-.6-1-1-1.7-1-1.1 0-2 .9-2 2 0 .7.4 1.4 1 1.7v4.6c-.6.3-1 1-1 1.7 0 1.1.9 2 2 2 .7 0 1.4-.4 1.7-1h4.6c.3.6 1 1 1.7 1 1.1 0 2-.9 2-2 0-.7-.4-1.4-1-1.7zm-8-.3v-4l1-1h4l1 1v4l-1 1h-4z"/></svg>
-              </button>
-              <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Add PNG image to map"><FontAwesomeIcon icon={faImage} /></button>
+              <button className="um-mapctrl-btn" title="Add cards from map"><FontAwesomeIcon icon={faPlus} /></button>
               <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Toggle Markers"><FontAwesomeIcon icon={faEye} /></button>
               <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Reset View">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -3050,75 +3124,43 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 5. Add single-point card */}
+          {/* 5. Add cards from map */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo">
                 <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
-                  <button className="um-mapctrl-btn" title="Add single point card">
-                    <FontAwesomeIcon icon={faLocationDot} />
+                  <button className="um-mapctrl-btn" title="Add cards from map">
+                    <FontAwesomeIcon icon={faPlus} />
                   </button>
                 </div>
               </div>
             </div>
             <div className="um-feature-info">
-              <p className="um-feature-title">Single Point Card Shortcut</p>
+              <p className="um-feature-title">Add Cards from Map (Collapsible Menu)</p>
               <p className="um-feature-desc">
-                Opens the Add Card form and immediately starts the <strong>Select a Location</strong>{' '}
-                flow for <strong>Single Point</strong>. Click a point on the map and confirm to
-                prefill latitude/longitude in the form.
-              </p>
-            </div>
-          </div>
-
-          {/* 6. Draw polygon */}
-          <div className="um-feature-row">
-            <div className="um-feature-demo">
-              <div className="um-isolated-demo">
-                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
-                  <button className="um-mapctrl-btn" title="Draw Polygon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="m15 12.3v-4.6c.6-.3 1-1 1-1.7 0-1.1-.9-2-2-2-.7 0-1.4.4-1.7 1h-4.6c-.3-.6-1-1-1.7-1-1.1 0-2 .9-2 2 0 .7.4 1.4 1 1.7v4.6c-.6.3-1 1-1 1.7 0 1.1.9 2 2 2 .7 0 1.4-.4 1.7-1h4.6c.3.6 1 1 1.7 1 1.1 0 2-.9 2-2 0-.7-.4-1.4-1-1.7zm-8-.3v-4l1-1h4l1 1v4l-1 1h-4z"/></svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="um-feature-info">
-              <p className="um-feature-title">Polygon Card Shortcut</p>
-              <p className="um-feature-desc">
-                Opens the Draw Polygon panel to place a polygon area, then opens Add Card
-                with polygon coordinates prefilled. Use this when creating area-based cards.
+                A single <strong>+</strong> button opens a small menu with three creation flows:
+                <strong> Add Single Point</strong>, <strong>Polygon Tools</strong>, and
+                <strong> Add PNG</strong>.
               </p>
               <p className="um-feature-desc" style={{ marginTop: '8px' }}>
-                For all drawing tools, shape presets, style options, and transform modes, see the{' '}
-                <button type="button" className="um-inline-link" onClick={() => navTo('polygon-draw')}>
-                  Draw Polygon Panel
-                </button>{' '}tab.
+                See each dedicated tab for details:{' '}
+                <button type="button" className="um-inline-link" onClick={() => navTo('add-single-point')}>
+                  Add Single Point
+                </button>
+                ,{' '}
+                <button type="button" className="um-inline-link" onClick={() => navTo('polygon-tools')}>
+                  Polygon Tools
+                </button>
+                ,{' '}
+                <button type="button" className="um-inline-link" onClick={() => navTo('add-png')}>
+                  Add PNG
+                </button>
+                .
               </p>
             </div>
           </div>
 
-          {/* 7. Add image-overlay card */}
-          <div className="um-feature-row">
-            <div className="um-feature-demo">
-              <div className="um-isolated-demo">
-                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
-                  <button className="um-mapctrl-btn" title="Add PNG image to map">
-                    <FontAwesomeIcon icon={faImage} />
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="um-feature-info">
-              <p className="um-feature-title">Image Overlay Card Shortcut</p>
-              <p className="um-feature-desc">
-                Opens a PNG picker and placement flow on the map, then opens Add Card in
-                <strong>Image Overlay</strong> mode. The placed image supports move/rotate/resize
-                before saving and uses four corner vertices.
-              </p>
-            </div>
-          </div>
-
-          {/* 8. Toggle markers */}
+          {/* 6. Toggle markers */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo" style={{ gap: '10px' }}>
@@ -3145,7 +3187,7 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 9. Reset view */}
+          {/* 7. Reset view */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo">
@@ -3167,7 +3209,7 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 10. Screenshot */}
+          {/* 8. Screenshot */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo">
@@ -3191,12 +3233,245 @@ function UserManual() {
       </section>
       )}
 
-      {activeSection === 'polygon-draw' && (
+      {activeSection === 'add-single-point' && (
       <section className="um-section">
-        <h2>Draw Polygon Panel</h2>
+        <h2>Add Single Point</h2>
         <p className="um-section-desc">
-          The Draw Polygon Panel appears on the map after you click the polygon tool in the
-          top-right control group. It lets you place vertices by clicking the map, then
+          Use <strong>Add Cards from Map</strong> in the top-right toolbar, then select
+          <strong> Add Single Point</strong>. The Card Creation form opens and immediately enters
+          location-picking mode for a single point.
+        </p>
+
+        <div className="um-feature-list">
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add cards from map"><FontAwesomeIcon icon={faPlus} /></button>
+                </div>
+                <span style={{ fontSize: '11px', color: '#888' }}>→</span>
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add single point card"><FontAwesomeIcon icon={faLocationDot} /></button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 1: Start the Shortcut</p>
+              <p className="um-feature-desc">
+                Click <strong>+</strong> in map controls, then choose{' '}
+                <strong>Add Single Point</strong>. The Card Creation form opens and immediately
+                starts map point selection mode.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', gap: '8px', pointerEvents: 'none' }}>
+                <div className="location-select-hint" style={{ position: 'static', top: 'auto', left: 'auto', transform: 'none', zIndex: 1, padding: '8px 12px', fontSize: '12px', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                  <span>Click on the map to select a location</span>
+                  <button type="button">Cancel</button>
+                </div>
+
+                <div className="location-select-mapbox-popup mapboxgl-popup" style={{ position: 'static', maxWidth: 'none' }}>
+                  <div className="mapboxgl-popup-content">
+                    <div className="location-select-popup">
+                      <div style={{ fontSize: '12px', marginBottom: '6px', color: '#333' }}>
+                        45.609618, -117.344663
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button className="location-select-confirm">OK</button>
+                        <button className="location-select-cancel">Cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="text" readOnly value="47.6123" className="um-form-input-mock" style={{ margin: 0 }} />
+                  <input type="text" readOnly value="-122.3355" className="um-form-input-mock" style={{ margin: 0 }} />
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 2: Pick and Confirm</p>
+              <p className="um-feature-desc">
+                While picking, the top hint shows <strong>"Click on the map to select a location"</strong>
+                with a <strong>Cancel</strong> action. After a map click, a marker popup shows
+                coordinates in 6-decimal format with <strong>OK</strong> and <strong>Cancel</strong>.
+                Click <strong>OK</strong> to fill latitude/longitude fields; click popup
+                <strong> Cancel</strong> to discard that point and click elsewhere.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+                <span style={{ fontSize: '12px', color: '#3f536a' }}>Result after confirm:</span>
+                <span style={{ fontSize: '12px', color: '#1f7a45', fontWeight: 600 }}>Point location is attached to the new card</span>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 3: Complete Card Data</p>
+              <p className="um-feature-desc">
+                After the point is confirmed, continue filling title, category, description,
+                links, images, files, and optional ArcGIS links. Submit to create a point-based
+                card marker on the map.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'add-png' && (
+      <section className="um-section">
+        <h2>Add PNG</h2>
+        <p className="um-section-desc">
+          Use <strong>Add Cards from Map</strong> in the top-right toolbar, then choose
+          <strong> Add PNG</strong> to select a PNG file and place it on the map.
+        </p>
+
+        <div className="um-feature-list">
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add cards from map"><FontAwesomeIcon icon={faPlus} /></button>
+                </div>
+                <span style={{ fontSize: '11px', color: '#888' }}>→</span>
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add PNG image to map"><FontAwesomeIcon icon={faImage} /></button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 1: Select PNG File</p>
+              <p className="um-feature-desc">
+                Click <strong>+</strong> in map controls, then choose <strong>Add PNG</strong>.
+                Select a PNG file from your device to enter overlay placement mode.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '250px', gap: '8px', pointerEvents: 'none' }}>
+                <div className="polygon-draw-modal" style={{ position: 'static', top: 'auto', right: 'auto', width: '100%', maxHeight: 'none' }}>
+                  <div className="polygon-draw-modal-header">
+                    <h3>Place Image</h3>
+                    <span className="polygon-draw-modal-hint">Click and drag on the map to place the image</span>
+                  </div>
+
+                  <div className="polygon-draw-style-toolbar">
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn polygon-draw-drag-active" title="Move">
+                        <FontAwesomeIcon icon={faHand} style={{ fontSize: 14 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn" title="Rotate">
+                        <FontAwesomeIcon icon={faRotate} style={{ fontSize: 14 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn" title="Resize">
+                        <FontAwesomeIcon icon={faUpRightAndDownLeftFromCenter} style={{ fontSize: 13 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn" title="Undo (Ctrl+Z)">
+                        <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: 13 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn" title="Redo (Ctrl+Y)">
+                        <FontAwesomeIcon icon={faRotateRight} style={{ fontSize: 13 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn polygon-draw-clear-btn" title="Clear All">
+                        <FontAwesomeIcon icon={faTrash} style={{ fontSize: 12 }} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="polygon-draw-modal-vertices">
+                    <div className="polygon-draw-modal-vertex-row">
+                      <span className="polygon-draw-modal-vertex-num">1</span>
+                      <div className="polygon-draw-modal-vertex-coords">47.620100, -122.349300</div>
+                    </div>
+                    <div className="polygon-draw-modal-vertex-row">
+                      <span className="polygon-draw-modal-vertex-num">2</span>
+                      <div className="polygon-draw-modal-vertex-coords">47.620100, -122.342000</div>
+                    </div>
+                    <div className="polygon-draw-modal-vertex-row">
+                      <span className="polygon-draw-modal-vertex-num">3</span>
+                      <div className="polygon-draw-modal-vertex-coords">47.615900, -122.342000</div>
+                    </div>
+                    <div className="polygon-draw-modal-vertex-row">
+                      <span className="polygon-draw-modal-vertex-num">4</span>
+                      <div className="polygon-draw-modal-vertex-coords">47.615900, -122.349300</div>
+                    </div>
+                  </div>
+
+                  <div className="polygon-draw-modal-actions">
+                    <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-save">Save</button>
+                    <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-cancel">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 2: Place and Edit Overlay</p>
+              <p className="um-feature-desc">
+                After file selection, the <strong>Place Image</strong> modal appears. The header
+                hint starts as <strong>"Click and drag on the map to place the image"</strong>,
+                then changes based on mode (move/rotate/resize). Position the image and adjust
+                with toolbar controls until alignment is correct.
+              </p>
+              <p className="um-feature-desc" style={{ marginTop: '8px' }}>
+                The same toolbar also includes <strong>Undo</strong>, <strong>Redo</strong>, and
+                <strong> Clear All (delete)</strong> so you can revert recent edits or reset
+                placement quickly.
+              </p>
+              <p className="um-feature-desc" style={{ marginTop: '8px' }}>
+                <strong>Save</strong> is enabled after valid placement (4 corners). Click
+                <strong> Cancel</strong> to exit placement without applying changes.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+                <span style={{ fontSize: '12px', color: '#3f536a' }}>Saved data:</span>
+                <span style={{ fontSize: '12px', color: '#1f7a45', fontWeight: 600 }}>4 corner vertices + overlay image</span>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 3: Continue in Image Overlay Mode</p>
+              <p className="um-feature-desc">
+                After saving placement, Card Creation opens in <strong>Image Overlay</strong>
+                mode and shows summary like <strong>"Image placement saved: 4 corners"</strong>.
+                The overlay image is used as card map
+                representation, while additional uploaded images are optional Learn More gallery
+                images.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'polygon-tools' && (
+      <section className="um-section">
+        <h2>Polygon Tools</h2>
+        <p className="um-section-desc">
+          Polygon Tools appears after choosing <strong>Polygon Tools</strong> from
+          <strong> Add Cards from Map</strong> in the top-right control group. It lets you place
+          vertices by clicking the map, then
           style, transform, and save the shape to use as a spatial filter — cards whose
           markers fall inside the polygon are shown; all others are hidden.
         </p>

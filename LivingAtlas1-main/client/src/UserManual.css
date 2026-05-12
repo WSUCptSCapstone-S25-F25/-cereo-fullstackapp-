@@ -158,6 +158,22 @@ nav.um-nav-sidebar {
   border-left-color: #3b82f6;
 }
 
+.um-nav-sidebar .um-nav-item--group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.um-nav-sidebar .um-nav-item--group svg {
+  font-size: 0.72rem;
+  color: #7b8ca1;
+}
+
+.um-nav-sidebar .um-nav-item--child {
+  padding-left: 30px;
+  font-size: 0.84rem;
+}
+
 .um-content-area {
   width: 100%;
 }
