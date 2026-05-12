@@ -31,6 +31,7 @@ import {
   faMinus,
   faLocationCrosshairs,
   faLocationDot,
+  faImage,
   faRotate,
   faShapes,
   faPalette,
@@ -822,7 +823,9 @@ function UserManual() {
         <p className="um-section-desc">
           The Add Card form lets you submit a new research entry to the atlas. Click the{' '}
           <strong>+</strong> button in the card panel toolbar to open it. You must be logged
-          in — a login prompt appears otherwise. Once submitted, the new card appears in the
+          in — a login prompt appears otherwise. You can also start location-first creation
+          from the map toolbar using the <strong>Single Point</strong>, <strong>Draw Polygon</strong>, and{' '}
+          <strong>Add PNG image to map</strong> buttons. Once submitted, the new card appears in the
           card container and is pinned to the map.
         </p>
 
@@ -855,6 +858,7 @@ function UserManual() {
             <div className="form-modal-location-tabs" style={{ pointerEvents: 'none', marginBottom: '10px' }}>
               <button type="button" className="form-modal-location-tab active">Single Point</button>
               <button type="button" className="form-modal-location-tab">Polygon Area</button>
+              <button type="button" className="form-modal-location-tab">Image Overlay</button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
               <button type="button" style={{ background: '#0077c0', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 18px', fontWeight: 600, fontSize: '13px', cursor: 'default' }}>Submit</button>
@@ -879,8 +883,9 @@ function UserManual() {
               <p className="um-feature-title">Opening the Form</p>
               <p className="um-feature-desc">
                 Click the <strong>+</strong> button in the card panel toolbar. Login is
-                required; if you are not logged in, a prompt appears instead. The form
-                slides in as a side panel over the map.
+                required; if you are not logged in, a prompt appears instead. You can also
+                open this form from map toolbar shortcuts (single point, polygon, image overlay)
+                with location pre-filled. The form slides in as a side panel over the map.
               </p>
             </div>
           </div>
@@ -965,6 +970,7 @@ function UserManual() {
                 <div className="form-modal-location-tabs" style={{ pointerEvents: 'none' }}>
                   <button type="button" className="form-modal-location-tab active">Single Point</button>
                   <button type="button" className="form-modal-location-tab">Polygon Area</button>
+                  <button type="button" className="form-modal-location-tab">Image Overlay</button>
                 </div>
                 <button type="button" className="location_button" style={{ pointerEvents: 'none', marginBottom: 0 }}>
                   <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: '6px' }} />
@@ -982,8 +988,9 @@ function UserManual() {
                 Choose <strong>Single Point</strong> to click on the map and confirm a
                 lat/lng coordinate, or enter coordinates manually. Choose{' '}
                 <strong>Polygon Area</strong> to draw a custom polygon directly on the
-                map. The polygon's centroid is stored as the card's primary location.
-                Location is required for card submission.
+                map. Choose <strong>Image Overlay</strong> to place a PNG on the map with
+                move/rotate/resize support. For polygon/image modes, centroid is stored as
+                the card's primary location. Location is required for card submission.
               </p>
             </div>
           </div>
@@ -996,6 +1003,7 @@ function UserManual() {
                 <div className="form-modal-location-tabs">
                   <button type="button" className="form-modal-location-tab">Single Point</button>
                   <button type="button" className="form-modal-location-tab active">Polygon Area</button>
+                  <button type="button" className="form-modal-location-tab">Image Overlay</button>
                 </div>
                 {/* polygon section */}
                 <div className="form-modal-polygon-section">
@@ -1052,7 +1060,9 @@ function UserManual() {
               <p className="um-feature-title">Images &amp; File Attachments</p>
               <p className="um-feature-desc">
                 Upload one or more images (PNG, JPG, GIF, WebP, max 5 MB each). The
-                first image becomes the card's thumbnail. Upload supporting files
+                first image becomes the card's thumbnail for point/polygon cards. For
+                image-overlay cards, the map representation image is managed separately,
+                and these images are used for the Learn More gallery. Upload supporting files
                 (PDFs, spreadsheets, etc., max 5 MB each) that viewers can download
                 from the Card Detail View.
               </p>
@@ -2900,9 +2910,9 @@ function UserManual() {
         <p className="um-section-desc">
           The map canvas has two groups of controls: a vertical stack in the
           <strong> top-left</strong> and a vertical stack in the <strong>top-right</strong>.
-          Together they provide search, fullscreen, zoom, compass, location, drawing, and
-          utility tools. All controls are built into the Mapbox/Mapbox-Draw interface and
-          require no account or sign-in.
+          Together they provide search, fullscreen, zoom, compass, location, drawing, card
+          creation shortcuts, and utility tools. View/navigation controls are available to
+          everyone; card-creation shortcuts require login.
         </p>
 
         {/* ---- overview layout ---- */}
@@ -2931,9 +2941,11 @@ function UserManual() {
           <div className="um-mapctrl-corner um-mapctrl-tr">
             <div className="um-mapctrl-label">Top-right</div>
             <div className="um-mapctrl-group">
-              <button className="um-mapctrl-btn" title="Draw Polygon">
+              <button className="um-mapctrl-btn" title="Add single point card"><FontAwesomeIcon icon={faLocationDot} /></button>
+              <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Draw Polygon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="m15 12.3v-4.6c.6-.3 1-1 1-1.7 0-1.1-.9-2-2-2-.7 0-1.4.4-1.7 1h-4.6c-.3-.6-1-1-1.7-1-1.1 0-2 .9-2 2 0 .7.4 1.4 1 1.7v4.6c-.6.3-1 1-1 1.7 0 1.1.9 2 2 2 .7 0 1.4-.4 1.7-1h4.6c.3.6 1 1 1.7 1 1.1 0 2-.9 2-2 0-.7-.4-1.4-1-1.7zm-8-.3v-4l1-1h4l1 1v4l-1 1h-4z"/></svg>
               </button>
+              <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Add PNG image to map"><FontAwesomeIcon icon={faImage} /></button>
               <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Toggle Markers"><FontAwesomeIcon icon={faEye} /></button>
               <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Reset View">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -3038,7 +3050,28 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 5. Draw polygon */}
+          {/* 5. Add single-point card */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add single point card">
+                    <FontAwesomeIcon icon={faLocationDot} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Single Point Card Shortcut</p>
+              <p className="um-feature-desc">
+                Opens the Add Card form and immediately starts the <strong>Select a Location</strong>{' '}
+                flow for <strong>Single Point</strong>. Click a point on the map and confirm to
+                prefill latitude/longitude in the form.
+              </p>
+            </div>
+          </div>
+
+          {/* 6. Draw polygon */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo">
@@ -3050,12 +3083,10 @@ function UserManual() {
               </div>
             </div>
             <div className="um-feature-info">
-              <p className="um-feature-title">Draw Polygon Filter</p>
+              <p className="um-feature-title">Polygon Card Shortcut</p>
               <p className="um-feature-desc">
-                Click to activate polygon-drawing mode, then click on the map to place
-                vertices and close the shape. Cards whose location markers fall inside the
-                polygon are shown; all others are hidden. The polygon can be deleted from
-                the drawing panel that opens after completing the shape.
+                Opens the Draw Polygon panel to place a polygon area, then opens Add Card
+                with polygon coordinates prefilled. Use this when creating area-based cards.
               </p>
               <p className="um-feature-desc" style={{ marginTop: '8px' }}>
                 For all drawing tools, shape presets, style options, and transform modes, see the{' '}
@@ -3066,7 +3097,28 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 6. Toggle markers */}
+          {/* 7. Add image-overlay card */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add PNG image to map">
+                    <FontAwesomeIcon icon={faImage} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Image Overlay Card Shortcut</p>
+              <p className="um-feature-desc">
+                Opens a PNG picker and placement flow on the map, then opens Add Card in
+                <strong>Image Overlay</strong> mode. The placed image supports move/rotate/resize
+                before saving and uses four corner vertices.
+              </p>
+            </div>
+          </div>
+
+          {/* 8. Toggle markers */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo" style={{ gap: '10px' }}>
@@ -3093,7 +3145,7 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 7. Reset view */}
+          {/* 9. Reset view */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo">
@@ -3115,7 +3167,7 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 8. Screenshot */}
+          {/* 10. Screenshot */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo">
