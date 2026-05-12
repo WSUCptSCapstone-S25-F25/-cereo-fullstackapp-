@@ -7,6 +7,15 @@ function ChangelogHistory() {
             <h1>Update History</h1>
             <div className="changelog-history-body">
 
+                <h3>Update Date: 5/11/2026</h3>
+                <p>Added the AI chatbot hidden floating UI window and backend wiring. Full features (RAG and conversation memory) are still under development and currently unavailable.</p>
+                <p>Added a new onboarding button under the left sidebar changelog button for general app onboarding, with a brief walkthrough of each panel and guidance that each panel has its own onboarding.</p>
+                <p>Expanded the User Manual with detailed Service/Layer Info modal documentation.</p>
+                <p>Added a new Mapbox toolbar feature to place PNG images on the map. PNG overlays can now serve as card representations and support move, rotate, and resize transformations.</p>
+                <p>Integrated the Add Single Point trigger into the Mapbox toolbar, and consolidated Add Single Point, Polygon Tools, and Add PNG into the Add Cards from Map (+) modal.</p>
+                <p>Added top-right Help and Onboarding buttons to the Create Card modal, matching the Card Container style, with Help redirecting to the relevant User Manual section.</p>
+                <hr />
+
                 <h3>Update Date: 5/10/2026</h3>
                 <p>Added onboarding tours for the ArcGIS Upload Panel, Custom Layers Panel, and Basemap Panel.</p>
                 <p>Cards and card titles now adapt to different screen sizes automatically.</p>
