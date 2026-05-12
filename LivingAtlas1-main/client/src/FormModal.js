@@ -6,6 +6,9 @@ import './FormModal.css';
 import api from './api.js';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import ArcGISPickerModal from './ArcGISPickerModal';
+import CreateCardModalOnboarding from './OnboardingCreateCardModal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faQuestion, faPlay } from '@fortawesome/free-solid-svg-icons';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -20,6 +23,7 @@ const FormModal = (props) => {
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
     const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
     const [isPlacingImageOverlay, setIsPlacingImageOverlay] = useState(false);
+    const [isCreateCardOnboardingOpen, setIsCreateCardOnboardingOpen] = useState(false);
     const [locationType, setLocationType] = useState('point'); // 'point' | 'polygon' | 'image'
     const [polygonVertices, setPolygonVertices] = useState([]);
     const [polygonFillColor, setPolygonFillColor] = useState('#0077c0');
@@ -73,6 +77,7 @@ const FormModal = (props) => {
         setModalIsOpen(false);
         setIsDrawingPolygon(false);
         setIsPlacingImageOverlay(false);
+        setIsCreateCardOnboardingOpen(false);
         if (selectLocationMarker.current) {
             selectLocationMarker.current.remove();
             selectLocationMarker.current = null;
@@ -81,6 +86,22 @@ const FormModal = (props) => {
             props.onRequestClose();
         }
     };
+
+    const handleOpenCreateCardHelp = () => {
+        window.open('/user-manual?section=add-card', '_blank');
+    };
+
+    const handleStartCreateCardOnboarding = () => {
+        setIsCreateCardOnboardingOpen(true);
+    };
+
+    const isCreateCardModalVisible = isModalOpen && !isSelectingLocation && !isDrawingPolygon && !isPlacingImageOverlay;
+
+    useEffect(() => {
+        if (!isCreateCardModalVisible && isCreateCardOnboardingOpen) {
+            setIsCreateCardOnboardingOpen(false);
+        }
+    }, [isCreateCardModalVisible, isCreateCardOnboardingOpen]);
 
     const [formData, setFormData] = useState({
         username: props.username || '',   // required account login
@@ -438,16 +459,36 @@ const FormModal = (props) => {
             )}
 
             <Modal
-                isOpen={isModalOpen && !isSelectingLocation && !isDrawingPolygon && !isPlacingImageOverlay}
+                isOpen={isCreateCardModalVisible}
                 onRequestClose={handleCloseModal}
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
                 ariaHideApp={false}
             >
+                <div className="form-modal-top-actions" data-onboarding-target="create-card-top-actions">
+                    <button
+                        type="button"
+                        className="form-modal-top-action-btn form-modal-top-action-btn--onboarding card-panel-titlebar-btn card-panel-titlebar-btn--onboarding"
+                        title="Help"
+                        onClick={handleOpenCreateCardHelp}
+                    >
+                        <FontAwesomeIcon icon={faQuestion} />
+                    </button>
+                    <button
+                        type="button"
+                        className="form-modal-top-action-btn form-modal-top-action-btn--onboarding card-panel-titlebar-btn card-panel-titlebar-btn--onboarding"
+                        title="Start onboarding"
+                        data-onboarding-target="create-card-onboarding-button"
+                        onClick={handleStartCreateCardOnboarding}
+                    >
+                        <FontAwesomeIcon icon={faPlay} />
+                    </button>
+                </div>
                 <button className="close-modal-button" onClick={handleCloseModal}>
                     &times;
                 </button>
-                <h2>Create Card</h2>
+                <div data-onboarding-target="create-card-modal-root">
+                <h2 data-onboarding-target="create-card-title">Create Card</h2>
                 <form onSubmit={handleSubmit}>
                     <label>Author Name (required):</label>
                     <input 
@@ -517,7 +558,7 @@ const FormModal = (props) => {
                     </div>
 
                     <label>Location Type:</label>
-                    <div className="form-modal-location-tabs">
+                    <div className="form-modal-location-tabs" data-onboarding-target="create-card-location-tabs">
                         <button
                             type="button"
                             className={`form-modal-location-tab ${locationType === 'point' ? 'active' : ''}`}
@@ -605,6 +646,7 @@ const FormModal = (props) => {
                     <label>{locationType === 'image' ? 'Learn More Gallery Images:' : 'Images:'}</label>
                     <div
                         className="form-modal-image-upload-area"
+                        data-onboarding-target="create-card-image-upload"
                         onClick={() => imageInputRef.current?.click()}
                     >
                         <p>{locationType === 'image' ? 'Click or drag to add optional Learn More gallery images' : 'Click or drag to add images (PNG, JPG, GIF, WebP)'}</p>
@@ -635,6 +677,7 @@ const FormModal = (props) => {
                     <label>Upload Files:</label>
                     <div
                         className="form-modal-file-upload-area"
+                        data-onboarding-target="create-card-file-upload"
                         onClick={() => fileInputRef.current?.click()}
                     >
                         <p>Click to add files (max 5 MB each)</p>
@@ -679,12 +722,18 @@ const FormModal = (props) => {
                         </div>
                     )}
 
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }} data-onboarding-target="create-card-submit-actions">
                         <button type="submit">Submit</button>
                         <button type="button" className="cancel_button" onClick={handleCloseModal}>Cancel</button>
                     </div>
                 </form>
+                </div>
             </Modal>
+
+            <CreateCardModalOnboarding
+                isOpen={isCreateCardOnboardingOpen}
+                onClose={() => setIsCreateCardOnboardingOpen(false)}
+            />
 
             {isArcgisPickerOpen && ReactDOM.createPortal(
                 <ArcGISPickerModal

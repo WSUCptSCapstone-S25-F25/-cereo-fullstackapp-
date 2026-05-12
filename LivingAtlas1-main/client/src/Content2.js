@@ -877,6 +877,7 @@ function Content2(props) {
                 initialPolygonData={pendingPolygonData}
                 initialImageOverlayData={pendingImageOverlayData}
                 initialPointToolSignal={pendingPointToolSignal}
+                onStartOnboarding={() => setIsOnboardingOpen(true)}
             />
     
             <section

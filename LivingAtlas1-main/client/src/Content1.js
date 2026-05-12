@@ -194,7 +194,7 @@ const Content1 = (props) => {
     mediaContainer.appendChild(nextButton);
     mediaContainer.appendChild(indicators);
 
-    const initialImage = feature.thumbnail_link && String(feature.thumbnail_link).trim() !== ''
+    const initialImage = (feature.location_type !== 'image' && feature.thumbnail_link && String(feature.thumbnail_link).trim() !== '')
       ? resolveImageUrl(feature.thumbnail_link)
       : '/CEREO-logo.png';
 
@@ -364,7 +364,6 @@ const Content1 = (props) => {
     const fetchPopupImages = async () => {
       const cardID = Number(feature.cardID);
       if (!Number.isInteger(cardID) || cardID <= 0) return;
-      if (feature.location_type === 'image') return;
 
       try {
         const response = await api.get(`/cardImages/${cardID}`);
