@@ -13,7 +13,7 @@ import api from './api.js';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import html2canvas from 'html2canvas';
 import { icon } from '@fortawesome/fontawesome-svg-core';
-import { faEye, faEyeSlash, faCamera, faImage } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faCamera, faImage, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 
 // Mapbox Token
 mapboxgl.accessToken =
@@ -573,6 +573,26 @@ const Content1 = (props) => {
     {
       const drawGroup = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-top-right .mapboxgl-ctrl-group');
       if (drawGroup) {
+        const pointBtn = document.createElement('button');
+        pointBtn.className = 'mapbox-gl-draw_ctrl-draw-btn point-select-btn';
+        pointBtn.title = 'Add single point card';
+        pointBtn.type = 'button';
+        pointBtn.innerHTML = icon(faLocationDot).html[0];
+        pointBtn.addEventListener('click', () => {
+          window.dispatchEvent(new CustomEvent('map-point-tool-start'));
+        });
+        drawGroup.insertBefore(pointBtn, drawGroup.firstChild);
+
+        const imageBtn = document.createElement('button');
+        imageBtn.className = 'mapbox-gl-draw_ctrl-draw-btn image-overlay-btn';
+        imageBtn.title = 'Add PNG image to map';
+        imageBtn.type = 'button';
+        imageBtn.innerHTML = icon(faImage).html[0];
+        imageBtn.addEventListener('click', () => {
+          imageToolInputRef.current?.click();
+        });
+        drawGroup.appendChild(imageBtn);
+
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'mapbox-gl-draw_ctrl-draw-btn marker-visibility-toggle active';
         toggleBtn.title = 'Toggle markers & polygons visibility';
@@ -607,16 +627,6 @@ const Content1 = (props) => {
           }
         });
         drawGroup.appendChild(toggleBtn);
-
-        const imageBtn = document.createElement('button');
-        imageBtn.className = 'mapbox-gl-draw_ctrl-draw-btn image-overlay-btn';
-        imageBtn.title = 'Add PNG image to map';
-        imageBtn.type = 'button';
-        imageBtn.innerHTML = icon(faImage).html[0];
-        imageBtn.addEventListener('click', () => {
-          imageToolInputRef.current?.click();
-        });
-        drawGroup.appendChild(imageBtn);
 
         const resetViewBtn = document.createElement('button');
         resetViewBtn.className = 'mapbox-gl-draw_ctrl-draw-btn reset-view-btn';

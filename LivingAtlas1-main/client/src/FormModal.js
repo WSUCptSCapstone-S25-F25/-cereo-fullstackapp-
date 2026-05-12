@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import Modal from 'react-modal';
 import mapboxgl from 'mapbox-gl';
@@ -25,6 +25,7 @@ const FormModal = (props) => {
     const [polygonLineStyle, setPolygonLineStyle] = useState('solid');
     const isModalOpen = modalIsOpen || props.isOpen;
     const selectLocationMarker = useRef(null);
+    const lastPointToolSignalRef = useRef(null);
 
     // Apply initial polygon data from Polygon Tool flow
     useEffect(() => {
@@ -271,7 +272,7 @@ const FormModal = (props) => {
         });
     };
 
-    const handleSelectLocation = () => {
+    const handleSelectLocation = useCallback(() => {
         const map = window.atlasMapInstance;
 
         if (!map) {
@@ -344,7 +345,7 @@ const FormModal = (props) => {
 
         // Store ref so we can clean up
         selectLocationMarker.current = { _onMapClick: onMapClick, remove: () => {} };
-    };
+    }, []);
 
     const cancelSelectLocation = () => {
         const map = window.atlasMapInstance;
@@ -389,6 +390,17 @@ const FormModal = (props) => {
             setPolygonVertices([]);
         }
     };
+
+    useEffect(() => {
+        const signal = props.initialPointToolSignal;
+        if (!signal || signal === lastPointToolSignalRef.current) return;
+        if (!isModalOpen || isSelectingLocation || isDrawingPolygon) return;
+
+        lastPointToolSignalRef.current = signal;
+        setLocationType('point');
+        setPolygonVertices([]);
+        handleSelectLocation();
+    }, [props.initialPointToolSignal, isModalOpen, isSelectingLocation, isDrawingPolygon, handleSelectLocation]);
 
     return (
         <div>
