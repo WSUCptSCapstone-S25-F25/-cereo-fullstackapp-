@@ -117,6 +117,12 @@ def save_uploaded_file(file: UploadFile, require_gcs: bool = True) -> str:
         f.write(content)
     return f"/uploads/card_images/{unique_filename}"
 
+
+def _should_sync_thumbnail_with_gallery(card_id: int) -> bool:
+    cur.execute("SELECT COALESCE(LocationType, 'point') FROM Cards WHERE CardID = %s", (card_id,))
+    row = cur.fetchone()
+    return not row or row[0] != 'image'
+
 @images_router.post("/uploadCardImage")
 async def upload_card_image(
     cardID: int = Form(...),
@@ -159,11 +165,12 @@ async def upload_card_image(
         
         image_id = cur.fetchone()[0]
 
-        # Keep legacy thumbnail field in sync for list/map endpoints that still read Cards.Thumbnail_Link
-        cur.execute(
-            "UPDATE Cards SET Thumbnail_Link = %s WHERE CardID = %s",
-            (image_url, cardID)
-        )
+        if _should_sync_thumbnail_with_gallery(cardID):
+            # Keep legacy thumbnail field in sync for list/map endpoints that still read Cards.Thumbnail_Link
+            cur.execute(
+                "UPDATE Cards SET Thumbnail_Link = %s WHERE CardID = %s",
+                (image_url, cardID)
+            )
         conn.commit()
         
         return {
@@ -237,11 +244,12 @@ async def upload_card_images(
                 "altText": alt_text
             })
 
-        # Keep legacy thumbnail in sync to first newly uploaded image
-        cur.execute(
-            "UPDATE Cards SET Thumbnail_Link = %s WHERE CardID = %s",
-            (created_images[0]["imageURL"], cardID)
-        )
+        if created_images and _should_sync_thumbnail_with_gallery(cardID):
+            # Keep legacy thumbnail in sync to first newly uploaded image
+            cur.execute(
+                "UPDATE Cards SET Thumbnail_Link = %s WHERE CardID = %s",
+                (created_images[0]["imageURL"], cardID)
+            )
         conn.commit()
 
         return {
@@ -309,23 +317,24 @@ async def delete_card_image(imageID: int):
                 (idx, img_id)
             )
 
-        # After delete, reset thumbnail to first remaining image or default logo.
-        cur.execute(
-            """
-            SELECT ImageURL
-            FROM CardImages
-            WHERE CardID = %s
-            ORDER BY DisplayOrder ASC, ImageID ASC
-            LIMIT 1
-            """,
-            (card_id,)
-        )
-        first_image = cur.fetchone()
-        next_thumbnail = first_image[0] if first_image else "/CEREO-logo.png"
-        cur.execute(
-            "UPDATE Cards SET Thumbnail_Link = %s WHERE CardID = %s",
-            (next_thumbnail, card_id)
-        )
+        if _should_sync_thumbnail_with_gallery(card_id):
+            # After delete, reset thumbnail to first remaining image or default logo.
+            cur.execute(
+                """
+                SELECT ImageURL
+                FROM CardImages
+                WHERE CardID = %s
+                ORDER BY DisplayOrder ASC, ImageID ASC
+                LIMIT 1
+                """,
+                (card_id,)
+            )
+            first_image = cur.fetchone()
+            next_thumbnail = first_image[0] if first_image else "/CEREO-logo.png"
+            cur.execute(
+                "UPDATE Cards SET Thumbnail_Link = %s WHERE CardID = %s",
+                (next_thumbnail, card_id)
+            )
         
         conn.commit()
         

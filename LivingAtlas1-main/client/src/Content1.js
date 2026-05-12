@@ -13,7 +13,7 @@ import api from './api.js';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import html2canvas from 'html2canvas';
 import { icon } from '@fortawesome/fontawesome-svg-core';
-import { faEye, faEyeSlash, faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faCamera, faImage } from '@fortawesome/free-solid-svg-icons';
 
 // Mapbox Token
 mapboxgl.accessToken =
@@ -56,6 +56,10 @@ const Content1 = (props) => {
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
   const [isPolygonToolDrawing, setIsPolygonToolDrawing] = useState(false);
+  const [isImageToolDrawing, setIsImageToolDrawing] = useState(false);
+  const [pendingMapImageFile, setPendingMapImageFile] = useState(null);
+  const [pendingMapImageUrl, setPendingMapImageUrl] = useState('');
+  const imageToolInputRef = useRef(null);
   const markersVisibleRef = useRef(true);
 
   const closeMarkerPopup = useCallback(() => {
@@ -76,6 +80,34 @@ const Content1 = (props) => {
     const baseURL = (api.defaults.baseURL || '').replace(/\/$/, '');
     if (!baseURL) return url;
     return url.startsWith('/') ? `${baseURL}${url}` : `${baseURL}/${url}`;
+  }, []);
+
+  const handleImageToolInputChange = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'image/png') {
+      alert('The map image tool currently supports PNG files only.');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        alert('Unable to load the selected PNG file.');
+        return;
+      }
+
+      setPendingMapImageFile(file);
+      setPendingMapImageUrl(reader.result);
+      setIsImageToolDrawing(true);
+    };
+    reader.onerror = () => {
+      alert('Unable to load the selected PNG file.');
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   }, []);
 
   const buildMarkerPopupContent = useCallback((feature) => {
@@ -300,6 +332,7 @@ const Content1 = (props) => {
     const fetchPopupImages = async () => {
       const cardID = Number(feature.cardID);
       if (!Number.isInteger(cardID) || cardID <= 0) return;
+      if (feature.location_type === 'image') return;
 
       try {
         const response = await api.get(`/cardImages/${cardID}`);
@@ -562,13 +595,28 @@ const Content1 = (props) => {
           const style = map.getStyle();
           if (style && style.layers) {
             style.layers.forEach(layer => {
-              if (layer.id.startsWith('card-polygon-fill-') || layer.id.startsWith('card-polygon-line-')) {
+              if (
+                layer.id.startsWith('card-polygon-fill-') ||
+                layer.id.startsWith('card-polygon-line-') ||
+                layer.id.startsWith('card-image-layer-') ||
+                layer.id.startsWith('card-image-outline-')
+              ) {
                 map.setLayoutProperty(layer.id, 'visibility', visible ? 'visible' : 'none');
               }
             });
           }
         });
         drawGroup.appendChild(toggleBtn);
+
+        const imageBtn = document.createElement('button');
+        imageBtn.className = 'mapbox-gl-draw_ctrl-draw-btn image-overlay-btn';
+        imageBtn.title = 'Add PNG image to map';
+        imageBtn.type = 'button';
+        imageBtn.innerHTML = icon(faImage).html[0];
+        imageBtn.addEventListener('click', () => {
+          imageToolInputRef.current?.click();
+        });
+        drawGroup.appendChild(imageBtn);
 
         const resetViewBtn = document.createElement('button');
         resetViewBtn.className = 'mapbox-gl-draw_ctrl-draw-btn reset-view-btn';
@@ -693,8 +741,11 @@ const Content1 = (props) => {
       for (let feature of markersData) {
         if (!isActive) return;
 
-        // Skip polygon cards — they are rendered by renderCardPolygons
-        if (feature.location_type === 'polygon' && feature.polygon_vertices && feature.polygon_vertices.length >= 3) {
+        // Skip overlay cards — they are rendered by renderCardPolygons
+        if (
+          (feature.location_type === 'polygon' && feature.polygon_vertices && feature.polygon_vertices.length >= 3) ||
+          (feature.location_type === 'image' && feature.polygon_vertices && feature.polygon_vertices.length >= 4)
+        ) {
           continue;
         }
 
@@ -742,14 +793,22 @@ const Content1 = (props) => {
     };
 
     const renderCardPolygons = (markersData, mapInstance) => {
-      // Remove existing polygon layers/sources
+      // Remove existing overlay layers/sources
       markersData.forEach(feature => {
         const sourceId = `card-polygon-${feature.cardID}`;
         const fillLayerId = `card-polygon-fill-${feature.cardID}`;
         const lineLayerId = `card-polygon-line-${feature.cardID}`;
+        const imageSourceId = `card-image-${feature.cardID}`;
+        const imageLayerId = `card-image-layer-${feature.cardID}`;
+        const imageOutlineSourceId = `card-image-outline-source-${feature.cardID}`;
+        const imageOutlineLayerId = `card-image-outline-${feature.cardID}`;
         if (mapInstance.getLayer(fillLayerId)) mapInstance.removeLayer(fillLayerId);
         if (mapInstance.getLayer(lineLayerId)) mapInstance.removeLayer(lineLayerId);
         if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+        if (mapInstance.getLayer(imageLayerId)) mapInstance.removeLayer(imageLayerId);
+        if (mapInstance.getLayer(imageOutlineLayerId)) mapInstance.removeLayer(imageOutlineLayerId);
+        if (mapInstance.getSource(imageSourceId)) mapInstance.removeSource(imageSourceId);
+        if (mapInstance.getSource(imageOutlineSourceId)) mapInstance.removeSource(imageOutlineSourceId);
       });
 
       // Line style dash patterns (must match PolygonDrawingModal.js)
@@ -762,55 +821,123 @@ const Content1 = (props) => {
 
       for (let feature of markersData) {
         const vertices = feature.polygon_vertices;
-        if (!vertices || !Array.isArray(vertices) || vertices.length < 3) continue;
-        if (feature.location_type !== 'polygon') continue;
+        if (!vertices || !Array.isArray(vertices)) continue;
 
-        const coords = vertices.map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
-        coords.push(coords[0]); // close polygon
+        if (feature.location_type === 'polygon' && vertices.length >= 3) {
+          const coords = vertices.map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
+          coords.push(coords[0]);
 
-        const sourceId = `card-polygon-${feature.cardID}`;
-        const fillLayerId = `card-polygon-fill-${feature.cardID}`;
-        const lineLayerId = `card-polygon-line-${feature.cardID}`;
+          const sourceId = `card-polygon-${feature.cardID}`;
+          const fillLayerId = `card-polygon-fill-${feature.cardID}`;
+          const lineLayerId = `card-polygon-line-${feature.cardID}`;
+          const fillColor = feature.polygon_fill_color || '#0077c0';
+          const lineDash = LINE_STYLE_DASH[feature.polygon_line_style] || [];
 
-        // Use the user-chosen color saved on the card; fall back to default blue
-        const fillColor = feature.polygon_fill_color || '#0077c0';
+          mapInstance.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              geometry: { type: 'Polygon', coordinates: [coords] }
+            }
+          });
+
+          mapInstance.addLayer({
+            id: fillLayerId,
+            type: 'fill',
+            source: sourceId,
+            paint: {
+              'fill-color': fillColor,
+              'fill-opacity': 0.2
+            }
+          });
+
+          const linePaint = {
+            'line-color': fillColor,
+            'line-width': 2
+          };
+          if (lineDash.length > 0) {
+            linePaint['line-dasharray'] = lineDash;
+          }
+
+          mapInstance.addLayer({
+            id: lineLayerId,
+            type: 'line',
+            source: sourceId,
+            paint: linePaint
+          });
+
+          mapInstance.on('click', fillLayerId, (e) => {
+            e.originalEvent.stopPropagation();
+            preventGenericClickClose = true;
+            if (markerPopupRef.current && openMarkerIdRef.current === feature.cardID) {
+              closeMarkerPopup();
+              return;
+            }
+            marker_clicked = true;
+            setSearchCondition(feature.title);
+            openMarkerPopup(feature, e.lngLat, mapInstance);
+          });
+
+          mapInstance.on('mouseenter', fillLayerId, () => {
+            mapInstance.getCanvas().style.cursor = 'pointer';
+          });
+          mapInstance.on('mouseleave', fillLayerId, () => {
+            mapInstance.getCanvas().style.cursor = '';
+          });
+          continue;
+        }
+
+        if (feature.location_type !== 'image' || vertices.length < 4) continue;
+
+        const imageCoords = vertices.slice(0, 4).map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
+        const outlineCoords = [...imageCoords, imageCoords[0]];
+        const imageSourceId = `card-image-${feature.cardID}`;
+        const imageLayerId = `card-image-layer-${feature.cardID}`;
+        const imageOutlineSourceId = `card-image-outline-source-${feature.cardID}`;
+        const imageOutlineLayerId = `card-image-outline-${feature.cardID}`;
+        const outlineColor = feature.polygon_fill_color || '#0077c0';
         const lineDash = LINE_STYLE_DASH[feature.polygon_line_style] || [];
+        const imageUrl = resolveImageUrl(feature.thumbnail_link);
 
-        mapInstance.addSource(sourceId, {
+        mapInstance.addSource(imageSourceId, {
+          type: 'image',
+          url: imageUrl,
+          coordinates: imageCoords
+        });
+
+        mapInstance.addLayer({
+          id: imageLayerId,
+          type: 'raster',
+          source: imageSourceId,
+          paint: {
+            'raster-opacity': 1
+          }
+        });
+
+        mapInstance.addSource(imageOutlineSourceId, {
           type: 'geojson',
           data: {
             type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [coords] }
+            geometry: { type: 'Polygon', coordinates: [outlineCoords] }
           }
         });
 
-        mapInstance.addLayer({
-          id: fillLayerId,
-          type: 'fill',
-          source: sourceId,
-          paint: {
-            'fill-color': fillColor,
-            'fill-opacity': 0.2
-          }
-        });
-
-        const linePaint = {
-          'line-color': fillColor,
+        const outlinePaint = {
+          'line-color': outlineColor,
           'line-width': 2
         };
         if (lineDash.length > 0) {
-          linePaint['line-dasharray'] = lineDash;
+          outlinePaint['line-dasharray'] = lineDash;
         }
 
         mapInstance.addLayer({
-          id: lineLayerId,
+          id: imageOutlineLayerId,
           type: 'line',
-          source: sourceId,
-          paint: linePaint
+          source: imageOutlineSourceId,
+          paint: outlinePaint
         });
 
-        // Click handler for polygon fill — open card popup
-        mapInstance.on('click', fillLayerId, (e) => {
+        mapInstance.on('click', imageLayerId, (e) => {
           e.originalEvent.stopPropagation();
           preventGenericClickClose = true;
           if (markerPopupRef.current && openMarkerIdRef.current === feature.cardID) {
@@ -822,11 +949,10 @@ const Content1 = (props) => {
           openMarkerPopup(feature, e.lngLat, mapInstance);
         });
 
-        // Cursor style on hover
-        mapInstance.on('mouseenter', fillLayerId, () => {
+        mapInstance.on('mouseenter', imageLayerId, () => {
           mapInstance.getCanvas().style.cursor = 'pointer';
         });
-        mapInstance.on('mouseleave', fillLayerId, () => {
+        mapInstance.on('mouseleave', imageLayerId, () => {
           mapInstance.getCanvas().style.cursor = '';
         });
       }
@@ -1055,6 +1181,13 @@ const Content1 = (props) => {
       }}
     >
       <div className="AtlasMap__container" ref={mapContainerRef}>
+        <input
+          ref={imageToolInputRef}
+          type="file"
+          accept="image/png"
+          style={{ display: 'none' }}
+          onChange={handleImageToolInputChange}
+        />
         <div className="AtlasMap__info-bottomleft">
           <div>
             Map Center - Lat: {lat} | Long: {lng} | Zoom: {zoom}
@@ -1075,6 +1208,7 @@ const Content1 = (props) => {
 
       {isPolygonToolDrawing && (
         <PolygonDrawingModal
+          mode="polygon"
           onSave={(vertices, centroid, style) => {
             setIsPolygonToolDrawing(false);
             window.dispatchEvent(new CustomEvent('polygon-tool-save', {
@@ -1082,6 +1216,32 @@ const Content1 = (props) => {
             }));
           }}
           onCancel={() => setIsPolygonToolDrawing(false)}
+        />
+      )}
+
+      {isImageToolDrawing && pendingMapImageUrl && (
+        <PolygonDrawingModal
+          mode="image"
+          title="Place Image"
+          initialImageUrl={pendingMapImageUrl}
+          onSave={(vertices, centroid) => {
+            setIsImageToolDrawing(false);
+            window.dispatchEvent(new CustomEvent('map-image-tool-save', {
+              detail: {
+                vertices,
+                centroid,
+                imageFile: pendingMapImageFile,
+                previewUrl: pendingMapImageUrl
+              }
+            }));
+            setPendingMapImageFile(null);
+            setPendingMapImageUrl('');
+          }}
+          onCancel={() => {
+            setIsImageToolDrawing(false);
+            setPendingMapImageFile(null);
+            setPendingMapImageUrl('');
+          }}
         />
       )}
     </div>

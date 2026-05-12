@@ -522,8 +522,8 @@ async def upload_form(
         if len(title) > 255:
             raise HTTPException(status_code=400, detail="Title exceeds 255 characters")
 
-        # For polygon cards, compute centroid from vertices if lat/lng not provided
-        if (location_type == "polygon") and polygon_coordinates and (not latitude or not longitude):
+        # For polygon/image overlays, compute centroid from vertices if lat/lng not provided
+        if (location_type in ("polygon", "image")) and polygon_coordinates and (not latitude or not longitude):
             try:
                 parsed_coords = json.loads(polygon_coordinates)
                 # Handle envelope format: { vertices: [...], fillColor, lineStyle }
@@ -628,9 +628,9 @@ async def upload_form(
                   polygon_fill_color or '#0077c0', polygon_line_style or 'solid'))
 
         # --------------------------------------------------
-        # Handle polygon vertices (if location_type is 'polygon')
+        # Handle overlay vertices (polygon/image)
         # --------------------------------------------------
-        if location_type == "polygon" and polygon_coordinates:
+        if location_type in ("polygon", "image") and polygon_coordinates:
             try:
                 parsed = json.loads(polygon_coordinates)
                 # Support new envelope format: { vertices: [...], fillColor, lineStyle }
@@ -644,8 +644,12 @@ async def upload_form(
                 else:
                     vertices = parsed  # legacy: plain array of vertices
 
-                if not isinstance(vertices, list) or len(vertices) < 3:
-                    raise HTTPException(status_code=400, detail="Polygon must have at least 3 vertices")
+                minimum_vertices = 4 if location_type == "image" else 3
+                if not isinstance(vertices, list) or len(vertices) < minimum_vertices:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Image overlay must have 4 vertices" if location_type == "image" else "Polygon must have at least 3 vertices"
+                    )
 
                 # Re-run UPDATE with the (possibly corrected) style values
                 cur.execute("""
@@ -756,7 +760,28 @@ async def upload_form(
         # --------------------------------------------------
         # Populate CardImages for newly created cards
         # --------------------------------------------------
-        if not update and thumbnail_url != DEFAULT_THUMBNAIL_URL:
+        if not update and location_type == "image":
+            try:
+                from endpoint_files.images import save_uploaded_file as _save_img
+                if images:
+                    for idx, img_file in enumerate(images):
+                        try:
+                            img_url = _save_img(img_file, require_gcs=True)
+                            cur.execute(
+                                "INSERT INTO CardImages (CardID, ImageURL, DisplayOrder, AltText) VALUES (%s, %s, %s, '')",
+                                (nextcardid, img_url, idx)
+                            )
+                        except Exception as img_err:
+                            print(f"[IMAGE] Failed to upload image at index {idx}: {img_err}")
+                conn.commit()
+                print(f"[IMAGES] Inserted gallery CardImages for new image-overlay card {nextcardid}")
+            except Exception as img_err:
+                print(f"[IMAGE] Failed to insert CardImages: {img_err}")
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+        elif not update and thumbnail_url != DEFAULT_THUMBNAIL_URL:
             try:
                 from endpoint_files.images import save_uploaded_file as _save_img
                 # Use the already-uploaded thumbnail as the first gallery image

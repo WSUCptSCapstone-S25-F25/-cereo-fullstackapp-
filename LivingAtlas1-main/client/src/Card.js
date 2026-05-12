@@ -363,9 +363,11 @@ function Card(props) {
         if (formData.created_date) addField('Created', new Date(formData.created_date).toLocaleDateString());
 
         // Location
-        const isPolygonCard = Array.isArray(formData.polygon_coords) && formData.polygon_coords.length > 0;
-        if (isPolygonCard) {
+        const exportLocationType = formData.location_type;
+        if (exportLocationType === 'polygon') {
             addField('Location type', 'Polygon area');
+        } else if (exportLocationType === 'image') {
+            addField('Location type', 'Image overlay');
         } else if (formData.lat !== undefined && formData.lat !== null && formData.lon !== undefined && formData.lon !== null) {
             addField('Latitude', formData.lat);
             addField('Longitude', formData.lon);
@@ -542,9 +544,24 @@ function Card(props) {
     };
 
     const isPolygonCard = formData.location_type === 'polygon';
+    const isImageCard = formData.location_type === 'image';
+    const isOverlayCard = isPolygonCard || isImageCard;
+
+    const getRepresentativeImageUrl = useCallback((data = formData) => {
+        if (data.location_type === 'image') {
+            return resolveImageUrl(data.thumbnail_link || preview || '/CEREO-logo.png');
+        }
+        const imageRecords = Array.isArray(data.images) ? data.images : [];
+        const firstImage = imageRecords[0];
+        if (typeof firstImage === 'string') return resolveImageUrl(firstImage);
+        if (firstImage?.url || firstImage?.imageURL) {
+            return resolveImageUrl(firstImage.url || firstImage.imageURL);
+        }
+        return resolveImageUrl(data.thumbnail_link || preview || '/CEREO-logo.png');
+    }, [formData, preview]);
 
     const validateForm = () => {
-        const requiredFields = isPolygonCard
+        const requiredFields = isOverlayCard
             ? ['username', 'name', 'email', 'title', 'category']
             : ['username', 'name', 'email', 'title', 'category', 'latitude', 'longitude'];
         for (const field of requiredFields) {
@@ -561,6 +578,14 @@ function Card(props) {
                 alert('Longitude must be between -180 and 180.');
                 return false;
             }
+        }
+        if (isPolygonCard && (!Array.isArray(formData.polygon_vertices) || formData.polygon_vertices.length < 3)) {
+            alert('Polygon cards must keep at least 3 points.');
+            return false;
+        }
+        if (isImageCard && (!Array.isArray(formData.polygon_vertices) || formData.polygon_vertices.length < 4)) {
+            alert('Image cards must keep 4 corner points.');
+            return false;
         }
         return true;
     };
@@ -588,7 +613,7 @@ function Card(props) {
     }
 
     let effectiveThumbnailLink = formData.thumbnail_link || '';
-    if (!thumbnail && Array.isArray(formData.images) && formData.images.length > 0) {
+    if (!isImageCard && !thumbnail && Array.isArray(formData.images) && formData.images.length > 0) {
         const firstImage = formData.images[0];
         const firstImageUrl = typeof firstImage === 'string'
             ? firstImage
@@ -621,7 +646,7 @@ function Card(props) {
     formDataToSend.append('category', formData.category || 'None');
 
     // Send polygon vertices as JSON string if polygon card
-    if (formData.location_type === 'polygon' && Array.isArray(formData.polygon_vertices) && formData.polygon_vertices.length >= 3) {
+    if (isOverlayCard && Array.isArray(formData.polygon_vertices) && formData.polygon_vertices.length >= (isImageCard ? 4 : 3)) {
         formDataToSend.append('polygon_coordinates', JSON.stringify({
             vertices: formData.polygon_vertices,
             fillColor: formData.polygon_fill_color,
@@ -810,7 +835,8 @@ function Card(props) {
     const handleEditPolygon = useCallback(() => {
         const map = window.atlasMapInstance;
         const verts = formData.polygon_vertices;
-        if (!map || !Array.isArray(verts) || verts.length < 3) return;
+        const minimumVertices = formData.location_type === 'image' ? 4 : 3;
+        if (!map || !Array.isArray(verts) || verts.length < minimumVertices) return;
 
         // Close any open Mapbox popups on the map
         document.querySelectorAll('.mapboxgl-popup').forEach(el => {
@@ -822,10 +848,17 @@ function Card(props) {
         // Hide the existing card polygon layers so they don't show underneath the editor
         const cardID = formData.cardID || props.cardID;
         if (cardID) {
-            const fillLayerId = `card-polygon-fill-${cardID}`;
-            const lineLayerId = `card-polygon-line-${cardID}`;
-            if (map.getLayer(fillLayerId)) map.setLayoutProperty(fillLayerId, 'visibility', 'none');
-            if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', 'none');
+            if (formData.location_type === 'image') {
+                const imageLayerId = `card-image-layer-${cardID}`;
+                const outlineLayerId = `card-image-outline-${cardID}`;
+                if (map.getLayer(imageLayerId)) map.setLayoutProperty(imageLayerId, 'visibility', 'none');
+                if (map.getLayer(outlineLayerId)) map.setLayoutProperty(outlineLayerId, 'visibility', 'none');
+            } else {
+                const fillLayerId = `card-polygon-fill-${cardID}`;
+                const lineLayerId = `card-polygon-line-${cardID}`;
+                if (map.getLayer(fillLayerId)) map.setLayoutProperty(fillLayerId, 'visibility', 'none');
+                if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', 'none');
+            }
         }
 
         setIsEditingPolygon(true);
@@ -838,18 +871,26 @@ function Card(props) {
             [Math.max(...lngs), Math.max(...lats)]
         ];
         map.fitBounds(bounds, { padding: 80, maxZoom: 16 });
-    }, [formData.polygon_vertices, formData.cardID, props.cardID]);
+    }, [formData.polygon_vertices, formData.cardID, formData.location_type, props.cardID]);
 
     // Restore card polygon layer visibility
     const restoreCardPolygonLayers = useCallback(() => {
         const map = window.atlasMapInstance;
         const cardID = formData.cardID || props.cardID;
         if (!map || !cardID) return;
+        if (formData.location_type === 'image') {
+            const imageLayerId = `card-image-layer-${cardID}`;
+            const outlineLayerId = `card-image-outline-${cardID}`;
+            if (map.getLayer(imageLayerId)) map.setLayoutProperty(imageLayerId, 'visibility', 'visible');
+            if (map.getLayer(outlineLayerId)) map.setLayoutProperty(outlineLayerId, 'visibility', 'visible');
+            return;
+        }
+
         const fillLayerId = `card-polygon-fill-${cardID}`;
         const lineLayerId = `card-polygon-line-${cardID}`;
         if (map.getLayer(fillLayerId)) map.setLayoutProperty(fillLayerId, 'visibility', 'visible');
         if (map.getLayer(lineLayerId)) map.setLayoutProperty(lineLayerId, 'visibility', 'visible');
-    }, [formData.cardID, props.cardID]);
+    }, [formData.cardID, formData.location_type, props.cardID]);
 
     // After polygon edit save: update formData and return to learn-more modal (edit mode)
     const handlePolygonEditSave = useCallback((vertices, centroid, style) => {
@@ -873,35 +914,59 @@ function Card(props) {
         // Update the polygon on the main map immediately
         const map = window.atlasMapInstance;
         const cardID = formData.cardID || props.cardID;
-        if (map && cardID && vertices.length >= 3) {
-            const sourceId = `card-polygon-${cardID}`;
-            const fillLayerId = `card-polygon-fill-${cardID}`;
-            const lineLayerId = `card-polygon-line-${cardID}`;
-            const coords = vertices.map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
-            coords.push(coords[0]); // close polygon
-
-            const newData = {
-                type: 'Feature',
-                geometry: { type: 'Polygon', coordinates: [coords] }
-            };
-
-            const source = map.getSource(sourceId);
-            if (source) {
-                source.setData(newData);
-            }
-
-            // Update fill color / opacity if the layers exist
+        if (map && cardID && vertices.length >= (formData.location_type === 'image' ? 4 : 3)) {
             const fillColor = style?.fillColor || formData.polygon_fill_color || '#0077c0';
-            const fillOpacity = style?.fillOpacity ?? 0.2;
-            if (map.getLayer(fillLayerId)) {
-                map.setPaintProperty(fillLayerId, 'fill-color', fillColor);
-                map.setPaintProperty(fillLayerId, 'fill-opacity', fillOpacity);
-            }
-            if (map.getLayer(lineLayerId)) {
-                map.setPaintProperty(lineLayerId, 'line-color', fillColor);
+            if (formData.location_type === 'image') {
+                const imageSourceId = `card-image-${cardID}`;
+                const outlineSourceId = `card-image-outline-source-${cardID}`;
+                const outlineLayerId = `card-image-outline-${cardID}`;
+                const imageCoords = vertices.slice(0, 4).map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
+                const outlineCoords = [...imageCoords, imageCoords[0]];
+                const imageSource = map.getSource(imageSourceId);
+                const outlineSource = map.getSource(outlineSourceId);
+                if (imageSource) {
+                    const imageUrl = thumbnail ? preview : getRepresentativeImageUrl();
+                    if (typeof imageSource.updateImage === 'function') {
+                        imageSource.updateImage({ url: imageUrl, coordinates: imageCoords });
+                    } else if (typeof imageSource.setCoordinates === 'function') {
+                        imageSource.setCoordinates(imageCoords);
+                    }
+                }
+                if (outlineSource) {
+                    outlineSource.setData({
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [outlineCoords] }
+                    });
+                }
+                if (map.getLayer(outlineLayerId)) {
+                    map.setPaintProperty(outlineLayerId, 'line-color', fillColor);
+                }
+            } else {
+                const sourceId = `card-polygon-${cardID}`;
+                const fillLayerId = `card-polygon-fill-${cardID}`;
+                const lineLayerId = `card-polygon-line-${cardID}`;
+                const coords = vertices.map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
+                coords.push(coords[0]);
+
+                const source = map.getSource(sourceId);
+                if (source) {
+                    source.setData({
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [coords] }
+                    });
+                }
+
+                const fillOpacity = style?.fillOpacity ?? 0.2;
+                if (map.getLayer(fillLayerId)) {
+                    map.setPaintProperty(fillLayerId, 'fill-color', fillColor);
+                    map.setPaintProperty(fillLayerId, 'fill-opacity', fillOpacity);
+                }
+                if (map.getLayer(lineLayerId)) {
+                    map.setPaintProperty(lineLayerId, 'line-color', fillColor);
+                }
             }
         }
-    }, [formData.cardID, formData.polygon_fill_color, props.cardID]);
+    }, [formData.cardID, formData.location_type, formData.polygon_fill_color, getRepresentativeImageUrl, preview, props.cardID, restoreCardPolygonLayers, thumbnail]);
 
     const handlePolygonEditCancel = useCallback(() => {
         // If was converting from marker to polygon, revert location_type
@@ -1294,12 +1359,18 @@ function Card(props) {
             ? resolveImageUrl(displayCardData.thumbnail_link)
             : "/CEREO-logo.png";
 
-    const cardImageList = displayCardData.images && Array.isArray(displayCardData.images) && displayCardData.images.length > 0
+    const cardImageList = isImageCard
+        ? [{ url: cardThumbnailSrc, id: 'card-representation', imageID: null, alt: 'Card representation' }]
+        : displayCardData.images && Array.isArray(displayCardData.images) && displayCardData.images.length > 0
         ? displayCardData.images.map((img, idx) => normalizeImageRecord(img, idx))
         : [{ url: cardThumbnailSrc, id: 0 }];
 
     // Multi-image support: use images array if available, otherwise fall back to single thumbnail
-    const imageList = formData.images && Array.isArray(formData.images) && formData.images.length > 0
+    const imageList = isImageCard
+        ? (formData.images && Array.isArray(formData.images) && formData.images.length > 0
+            ? formData.images.map((img, idx) => normalizeImageRecord(img, idx))
+            : [])
+        : formData.images && Array.isArray(formData.images) && formData.images.length > 0
         ? formData.images.map((img, idx) => normalizeImageRecord(img, idx))
         : [{ url: cardThumbnailSrc, id: 0 }];
 
@@ -1408,7 +1479,7 @@ function Card(props) {
     );
     const learnMoreGalleryImages = (Array.isArray(formData.images) && formData.images.length > 0)
         ? formData.images.map((img, idx) => normalizeImageRecord(img, idx)).slice(0, 5)
-        : (displayCardData.thumbnail_link && displayCardData.thumbnail_link.trim() !== ""
+        : (!isImageCard && displayCardData.thumbnail_link && displayCardData.thumbnail_link.trim() !== ""
             ? [{ url: cardThumbnailSrc, id: 0, imageID: null }]
             : []);
     const learnMoreGallerySlots = Array.from({ length: 5 }, (_, index) => learnMoreGalleryImages[index] || null);
@@ -1885,7 +1956,7 @@ function Card(props) {
                                     <p><strong>Organization:</strong></p>
                                     <input className="learn-more-inline-input" type="text" name="org" value={formData.org || ''} onChange={handleInputChange} />
                                 </div>
-                                {!isPolygonCard && (
+                                {!isOverlayCard && (
                                     <div className="learn-more-field-cell learn-more-coordinate-cell">
                                         <p><strong>Coordinates:</strong></p>
                                         <div className="learn-more-coordinate-row">
@@ -1945,9 +2016,9 @@ function Card(props) {
                             <input className="learn-more-inline-input" type="text" name="tags" value={formData.tags || ''} onChange={handleInputChange} />
 
                             <div data-onboarding-target="learn-more-coordinates-polygon">
-                                {isPolygonCard ? (
+                                {isOverlayCard ? (
                                     <button type="button" className="learn-more-select-location-btn" onClick={handleEditPolygon}>
-                                        Edit Polygon
+                                        {isImageCard ? 'Edit Image' : 'Edit Polygon'}
                                     </button>
                                 ) : (
                                     <div className="learn-more-location-btn-group">
@@ -1969,7 +2040,7 @@ function Card(props) {
                                 <p><strong>Email:</strong> {formData.email}</p>
                                 <p><strong>Funding:</strong> {formData.funding || 'N/A'}</p>
                                 <p><strong>Organization:</strong> {formData.org || 'N/A'}</p>
-                                {!isPolygonCard && (
+                                {!isOverlayCard && (
                                     <p className="learn-more-coordinate-readonly">
                                         <strong>Latitude:</strong> {formData.latitude}
                                         <span className="learn-more-coordinate-separator"> | </span>
@@ -2624,9 +2695,12 @@ function Card(props) {
             <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
             {isEditingPolygon && (
                 <PolygonDrawingModal
+                    mode={isImageCard ? 'image' : 'polygon'}
+                    title={isImageCard ? 'Edit Image' : 'Draw Polygon'}
                     initialVertices={isConvertingToPolygon ? [] : formData.polygon_vertices}
                     initialLineStyle={isConvertingToPolygon ? undefined : formData.polygon_line_style}
                     initialFillColor={isConvertingToPolygon ? undefined : formData.polygon_fill_color}
+                    initialImageUrl={isImageCard ? getRepresentativeImageUrl() : undefined}
                     onSave={handlePolygonEditSave}
                     onCancel={handlePolygonEditCancel}
                 />

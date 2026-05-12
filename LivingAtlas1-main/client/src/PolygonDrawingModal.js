@@ -140,9 +140,12 @@ function normalizeHistorySnapshot(snapshot) {
     );
 }
 
-const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor }) => {
+const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineStyle, initialFillColor, mode = 'polygon', initialImageUrl, title }) => {
+    const isImageMode = mode === 'image';
+    const minimumVertexCount = isImageMode ? 4 : 3;
+    const modalTitle = title || (isImageMode ? 'Place Image' : 'Draw Polygon');
     const [vertices, setVertices] = useState(initialVertices || []);
-    const [isDrawing, setIsDrawing] = useState(!(initialVertices && initialVertices.length >= 3));
+    const [isDrawing, setIsDrawing] = useState(!isImageMode && !(initialVertices && initialVertices.length >= minimumVertexCount));
     const [lineStyle, setLineStyle] = useState(initialLineStyle || 'solid'); // 'solid', 'dashed', 'dotted'
     const [fillColor, setFillColor] = useState(initialFillColor || DEFAULT_POLYGON_COLOR);
     const [showLineMenu, setShowLineMenu] = useState(false);
@@ -167,6 +170,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const markersRef = useRef([]);
     const linesSourceAdded = useRef(false);
     const fillSourceAdded = useRef(false);
+    const imageSourceAdded = useRef(false);
     const mapClickHandlerRef = useRef(null);
     const modalRef = useRef(null);
     const verticesRef = useRef(vertices); // always-current vertices, safe for use inside stale closures
@@ -190,23 +194,30 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     const curveVertexCountRef = useRef((initialVertices || []).length);
     const curveMarkersRef = useRef([]); // Mapbox markers for bezier control handles
     const rebuildCurveMarkersRef = useRef(null);
+    const hasAutoStartedImagePlacementRef = useRef(false);
+    const imageUrlRef = useRef(initialImageUrl || '');
+    imageUrlRef.current = initialImageUrl || '';
 
     const POLYGON_LINE_SOURCE = 'card-polygon-draw-line';
     const POLYGON_LINE_LAYER = 'card-polygon-draw-line-layer';
     const POLYGON_FILL_SOURCE = 'card-polygon-draw-fill';
     const POLYGON_FILL_LAYER = 'card-polygon-draw-fill-layer';
+    const IMAGE_SOURCE = 'card-polygon-draw-image';
+    const IMAGE_LAYER = 'card-polygon-draw-image-layer';
 
     // Update line style on map when lineStyle changes
     useEffect(() => {
         const map = window.atlasMapInstance;
+        if (isImageMode) return;
         if (!map || !map.getLayer(POLYGON_LINE_LAYER)) return;
         const dash = LINE_STYLES[lineStyle] || [];
         map.setPaintProperty(POLYGON_LINE_LAYER, 'line-dasharray', dash.length ? dash : undefined);
-    }, [lineStyle]);
+    }, [lineStyle, isImageMode]);
 
     // Update fill color on map when fillColor changes
     useEffect(() => {
         const map = window.atlasMapInstance;
+        if (isImageMode) return;
         if (!map) return;
         const activeColor = fillColor || DEFAULT_POLYGON_COLOR;
         if (map.getLayer(POLYGON_LINE_LAYER)) {
@@ -222,14 +233,15 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             const lbl = m.getElement().querySelector('.polygon-draw-vertex-label');
             if (lbl) lbl.style.color = activeColor;
         });
-    }, [fillColor]);
+    }, [fillColor, isImageMode]);
 
     // Update fill opacity on map when fillOpacity changes
     useEffect(() => {
         const map = window.atlasMapInstance;
+        if (isImageMode) return;
         if (!map || !map.getLayer(POLYGON_FILL_LAYER)) return;
         map.setPaintProperty(POLYGON_FILL_LAYER, 'fill-opacity', fillOpacity);
-    }, [fillOpacity]);
+    }, [fillOpacity, isImageMode]);
 
     // Set crosshair cursor synchronously before paint whenever drawing mode is active.
     // useLayoutEffect runs before the browser paints, preventing the default 'grab'
@@ -244,11 +256,11 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         const map = window.atlasMapInstance;
         if (!map) return;
 
-        const useCurve = isCurveModeRef.current && verts.length >= 3;
+        const useCurve = !isImageMode && isCurveModeRef.current && verts.length >= 3;
         const lineCoords = useCurve
             ? buildBezierCoords(verts, curveControlPointsRef.current)
             : verts.map(v => [v.lng, v.lat]);
-        if (!useCurve && lineCoords.length >= 3) lineCoords.push(lineCoords[0]);
+        if (!useCurve && lineCoords.length >= minimumVertexCount) lineCoords.push(lineCoords[0]);
 
         // Update line
         if (linesSourceAdded.current) {
@@ -269,7 +281,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         }
 
         // Update fill (only if >= 3 points)
-        if (fillSourceAdded.current) {
+        if (!isImageMode && fillSourceAdded.current) {
             const src = map.getSource(POLYGON_FILL_SOURCE);
             if (src) {
                 if (verts.length >= 3) {
@@ -285,11 +297,55 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 }
             }
         }
-    }, []);
+
+        if (isImageMode) {
+            const imageCoords = verts.slice(0, 4).map(v => [v.lng, v.lat]);
+            if (imageCoords.length >= 4 && imageUrlRef.current) {
+                if (!map.getSource(IMAGE_SOURCE)) {
+                    map.addSource(IMAGE_SOURCE, {
+                        type: 'image',
+                        url: imageUrlRef.current,
+                        coordinates: imageCoords
+                    });
+                    imageSourceAdded.current = true;
+                } else {
+                    const imageSource = map.getSource(IMAGE_SOURCE);
+                    if (typeof imageSource.updateImage === 'function') {
+                        imageSource.updateImage({ url: imageUrlRef.current, coordinates: imageCoords });
+                    } else if (typeof imageSource.setCoordinates === 'function') {
+                        imageSource.setCoordinates(imageCoords);
+                    }
+                }
+
+                if (!map.getLayer(IMAGE_LAYER)) {
+                    map.addLayer({
+                        id: IMAGE_LAYER,
+                        type: 'raster',
+                        source: IMAGE_SOURCE,
+                        paint: {
+                            'raster-opacity': 1
+                        }
+                    });
+                }
+            } else if (map.getLayer(IMAGE_LAYER) || map.getSource(IMAGE_SOURCE)) {
+                if (map.getLayer(IMAGE_LAYER)) map.removeLayer(IMAGE_LAYER);
+                if (map.getSource(IMAGE_SOURCE)) map.removeSource(IMAGE_SOURCE);
+                imageSourceAdded.current = false;
+            }
+        }
+    }, [isImageMode, minimumVertexCount]);
 
     const syncCurveGeometry = useCallback((verts, options = {}) => {
         const { forceReset = false, rebuildHandles = false } = options;
         const vertexCountChanged = curveVertexCountRef.current !== verts.length;
+
+        if (isImageMode) {
+            if (rebuildHandles) {
+                curveMarkersRef.current.forEach(m => m.remove());
+                curveMarkersRef.current = [];
+            }
+            return {};
+        }
 
         if (verts.length < 3) {
             curveVertexCountRef.current = verts.length;
@@ -322,7 +378,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         }
 
         return nextCtrlPts;
-    }, []);
+    }, [isImageMode]);
 
     const createDraggableMarker = useCallback((vertex, index, currentVertices) => {
         const map = window.atlasMapInstance;
@@ -377,12 +433,14 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         markersRef.current.forEach(m => m.remove());
         markersRef.current = [];
 
+        if (isImageMode) return;
+
         // Create new markers
         verts.forEach((v, i) => {
             const marker = createDraggableMarker(v, i, verts);
             if (marker) markersRef.current.push(marker);
         });
-    }, [createDraggableMarker]);
+    }, [createDraggableMarker, isImageMode]);
 
     const rebuildCurveMarkers = useCallback((verts, ctrlPts) => {
         const map = window.atlasMapInstance;
@@ -632,6 +690,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                 lat: parseFloat((v.lat + dLat).toFixed(6)),
                 lng: parseFloat((v.lng + dLng).toFixed(6)),
             }));
+            syncCurveGeometry(moved, { rebuildHandles: isCurveModeRef.current && !isImageMode });
             updatePolygonOnMap(moved);
             moved.forEach((v, i) => {
                 if (markersRef.current[i]) {
@@ -652,6 +711,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             dragRef.current = null;
             map.dragPan.enable();
             map.getCanvas().style.cursor = 'grab';
+            syncCurveGeometry(moved, { rebuildHandles: isCurveModeRef.current && !isImageMode });
             setVertices(moved);
             updatePolygonOnMap(moved);
             moved.forEach((v, i) => {
@@ -665,7 +725,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         map.on('mousedown', onMouseDown);
         map.on('mousemove', onMouseMove);
         map.on('mouseup', onMouseUp);
-    }, [updatePolygonOnMap]);
+    }, [updatePolygonOnMap, syncCurveGeometry, isImageMode]);
 
     // ── Whole-polygon rotate mode ──
     const stopRotateMode = useCallback(() => {
@@ -734,6 +794,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             const curAngle = Math.atan2(e.lngLat.lat - centroid.lat, e.lngLat.lng - centroid.lng);
             const delta = curAngle - startAngle;
             const rotated = rotateVertices(startVertices, centroid, delta);
+            syncCurveGeometry(rotated, { rebuildHandles: isCurveModeRef.current && !isImageMode });
             updatePolygonOnMap(rotated);
             rotated.forEach((v, i) => {
                 if (markersRef.current[i]) markersRef.current[i].setLngLat([v.lng, v.lat]);
@@ -749,6 +810,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             rotateRef.current = null;
             map.dragPan.enable();
             map.getCanvas().style.cursor = 'grab';
+            syncCurveGeometry(rotated, { rebuildHandles: isCurveModeRef.current && !isImageMode });
             setVertices(rotated);
             updatePolygonOnMap(rotated);
             rotated.forEach((v, i) => {
@@ -760,7 +822,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         map.on('mousedown', onMouseDown);
         map.on('mousemove', onMouseMove);
         map.on('mouseup', onMouseUp);
-    }, [updatePolygonOnMap]);
+    }, [updatePolygonOnMap, syncCurveGeometry, isImageMode]);
 
     // ── Bounding-box resize mode ──
     const stopResizeMode = useCallback(() => {
@@ -893,6 +955,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     const { handleType, startVertices, startBBox } = resizeStateRef.current;
                     const pos = marker.getLngLat();
                     const resized = applyResize(startVertices, startBBox, handleType, pos.lat, pos.lng);
+                    syncCurveGeometry(resized, { rebuildHandles: isCurveModeRef.current && !isImageMode });
                     updatePolygonOnMap(resized);
                     // For circle/dot: update center marker position
                     if (circleMetaRef.current && markersRef.current.length === 1) {
@@ -922,6 +985,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     const pos = marker.getLngLat();
                     const resized = applyResize(startVertices, startBBox, handleType, pos.lat, pos.lng);
                     resizeStateRef.current = null;
+                    syncCurveGeometry(resized, { rebuildHandles: isCurveModeRef.current && !isImageMode });
                     setVertices(resized);
                     updatePolygonOnMap(resized);
                     // For circle/dot: update center marker and metadata
@@ -957,7 +1021,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             return currentVerts;
         });
         placeHandlesRef.current = placeHandles;
-    }, [updatePolygonOnMap]);
+    }, [updatePolygonOnMap, syncCurveGeometry, isImageMode]);
 
     const handleToggleDragMode = useCallback(() => {
         // Exit rotate/resize mode if active
@@ -1021,7 +1085,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         }
         updatePolygonOnMap(verticesRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isCurveMode]);
+    }, [isCurveMode, syncCurveGeometry, rebuildCurveMarkers, updatePolygonOnMap]);
 
     // Start shape placement mode
     const startShapePlacement = useCallback((shape) => {
@@ -1154,7 +1218,13 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         curveVertexCountRef.current = 0;
         circleMetaRef.current = null;
         updatePolygonOnMap([]);
-        setIsDrawing(true);
+        setIsDrawing(!isImageMode);
+
+        if (isImageMode) {
+            updatePolygonOnMap([]);
+            startShapePlacement('rectangle');
+            return;
+        }
 
         // Re-attach click handler if not already present
         const map = window.atlasMapInstance;
@@ -1174,7 +1244,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             map.on('click', handleMapClick);
             map.getCanvas().style.cursor = 'crosshair';
         }
-    }, [updatePolygonOnMap, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode, syncCurveGeometry, rebuildMarkers]);
+    }, [updatePolygonOnMap, isDragMode, stopDragMode, isRotateMode, stopRotateMode, isResizeMode, stopResizeMode, syncCurveGeometry, rebuildMarkers, isImageMode, startShapePlacement]);
 
 
     // Position modal flush with the draw control bar
@@ -1220,27 +1290,29 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         }
 
         // Add fill source/layer
-        if (!map.getSource(POLYGON_FILL_SOURCE)) {
-            map.addSource(POLYGON_FILL_SOURCE, {
-                type: 'geojson',
-                data: { type: 'FeatureCollection', features: [] }
-            });
-            fillSourceAdded.current = true;
-        }
-        if (!map.getLayer(POLYGON_FILL_LAYER)) {
-            map.addLayer({
-                id: POLYGON_FILL_LAYER,
-                type: 'fill',
-                source: POLYGON_FILL_SOURCE,
-                paint: {
-                    'fill-color': fillColor || DEFAULT_POLYGON_COLOR,
-                    'fill-opacity': fillOpacity
-                }
-            });
+        if (!isImageMode) {
+            if (!map.getSource(POLYGON_FILL_SOURCE)) {
+                map.addSource(POLYGON_FILL_SOURCE, {
+                    type: 'geojson',
+                    data: { type: 'FeatureCollection', features: [] }
+                });
+                fillSourceAdded.current = true;
+            }
+            if (!map.getLayer(POLYGON_FILL_LAYER)) {
+                map.addLayer({
+                    id: POLYGON_FILL_LAYER,
+                    type: 'fill',
+                    source: POLYGON_FILL_SOURCE,
+                    paint: {
+                        'fill-color': fillColor || DEFAULT_POLYGON_COLOR,
+                        'fill-opacity': fillOpacity
+                    }
+                });
+            }
         }
 
         // Render initial vertices if provided (edit mode)
-        if (initialVertices && initialVertices.length >= 3) {
+        if (initialVertices && initialVertices.length >= minimumVertexCount) {
             syncCurveGeometry(initialVertices, { forceReset: true });
             updatePolygonOnMap(initialVertices);
             rebuildMarkers(initialVertices);
@@ -1263,7 +1335,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
         };
 
         // If editing existing polygon, start in drag/edit mode (not drawing)
-        if (!(initialVertices && initialVertices.length >= 3)) {
+        if (!isImageMode && !(initialVertices && initialVertices.length >= minimumVertexCount)) {
             mapClickHandlerRef.current = handleMapClick;
             map.on('click', handleMapClick);
             map.getCanvas().style.cursor = 'crosshair';
@@ -1345,13 +1417,25 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
             if (map.getSource(POLYGON_LINE_SOURCE)) map.removeSource(POLYGON_LINE_SOURCE);
             if (map.getLayer(POLYGON_FILL_LAYER)) map.removeLayer(POLYGON_FILL_LAYER);
             if (map.getSource(POLYGON_FILL_SOURCE)) map.removeSource(POLYGON_FILL_SOURCE);
+            if (map.getLayer(IMAGE_LAYER)) map.removeLayer(IMAGE_LAYER);
+            if (map.getSource(IMAGE_SOURCE)) map.removeSource(IMAGE_SOURCE);
             linesSourceAdded.current = false;
             fillSourceAdded.current = false;
+            imageSourceAdded.current = false;
         };
-    }, [initialVertices, updateMarkerLabels, updatePolygonOnMap, rebuildMarkers, syncCurveGeometry]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [initialVertices, updateMarkerLabels, updatePolygonOnMap, rebuildMarkers, syncCurveGeometry, isImageMode, minimumVertexCount, fillColor, fillOpacity, lineStyle]); // eslint-disable-line react-hooks/exhaustive-deps
     // Note: fillColor, fillOpacity, lineStyle are intentionally excluded — they are handled by
     // their own dedicated useEffects above via setPaintProperty, so they must NOT trigger a
     // full teardown/reinit of the layer setup (which would make markers invisible).
+
+    useEffect(() => {
+        if (!isImageMode || !initialImageUrl) return;
+        if (initialVertices && initialVertices.length >= minimumVertexCount) return;
+        if (hasAutoStartedImagePlacementRef.current) return;
+
+        hasAutoStartedImagePlacementRef.current = true;
+        startShapePlacement('rectangle');
+    }, [isImageMode, initialImageUrl, initialVertices, minimumVertexCount, startShapePlacement]);
 
     // Stop drawing mode (finish polygon)
     const handleFinishDrawing = () => {
@@ -1367,6 +1451,10 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
 
     // Resume drawing
     const handleResumeDrawing = () => {
+        if (isImageMode) {
+            startShapePlacement('rectangle');
+            return;
+        }
         // Exit drag/rotate mode if active
         if (isDragMode) { stopDragMode(); setIsDragMode(false); }
         if (isRotateMode) { stopRotateMode(); setIsRotateMode(false); }
@@ -1407,8 +1495,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     };
 
     const handleSave = () => {
-        if (vertices.length < 3) {
-            alert('A polygon needs at least 3 points.');
+        if (vertices.length < minimumVertexCount) {
+            alert(isImageMode ? 'An image overlay needs 4 corner points.' : 'A polygon needs at least 3 points.');
             return;
         }
         // Compute centroid for lat/lng fieldssetShowShapeMenu(false); 
@@ -1429,22 +1517,25 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
     return ReactDOM.createPortal(
         <div className="polygon-draw-modal" ref={modalRef}>
             <div className="polygon-draw-modal-header">
-                <h3>Draw Polygon</h3>
+                <h3>{modalTitle}</h3>
                 <span className="polygon-draw-modal-hint">
                     {isResizeMode
                         ? 'Drag corner to scale, edge to stretch'
                         : isRotateMode
                             ? 'Drag to rotate the polygon'
                             : isDragMode
-                                ? 'Drag to move the entire polygon'
+                                ? `Drag to move the entire ${isImageMode ? 'image' : 'polygon'}`
                                 : activeShape
                                     ? `Click & drag on map to place ${activeShape}`
-                                    : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
+                                    : isImageMode
+                                        ? 'Click and drag on the map to place the image'
+                                        : isDrawing ? 'Click on the map to add points' : 'Drag points to adjust'}
                 </span>
             </div>
 
             {/* Style toolbar */}
             <div className="polygon-draw-style-toolbar">
+                {!isImageMode && (
                 <div className="polygon-draw-style-btn-wrap">
                     <button
                         type="button"
@@ -1480,6 +1571,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         </div>
                     )}
                 </div>
+                )}
+                {!isImageMode && (
                 <div className="polygon-draw-style-btn-wrap">
                     <button
                         type="button"
@@ -1492,6 +1585,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         </svg>
                     </button>
                 </div>
+                )}
+                {!isImageMode && (
                 <div className="polygon-draw-style-btn-wrap">
                     <button
                         type="button"
@@ -1515,7 +1610,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         </div>
                     )}
                 </div>
-                {/* Fill opacity */}
+                )}
+                {!isImageMode && (
                 <div className="polygon-draw-style-btn-wrap">
                     <button
                         type="button"
@@ -1543,7 +1639,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         </div>
                     )}
                 </div>
-                {/* Shape presets */}
+                )}
+                {!isImageMode && (
                 <div className="polygon-draw-style-btn-wrap">
                     <button
                         type="button"
@@ -1586,13 +1683,14 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         </div>
                     )}
                 </div>
+                )}
                 {/* Move / drag whole polygon */}
                 <div className="polygon-draw-style-btn-wrap">
                     <button
                         type="button"
                         className={`polygon-draw-style-btn${isDragMode ? ' polygon-draw-drag-active' : ''}`}
-                        title="Move Polygon"
-                        disabled={vertices.length < 3}
+                        title={isImageMode ? 'Move Image' : 'Move Polygon'}
+                        disabled={vertices.length < minimumVertexCount}
                         onClick={handleToggleDragMode}
                     >
                         <FontAwesomeIcon icon={faHand} style={{ fontSize: 16, width: 16, height: 16 }} />
@@ -1603,8 +1701,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     <button
                         type="button"
                         className={`polygon-draw-style-btn${isRotateMode ? ' polygon-draw-rotate-active' : ''}`}
-                        title="Rotate Polygon"
-                        disabled={vertices.length < 3}
+                        title={isImageMode ? 'Rotate Image' : 'Rotate Polygon'}
+                        disabled={vertices.length < minimumVertexCount}
                         onClick={handleToggleRotateMode}
                     >
                         <FontAwesomeIcon icon={faRotate} style={{ fontSize: 16, width: 16, height: 16 }} />
@@ -1615,8 +1713,8 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     <button
                         type="button"
                         className={`polygon-draw-style-btn${isResizeMode ? ' polygon-draw-resize-active' : ''}`}
-                        title="Resize Polygon"
-                        disabled={vertices.length < 3}
+                        title={isImageMode ? 'Resize Image' : 'Resize Polygon'}
+                        disabled={vertices.length < minimumVertexCount}
                         onClick={handleToggleResizeMode}
                     >
                         <FontAwesomeIcon icon={faUpRightAndDownLeftFromCenter} style={{ fontSize: 14, width: 16, height: 16 }} />
@@ -1754,21 +1852,23 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                                     title="Longitude"
                                 />
                             </div>
-                            <button
-                                type="button"
-                                className="polygon-draw-modal-vertex-remove"
-                                onClick={() => handleRemoveVertex(i)}
-                                title="Remove"
-                            >
-                                &times;
-                            </button>
+                            {!isImageMode && (
+                                <button
+                                    type="button"
+                                    className="polygon-draw-modal-vertex-remove"
+                                    onClick={() => handleRemoveVertex(i)}
+                                    title="Remove"
+                                >
+                                    &times;
+                                </button>
+                            )}
                         </div>
                     ))
                 )}
             </div>
 
             <div className="polygon-draw-modal-actions">
-                {isDrawing && vertices.length >= 3 && (
+                {!isImageMode && isDrawing && vertices.length >= 3 && (
                     <button
                         type="button"
                         className="polygon-draw-modal-btn polygon-draw-modal-btn-finish"
@@ -1777,7 +1877,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                         Finish Drawing
                     </button>
                 )}
-                {!isDrawing && (
+                {!isImageMode && !isDrawing && (
                     <button
                         type="button"
                         className="polygon-draw-modal-btn polygon-draw-modal-btn-resume"
@@ -1790,7 +1890,7 @@ const PolygonDrawingModal = ({ onSave, onCancel, initialVertices, initialLineSty
                     type="button"
                     className="polygon-draw-modal-btn polygon-draw-modal-btn-save"
                     onClick={handleSave}
-                    disabled={vertices.length < 3}
+                    disabled={vertices.length < minimumVertexCount}
                 >
                     Save
                 </button>

@@ -22,6 +22,7 @@ function Content2(props) {
     const bothOnLeft = isOnLeft && !props.isCollapsed && props.isUploadPanelOpen;
     const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
     const [pendingPolygonData, setPendingPolygonData] = useState(null);
+    const [pendingImageOverlayData, setPendingImageOverlayData] = useState(null);
     const containerWidth = props.cardPanelWidth ?? 300;
     const containerRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -36,7 +37,11 @@ function Content2(props) {
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
     const openModal = () => setIsModalOpen(true);
-    const closeModal = () => { setIsModalOpen(false); setPendingPolygonData(null); };
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setPendingPolygonData(null);
+        setPendingImageOverlayData(null);
+    };
 
 
     // Listen for polygon-tool-save from Content1's Polygon Tool
@@ -51,6 +56,19 @@ function Content2(props) {
         };
         window.addEventListener('polygon-tool-save', handler);
         return () => window.removeEventListener('polygon-tool-save', handler);
+    }, [props.isLoggedIn]);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (!props.isLoggedIn) {
+                setShowLoginPrompt(true);
+                return;
+            }
+            setPendingImageOverlayData(e.detail);
+            setIsModalOpen(true);
+        };
+        window.addEventListener('map-image-tool-save', handler);
+        return () => window.removeEventListener('map-image-tool-save', handler);
     }, [props.isLoggedIn]);
 
     function useDidMount() {
@@ -842,6 +860,7 @@ function Content2(props) {
                 isOpen={isModalOpen} 
                 onRequestClose={closeModal}
                 initialPolygonData={pendingPolygonData}
+                initialImageOverlayData={pendingImageOverlayData}
             />
     
             <section

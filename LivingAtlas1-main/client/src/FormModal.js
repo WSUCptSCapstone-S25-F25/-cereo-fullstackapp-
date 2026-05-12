@@ -19,7 +19,7 @@ const FormModal = (props) => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
     const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
-    const [locationType, setLocationType] = useState('point'); // 'point' or 'polygon'
+    const [locationType, setLocationType] = useState('point'); // 'point' | 'polygon' | 'image'
     const [polygonVertices, setPolygonVertices] = useState([]);
     const [polygonFillColor, setPolygonFillColor] = useState('#0077c0');
     const [polygonLineStyle, setPolygonLineStyle] = useState('solid');
@@ -41,6 +41,21 @@ const FormModal = (props) => {
             }));
         }
     }, [props.initialPolygonData]);
+
+    useEffect(() => {
+        if (props.initialImageOverlayData) {
+            const { vertices, centroid, imageFile, previewUrl } = props.initialImageOverlayData;
+            setLocationType('image');
+            setPolygonVertices(vertices || []);
+            setOverlayImageFile(imageFile || null);
+            setOverlayImagePreview(previewUrl || '');
+            setFormData(prev => ({
+                ...prev,
+                latitude: centroid?.lat?.toFixed(6) || prev.latitude,
+                longitude: centroid?.lng?.toFixed(6) || prev.longitude,
+            }));
+        }
+    }, [props.initialImageOverlayData]);
 
     const handleCloseModal = () => {
         setModalIsOpen(false);
@@ -74,6 +89,8 @@ const FormModal = (props) => {
     const [selectedFiles, setSelectedFiles] = useState([]);   // <-- multiple files
     const [imageFiles, setImageFiles] = useState([]);         // multi-image upload
     const [imagePreviews, setImagePreviews] = useState([]);
+    const [overlayImageFile, setOverlayImageFile] = useState(null);
+    const [overlayImagePreview, setOverlayImagePreview] = useState('');
     const [pendingArcgisItems, setPendingArcgisItems] = useState([]);
     const [isArcgisPickerOpen, setIsArcgisPickerOpen] = useState(false);
     const imageInputRef = useRef(null);
@@ -143,6 +160,9 @@ const FormModal = (props) => {
         if (!formData.title.trim() || formData.title.length > 255) errors.push("Title is required and must be <256 chars.");
         if (locationType === 'polygon') {
             if (polygonVertices.length < 3) errors.push("Polygon must have at least 3 points.");
+        } else if (locationType === 'image') {
+            if (polygonVertices.length < 4) errors.push("Image overlay must have 4 corner points.");
+            if (!overlayImageFile && !overlayImagePreview) errors.push("A PNG image is required for the map image overlay.");
         } else {
             if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.latitude)) errors.push("Latitude format is invalid.");
             if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.longitude)) errors.push("Longitude format is invalid.");
@@ -183,7 +203,7 @@ const FormModal = (props) => {
 
         // Add location type and polygon data
         formData2.append('location_type', locationType);
-        if (locationType === 'polygon' && polygonVertices.length >= 3) {
+        if ((locationType === 'polygon' && polygonVertices.length >= 3) || (locationType === 'image' && polygonVertices.length >= 4)) {
             // Embed style inside JSON so it always travels with vertices
             formData2.append('polygon_coordinates', JSON.stringify({
                 vertices: polygonVertices,
@@ -202,7 +222,14 @@ const FormModal = (props) => {
         }
         
         // append multiple images
-        if (imageFiles.length > 0) {
+        if (locationType === 'image') {
+            if (overlayImageFile) {
+                formData2.append('thumbnail', overlayImageFile);
+            }
+            imageFiles.forEach((file) => {
+                formData2.append('images', file);
+            });
+        } else if (imageFiles.length > 0) {
             formData2.append('thumbnail', imageFiles[0]); // first image as thumbnail
             imageFiles.forEach((file) => {
                 formData2.append('images', file);
@@ -476,6 +503,13 @@ const FormModal = (props) => {
                         >
                             Polygon Area
                         </button>
+                        <button
+                            type="button"
+                            className={`form-modal-location-tab ${locationType === 'image' ? 'active' : ''}`}
+                            onClick={() => handleLocationTypeChange('image')}
+                        >
+                            Image Overlay
+                        </button>
                     </div>
 
                     {locationType === 'point' && (
@@ -518,15 +552,36 @@ const FormModal = (props) => {
                         </div>
                     )}
 
+                    {locationType === 'image' && (
+                        <div className="form-modal-polygon-section">
+                            <div className="form-modal-polygon-summary">
+                                <span className="form-modal-polygon-check">&#10003;</span>
+                                {polygonVertices.length >= 4
+                                    ? `Image placement saved: ${polygonVertices.length} corners`
+                                    : 'Use the map image tool to place a PNG on the map.'}
+                            </div>
+                            <p style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                                The map representation image is managed separately from the Learn More gallery.
+                            </p>
+                            {overlayImagePreview && (
+                                <div className="form-modal-image-previews" style={{ marginTop: '12px' }}>
+                                    <div className="form-modal-image-preview-item">
+                                        <img src={overlayImagePreview} alt="Map overlay preview" />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <label>Tags (comma-separated):</label>
                     <input type="text" name="tags" value={formData.tags} onChange={handleInputChange} />
 
-                    <label>Images:</label>
+                    <label>{locationType === 'image' ? 'Learn More Gallery Images:' : 'Images:'}</label>
                     <div
                         className="form-modal-image-upload-area"
                         onClick={() => imageInputRef.current?.click()}
                     >
-                        <p>Click or drag to add images (PNG, JPG, GIF, WebP)</p>
+                        <p>{locationType === 'image' ? 'Click or drag to add optional Learn More gallery images' : 'Click or drag to add images (PNG, JPG, GIF, WebP)'}</p>
                         <span className="form-modal-image-upload-btn">Choose Images</span>
                         <input
                             ref={imageInputRef}
