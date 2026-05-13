@@ -1,14 +1,13 @@
-"""Index backend/docs markdown files into doc_chunks with OpenAI embeddings."""
+"""Index backend/docs markdown files into doc_chunks with local embeddings."""
 
 import os
 import sys
 from pathlib import Path
 
 import psycopg2
-from openai import OpenAI
 
 MAX_CHARS = 400
-EMBED_MODEL = "text-embedding-3-small"
+LOCAL_EMBED_MODEL = os.environ.get("LOCAL_EMBED_MODEL", "BAAI/bge-small-en-v1.5")
 
 
 def get_db_connection():
@@ -48,17 +47,24 @@ def chunk_markdown(text: str, max_chars: int = MAX_CHARS) -> list[str]:
     return [chunk for chunk in chunks if chunk.strip()]
 
 
-def embed_text(client: OpenAI, text: str) -> list[float]:
-    """Get embedding vector from OpenAI."""
-    result = client.embeddings.create(model=EMBED_MODEL, input=text)
-    return result.data[0].embedding
+def get_local_embedder():
+    """Create a local embedding model instance lazily."""
+    try:
+        from fastembed import TextEmbedding
+    except ImportError as exc:
+        raise RuntimeError(
+            "fastembed is required for local embeddings. Install dependencies from requirements.txt."
+        ) from exc
+    return TextEmbedding(model_name=LOCAL_EMBED_MODEL)
+
+
+def embed_text(embedder, text: str) -> list[float]:
+    """Get embedding vector from local model."""
+    vector = next(embedder.embed([text]))
+    return [float(value) for value in vector.tolist()]
 
 
 def main() -> int:
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("Missing OPENAI_API_KEY environment variable.")
-
     docs_dir = Path(__file__).resolve().parents[1] / "docs"
     md_files = sorted(docs_dir.glob("*.md"))
 
@@ -66,7 +72,7 @@ def main() -> int:
         print(f"No markdown files found in {docs_dir}")
         return 0
 
-    client = OpenAI(api_key=api_key)
+    embedder = get_local_embedder()
     conn = None
     cur = None
     total_chunks = 0
@@ -83,7 +89,7 @@ def main() -> int:
             inserted_for_file = 0
 
             for chunk in chunks:
-                embedding = embed_text(client, chunk)
+                embedding = embed_text(embedder, chunk)
                 cur.execute(
                     "INSERT INTO doc_chunks (source, content, embedding) VALUES (%s, %s, %s::vector)",
                     (md_file.name, chunk, str(embedding)),
