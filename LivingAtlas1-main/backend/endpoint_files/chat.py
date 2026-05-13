@@ -12,7 +12,7 @@ from typing import Any
 import psycopg2
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from openai import OpenAI, OpenAIError
+from openai import APIConnectionError, APITimeoutError, OpenAI, OpenAIError
 
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
 _LOCAL_EMBEDDER = None
@@ -159,12 +159,45 @@ def ask(payload: ChatRequest):
         answer = response.choices[0].message.content.strip()
         return ChatResponse(answer=answer)
 
+    except (APIConnectionError, APITimeoutError) as e:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "The chatbot is temporarily unavailable because the DeepSeek API "
+                "could not be reached. Please try again later or contact the administrator."
+            ),
+        ) from e
     except OpenAIError as e:
         err_str = str(e)
-        # DeepSeek returns HTTP 402 with code "insufficient_balance" when credits run out
-        if "insufficient_balance" in err_str or "402" in err_str:
+        status_code = getattr(e, "status_code", None)
+        lowered = err_str.lower()
+
+        # DeepSeek returns HTTP 402 with code "insufficient_balance" when credits run out.
+        if status_code == 402 or "insufficient_balance" in lowered or "402" in err_str:
             raise HTTPException(
                 status_code=402,
-                detail="The chatbot is temporarily unavailable due to insufficient API credits. Please contact the administrator.",
-            )
-        raise HTTPException(status_code=502, detail=f"AI service error: {err_str}")
+                detail=(
+                    "The chatbot is temporarily unavailable because the DeepSeek API credits "
+                    "have been exhausted. Please contact the administrator."
+                ),
+            ) from e
+
+        if status_code in {401, 403} or "authentication" in lowered or "permission" in lowered:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "The chatbot is temporarily unavailable because the DeepSeek API "
+                    "credentials are invalid or unauthorized. Please contact the administrator."
+                ),
+            ) from e
+
+        if status_code == 429 or "rate limit" in lowered:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "The chatbot is temporarily unavailable because the DeepSeek API "
+                    "rate limit was reached. Please try again later."
+                ),
+            ) from e
+
+        raise HTTPException(status_code=502, detail=f"AI service error: {err_str}") from e

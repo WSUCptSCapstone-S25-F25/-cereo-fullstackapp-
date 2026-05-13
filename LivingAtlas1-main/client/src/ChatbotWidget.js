@@ -43,9 +43,9 @@ export default function ChatbotWidget() {
       const detail = err?.response?.data?.detail;
       let errorText = 'Sorry, something went wrong. Please try again later.';
       if (status === 402) {
-        errorText = 'The chatbot is temporarily unavailable due to insufficient API credits. Please contact the administrator.';
+        errorText = detail ?? 'The chatbot is temporarily unavailable due to insufficient API credits. Please contact the administrator.';
       } else if (status === 503) {
-        errorText = 'The chatbot is not configured. Please contact the administrator.';
+        errorText = detail ?? 'The chatbot is temporarily unavailable. Please contact the administrator.';
       } else if (detail) {
         errorText = detail;
       }
