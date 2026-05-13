@@ -1,7 +1,9 @@
 """
 chat.py  —  /chat/ask endpoint
-Uses OpenAI Chat Completions API (gpt-4.1-mini by default).
-Set the OPENAI_API_KEY environment variable on Render.
+
+Embedding: local fastembed (BAAI/bge-small-en-v1.5), runs in-process.
+Generation: DeepSeek API (OpenAI-compatible). Set DEEPSEEK_API on Render.
+  Model is configured via DEEPSEEK_MODEL env var (default: deepseek-v4-flash).
 """
 
 import os
@@ -117,6 +119,13 @@ def ask(payload: ChatRequest):
     if not question:
         raise HTTPException(status_code=400, detail="Question must not be empty.")
 
+    api_key = os.environ.get("DEEPSEEK_API")
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Chatbot is not configured (missing DEEPSEEK_API). Please contact the administrator.",
+        )
+
     context = get_relevant_docs(question)
     if context:
         system_prompt = (
@@ -127,14 +136,8 @@ def ask(payload: ChatRequest):
     else:
         system_prompt = SYSTEM_PROMPT_BASE
 
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="Chatbot is not configured (missing OPENAI_API_KEY). Please contact the administrator."
-        )
-
-    client = OpenAI(api_key=api_key)
+    client = OpenAI(base_url="https://api.deepseek.com", api_key=api_key)
+    model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash")
 
     try:
         messages = [{"role": "system", "content": system_prompt}]
@@ -148,7 +151,7 @@ def ask(payload: ChatRequest):
         messages.append({"role": "user", "content": question})
 
         response = client.chat.completions.create(
-            model=os.environ.get("OPENAI_MODEL", "gpt-4.1-mini"),
+            model=model,
             messages=messages,
             max_tokens=600,
             temperature=0.4,

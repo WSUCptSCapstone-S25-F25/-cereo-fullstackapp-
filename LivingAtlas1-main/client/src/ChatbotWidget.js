@@ -2,14 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import api from './api';
 import './ChatbotWidget.css';
 
-const WELCOME_MESSAGE = {
-  role: 'assistant',
-  text: 'RWC Living Atlas Helper is currently under development and is currently unavailable.',
-};
-
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState([{
+    role: 'assistant',
+    text: 'Hi! I\'m the RWC Living Atlas Helper. Ask me anything about using the app or its environmental datasets.',
+  }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -34,7 +32,10 @@ export default function ChatbotWidget() {
     setLoading(true);
 
     try {
-      const res = await api.post('/chat/ask', { question: text });
+      const res = await api.post('/chat/ask', {
+        question: text,
+        history: messages.slice(-6),
+      });
       const answer = res.data?.answer ?? 'Sorry, I couldn\'t get a response.';
       setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
     } catch {
