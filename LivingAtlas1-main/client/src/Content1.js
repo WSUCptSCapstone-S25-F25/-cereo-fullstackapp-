@@ -36,6 +36,99 @@ let yellowMarkers = [];
 let curLocationCoordinates = { lat: 0, lng: 0 };
 let searchLocationCoordinates = { lat: 0, lng: 0 };
 
+const createZoomAxisControl = (targetMap) => {
+  let container = null;
+  let pointer = null;
+  let value = null;
+
+  const clampZoom = (z) => {
+    const min = targetMap.getMinZoom();
+    const max = targetMap.getMaxZoom();
+    if (max <= min) return min;
+    return Math.min(max, Math.max(min, z));
+  };
+
+  const SPINE_MARGIN_PX = 8;  // must match top/bottom on .atlas-z-axis__spine
+  const AXIS_HEIGHT_PX = 140; // must match --axis-height CSS variable
+  const zoomToTopPercent = (z) => {
+    const min = targetMap.getMinZoom();
+    const max = targetMap.getMaxZoom();
+    if (max <= min) return 100;
+    const clamped = clampZoom(z);
+    const rawPercent = (max - clamped) / (max - min);
+    const topPx = SPINE_MARGIN_PX + rawPercent * (AXIS_HEIGHT_PX - 2 * SPINE_MARGIN_PX);
+    return (topPx / AXIS_HEIGHT_PX) * 100;
+  };
+
+  const buildTickValues = () => {
+    const min = Math.floor(targetMap.getMinZoom());
+    const max = Math.ceil(targetMap.getMaxZoom());
+    const values = [];
+    const step = Math.max(1, Math.round((max - min) / 5));
+
+    for (let current = min; current <= max; current += step) {
+      values.push(current);
+    }
+
+    if (values[values.length - 1] !== max) {
+      values.push(max);
+    }
+
+    return values;
+  };
+
+  const updatePointer = () => {
+    const currentZoom = targetMap.getZoom();
+    if (pointer) {
+      pointer.style.top = `${zoomToTopPercent(currentZoom)}%`;
+    }
+    if (value) {
+      value.textContent = `z ${currentZoom.toFixed(1)}`;
+    }
+  };
+
+  return {
+    onAdd: () => {
+      container = document.createElement('div');
+      container.className = 'mapboxgl-ctrl atlas-z-axis-control';
+
+      const scale = document.createElement('div');
+      scale.className = 'atlas-z-axis__scale';
+
+      const spine = document.createElement('div');
+      spine.className = 'atlas-z-axis__spine';
+      scale.appendChild(spine);
+
+      pointer = document.createElement('div');
+      pointer.className = 'atlas-z-axis__pointer';
+
+      scale.appendChild(pointer);
+      container.appendChild(scale);
+
+      value = document.createElement('div');
+      value.className = 'atlas-z-axis__value';
+      container.appendChild(value);
+
+      targetMap.on('zoom', updatePointer);
+      targetMap.on('zoomend', updatePointer);
+      updatePointer();
+
+      return container;
+    },
+    onRemove: () => {
+      targetMap.off('zoom', updatePointer);
+      targetMap.off('zoomend', updatePointer);
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+      container = null;
+      pointer = null;
+      value = null;
+    },
+    getDefaultPosition: () => 'top-left'
+  };
+};
+
 // helper to convert mapbox bounds → your Home.js bounding format
 const convertBounds = (b) => ({
   NE: { Lat: b._ne.lat, Lng: b._ne.lng },
@@ -798,6 +891,7 @@ const Content1 = (props) => {
     });
 
     map.addControl(currentLocation, 'top-left');
+    map.addControl(createZoomAxisControl(map), 'top-left');
 
     const syncBottomRightMeta = () => {
       if (!atlasMapRef.current) return;

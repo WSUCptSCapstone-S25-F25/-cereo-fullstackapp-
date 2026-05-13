@@ -97,6 +97,88 @@
   margin: 0 !important;
 }
 
+.atlas-z-axis-control {
+  --axis-height: 140px;
+  --spine-x: 50%;
+  margin: 10px 0 0 10px !important;
+  padding: 5px !important;
+  width: 29px !important;
+  height: auto !important;
+  background: #fff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 3px !important;
+  box-sizing: border-box !important;
+}
+
+.atlas-z-axis__scale {
+  position: relative;
+  width: 100%;
+  height: var(--axis-height);
+}
+
+.atlas-z-axis__spine {
+  position: absolute;
+  left: var(--spine-x);
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  transform: translateX(-50%);
+  background: #ccc;
+  overflow: visible;
+}
+
+.atlas-z-axis__spine::before,
+.atlas-z-axis__spine::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #333;
+}
+
+.atlas-z-axis__spine::before {
+  top: -4px;
+}
+
+.atlas-z-axis__spine::after {
+  bottom: -4px;
+}
+
+.atlas-z-axis__pointer {
+  position: absolute;
+  left: var(--spine-x);
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 8px solid #333;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  transition: top 120ms ease-out;
+  pointer-events: none;
+}
+
+.atlas-z-axis__value {
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  color: #333;
+  font: 600 9px/1.3 "Segoe UI", Arial, sans-serif;
+  text-align: center;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
 /* Delete is handled exclusively inside the Draw Polygon panel */
 .mapbox-gl-draw_trash {
   display: none !important;
