@@ -38,10 +38,20 @@ export default function ChatbotWidget() {
       });
       const answer = res.data?.answer ?? 'Sorry, I couldn\'t get a response.';
       setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
-    } catch {
+    } catch (err) {
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail;
+      let errorText = 'Sorry, something went wrong. Please try again later.';
+      if (status === 402) {
+        errorText = 'The chatbot is temporarily unavailable due to insufficient API credits. Please contact the administrator.';
+      } else if (status === 503) {
+        errorText = 'The chatbot is not configured. Please contact the administrator.';
+      } else if (detail) {
+        errorText = detail;
+      }
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: 'Sorry, something went wrong. Please try again later.' },
+        { role: 'assistant', text: errorText },
       ]);
     } finally {
       setLoading(false);

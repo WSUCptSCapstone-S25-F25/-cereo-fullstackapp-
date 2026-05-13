@@ -160,4 +160,11 @@ def ask(payload: ChatRequest):
         return ChatResponse(answer=answer)
 
     except OpenAIError as e:
-        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+        err_str = str(e)
+        # DeepSeek returns HTTP 402 with code "insufficient_balance" when credits run out
+        if "insufficient_balance" in err_str or "402" in err_str:
+            raise HTTPException(
+                status_code=402,
+                detail="The chatbot is temporarily unavailable due to insufficient API credits. Please contact the administrator.",
+            )
+        raise HTTPException(status_code=502, detail=f"AI service error: {err_str}")
