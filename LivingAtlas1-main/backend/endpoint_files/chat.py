@@ -139,17 +139,17 @@ def ask(payload: ChatRequest):
     client = OpenAI(base_url="https://api.deepseek.com", api_key=api_key)
     model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash")
 
+    messages = [{"role": "system", "content": system_prompt}]
+
+    for msg in payload.history[-6:]:
+        role = msg.get("role") if isinstance(msg, dict) else None
+        text = msg.get("text") if isinstance(msg, dict) else None
+        if role in {"user", "assistant"} and isinstance(text, str) and text.strip():
+            messages.append({"role": role, "content": text})
+
+    messages.append({"role": "user", "content": question})
+
     try:
-        messages = [{"role": "system", "content": system_prompt}]
-
-        for msg in payload.history[-6:]:
-            role = msg.get("role") if isinstance(msg, dict) else None
-            text = msg.get("text") if isinstance(msg, dict) else None
-            if role in {"user", "assistant"} and isinstance(text, str) and text.strip():
-                messages.append({"role": role, "content": text})
-
-        messages.append({"role": "user", "content": question})
-
         response = client.chat.completions.create(
             model=model,
             messages=messages,
@@ -158,21 +158,20 @@ def ask(payload: ChatRequest):
         )
         answer = response.choices[0].message.content.strip()
         return ChatResponse(answer=answer)
-
-    except (APIConnectionError, APITimeoutError) as e:
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "The chatbot is temporarily unavailable because the DeepSeek API "
-                "could not be reached. Please try again later or contact the administrator."
-            ),
-        ) from e
-    except OpenAIError as e:
+    except Exception as e:
         err_str = str(e)
-        status_code = getattr(e, "status_code", None)
         lowered = err_str.lower()
+        status_code = getattr(e, "status_code", None)
 
-        # DeepSeek returns HTTP 402 with code "insufficient_balance" when credits run out.
+        if isinstance(e, (APIConnectionError, APITimeoutError)) or "connection error" in lowered or "timed out" in lowered:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "The chatbot is temporarily unavailable because the DeepSeek API "
+                    "could not be reached. Please try again later or contact the administrator."
+                ),
+            ) from e
+
         if status_code == 402 or "insufficient_balance" in lowered or "402" in err_str:
             raise HTTPException(
                 status_code=402,
@@ -201,3 +200,4 @@ def ask(payload: ChatRequest):
             ) from e
 
         raise HTTPException(status_code=502, detail=f"AI service error: {err_str}") from e
+
