@@ -1,104 +1,61 @@
-# Custom Layers Panel: Search, Navigation, and Filters
+﻿# Custom Layers Panel: Search, Folders, and Organization
 
-## What This Covers
+## How to Search Your Saved Layers
 
-This document explains search and navigation features in Custom Layers Panel.
+1. Open the Custom Layers Panel (click Custom Layers icon in the left sidebar).
+2. Type a keyword in the **search box** at the top.
+3. Choose the search type from the dropdown:
+   - **Any** — search all names
+   - **Folder** — search folder names only
+   - **Service** — search service names only
+   - **Layer** — search layer names only
+4. Press Enter or click the Search button.
+5. Matching items are automatically expanded and highlighted.
+6. Use the **Previous** and **Next** arrows to jump between matches.
+7. Click **Clear** (X) to reset the search.
 
-Covered areas:
-- Path-scoped search
-- Search type selector
-- Auto-expansion of matches
-- Previous/next result navigator
-- Added-only filtering
-- Clear search behavior
-
----
-
-## Path-Scoped Search
-
-Search scope depends on current folder path:
-- At root: search all custom services
-- Inside a folder: search only services in that folder
-
-This ensures results stay relevant to user context.
+**Tip:** If you are inside a specific folder, search only looks within that folder. Go to the root level to search all saved services.
 
 ---
 
-## Search Type Selector
+## How to Create a New Folder
 
-Custom panel supports explicit search types:
-- `any`
-- `folder`
-- `service`
-- `layer`
-
-Users can search by pressing Enter or clicking search button.
+1. Click the **New Folder** button in the Custom Layers Panel header.
+2. Type a folder name and click OK.
+3. The folder appears in your library.
+4. Folder names can use `/` to create nested paths (e.g., "Hydrology/Rivers").
 
 ---
 
-## Lazy Layer Loading During Search
+## How to Navigate Folders
 
-For layer-name search completeness, panel loads missing service layers on demand.
-
-While loading:
-- Search loading indicator appears
-- Remaining service count is shown
-
-When new layer data arrives:
-- Active search is re-run automatically
-- Match set and expansion state update
+- Click a folder to enter it and see its contents.
+- Use the **breadcrumb bar** at the top to go back to a parent folder.
+- Click **Root** in the breadcrumb to return to the top level.
 
 ---
 
-## Search Result Expansion
+## How to Move Services Between Folders
 
-After a search run, panel auto-expands matched structure:
-- Folder matches
-- Service matches
-- Layer/group matches
-
-This reduces manual expansion steps.
+- Drag a service row and drop it onto a different folder.
+- You can also drag a folder onto another folder to nest it.
 
 ---
 
-## Result Navigation Mini Bar
+## How to Reorder Services
 
-When search is active, panel shows mini navigation controls:
-- Previous match
-- Next match
-- Match counter (e.g., `3 / 12`)
-
-Current matched item receives highlight state.
+- Drag a service row up or down within the current folder view.
+- The new order is saved automatically.
 
 ---
 
-## Clear Search
+## Common Questions
 
-Clear action resets:
-- Search keyword and type context output
-- Search result object
-- Expanded folders/services/layers driven by search
-- Result navigator state
+**Q: How do I search for a saved layer by name?**
+A: Open Custom Layers Panel, type in the search box, and press Enter.
 
----
+**Q: My search shows no results. Why?**
+A: Make sure you are at the root level if you want to search all saved services. Also check the search type selector (Any vs Layer vs Service).
 
-## Show Added-Only Filter
-
-"Show only services added to map" filters visible services to ones with checked layers.
-
-When enabled:
-- Panel auto-expands folders/services containing active map selections
-
-When disabled:
-- Expansion state related to this filter is reset
-
----
-
-## Folder Navigation
-
-Navigation behavior includes:
-- Click folder to enter path
-- Breadcrumb back button to move up one level
-- Breadcrumb path display for current folder hierarchy
-
-Search mode can temporarily supersede normal folder-only view by showing matched folders directly.
+**Q: How do I organize layers into folders?**
+A: Click New Folder to create a folder, then drag services into it.

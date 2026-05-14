@@ -1,97 +1,49 @@
-# General Onboarding and What's New Features
+﻿# App Tutorials and What's New
 
-## Scope
+## What Is the Onboarding / Tutorial Feature?
 
-This document describes app-level onboarding and changelog flows accessible from the Home left sidebar.
-
-Covered:
-- What's New modal behavior
-- General onboarding modal behavior
-- General onboarding guided tour
-- Sidebar triggers and persistence rules
+The app includes interactive guided tutorials that walk you through how to use different panels. These are useful for new users learning the app.
 
 ---
 
-## Left Sidebar Entry Points
+## How to Start the App Tutorial (General Onboarding)
 
-In Home left sidebar:
-- Bell button opens `What's New` modal
-- Info button opens `General Onboarding` modal
-
-These are global app-level guides (separate from panel-specific onboarding tutorials).
-
----
-
-## What's New Modal
-
-Component: `ChangelogModal`
-
-### Triggering
-- Auto-open condition: first load when localStorage key `changelog_seen_v14` is absent
-- Manual open: click left sidebar bell button
-
-### Close behavior
-- Close button, overlay close, and footer dismiss all call `onClose`
-- Close action sets `changelog_seen_v14 = true` to prevent auto-open next load
-
-### Content role
-The modal shows latest release highlights, including:
-- chatbot availability note
-- onboarding additions
-- map and form feature updates
+1. On the Home page, look at the left sidebar.
+2. Click the **Tutorial / Info button** (info or play icon).
+3. A modal opens explaining how the tutorials work.
+4. Click **Play General Onboarding** to start the guided tour.
+5. Follow the highlighted steps — each step highlights a part of the UI and explains what it does.
 
 ---
 
-## General Onboarding Intro Modal
+## How to Start a Panel-Specific Tutorial
 
-Component: `GeneralOnboardingModal`
+Each major panel has its own tutorial button:
+- In the **Card Panel**, click the Tutorial button in the titlebar.
+- In the **ArcGIS Services Panel**, click the Tutorial button.
+- In the **Custom Layers Panel**, click the Tutorial button.
+- In the **Card Detail Modal**, click the Tutorial button.
 
-### Purpose
-Provides quick instructions for:
-- how to start onboarding in each major panel
-- difference between help button and tutorial button
-- replaying app-wide onboarding tour
-
-### Actions
-- `Play General Onboarding` starts guided tour
-- `Got it` or close icon dismisses modal
+Clicking these starts a guided walkthrough specific to that panel.
 
 ---
 
-## General Onboarding Guided Tour
+## What Is the "What's New" Modal?
 
-Component: `OnboardingGeneral`
+When there is a new app update, a "What's New" popup may appear automatically when you open the app. It shows the latest feature additions and changes.
 
-### Tour target model
-The tour is defined by step list using `data-onboarding-target` selectors.
-
-Highlighted areas include:
-- top navbar and each core nav link
-- account/auth area
-- left sidebar root
-- sidebar buttons (search, cards, GIS, custom layers, basemap, changelog, onboarding)
-
-### Runtime behavior
-- Filters to only selectors that currently exist in DOM
-- Highlights target element and shows contextual tooltip
-- Tooltip auto-placement with viewport bounds handling
-- Auto-scrolls target into view when step changes
-
-### Navigation controls
-- Previous / Next / Close buttons
-- Last step button changes to `Finish`
-- Keyboard support:
-  - Left arrow -> previous
-  - Right arrow -> next
-  - Escape -> close
-
-### Rendering model
-The overlay is rendered via portal into `document.body`.
+- To **open it manually**: click the **bell icon** in the left sidebar.
+- To **dismiss it**: click Close or click outside the modal.
 
 ---
 
-## Relationship to Panel-Specific Onboarding
+## Common Questions
 
-General onboarding is an app shell tour.
+**Q: How do I start a tutorial for the app?**
+A: Click the tutorial/info button in the left sidebar on the Home page and select "Play General Onboarding".
 
-Panel-level tutorials (Cards, ArcGIS, Custom Layers, Basemap) remain separate and are launched within each panel.
+**Q: How do I replay the tutorial for a specific panel?**
+A: Each panel has a Tutorial button in its header. Click it to start that panel's guided tour.
+
+**Q: What is the bell icon in the sidebar?**
+A: It opens the "What's New" modal showing the latest app updates and features.

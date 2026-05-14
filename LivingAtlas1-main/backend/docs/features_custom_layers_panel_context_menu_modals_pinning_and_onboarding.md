@@ -1,133 +1,66 @@
-# Custom Layers Panel: Context Menu, Modals, Pinning, and Onboarding
+﻿# Custom Layers Panel: Right-Click Menu and Service Info
 
-## What This Covers
+## Right-Click Menu (Context Menu)
 
-This document explains right-click actions, info modals, pinning, and onboarding workflow in Custom Layers Panel.
+Right-clicking on items in the Custom Layers Panel opens a context menu with actions specific to the item type.
 
-Covered areas:
-- Context menu by target type
-- Remove-from-library flow
-- Service and layer info modals
-- Pin/unpin persistence behavior
-- Onboarding guided tour
+### Folder Actions
+- **Rename** — rename the folder
+- **Delete Folder** — delete the folder (services are moved to Root)
 
----
+### Service Actions
+- **Rename** — rename the service entry in your library
+- **Learn More** — open the service info modal
+- **Pin / Unpin (Auto-load)** — mark the service to load automatically
+- **Remove from Custom Layers** — delete this service from your library
 
-## Context Menu Actions
-
-Context menu is shared pattern with upload panel and adapts by target type.
-
-### Folder target
-- Rename
-- Delete Folder
-
-### Service target
-- Rename
-- Learn More
-- Pin / Unpin (Auto-load label)
-- Remove from Custom Layers
-
-### Layer target
-- Learn More
-- Pin / Unpin
-
-### Sublayer target
-- Pin / Unpin
+### Layer Actions
+- **Learn More** — view layer details
+- **Pin / Unpin** — mark the layer to load automatically
 
 ---
 
-## Remove from Custom Layers
+## How to Remove a Service from Your Library
 
-Service-level remove action:
-1. Calls `deleteCustomLayer`
-2. Removes map layers/sources for that service
-3. Cleans related local states (`checked`, `added`, `sublayer`)
-4. Shows status toast message
+1. Right-click the service name.
+2. Click **Remove from Custom Layers**.
+3. The service is removed from your library and its layers are taken off the map.
 
 ---
 
-## Pinning Behavior
+## How to View Service or Layer Info (Learn More)
 
-Pinned custom items are stored in browser local storage key:
-- `custom_layers_pinned_items`
-
-Stored item shape includes:
-- `serviceKey`
-- optional `layerId`
-- optional `sublayerIndex`
-
-Panel writes storage when pin state changes.
-
-Note:
-- This panel currently persists pin state and menu state checks.
-- It does not auto-apply pinned selections on panel open in the current implementation.
+1. Right-click a service or layer.
+2. Click **Learn More**.
+3. A modal opens showing:
+   - Service/layer description
+   - Coordinate system and spatial reference info
+   - Layer and sublayer list with links
+   - Opacity slider (for services)
+   - Link to the service on the external ArcGIS portal
 
 ---
 
-## Service Info Modal
+## How to Pin a Layer (Auto-Load)
 
-Open paths:
-- Service row action button (`...`)
-- Service context menu -> Learn More
+Pinning marks a service or layer to be remembered for quick access.
 
-Modal includes:
-- Service description / metadata
-- Spatial reference summary
-- Service opacity slider
-- Layer and sublayer link tree
-- External ArcGIS service page link
-
-Service metadata is cached by service key.
+1. Right-click the service or layer.
+2. Click **Pin (Auto-load)**.
+3. To unpin, right-click again and click **Unpin**.
 
 ---
 
-## Layer Info Modal
+## Common Questions
 
-Open paths:
-- Layer links inside service info modal
-- Layer context menu -> Learn More
+**Q: How do I delete a saved service from my library?**
+A: Right-click the service and choose "Remove from Custom Layers".
 
-Modal includes (when available):
-- Description
-- Layer name
-- Geometry type
-- Copyright
-- Min/Max scale
-- Default visibility
-- Attachment support
-- Field summary
-- External ArcGIS layer page link
+**Q: How do I view details about a service?**
+A: Right-click the service and choose "Learn More". The info modal shows description, layers, and spatial info.
 
-Layer metadata cache key format:
-- `${serviceKey}-${layerId}`
+**Q: What does "Pin" do?**
+A: Pinning marks a service or layer for easy auto-loading. Pinned items are remembered in your browser.
 
----
-
-## Status Messages
-
-Panel displays temporary bottom status messages for operations like:
-- Remove success/failure
-- Other local operation feedback
-
-Messages auto-dismiss after timer expiry.
-
----
-
-## Onboarding Tour
-
-Tutorial button opens guided onboarding overlay.
-
-Tour highlights:
-- Panel overview
-- New folder button
-- Folder area
-- Service row
-- Search area
-- Service info button
-- Layer tree
-- Display controls
-
-Behavior:
-- Supports previous/next/finish controls
-- Supports keyboard arrows and Escape
-- Locks panel into onboarding-oriented UI state and restores prior UI state on close
+**Q: How do I rename a service in my library?**
+A: Right-click the service and choose "Rename".

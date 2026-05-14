@@ -1,119 +1,54 @@
-# Custom Layers Panel: Layer Selection and Map Rendering
+﻿# Custom Layers Panel: Adding and Controlling Layers on the Map
 
-## What This Covers
+## How to Add a Service to the Map
 
-This document explains how Custom Layers Panel controls map rendering.
+1. Open the Custom Layers Panel (click Custom Layers icon in the left sidebar).
+2. Find the service you want in your library.
+3. Click the **checkbox** next to the service name.
+4. All layers in that service are added to the map.
 
-Covered areas:
-- Service/layer/sublayer selection model
-- Group-layer bulk selection
-- Map add/remove logic for vector and raster layers
-- Opacity controls
-- Clear-all behavior
+## How to Add Individual Layers (Not the Whole Service)
 
----
+1. Click the expand arrow next to the service name.
+2. You see a list of individual layers.
+3. Check only the specific layers you want to display.
 
-## Selection Hierarchy
+## How to Remove a Layer from the Map
 
-Selections are tracked at multiple levels:
-- Service-level (select all leaf layers)
-- Layer-level (single leaf layer)
-- Group-layer level (all descendant leaf layers)
-- Sublayer level (legend-driven entries)
+- Uncheck the checkbox next to the layer or service.
+- The layer disappears from the map but stays in your saved library.
 
-Core states:
-- `checkedLayerIds`
-- `checkedSublayerIds`
-- `serviceLayerAdded`
+## How to Select/Deselect All Layers in a Group
 
----
+- For group layers, click the group checkbox to select or deselect all layers inside the group at once.
 
-## Service-Level Select All
+## How to Adjust Layer Opacity
 
-Selecting service checkbox:
-- Checks all leaf layer IDs
-- Marks service as added
-- Initializes sublayer checks where multiple legend entries exist
+- Use the **global opacity slider** at the top of the Custom Layers Panel to dim all custom layers at once.
+- To adjust opacity for a single service: right-click the service > Learn More > use the opacity slider in the info modal.
 
-Unselecting service checkbox:
-- Clears all checked layers and sublayers for that service
-- Marks service as not added
+## How to Clear All Custom Layers from the Map
+
+1. Click the **Clear All** button at the top of the Custom Layers Panel.
+2. All custom layers are removed from the map in one step.
+
+## How to Filter to Only Active Layers
+
+1. Toggle the **"Show only services added to map"** switch at the top of the panel.
+2. Only services that are currently visible on the map are shown in the list.
 
 ---
 
-## Layer-Level Selection
+## Common Questions
 
-When layer is checked:
-- Layer ID is added to checked set
-- Legend-derived sublayers are auto-checked (if available)
+**Q: How do I add a custom layer to the map?**
+A: Open Custom Layers Panel and check the checkbox next to the service or layer.
 
-When layer is unchecked:
-- Layer ID is removed
-- Related sublayer checks are cleared
+**Q: How do I hide a custom layer temporarily?**
+A: Uncheck its checkbox in the Custom Layers Panel. The layer is hidden but stays in your library.
 
----
+**Q: How do I change the opacity of my custom layers?**
+A: Use the opacity slider at the top of the Custom Layers Panel.
 
-## Group-Layer Bulk Toggle
-
-For group nodes, panel computes descendant leaf layers and applies bulk toggle.
-
-Supported behavior:
-- Select all descendant layers
-- Deselect all descendant layers
-- Sync sublayer states accordingly
-
----
-
-## Sublayer Behavior
-
-Sublayer checkbox updates parent-layer status:
-- If at least one sublayer selected -> parent layer stays selected
-- If no sublayers selected -> parent layer is deselected
-
-Service added-state is recalculated from sublayer selections.
-
----
-
-## Map Diff Rendering
-
-Panel compares previous vs current checked states and updates map layers incrementally.
-
-Per checked layer it can:
-- Add/remove vector style layers and source
-- Add/remove raster source/layers
-- Rebuild sublayer raster stacks when sublayer selection changes
-
-IDs use `custom` prefixes to isolate custom-layer map artifacts.
-
----
-
-## Opacity Controls
-
-### Global Opacity
-Main slider updates all custom raster/vector paint opacity.
-
-### Service Opacity
-Service info modal includes per-service opacity slider for active custom-layer map IDs tied to that service key.
-
----
-
-## Clear All
-
-Clear All action resets selection states:
-- `checkedLayerIds`
-- `checkedSublayerIds`
-- `serviceLayerAdded`
-
-Map layers are then removed by render-diff effect because all checked IDs become empty.
-
----
-
-## Layer Order Within Service
-
-Service layer tree respects saved `layer_order` when available.
-
-Users can drag top-level layer nodes to reorder.
-
-On drop:
-- Local `layerOrder` updates
-- Backend `saveLayerOrder` persists order per service
+**Q: How do I remove all custom layers from the map at once?**
+A: Click the Clear All button at the top of the Custom Layers Panel.

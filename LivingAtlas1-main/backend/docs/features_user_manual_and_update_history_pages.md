@@ -1,56 +1,43 @@
-# User Manual and Update History Pages
+﻿# User Manual and Update History
 
-## Scope
+## User Manual
 
-This document describes two global informational pages available from navbar links.
+### How to Open the User Manual
+1. Click **User Manual** in the top navigation bar.
+2. The User Manual page opens with a list of sections on the left.
+3. Click any section to jump to that topic.
 
-Covered:
-- User Manual page structure and navigation behavior
-- Update History page role and content behavior
+### What Is in the User Manual?
+The User Manual covers all major features of the app:
+- Overview of the app
+- How to use the Card Container
+- Card creation and editing
+- ArcGIS and custom layers
+- Basemap controls
+- Map tools and controls
 
----
-
-## User Manual Page
-
-Route: `/user-manual`
-Component: `UserManual`
-
-### Section model
-User manual organizes content into section IDs and labels, including:
-- overview
-- card container and card workflows
-- ArcGIS and custom layers sections
-- basemap and map controls
-- add-cards-from-map sub-sections
-
-### In-page navigation behavior
-- Left-side section nav updates active section state
-- Supports deep link via query param `?section=<id>`
-- Auto-opens nested add-cards-from-map group for matching section IDs
-
-### Content role
-Acts as the canonical in-app usage guide with visual examples and walkthrough text.
+### How to Go to a Specific Section
+- Use the left-side section navigation to browse topics.
+- You can also share a direct link to a section using the URL.
 
 ---
 
-## Update History Page
+## Update History
 
-Route: `/update-history`
-Component: `ChangelogHistory`
-
-### Page role
-Provides full chronological release history in a standalone page.
-
-### Content behavior
-- Displays date-grouped updates and fixes
-- Includes links when relevant (for example app URL entries)
-- Acts as long-form historical changelog, while the Home `What's New` modal focuses on latest highlights
+### How to See What Changed in Recent Updates
+1. Click **Updates** in the top navigation bar.
+2. The Update History page shows a chronological list of all releases.
+3. Each entry shows the date and a description of what was added or fixed.
 
 ---
 
-## Relationship Between the Two Pages
+## Common Questions
 
-- `User Manual` explains how to use current features.
-- `Update History` explains what changed across releases.
+**Q: Where is the user manual?**
+A: Click "User Manual" in the top navigation bar.
 
-Both are global references and accessible directly from navbar regardless of login state.
+**Q: How do I see the app changelog or release notes?**
+A: Click "Updates" in the navigation bar to see the full update history.
+
+**Q: Is the user manual available without logging in?**
+A: Yes. Both the User Manual and Update History pages are available to all users regardless of login status.

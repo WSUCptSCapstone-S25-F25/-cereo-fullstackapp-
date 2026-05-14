@@ -1,96 +1,61 @@
-# Mapbox Map Interactions and Card Overlay Features
+﻿# Map Interactions and Card Markers
 
-## Scope
+## How Card Markers Work
 
-This document covers core map interactions tied to cards and overlay rendering in `Content1`.
-
-Included:
-- Marker fetch/retry and render
-- Marker popup behavior
-- Card polygon/image overlays
-- Click/hover interactions
-- Search-condition linkage
+Cards created with a geographic point appear as colored marker pins on the map:
+- **Blue marker** = River category
+- **Green marker** = Watershed category
+- **Yellow marker** = Other categories
 
 ---
 
-## Marker Data Loading
+## How to Open a Card from the Map
 
-Markers are fetched from backend (`/getMarkers`) with retry strategy:
-- Multiple attempts with exponential backoff
-- Long timeout support
-- Recovery logging when retries succeed
-
-Triggers include:
-- Initial map ready/load
-- `atlas:cards-loaded` event
-- `atlas:card-uploaded` event
+1. Click a colored marker pin on the map.
+2. A popup appears with the card's title and basic info.
+3. Click the card title or the popup button to open the full card detail.
 
 ---
 
-## Marker Rendering by Category
+## How to Close a Marker Popup
 
-Each marker is rendered as custom DOM marker with category class:
-- `blue-marker` (River)
-- `green-marker` (Watershed)
-- `yellow-marker` (other category)
-
-Category marker arrays are maintained for filtering/visibility flows.
+- Click anywhere on the map background (outside the popup).
+- Or click the X on the popup.
 
 ---
 
-## Marker Popup Interaction
+## How Polygon Cards Appear on the Map
 
-Marker click behavior:
-- Stops event propagation to prevent background close
-- Toggles popup if same marker is clicked
-- Updates search condition with card title
-- Notifies card panel selection via callback
-
-Map background click closes active popup unless click originated from guarded overlay click flow.
+Cards created with a polygon location appear as a shaded area on the map instead of a pin.
+- Click the polygon area to open the card popup.
+- Hover over the polygon to see the cursor change (indicating it's clickable).
 
 ---
 
-## Card Polygon Overlay Rendering
+## How Image Overlay Cards Appear on the Map
 
-For cards with polygon vertices:
-- Creates GeoJSON polygon source
-- Adds fill layer with configured color/opacity
-- Adds line layer with configurable dash style
-
-Supported line styles map to dash arrays (solid/dashed/dotted/dashdot).
-
-Polygon click opens card popup; hover shows pointer cursor.
+Cards created with an image overlay show a pinned image (like a heatmap or photo) positioned over a specific area.
+- Click the image to open the card popup.
 
 ---
 
-## Card Image Overlay Rendering
+## How to Find a Card on the Map
 
-For image cards with four-corner vertices:
-- Adds transparent hit polygon layer for click targeting
-- Loads raster image through backend proxy endpoint
-- Adds image source/layer with provided coordinates
-
-Image hit layer click opens associated card popup.
+1. In the card list (left panel), click the **magnifier/locate icon** on any card.
+2. The map pans and zooms to center on that card's location.
 
 ---
 
-## Overlay Cleanup
+## Common Questions
 
-Before re-rendering card overlays, app removes existing per-card polygon/image layers and sources to avoid stale duplication.
+**Q: I clicked a marker but nothing happened. Why?**
+A: Make sure markers are visible (check the marker visibility toggle on the toolbar). Also try clicking directly on the pin center.
 
----
+**Q: How do I go to a specific card's location on the map?**
+A: Click the magnifier icon on the card in the card list panel.
 
-## Marker + Overlay Cohesion
+**Q: What do the different marker colors mean?**
+A: Blue = River, Green = Watershed, Yellow = other categories.
 
-`renderMarkers()` deliberately skips point-marker creation for cards represented as polygon/image overlays.
-
-This ensures one visual representation per card location type.
-
----
-
-## Popup/Selection UX Details
-
-The app tracks currently open marker card id and popup ref to support:
-- idempotent close/open behavior
-- avoiding accidental close during overlay click
-- synchronization with search selection state
+**Q: I see a shaded area on the map. What is it?**
+A: It is a polygon card — a card that covers an area rather than a single point. Click it to view the card details.

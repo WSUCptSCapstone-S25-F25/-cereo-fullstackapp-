@@ -1,114 +1,94 @@
-# Avatar-Accessible Pages: Profile, Administration, and Switch Account
+﻿# Profile Page, Administration Panel, and Switch Account
 
-## Scope
+## Profile Page
 
-This document describes page-level functions reachable through avatar menu entries.
+### How to Access Your Profile
+1. Click your username or avatar icon in the top navigation bar.
+2. Click **Profile**.
+3. Your profile page opens.
 
-Covered pages:
-- Profile (`/profile`)
-- Administration (`/administration`, admin only)
-- Switch Account (`/switch-account`)
+### How to Edit Your Username
+1. Go to your Profile page.
+2. Click the **Edit** button next to your username.
+3. Type your new username.
+4. Click **Save**.
 
----
+### How to Edit Your Bio
+1. Go to your Profile page.
+2. Click the bio text area and type your bio (character limit applies).
+3. Click **Save**.
 
-## Profile Page Features
+### How to Change Your Profile Picture
+1. Go to your Profile page.
+2. Click **Edit** or the profile image area.
+3. Select a new image file from your device.
+4. Preview the image, then click **Save** to upload.
 
-Route: `/profile` (login required)
+### How to Change Your Password
+1. Go to your Profile page.
+2. Find the **Change Password** section.
+3. Enter your new password and confirm it.
+4. Click **Save**.
 
-### Account Info and Editing
-- display username and email
-- edit mode for username
-- save/cancel profile editing workflow
-
-### Bio Management
-- fetch existing bio by email
-- edit bio with character limit
-- persist bio updates to backend
-
-### Profile Image
-- fetch existing profile image
-- choose new image in edit mode
-- upload selected image to backend
-- preview selected image before save
-
-### Additional Actions
-- invite new user (opens `Register` flow inside profile page)
-- change password form (new password + confirm)
-- password reset request endpoint support is present in page logic
-
-### Feedback
-- shows success/error status message for profile operations.
+### How to Invite a New User
+1. Go to your Profile page.
+2. Click the **Invite User** button.
+3. Fill in the invite/registration form and submit.
 
 ---
 
-## Administration Page Features
+## Administration Panel (Admin Only)
 
-Route: `/administration` (logged-in admin required)
+The Administration panel is only visible to accounts with administrator privileges.
 
-### Tabbed Sections
-- Statistics (placeholder)
-- Manage Users
-- Sign Up Requests
+### How to Access the Admin Panel
+1. Click your avatar/username in the navigation bar.
+2. Click **Administration**.
+3. The admin panel opens.
 
-### Manage Users
-- fetch user list
-- sortable columns (name, date joined)
-- online/offline status display
-- last online timestamp display
-- role badge display
+### How to Change a User's Role
+1. In the Admin panel, go to the **Manage Users** tab.
+2. Find the user in the list.
+3. Click the role action button for that user.
+4. Choose the new role (Regular or Admin).
+5. Type "Confirm" when prompted and click to apply.
 
-### Role Change Flow
-- open role modal for selected user
-- choose regular/admin role
-- typed confirmation required (`Confirm`)
-- apply role update and refresh list
+### How to Delete a User
+1. In the Admin panel, go to **Manage Users**.
+2. Find the user (you cannot delete admin accounts this way).
+3. Click the **Delete** button for that user.
+4. Type "Confirm" when prompted and click to apply.
 
-### Delete User Flow
-- open delete modal for selected non-admin user
-- typed confirmation required (`Confirm`)
-- delete user and refresh list
-
-### Sign Up Requests
-- fetch pending requests
-- approve request (create account + role assignment if requested)
-- deny request
-- refresh pending list after actions
+### How to Approve or Deny Signup Requests
+1. In the Admin panel, go to the **Sign Up Requests** tab.
+2. Review the pending request.
+3. Click **Approve** to create the account, or **Deny** to reject it.
 
 ---
 
-## Switch Account Page Features
+## Switch Account
 
-Route: `/switch-account` (login required)
-
-### Saved Accounts
-- load saved accounts from localStorage
-- identify and display current account
-- list other switchable accounts
-
-### Switch Flow
-- select another saved account
-- validate account by backend login lookup
-- update auth state, user info, admin flag
-- persist switched account state to localStorage
-- redirect to home on success
-
-### Expired/Invalid Saved Account Handling
-- on failed switch, invalid account is removed from saved list
-- user receives error/session-expired feedback
-
-### Add Account Shortcut
-- "Add account" entry redirects to login page.
-
-### Sign Out Shortcut
-- sign-out action clears auth state/localStorage
-- redirects to login page.
+### How to Switch to Another Account
+1. Click your avatar/username in the navigation bar.
+2. Click **Switch Account**.
+3. The Switch Account page shows a list of accounts you have previously logged in with on this device.
+4. Click an account to switch to it instantly.
 
 ---
 
-## Route Protection Summary
+## Common Questions
 
-These avatar-accessible pages are all protected:
-- Profile and Switch Account require login
-- Administration requires login + admin role
+**Q: How do I change my username or bio?**
+A: Go to your Profile page (click avatar > Profile), then click Edit and update the field.
 
-Unauthorized access is redirected to login route.
+**Q: How do I change my profile picture?**
+A: Go to your Profile page and click the profile image area to upload a new one.
+
+**Q: How do I approve a new user signup?**
+A: Go to Administration > Sign Up Requests and click Approve on the request.
+
+**Q: How do I change someone's role to admin?**
+A: Go to Administration > Manage Users, click the role button for that user, choose Admin, and confirm.
+
+**Q: I don't see the Administration option. Why?**
+A: Only administrator accounts have access to the admin panel.

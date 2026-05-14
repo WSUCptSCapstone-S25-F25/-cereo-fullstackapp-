@@ -1,119 +1,56 @@
-# Custom Layers Panel: Folder and Order Management
+﻿# Custom Layers Panel: Folder and Order Management
 
-## What This Covers
+## How to Create a Folder
 
-This document explains folder operations and drag-and-drop ordering in Custom Layers Panel.
+1. Click the **New Folder** button at the top of the Custom Layers Panel.
+2. Enter a folder name and confirm.
+3. The folder appears in your library at the root level.
 
-Covered areas:
-- Create/delete/rename folders
-- Service reorder and move between folders
-- Nested folder move and rename propagation
-- Breadcrumb drop behavior
-- Persistence APIs
+**Tip:** Use `/` in the folder name to create nested subfolders. For example, naming a folder `Hydrology/Rivers` creates a subfolder "Rivers" inside "Hydrology".
 
----
+## How to Rename a Folder
 
-## Folder Model
+1. Right-click the folder name (or click the "..." menu).
+2. Click **Rename**.
+3. Enter the new name and confirm.
 
-Folder names can represent nested hierarchy using `/` separators.
+## How to Delete a Folder
 
-Examples:
-- `Hydrology`
-- `Hydrology/Rivers`
+1. Right-click the folder name (or click the "..." menu).
+2. Click **Delete Folder**.
+3. A confirmation message explains that services inside will be moved to Root.
+4. Click Confirm to delete.
 
-Panel root view shows top-level folders; entering folder reveals nested level.
+## How to Move a Service to a Different Folder
 
----
+1. Drag the service row to the target folder.
+2. The service appears in the new folder.
+3. You can also drag a folder onto another folder to nest it.
 
-## Create Folder
+## How to Reorder Services Within a Folder
 
-New Folder button prompts for name.
+1. Drag a service row up or down within the folder.
+2. Release it at the new position.
+3. The order is saved automatically.
 
-Validation:
-- Empty names rejected
-- Duplicate folder names rejected
+## How to Navigate Folders
 
-On success:
-- Folder is added to local folder list
-- Folder expansion state is updated
-- Backend `createCustomFolder` persists folder
-
----
-
-## Rename Folder
-
-Folder rename updates:
-- `dbFolders` entries
-- Service folder paths for affected rows
-- Expanded folder state when needed
-
-Persistence uses `renameCustomFolder` API.
+- Click a folder name to enter it.
+- Use the **breadcrumb bar** at the top to go back.
+- Click **Root** to return to the top level.
 
 ---
 
-## Delete Folder
+## Common Questions
 
-Delete folder from folder context menu.
+**Q: How do I organize my saved layers into folders?**
+A: Click "New Folder" in the Custom Layers Panel, then drag services into the folder.
 
-Behavior:
-- Confirmation dialog explains impact
-- If folder has services, they move to `Root`
-- Folder entry is removed from local folder list
+**Q: Can I nest folders inside each other?**
+A: Yes. Drag one folder onto another, or use a `/` in the folder name when creating it.
 
-Persistence uses `deleteCustomFolder` API.
+**Q: What happens to services when I delete a folder?**
+A: Services inside the deleted folder are automatically moved to Root.
 
----
-
-## Service Reorder and Move
-
-Services can be dragged:
-- Within same folder for ordering
-- Across folders to change folder assignment
-
-Drop result updates local sort order and folder value, then calls batch persist:
-- `reorderCustomLayers(userEmail, order)`
-
----
-
-## Folder-to-Folder Nesting
-
-Dragging one folder onto another nests source folder under target.
-
-Implementation details:
-- Source base path is rewritten to `target/sourceName`
-- All descendant folder paths are rewritten accordingly
-- Services under moved subtree receive updated folder paths
-- Each affected folder path is persisted via `renameCustomFolder`
-
-Safety rule:
-- Prevent dropping a folder into its own descendant path
-
----
-
-## Breadcrumb Drop (Move Out)
-
-While inside a folder path, breadcrumb acts as drop target.
-
-Dropping a folder there moves it up to parent of current path.
-
-This supports quick "move out" behavior without full tree expansion.
-
----
-
-## Layer-Level Reorder
-
-Inside expanded service, top-level layers can be reordered by drag handle.
-
-Persistence uses per-service API:
-- `saveLayerOrder(userEmail, serviceKey, layerOrder)`
-
----
-
-## Persistence Endpoints Used
-
-Folder/order management relies on:
-- Create folder
-- Delete folder
-- Rename folder
-- Batch reorder services
-- Save per-service layer order
+**Q: How do I change the order of services in my library?**
+A: Drag service rows up or down within the folder to reorder them.

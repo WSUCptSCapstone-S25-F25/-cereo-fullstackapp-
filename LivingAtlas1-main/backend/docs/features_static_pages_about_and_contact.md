@@ -1,49 +1,32 @@
-# Static Pages: About and Contact
-
-## Scope
-
-This document describes static informational pages exposed in the navbar.
-
-Covered:
-- About page
-- Contact page
-- Navigation characteristics
-
----
+﻿# About and Contact Pages
 
 ## About Page
 
-Route: `/about`
-Component: `About`
+The About page provides background information about the RWC Living Atlas project — its mission, purpose, and the team behind it.
 
-### Purpose
-Provides high-level background and context for the Living Atlas project.
-
-### Behavior
-- Read-only informational content
-- No authentication requirement
-- No form submission or state mutation
+### How to Access
+- Click **About** in the top navigation bar.
 
 ---
 
 ## Contact Page
 
-Route: `/contact`
-Component: `Contact`
+The Contact page provides communication and support information for the project.
 
-### Purpose
-Provides communication and support contact details.
+### How to Access
+- Click **Contact** in the top navigation bar.
 
-### Behavior
-- Read-only informational content
-- No authentication requirement
-- No backend write operations
+### What Is on the Contact Page?
+- Mailing address
+- Phone number
+- Email contact information
 
 ---
 
-## Navigation Notes
+## Common Questions
 
-Both pages are:
-- directly accessible from top navbar
-- available to logged-in and logged-out users
-- part of global app navigation shell
+**Q: How do I contact the Living Atlas team?**
+A: Click "Contact" in the navigation bar to find the email, phone, and address information.
+
+**Q: What is the Living Atlas project?**
+A: Click "About" in the navigation bar to read about the project mission and background.

@@ -1,100 +1,44 @@
-# Mapbox Built-in Layers, Metadata, and Viewport Sync
+﻿# Built-in Map Layers
 
-## Scope
+## What Are Built-in Map Layers?
 
-This document covers map-level built-in layers and metadata/UI sync features in `Content1` and related home state.
+The RWC Living Atlas map includes some built-in informational layers that can be toggled on or off:
+- **Hydrological Boundaries** — shows watershed and hydrological boundary areas
+- **City Limits** — shows urban area and city boundary outlines
 
-Included:
-- Built-in vector tile layers
-- Layer click popups and cursor changes
-- Viewport bounds synchronization
-- Mouse/location coordinate displays
-- Credit/attribution portal placement
+These layers are separate from the ArcGIS service layers and custom layers you add manually.
 
 ---
 
-## Built-in Vector Tile Layers
+## How to Click a Built-in Layer for Information
 
-On map load, app adds built-in vector layers:
-- `vector-tileset` (Hydrological Boundaries theme)
-- `urban-areas-fill` (City Limits fill)
-- `urban-areas-outline` (City Limits outline)
-
-These layers are initialized with visibility hidden and toggled by higher-level UI controls.
-
----
-
-## Built-in Layer Popups
-
-Click handlers provide metadata popups for built-in layers.
-
-`vector-tileset` popup shows fields like:
-- GNIS Name
-- Object ID
-- LengthKM
-- GNIS ID
-
-`urban-areas-fill` popup shows fields like:
-- city name
-- OBJECTID
-- UGA_NM
-- COUNTY_NM
-- GMA
-- INCORP
-
-Hover changes cursor to pointer on interactive layers.
+1. Make sure the relevant built-in layer is visible on the map.
+2. Click on a hydrological boundary or city area on the map.
+3. A popup appears with information about that area, such as:
+   - For hydrological areas: name, length, and ID
+   - For city/urban areas: city name, county, and area type
 
 ---
 
-## Viewport Bound Sync for Filtering
+## Current Map Location Display
 
-Map emits bound updates to parent state on:
-- zoomend
-- dragend
-- moveend
-
-Bounds are converted to app format:
-- `NE: { Lat, Lng }`
-- `SW: { Lat, Lng }`
-
-This supports card filtering by current viewport.
+The map shows your current cursor coordinates (latitude/longitude) as you move the mouse over the map. This helps you identify exact geographic positions.
 
 ---
 
-## Coordinate and Camera Display
+## Viewport Filtering
 
-Bottom-left info panel displays:
-- map center lat/lng
-- zoom level
-- current mouse lat/lng
-
-These values update on move and mousemove events.
+When the card panel scope is set to **In View**, the card list updates automatically as you pan and zoom the map. Only cards within the current map viewport are shown.
 
 ---
 
-## Geolocation Integration
+## Common Questions
 
-Geolocate control updates current location coordinate store when geolocation events fire.
+**Q: What are those boundary lines on the map?**
+A: They are built-in layers showing hydrological boundaries and/or city limits. Click on them to see details.
 
----
+**Q: How do I see watershed boundary information?**
+A: Click on the shaded watershed area on the map to see a popup with details like name and length.
 
-## Credit / Attribution Layout
-
-App customizes bottom-right metadata area:
-- Synchronizes custom credit host near attribution
-- Moves Mapbox logo into managed metadata host
-- Renders additional credit portal content (icon attribution)
-
-This keeps branding/credit UI organized with map controls.
-
----
-
-## Map Resize with Panel Layout
-
-Map container left/right offsets react to sidebar and card-panel layout.
-
-Resize logic runs on:
-- container geometry changes
-- card panel transition end
-
-This prevents map rendering glitches when side panels open/close.
+**Q: Why does the card list change when I move the map?**
+A: If the card panel scope is set to "In View", it only shows cards currently visible in the map window.

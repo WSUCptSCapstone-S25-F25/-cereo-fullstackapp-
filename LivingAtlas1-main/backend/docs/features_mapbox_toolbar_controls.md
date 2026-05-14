@@ -1,101 +1,79 @@
-# Mapbox Toolbar and Control Features
+﻿# Map Toolbar Controls
 
-## Scope
+## What Is the Map Toolbar?
 
-This document covers toolbar/control features mounted on the Mapbox map in `Content1`.
-
-Included:
-- Native Mapbox controls
-- Geocoder and coordinate search
-- Draw control group custom buttons
-- Add Tools dropdown workflows
-- Visibility toggle, reset view, screenshot
+The map toolbar is a set of buttons overlaid on the map canvas. It gives you tools for navigating the map, adding data points, and controlling map display.
 
 ---
 
-## Native Mapbox Controls
+## Navigation Controls
 
-Mounted controls include:
-- FullscreenControl (`top-left`)
-- NavigationControl (`top-left`)
-- GeolocateControl (`top-left`, high-accuracy + heading)
-- MapboxGeocoder search control
-- MapboxDraw control (polygon/trash enabled)
+- **Zoom In / Zoom Out** buttons — click + or - to zoom the map in or out.
+- **Compass / Rotate reset** — click to reset map rotation to north-up.
+- **Fullscreen button** — click to expand the map to fill the entire screen. Click again to exit.
+- **My Location (GPS)** — click to center the map on your current geographic location.
 
 ---
 
-## Geocoder Behavior
+## How to Search for a Location on the Map
 
-Geocoder supports:
-- Address/place search
-- Reverse geocode
-- Custom coordinate parser (`Lat,Lng` style)
-
-On result:
-- Search location coordinates are updated
-- Bound-condition sync is triggered for filtering pipeline
+1. Click the **search bar** on the map (geocoder/search box).
+2. Type an address, place name, or coordinates (in Lat, Lng format, e.g., `46.7, -120.5`).
+3. Press Enter or select a result from the dropdown.
+4. The map flies to the selected location.
 
 ---
 
-## Draw Group Customization
+## How to Add Tools (Points, Polygons, Images)
 
-After draw control is mounted, app injects custom controls into draw group.
-
-Custom toolbar actions:
-- Add Tools button (plus icon)
-- Marker/polygon visibility toggle
-- Reset Map View
-- Screenshot Map
-
----
-
-## Add Tools Dropdown
-
-Add Tools menu options:
-- Add Single Point
-- Polygon Tools
-- Add PNG
-
-Event dispatch behavior:
-- Single Point -> `map-point-tool-start`
-- Polygon -> open polygon drawing modal
-- Add PNG -> `map-image-tool-start`
-
-Menu closes on outside click and on option selection.
+1. Click the **Add Tools** button (plus icon) on the map toolbar.
+2. A dropdown menu appears with three options:
+   - **Add Single Point** — start point placement mode to add a card at a specific location
+   - **Polygon Tools** — open the polygon drawing tool
+   - **Add PNG** — start image overlay placement mode to pin an image on the map
+3. Click the desired option.
+4. Follow the on-screen instructions to place the point, draw the polygon, or position the image.
 
 ---
 
-## Marker/Polygon Visibility Toggle
+## How to Show or Hide Card Markers
 
-Toggle button switches global visibility state for:
-- Marker DOM elements (`allMarkers`)
-- Card polygon/image overlay layers (by id prefix matching)
-
-Button icon and title update between show/hide states.
+1. Click the **Marker visibility** toggle button on the map toolbar.
+2. All card markers (colored pins) on the map are hidden.
+3. Click again to show them again.
 
 ---
 
-## Reset View Button
+## How to Reset the Map View
 
-Reset view action performs `map.flyTo()` back to default map camera:
-- center: `[-120, 46]`
-- zoom: `5.5`
-
----
-
-## Screenshot Button
-
-Screenshot uses `html2canvas` on map container.
-
-Behavior:
-- Captures map viewport
-- Excludes map control corners from capture
-- Downloads PNG file with timestamp
+1. Click the **Reset View** button on the map toolbar.
+2. The map returns to the default view — centered on the region with default zoom level.
 
 ---
 
-## Draw Mode Intercept
+## How to Take a Screenshot of the Map
 
-When MapboxDraw enters `draw_polygon` mode, app immediately switches draw to `simple_select` and opens custom polygon drawing modal.
+1. Click the **Screenshot** button on the map toolbar.
+2. A PNG image of the current map view is automatically downloaded to your computer.
 
-This standardizes polygon creation through the app's richer drawing workflow.
+---
+
+## Common Questions
+
+**Q: How do I search for a city or address on the map?**
+A: Use the search bar on the map and type the location. The map will fly to that location.
+
+**Q: How do I add a point to the map?**
+A: Click the Add Tools button (+), then select "Add Single Point" and click on the map where you want to place it.
+
+**Q: How do I hide all the card markers temporarily?**
+A: Click the marker visibility toggle button on the map toolbar.
+
+**Q: How do I go back to the default map view?**
+A: Click the Reset View button on the map toolbar.
+
+**Q: How do I take a screenshot of the map?**
+A: Click the Screenshot button on the map toolbar. A PNG file is downloaded automatically.
+
+**Q: How do I draw a polygon on the map?**
+A: Click the Add Tools button (+), then select "Polygon Tools" to open the polygon drawing tool.

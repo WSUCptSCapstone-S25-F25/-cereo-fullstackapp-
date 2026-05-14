@@ -1,100 +1,53 @@
-# Basemap Panel Features
+﻿# Basemap Panel
 
-## Scope
+## What Is the Basemap Panel?
 
-This document covers the Basemap Panel (BasemapSwitcher) used to change Mapbox base style.
-
-Included:
-- Basemap list and preview behavior
-- Style-switch application flow
-- State persistence integration
-- Onboarding and help entry
+The Basemap Panel lets you change the background map style — for example, switching between a street map, satellite imagery, or an outdoor terrain view.
 
 ---
 
-## Panel Entry and Placement
+## How to Open the Basemap Panel
 
-Basemap Panel is opened from the left sidebar map-style button.
-
-Main props used by the panel:
-- `isOpen`
-- `onClose`
-- `mapInstance`
-- `currentBasemapId`
-- `onBasemapChange`
+1. On the main map page, look for the left sidebar.
+2. Click the **map style button** (usually a layers or map icon) in the sidebar.
+3. The Basemap Panel opens showing available map styles with preview thumbnails.
 
 ---
 
-## Available Basemap Styles
+## How to Change the Map Style (Basemap)
 
-Panel currently provides predefined Mapbox styles:
-- `navigation-day-v1`
-- `navigation-night-v1`
-- `outdoors-v12`
-- `satellite-streets-v12`
-- `satellite-v9`
-- `streets-v12`
-
-Each item includes:
-- style id
-- style URL
-- static thumbnail URL (token-appended)
-
----
-
-## Basemap Apply Logic
-
-When a basemap is selected:
-1. Current camera state is captured (center, zoom, bearing, pitch).
-2. Existing custom non-mapbox sources/layers are collected.
-3. `map.setStyle()` applies the target basemap style.
-4. On `style.load`, camera state is restored.
-5. Custom sources/layers are re-added.
-
-This avoids losing user-added overlay content during style switches.
+1. Open the Basemap Panel (see above).
+2. Browse the available styles:
+   - **Navigation Day** — clean road map, light theme
+   - **Navigation Night** — dark theme road map
+   - **Outdoors** — terrain and hiking-style map
+   - **Satellite Streets** — satellite imagery with road labels
+   - **Satellite** — pure satellite imagery, no labels
+   - **Streets** — standard street map
+3. Click the style you want.
+4. The map updates immediately to use the selected style.
+5. Your custom layers and card overlays are preserved when switching styles.
 
 ---
 
-## Controlled/Uncontrolled Sync
+## Saving Your Basemap Preference
 
-The panel keeps internal selected state in sync with controlled prop `currentBasemapId`.
-
-If map instance is not immediately available, a delayed retry attempts applying the requested basemap.
-
----
-
-## Preference Persistence (via Home)
-
-Basemap id is persisted through user UI preferences:
-- Logged-in user: cloud preferences API
-- Anonymous user: local pending preferences cache
-
-On app load, preferred basemap is restored and panel reflects active choice.
+Your basemap choice is saved automatically:
+- If you are **logged in**: your preference is saved to your account and restored next time you visit.
+- If you are **not logged in**: your preference is saved locally in your browser for this session.
 
 ---
 
-## Help and Onboarding
+## Common Questions
 
-Header actions include:
-- Help: opens user manual basemap section
-- Tutorial: opens panel-specific onboarding overlay
-- Close
+**Q: How do I change the map background?**
+A: Click the map style button in the left sidebar to open the Basemap Panel, then click the style you want.
 
-Onboarding highlights:
-- Panel container
-- Help button
-- Basemap list
-- Basemap item
-- Active item
+**Q: Will my layers disappear when I change the basemap?**
+A: No. Your custom layers and card overlays are preserved when you switch basemap styles.
 
-Keyboard support includes left/right step navigation and Escape close.
+**Q: Is my basemap choice saved for next time?**
+A: Yes. If you are logged in, your preference is saved to your account. If not, it is saved in your browser for the current session.
 
----
-
-## UX Notes
-
-Active basemap item is visually highlighted.
-
-Thumbnail URLs append access token at render time.
-
-If panel closes while onboarding is open, onboarding auto-closes.
+**Q: How do I switch to satellite view?**
+A: Open the Basemap Panel from the left sidebar and click "Satellite" or "Satellite Streets".

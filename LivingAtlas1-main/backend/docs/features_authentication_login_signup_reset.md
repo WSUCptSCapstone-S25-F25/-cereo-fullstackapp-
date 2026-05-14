@@ -1,110 +1,71 @@
-# Authentication, Signup, and Password Reset
+﻿# Login, Signup, and Password Reset
 
-## Scope
+## How to Log In
 
-This document describes authentication and account recovery features.
+1. Click **Login** in the top navigation bar.
+2. Enter your **email address** and **password**.
+3. Click **Log In**.
+4. On success, you will be redirected to the home page automatically.
 
-Covered:
-- Login workflow
-- Saved account handling
-- Signup request workflow
-- Password recovery and reset flows
-
----
-
-## Login Workflow
-
-Route: `/login`
-Component: `Login`
-Backend endpoint: `GET /profileAccount`
-
-### Input and validation
-- Requires email and password input
-- On submit, calls `/profileAccount` with query params
-
-### Success path
-- Extracts account info from response
-- Resolves admin flag with normalization logic
-- If needed, fetches role fallback via `GET /userRole`
-- Updates app auth state: logged-in flag, username, email, admin flag
-- Persists state into localStorage
-- Stores account in `savedAccounts` for switch-account feature (deduplicated by email)
-- Shows success message and starts redirect countdown to Home
-
-### Failure path
-- Invalid credentials show error message
-- Network/server errors show fallback error message
+**If login fails:** Check that your email and password are correct. Contact your administrator if you cannot access your account.
 
 ---
 
-## Saved Accounts and Session Persistence
+## How to Request a New Account (Sign Up)
 
-Login writes or updates localStorage keys used across app:
-- `isLoggedIn`
-- `email`
-- `username`
-- `isAdmin`
-- `savedAccounts`
+Accounts are not created automatically — you must submit a request that an administrator will review.
 
-These values support:
-- route protection decisions
-- navbar avatar state
-- switch-account fast login flow
+1. Click **Register** in the top navigation bar.
+2. Fill in the form:
+   - Your name
+   - Email address
+   - Password
+   - A sponsor name or reason for requesting access
+   - Desired access level (Regular User or Administrator)
+3. Click **Submit**.
+4. You will see a confirmation message. An administrator will review your request.
 
----
-
-## Signup Request Workflow
-
-Route: `/signup`
-Component: `Signup`
-
-### Form behavior
-- Collects name, email, password
-- Collects sponsor or request message
-- Collects desired access level (regular or admin)
-
-### Validation behavior
-- Requires non-empty required fields before submit
-
-### Submission flow
-1. Build multipart form payload
-2. POST to `/uploadSignup`
-3. On success, trigger notification via `/sendSignupNotification`
-4. Show success/failure feedback to user
-
-Signup does not directly create active login accounts. Requests are reviewed in Administration.
+**Note:** Signup does not immediately give you access. You must wait for an administrator to approve your account.
 
 ---
 
-## Forgot Password and Reset
+## How to Reset a Forgotten Password
 
-### Forgot password request (login/profile entry points)
-Endpoint: `POST /forgot-password`
-
-- User provides account email
-- Backend sends password recovery email
-- UI shows success/error message
-
-### Reset password page
-Route: `/reset-password`
-Component: `Reset`
-Endpoint: `POST /reset-password`
-
-Behavior:
-- Reads `email` from URL query string
-- Requires new password and confirm password
-- Enforces matching password fields
-- Enforces minimum length (6)
-- On success shows completion message
-- On failure shows backend or fallback error
+1. Go to the **Login** page.
+2. Click **Forgot Password?** (below the login form).
+3. Enter your registered email address and submit.
+4. Check your email inbox for a password reset link.
+5. Click the link in the email — it opens the Reset Password page.
+6. Enter your new password (minimum 6 characters) and confirm it.
+7. Click **Reset Password**.
+8. Once successful, you can log in with your new password.
 
 ---
 
-## Admin Approval Dependency
+## How to Log Out
 
-Accounts created via signup request become active only after admin review in Administration Sign Up Requests tab.
+1. Click your **username or avatar icon** in the top navigation bar.
+2. A menu opens — click **Logout**.
+3. You are logged out and returned to the login state.
 
-Admin approval path:
-- create account (`/uploadAccount`)
-- optionally set admin role (`/edit_user_role`)
-- remove pending request (`/deny_request`)
+---
+
+## Common Questions
+
+**Q: How do I log in?**
+A: Click Login in the navbar, enter your email and password, then click Log In.
+
+**Q: How do I create an account?**
+A: Click Register in the navbar and submit the signup form. An administrator must approve your request before you can log in.
+
+**Q: I forgot my password. How do I reset it?**
+A: Go to the Login page, click "Forgot Password?", enter your email, and follow the link sent to your email inbox.
+
+**Q: My login is not working. What should I do?**
+A: Double-check your email and password. If the issue persists, use the Forgot Password option or contact your administrator.
+
+**Q: How do I sign out?**
+A: Click your avatar/username in the top navigation bar and select Logout.
+
+**Q: Do I need an account to view the map?**
+A: You can browse the map without logging in, but some features (like creating cards, favoriting, and viewing the admin panel) require a logged-in account.

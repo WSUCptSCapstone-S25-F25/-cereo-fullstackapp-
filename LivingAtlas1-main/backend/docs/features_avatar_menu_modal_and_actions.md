@@ -1,83 +1,69 @@
-# Avatar Menu Modal Features
+﻿# User Menu (Avatar Menu)
 
-## Scope
+## What Is the Avatar Menu?
 
-This document describes all functions available from the navbar avatar menu modal.
-
-Covered:
-- Modal open/close behavior
-- Menu item visibility rules
-- Action routing
-- Logout behavior
+When you are logged in, your username and an avatar icon appear in the top navigation bar. Clicking on them opens a menu with account-related options.
 
 ---
 
-## Entry Conditions
+## How to Open the User Menu
 
-Avatar menu modal is available only when `isLoggedIn === true`.
-
-Navbar auth area then displays:
-- user icon
-- current username
-- clickable profile button
-
----
-
-## Open/Close Behavior
-
-- Clicking avatar button toggles modal open/close.
-- Clicking inside modal uses event stopPropagation to avoid accidental closure.
-- Selecting a menu link closes modal before or during route navigation.
+1. Make sure you are logged in.
+2. Click your **username or avatar icon** in the top-right corner of the navigation bar.
+3. A dropdown menu appears with the following options:
+   - **Profile** — view and manage your profile
+   - **Administration** — manage users and cards (admin only)
+   - **Switch Account** — quickly switch between saved accounts
+   - **Logout** — sign out of the app
 
 ---
 
-## Menu Items
+## How to Go to Your Profile
 
-### Profile
-- Route: `/profile`
-- Always shown for logged-in users.
-
-### Administration (conditional)
-- Route: `/administration`
-- Shown only when `isAdmin` is true.
-
-### Switch Account
-- Route: `/switch-account`
-- Always shown for logged-in users.
-
-### Logout
-- Route target link: `/login`
-- Also triggers logout handler before navigation.
+1. Click your avatar/username in the navigation bar.
+2. Click **Profile** in the menu.
+3. Your profile page opens where you can view your account information.
 
 ---
 
-## Logout Action Details
+## How to Access the Admin Panel
 
-Logout menu item executes parent `onLogout` callback, then closes modal.
+The Administration option only appears if your account has administrator privileges.
 
-Logout callback resets:
-- login state
-- email
-- username
-- admin flag
-- auth-related localStorage values
-
-After logout, UI returns to logged-out navbar state with Register/Login links.
+1. Click your avatar/username in the navigation bar.
+2. Click **Administration**.
+3. The admin panel opens where you can manage user accounts and cards.
 
 ---
 
-## Admin Visibility Logic
+## How to Switch Accounts
 
-Administration link appears only when both conditions are true:
-- logged in
-- admin flag true
+The Switch Account feature lets you quickly log in as a different saved account without re-entering credentials from scratch.
 
-Even if link is hidden, direct route access is still protected by route guard in app router.
+1. Click your avatar/username in the navigation bar.
+2. Click **Switch Account**.
+3. Select one of your previously logged-in accounts from the list.
 
 ---
 
-## Related UX Notes
+## How to Log Out
 
-- Username is displayed beside avatar icon as quick identity indicator.
-- Avatar button receives active style while menu is open.
-- Menu provides account-focused actions only; public pages remain in main navbar links.
+1. Click your avatar/username in the navigation bar.
+2. Click **Logout**.
+3. You are signed out and the navbar returns to showing Register / Login links.
+
+---
+
+## Common Questions
+
+**Q: Where do I find the logout button?**
+A: Click your username or avatar in the top-right corner of the navigation bar, then click Logout.
+
+**Q: I don't see an Administration option. Why?**
+A: The Administration link only appears for accounts with administrator privileges. Regular user accounts do not see it.
+
+**Q: How do I view my profile?**
+A: Click your avatar/username in the navbar and select Profile.
+
+**Q: What is Switch Account?**
+A: It lets you quickly log in as a different account you have previously logged in with on this device, without typing the full credentials again.

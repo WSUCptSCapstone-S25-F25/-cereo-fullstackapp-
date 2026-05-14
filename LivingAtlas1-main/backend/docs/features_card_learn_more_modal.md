@@ -1,142 +1,129 @@
-# Card Learn More Modal
+﻿# Card Detail (Learn More Modal)
 
-## What This Covers
+## What Is the Learn More Modal?
 
-This document covers the Card Learn More modal, including read mode, edit mode, image management, file management, and toolbar actions.
+When you click on any card in the card list, a pop-up window called "Learn More" opens. It shows the full details of that card — title, description, location, tags, links, images, and downloadable files.
 
----
-
-## Opening and Closing
-
-### Open
-- Click a card item in the Card Container.
-
-### Close
-- Click the close button in modal toolbar.
-- Overlay-close can be disabled while onboarding is active.
-
-### Notes
-- The modal can open in guided onboarding mode.
-- Learn More visibility is coordinated with location/polygon edit tools.
+From this modal you can also **edit** or **delete** the card if you have permission.
 
 ---
 
-## Toolbar Actions
+## How to Open a Card's Details
 
-### Left Side
-- **Edit**: enter inline edit mode.
-- **Save / Cancel**: shown while editing.
-- **Download PDF**: export card details and images to PDF.
-- **Delete Card**: remove card (permission checked).
+1. Find the card in the card list on the left side.
+2. Click on the card.
+3. The Learn More modal opens with all card details.
 
-### Right Side
-- **Help**: opens user manual detail-view section.
-- **Onboarding**: starts interactive Learn More tutorial.
-- **Close**: closes modal.
-
-### Delete Permission
-- Only card creator or admin can delete a card.
-- Confirmation prompt appears before deletion.
+To close, click the **X** (close) button in the top-right corner of the modal.
 
 ---
 
-## Read Mode Content
+## How to Edit a Card
 
-Read mode shows:
+You can edit a card if you are the card's creator or an administrator.
+
+### Steps:
+1. Open the card by clicking it in the card list.
+2. In the top toolbar of the modal, click the **Edit** button (pencil icon).
+3. The card switches to edit mode — fields become editable.
+4. Make your changes to any of these fields:
+   - Title
+   - Category
+   - Author name
+   - Email
+   - Funding source
+   - Organization
+   - Coordinates (for point cards)
+   - Links (URL + optional display text)
+   - Description
+   - Tags
+5. Click **Save** to apply your changes.
+6. To cancel without saving, click **Cancel**. You may be asked to confirm discarding changes.
+
+### Editing the Card's Location
+- For a **point card**: click **Select Location** to pick a new point on the map, or click **Change to Polygon** to switch location type.
+- For a **polygon card**: click **Edit Polygon** to redraw the area.
+- For an **image overlay card**: click **Edit Image** to reposition the image corners.
+
+---
+
+## How to Delete a Card
+
+Only the card's creator or an administrator can delete a card. Deletion is permanent and cannot be undone.
+
+### Steps:
+1. Open the card by clicking it in the card list.
+2. In the top toolbar, click the **Delete Card** button (trash icon).
+3. A confirmation prompt appears — click **Confirm** to permanently delete the card.
+4. The card is removed from the map and card list immediately.
+
+**Note:** Deletion removes all associated files, images, and tags permanently.
+
+---
+
+## How to Download a Card as PDF
+
+1. Open the card (click it in the card list).
+2. In the top toolbar, click the **Download PDF** button.
+3. A PDF file is generated and downloaded — it includes the card's metadata, description, tags, links, and images.
+
+---
+
+## What Information Is Shown in the Card
+
+When you open a card, you see:
 - Title and category
-- Author, creator, email
-- Funding and organization
-- Coordinates (non-overlay cards)
-- Links list
+- Creator name and email
+- Funding source and organization
+- Coordinates (for point cards)
+- External links
 - Description and tags
-- Attached downloadable files
-- Image gallery section with See all images option
+- Downloadable file attachments (click to download)
+- Image gallery (click an image to open a full preview)
 
 ---
 
-## Edit Mode (Inline Editing)
+## How to Manage Images (in Edit Mode)
 
-### Editable Fields
-- Title
-- Category
-- Author
-- Email
-- Funding
-- Organization
-- Coordinates (for non-overlay cards)
-- Links (URL + optional display text)
-- Description
-- Tags
-
-### Location Editing Actions
-- **Select Location** (point cards)
-- **Change to Polygon** (point cards)
-- **Edit Polygon / Edit Image** (overlay cards)
-
-### Save/Cancel Behavior
-- Save writes changes and exits edit mode.
-- Cancel can prompt to discard unsaved changes.
+1. Open the card and click **Edit**.
+2. To **add an image**: click an empty image slot and select a file (PNG, JPG, GIF, WebP, max 5 MB).
+3. To **delete an image**: click the delete icon on that image in edit mode.
+4. To **reorder images**: click **See All Images**, then use Move Up / Move Down.
+5. Click **Save** when done.
 
 ---
 
-## Image Management in Learn More
+## How to Manage Attached Files (in Edit Mode)
 
-### Main Gallery
-- Up to 5 slots shown in Learn More gallery view.
-- Clicking image opens preview.
-- In edit mode, empty slots can be used to upload image.
-- In edit mode, existing images can be deleted.
-
-### See All Images View
-- Opens full image list.
-- In edit mode, users can:
-  - Reorder images (move up/down)
-  - Select multiple images
-  - Delete selected images
-  - Add new image
-
-### Notes
-- Upload and delete actions are guarded by loading state.
-- Image operations refresh card image data after completion.
-
----
-
-## File Management in Learn More
-
-### Read Mode
-- Shows downloadable file links.
-
-### Edit Mode
-- Shows current attached files.
-- Allows deleting existing files (with confirmation).
-- Allows staging multiple new files for upload.
-
----
-
-## PDF Export
-
-### Purpose
-Generate a PDF snapshot of card information.
-
-### Included Data
-- Core card metadata and text fields
-- Location type context
-- Tags
-- Links
-- Images (proxy loading/fallback strategies used)
-
-### Notes
-- If an image cannot be embedded, export continues with placeholder text.
+1. Open the card and click **Edit**.
+2. To **upload a new file**: click the file upload area and select a file (max 5 MB per file, any format).
+3. To **delete a file**: click the delete icon next to the file name — a confirmation prompt appears.
+4. Click **Save** when done.
 
 ---
 
 ## Common Questions
 
-**Q: Why can’t I close by clicking outside modal sometimes?**
-A: Overlay close is locked during certain onboarding flows.
+**Q: How do I edit a card?**
+A: Click the card to open it, then click the Edit (pencil) button in the toolbar. Make your changes and click Save.
 
-**Q: Why is creator username not editable?**
-A: Card creator identity is intentionally read-only.
+**Q: How do I delete a card?**
+A: Open the card, click the Delete Card (trash) button in the toolbar, and confirm the deletion.
 
-**Q: Why can delete fail even in modal?**
-A: Deletion requires creator/admin permission and valid card metadata.
+**Q: I don't see an Edit or Delete button. Why?**
+A: You can only edit or delete cards you created. Administrators can edit or delete any card. If you are neither the creator nor an admin, those buttons are not shown.
+
+**Q: Can I edit the card creator's name?**
+A: No. The creator field is read-only.
+
+**Q: Can I close the modal by clicking outside it?**
+A: Usually yes. During an active tutorial/onboarding, clicking outside may be temporarily disabled.
+
+**Q: Why did deletion fail?**
+A: Deletion requires creator or admin permission. Make sure you are logged in as the card creator or an admin.
+
+**Q: Can I change a point card to a polygon card?**
+A: Yes. Open the card, click Edit, then click "Change to Polygon" in the location section.
+
+**Q: How do I download card information?**
+A: Open the card and click the Download PDF button in the top toolbar.
