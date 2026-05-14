@@ -7,6 +7,12 @@ function ChangelogHistory() {
             <h1>Update History</h1>
             <div className="changelog-history-body">
 
+                <h3>Update Date: 5/14/2026</h3>
+                <p>Fixed the Living Atlas Helper Chatbot API issues so the chatbot is now operational.</p>
+                <p>Improved the chatbot knowledge base content to provide better user-facing answers.</p>
+                <p>Added a chatbot display mode switch between floating widget and left sidebar panel.</p>
+                <hr />
+
                 <h3>Update Date: 5/13/2026</h3>
                 <p>Completed a full RAG pipeline for the Living Atlas Helper Chatbot, using a local embedding model and DeepSeek as the generation model. Due to an ongoing AI service connection issue, the chatbot is temporarily unavailable.</p>
                 <p>Added a map zoom level (Z) axis control to the Mapbox native control group, displaying the user's current zoom level in real time.</p>

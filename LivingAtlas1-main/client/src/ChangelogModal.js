@@ -14,18 +14,10 @@ function ChangelogModal({ isOpen, onClose }) {
                 <button className="changelog-modal-close" onClick={onClose} aria-label="Close">x</button>
             </div>
             <div className="changelog-modal-body">
-
-                <h3>Update Date: 5/13/2026</h3>
-                <p>Completed a full RAG pipeline for the Living Atlas Helper Chatbot, using a local embedding model and DeepSeek as the generation model. Due to an ongoing AI service connection issue, the chatbot is temporarily unavailable.</p>
-                <p>Added a map zoom level (Z) axis control to the Mapbox native control group, displaying the user's current zoom level in real time.</p>
-
-                <h3>Update Date: 5/11/2026</h3>
-                <p>Added the AI chatbot hidden floating UI window and backend wiring. Full features (RAG and conversation memory) are still under development and currently unavailable.</p>
-                <p>Added a new onboarding button under the left sidebar changelog button for general app onboarding, with a brief walkthrough of each panel and guidance that each panel has its own onboarding.</p>
-                <p>Expanded the User Manual with detailed Service/Layer Info modal documentation.</p>
-                <p>Added a new Mapbox toolbar feature to place PNG images on the map. PNG overlays can now serve as card representations and support move, rotate, and resize transformations.</p>
-                <p>Integrated the Add Single Point trigger into the Mapbox toolbar, and consolidated Add Single Point, Polygon Tools, and Add PNG into the Add Cards from Map (+) modal.</p>
-                <p>Added top-right Help and Onboarding buttons to the Create Card modal, matching the Card Container style, with Help redirecting to the relevant User Manual section.</p>
+                <h3>Update Date: 5/14/2026</h3>
+                <p>Fixed the Living Atlas Helper Chatbot API issues so the chatbot is now operational.</p>
+                <p>Improved the chatbot knowledge base content to provide better user-facing answers.</p>
+                <p>Added a chatbot display mode switch between floating widget and left sidebar panel.</p>
 
             </div>
             <div className="changelog-modal-footer">
