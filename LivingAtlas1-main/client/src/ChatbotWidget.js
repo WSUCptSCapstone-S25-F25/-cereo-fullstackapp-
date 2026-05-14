@@ -2,16 +2,41 @@ import React, { useState, useRef, useEffect } from 'react';
 import api from './api';
 import './ChatbotWidget.css';
 
-export default function ChatbotWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function ChatbotWidget({
+  displayMode = 'floating',
+  isOpen: controlledIsOpen,
+  onOpenChange,
+  onDisplayModeChange,
+  splitBottom = false,
+}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = typeof controlledIsOpen === 'boolean' ? controlledIsOpen : internalIsOpen;
   const [messages, setMessages] = useState([{
     role: 'assistant',
-    text: 'Hi! I\'m the RWC Living Atlas Helper. Ask me anything about using the app or its environmental datasets.',
+    text: 'Hi! I\'m the RWC Living Atlas Helper. Ask me anything about using the app.',
   }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  const setIsOpen = (next) => {
+    const resolved = typeof next === 'function' ? next(isOpen) : next;
+    if (typeof controlledIsOpen !== 'boolean') {
+      setInternalIsOpen(resolved);
+    }
+    if (onOpenChange) {
+      onOpenChange(resolved);
+    }
+  };
+
+  const handleDisplayModeToggle = () => {
+    const nextMode = displayMode === 'floating' ? 'sidebar' : 'floating';
+    if (onDisplayModeChange) {
+      onDisplayModeChange(nextMode);
+    }
+    setIsOpen(true);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -66,24 +91,47 @@ export default function ChatbotWidget() {
   };
 
   return (
-    <div className={`chatbot-widget${isOpen ? ' chatbot-widget--open' : ''}`}>
-      {/* Handle: collapses to right edge; hover slides it in; click toggles panel */}
-      <div
-        className="chatbot-widget__handle"
-        onClick={() => setIsOpen(v => !v)}
-        role="button"
-        aria-expanded={isOpen}
-        aria-label="RWC Living Atlas Helper"
-      >
-        <span className="chatbot-widget__handle-icon">💬</span>
-        <span className="chatbot-widget__handle-label">RWC Living Atlas Helper</span>
-        <span className="chatbot-widget__handle-arrow">{isOpen ? '✕' : ''}</span>
-      </div>
+    <div className={`chatbot-widget chatbot-widget--${displayMode}${splitBottom ? ' chatbot-widget--split-bottom' : ''}${isOpen ? ' chatbot-widget--open' : ''}`}>
+      {displayMode === 'floating' && (
+        <div
+          className="chatbot-widget__handle"
+          onClick={() => setIsOpen(v => !v)}
+          role="button"
+          aria-expanded={isOpen}
+          aria-label="RWC Living Atlas Helper"
+        >
+          <span className="chatbot-widget__handle-icon">💬</span>
+          <span className="chatbot-widget__handle-label">RWC Living Atlas Helper</span>
+          <span className="chatbot-widget__handle-arrow">{isOpen ? '✕' : ''}</span>
+        </div>
+      )}
 
       {/* Chat panel: toggled by click */}
       <div className="chatbot-widget__panel" aria-hidden={!isOpen}>
         <div className="chatbot-widget__header">
-          <span className="chatbot-widget__title">RWC Living Atlas Helper</span>
+          <div className="chatbot-widget__header-main">
+            <span className="chatbot-widget__title">RWC Living Atlas Helper - Beta Version</span>
+            <div className="chatbot-widget__header-actions">
+              <button
+                className="chatbot-widget__mode-toggle"
+                onClick={handleDisplayModeToggle}
+                type="button"
+              >
+                {displayMode === 'floating' ? 'Use Sidebar Button' : 'Use Floating Widget'}
+              </button>
+              <button
+                className="chatbot-widget__close"
+                onClick={() => setIsOpen(false)}
+                type="button"
+                aria-label="Close Chatbot"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <p className="chatbot-widget__notice">
+            Beta: The chatbot is functional, but still under testing. Responses may be inaccurate.
+          </p>
         </div>
 
         <div className="chatbot-widget__messages">

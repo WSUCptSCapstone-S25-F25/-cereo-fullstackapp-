@@ -94,6 +94,7 @@
     .left-sidebar-upload-button,
     .left-sidebar-cards-button,
     .left-sidebar-basemap-button,
+    .left-sidebar-chatbot-button,
     .left-sidebar-layers-button,
     .left-sidebar-customlayers-button,
     .left-sidebar-trash-button,
@@ -321,6 +322,7 @@
     .left-sidebar-upload-button,
     .left-sidebar-cards-button,
     .left-sidebar-basemap-button,
+    .left-sidebar-chatbot-button,
     .left-sidebar-layers-button,
     .left-sidebar-customlayers-button,
     .left-sidebar-trash-button,
@@ -339,7 +341,8 @@
 .left-sidebar :is(
     .left-sidebar-gis-button,
     .left-sidebar-cards-button,
-    .left-sidebar-customlayers-button
+    .left-sidebar-customlayers-button,
+    .left-sidebar-chatbot-button
 ).active {
     background-color: #444a53;
     color: #f5f8ff;
@@ -353,6 +356,7 @@
     .left-sidebar-upload-button,
     .left-sidebar-cards-button,
     .left-sidebar-basemap-button,
+    .left-sidebar-chatbot-button,
     .left-sidebar-layers-button,
     .left-sidebar-customlayers-button,
     .left-sidebar-trash-button,
@@ -371,6 +375,7 @@
     .left-sidebar-upload-button,
     .left-sidebar-cards-button,
     .left-sidebar-basemap-button,
+    .left-sidebar-chatbot-button,
     .left-sidebar-layers-button,
     .left-sidebar-customlayers-button,
     .left-sidebar-trash-button,
@@ -381,5 +386,15 @@
 ):focus-visible {
     outline: 2px solid #8ab4ff;
     outline-offset: 2px;
+}
+
+.left-sidebar .left-sidebar-chatbot-button:disabled,
+.left-sidebar .left-sidebar-chatbot-button:disabled:hover,
+.left-sidebar .left-sidebar-chatbot-button:disabled:active {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: transparent;
+    border-color: transparent;
+    transform: none;
 }
 

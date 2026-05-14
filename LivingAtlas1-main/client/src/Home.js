@@ -14,7 +14,7 @@ import CustomLayersPanel from './CustomLayersPanel';
 import { applyAreaVisibility } from './AreaFilter';
 import { showAll } from "./Filter.js";
 import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
-import { faBell, faMap, faObjectGroup, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faMap, faObjectGroup, faInfoCircle, faCommentDots } from '@fortawesome/free-solid-svg-icons';
 import BasemapSwitcher from './BasemapSwitcher';
 import Modal from 'react-modal';
 import ChangelogModal from './ChangelogModal';
@@ -74,6 +74,8 @@ function Home(props) {
     });
     const [isGeneralOnboardingOpen, setIsGeneralOnboardingOpen] = useState(false);
     const [isGeneralOnboardingTourOpen, setIsGeneralOnboardingTourOpen] = useState(false);
+    const [chatbotDisplayMode, setChatbotDisplayMode] = useState('floating');
+    const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
     const closeChangelog = () => {
         localStorage.setItem('changelog_seen_v14', 'true');
@@ -177,6 +179,16 @@ function Home(props) {
         setIsCollapsed(prev => !prev);
     };
 
+    const toggleSidebarChatbotPanel = () => {
+        if (chatbotDisplayMode === 'floating') return;
+        setIsChatbotOpen(prev => !prev);
+    };
+
+    const handleChatbotDisplayModeChange = (nextMode) => {
+        setChatbotDisplayMode(nextMode);
+        setIsChatbotOpen(true);
+    };
+
     const getMapboxMap = () => window.atlasMapInstance;
 
     // Basemap switcher state
@@ -199,6 +211,7 @@ function Home(props) {
             setCardPanelWidth(Math.round(window.innerWidth * 0.25));
         }
         setCardPanelSide(uiPrefs.cardPanelSide === 'left' ? 'left' : 'right');
+        setChatbotDisplayMode(uiPrefs.chatbotDisplayMode === 'sidebar' ? 'sidebar' : 'floating');
     };
 
     useEffect(() => {
@@ -264,6 +277,7 @@ function Home(props) {
                     basemapId: preferredBasemapId,
                     cardViewMode: cardViewModePreference,
                     cardPanelSide,
+                    chatbotDisplayMode,
                 },
             }).catch(error => {
                 console.warn('[Home] Failed to save user preferences:', error);
@@ -278,6 +292,7 @@ function Home(props) {
         preferredBasemapId,
         cardViewModePreference,
         cardPanelSide,
+        chatbotDisplayMode,
     ]);
 
     useEffect(() => {
@@ -291,6 +306,7 @@ function Home(props) {
                     basemapId: preferredBasemapId,
                     cardViewMode: cardViewModePreference,
                     cardPanelSide,
+                    chatbotDisplayMode,
                 },
             });
         }, 200);
@@ -302,6 +318,7 @@ function Home(props) {
         preferredBasemapId,
         cardViewModePreference,
         cardPanelSide,
+        chatbotDisplayMode,
     ]);
 
     const addArcgisLayer = (layerIds = checkedArcgisLayerIds) => {
@@ -513,6 +530,20 @@ function Home(props) {
                     <FontAwesomeIcon icon={faMap} />
                 </button>
 
+                <button
+                    className={`left-sidebar-chatbot-button${chatbotDisplayMode === 'sidebar' && isChatbotOpen ? ' active' : ''}`}
+                    data-onboarding-target="left-sidebar-chatbot"
+                    onClick={toggleSidebarChatbotPanel}
+                    title={
+                        chatbotDisplayMode === 'floating'
+                            ? 'Chatbot button disabled in floating mode'
+                            : (isChatbotOpen ? 'Close Chatbot' : 'Open Chatbot')
+                    }
+                    disabled={chatbotDisplayMode === 'floating'}
+                >
+                    <FontAwesomeIcon icon={faCommentDots} />
+                </button>
+
                 {/* Basemap Switcher Panel */}
                 <BasemapSwitcher
                     isOpen={isBasemapOpen}
@@ -646,7 +677,13 @@ function Home(props) {
             <GeneralOnboarding isOpen={isGeneralOnboardingTourOpen} onClose={closeGeneralOnboardingTour} />
 
             {/* AI Chatbot floating widget */}
-            <ChatbotWidget />
+            <ChatbotWidget
+                displayMode={chatbotDisplayMode}
+                isOpen={isChatbotOpen}
+                onOpenChange={setIsChatbotOpen}
+                onDisplayModeChange={handleChatbotDisplayModeChange}
+                splitBottom={cardPanelSide === 'left' && !isCollapsed}
+            />
 
         </div>
     );
