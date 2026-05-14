@@ -7,6 +7,7 @@ Generation: DeepSeek API (OpenAI-compatible). Set DEEPSEEK_API on Render.
 """
 
 import os
+import traceback
 from typing import Any
 
 import psycopg2
@@ -159,6 +160,17 @@ def ask(payload: ChatRequest):
         answer = response.choices[0].message.content.strip()
         return ChatResponse(answer=answer)
     except Exception as e:
+        # Print safe diagnostics for Render logs (no API key content).
+        print(
+            "[chat] DeepSeek request failed:",
+            f"type={type(e).__name__}",
+            f"status={getattr(e, 'status_code', None)}",
+            f"message={str(e)}",
+        )
+        if getattr(e, "__cause__", None):
+            print(f"[chat] DeepSeek cause: {repr(e.__cause__)}")
+        print("[chat] DeepSeek traceback:\n" + traceback.format_exc())
+
         err_str = str(e)
         lowered = err_str.lower()
         status_code = getattr(e, "status_code", None)

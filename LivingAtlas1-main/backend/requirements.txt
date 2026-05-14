@@ -5,7 +5,7 @@ apyori==1.1.2
 async-generator==1.10
 attrs==21.4.0
 cachetools==5.3.2
-certifi==2021.10.8
+certifi>=2025.1.31
 cffi==1.15.0
 charset-normalizer==3.3.2
 click==8.1.3
