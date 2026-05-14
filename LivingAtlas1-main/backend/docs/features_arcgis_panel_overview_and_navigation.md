@@ -26,6 +26,23 @@ The panel also includes a Built-in Layers folder for non-ArcGIS hardcoded map la
 
 ---
 
+## How to Add ArcGIS Layers to the Map (Quick Steps)
+
+If you are asking "how to add ArcGIS layers to map", use this flow:
+
+1. Open the **ArcGIS Upload Panel** from the sidebar/tools.
+2. Choose a state folder (**WA**, **ID**, or **OR**) or use search.
+3. Expand folders and open a service.
+4. Check a service checkbox to add all leaf layers, or check individual layer checkboxes.
+5. Wait for loading messages/spinner to finish; selected layers appear on the map.
+6. Uncheck the same checkbox to remove the layer/service from the map.
+
+Notes:
+- Built-in Layers can also be toggled from the Built-in section.
+- "Clear All" removes all ArcGIS selections currently added from this panel.
+
+---
+
 ## Data Source Behavior
 
 ### Preferred Source

@@ -116,6 +116,9 @@ Loaded completion messages appear when map sources become ready.
 
 ## Common Questions
 
+**Q: How do I add ArcGIS layers to the map?**
+A: In ArcGIS Upload Panel, expand a state and service, then check either the service checkbox (adds all leaf layers) or specific layer checkboxes. Wait for loading to complete; checked layers are rendered on the map.
+
 **Q: Why does selecting one sublayer still keep parent layer checked?**
 A: Parent layer remains active while any sublayer is selected.
 

@@ -85,6 +85,9 @@ Click **"Submit"** to create the card.
 
 ## Frequently Asked Questions
 
+**Q: How do I create cards?**
+A: Click **Create Card** (or **Add Card**), fill required fields (at minimum title, category, and location), then click **Submit**. For polygons and image overlays, complete the required map geometry before submitting.
+
 **Q: I see a "Title too long" error when submitting. What do I do?**
 A: The title exceeds the 255-character limit. Shorten the title and try again.
 

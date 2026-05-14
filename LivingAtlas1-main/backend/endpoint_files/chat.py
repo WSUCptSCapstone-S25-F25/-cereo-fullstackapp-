@@ -7,7 +7,6 @@ Generation: DeepSeek API (OpenAI-compatible). Set DEEPSEEK_API on Render.
 """
 
 import os
-import traceback
 from typing import Any
 
 import psycopg2
@@ -120,12 +119,16 @@ def ask(payload: ChatRequest):
     if not question:
         raise HTTPException(status_code=400, detail="Question must not be empty.")
 
-    api_key = os.environ.get("DEEPSEEK_API")
+    raw_api_key = os.environ.get("DEEPSEEK_API", "")
+    api_key = raw_api_key.strip()
     if not api_key:
         raise HTTPException(
             status_code=503,
             detail="Chatbot is not configured (missing DEEPSEEK_API). Please contact the administrator.",
         )
+    if raw_api_key != api_key:
+        # Render env vars sometimes include trailing newline/space from copy-paste.
+        print("[chat] Warning: DEEPSEEK_API contained leading/trailing whitespace; sanitized automatically.")
 
     context = get_relevant_docs(question)
     if context:
@@ -168,12 +171,20 @@ def ask(payload: ChatRequest):
             f"message={str(e)}",
         )
         if getattr(e, "__cause__", None):
-            print(f"[chat] DeepSeek cause: {repr(e.__cause__)}")
-        print("[chat] DeepSeek traceback:\n" + traceback.format_exc())
+            print(f"[chat] DeepSeek cause type: {type(e.__cause__).__name__}")
 
         err_str = str(e)
         lowered = err_str.lower()
         status_code = getattr(e, "status_code", None)
+
+        if "illegal header value" in lowered:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "The chatbot is temporarily unavailable because the DeepSeek API key format is invalid "
+                    "(it may contain whitespace/newline). Please contact the administrator."
+                ),
+            ) from e
 
         if isinstance(e, (APIConnectionError, APITimeoutError)) or "connection error" in lowered or "timed out" in lowered:
             raise HTTPException(

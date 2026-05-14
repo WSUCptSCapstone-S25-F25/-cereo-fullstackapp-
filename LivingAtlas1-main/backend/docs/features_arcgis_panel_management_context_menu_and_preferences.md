@@ -33,6 +33,10 @@ Right-click context menu supports different actions by target type.
 - Learn more
 - Pin/Unpin (Auto-load)
 
+If you ask "what options are in right click menu for layer", the typical options are:
+- Learn more
+- Pin/Unpin (Auto-load)
+
 ### Sublayer target
 - Pin/Unpin (Auto-load)
 

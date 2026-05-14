@@ -18,6 +18,14 @@ Included features:
 ### Open
 Click service row action button (ellipsis / Learn more).
 
+### Quick User Answer
+If you ask "what can I do in service info modal", the main actions are:
+- Read service metadata
+- Open linked layers
+- Open external ArcGIS service page
+- Adjust per-service opacity
+- Apply/clear historical time filters
+
 ### Data Source
 Service metadata is fetched from ArcGIS REST and cached by service key.
 
@@ -37,6 +45,12 @@ Modal provides link to ArcGIS service page.
 
 ### Open
 From service info modal layer links, open a specific layer.
+
+### Quick User Answer
+If you ask "what can I do in layer info modal", the main actions are:
+- Read layer metadata (name, description, geometry, scale/visibility)
+- Review field/attachment support info (when available)
+- Open external ArcGIS layer page
 
 ### Data Source
 Layer metadata is fetched from ArcGIS REST and cached by service-layer key.
