@@ -619,11 +619,13 @@ function CustomLayersPanel({
         });
     }, [mapInstance]);
 
+    const INFO_MODAL_WIDTH = 380;
+
     const getInfoModalStyle = () => {
         const panelEl = panelRootRef.current;
         if (!panelEl || typeof window === 'undefined') return undefined;
         const rect = panelEl.getBoundingClientRect();
-        const modalWidth = 380;
+        const modalWidth = INFO_MODAL_WIDTH;
         const left = Math.min(rect.right + 2, window.innerWidth - modalWidth - 8);
         const top = Math.max(8, rect.top);
         const maxHeight = Math.max(240, window.innerHeight - rect.top - 16);
@@ -631,6 +633,24 @@ function CustomLayersPanel({
             top: `${top}px`,
             left: `${left}px`,
             maxHeight: `${maxHeight}px`,
+        };
+    };
+
+    const getLayerInfoModalStyle = () => {
+        const serviceModalStyle = getInfoModalStyle();
+        if (!serviceModalStyle) return undefined;
+        if (!serviceInfoOpenKey) return serviceModalStyle;
+
+        const serviceLeft = Number.parseFloat(serviceModalStyle.left);
+        const serviceTop = Number.parseFloat(serviceModalStyle.top);
+        if (Number.isNaN(serviceLeft) || Number.isNaN(serviceTop)) {
+            return serviceModalStyle;
+        }
+
+        return {
+            ...serviceModalStyle,
+            left: `${serviceLeft + INFO_MODAL_WIDTH}px`,
+            top: `${serviceTop}px`,
         };
     };
 
@@ -1844,7 +1864,7 @@ function CustomLayersPanel({
 
             {/* Layer Info Modal */}
             {layerInfoOpen && (
-                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
+                <div className="arcgis-service-info-modal" style={getLayerInfoModalStyle()}>
                     <div className="arcgis-service-info-modal-header">
                         <strong>Layer Info: {layerInfoOpen.layerName}</strong>
                         <button
@@ -1978,17 +1998,32 @@ function CustomLayersPanel({
                                     })()}
 
                                     {/* Child layers links */}
-                                    {info.subLayerIds && info.subLayerIds.length > 0 && (() => {
+                                    {(() => {
                                         const rawLayers = serviceLayers[layerInfoOpen.serviceKey] || [];
-                                        const childLayers = info.subLayerIds
-                                            .map(id => rawLayers.find(l => l.id === id))
-                                            .filter(l => l);
-                                        
+                                        const childFromIds = Array.isArray(info.subLayerIds)
+                                            ? info.subLayerIds
+                                                .map(id => rawLayers.find(l => l.id === id) || { id, name: `Layer ${id}` })
+                                            : [];
+                                        const childFromSubLayers = Array.isArray(info.subLayers)
+                                            ? info.subLayers
+                                                .map(sl => {
+                                                    const subId = sl?.id;
+                                                    if (subId === undefined || subId === null) return null;
+                                                    return rawLayers.find(l => l.id === subId) || { id: subId, name: sl?.name || `Layer ${subId}` };
+                                                })
+                                                .filter(Boolean)
+                                            : [];
+                                        const dedupMap = new Map();
+                                        [...childFromIds, ...childFromSubLayers].forEach((layer) => {
+                                            dedupMap.set(layer.id, layer);
+                                        });
+                                        const childLayers = Array.from(dedupMap.values());
+
                                         if (childLayers.length > 0) {
                                             return (
                                                 <div className="arcgis-service-info-row">
                                                     <strong>Child Layers:</strong>
-                                                    <div style={{ marginTop: '8px', paddingLeft: '12px' }}>
+                                                    <div style={{ marginTop: '8px', paddingLeft: '12px', maxHeight: '180px', overflowY: 'auto', border: '1px solid #eee', borderRadius: '4px', padding: '8px 8px 2px 12px' }}>
                                                         {childLayers.map(child => (
                                                             <div key={child.id} style={{ marginBottom: '6px' }}>
                                                                 <button
