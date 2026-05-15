@@ -20,6 +20,65 @@ export default function ChatbotWidget({
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
+  const formatAssistantText = (rawText) => {
+    if (typeof rawText !== 'string') return '';
+
+    return rawText
+      .replace(/\r\n/g, '\n')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/([^\n])\s(\d+\.\s)/g, '$1\n$2')
+      .replace(/([^\n])\s([\-*]\s)/g, '$1\n$2')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
+
+  const renderInlineFormattedText = (text, keyPrefix) => {
+    const boldParts = String(text).split(/(\*\*[^*]+\*\*)/g);
+    const nodes = [];
+
+    boldParts.forEach((boldPart, boldIndex) => {
+      const boldMatch = boldPart.match(/^\*\*([^*]+)\*\*$/);
+      if (boldMatch) {
+        nodes.push(
+          <strong key={`${keyPrefix}-b-${boldIndex}`}>{boldMatch[1]}</strong>
+        );
+        return;
+      }
+
+      const italicParts = boldPart.split(/(\*[^*]+\*)/g);
+      italicParts.forEach((italicPart, italicIndex) => {
+        const italicMatch = italicPart.match(/^\*([^*]+)\*$/);
+        if (italicMatch) {
+          nodes.push(
+            <em key={`${keyPrefix}-i-${boldIndex}-${italicIndex}`}>{italicMatch[1]}</em>
+          );
+        } else if (italicPart) {
+          nodes.push(
+            <React.Fragment key={`${keyPrefix}-t-${boldIndex}-${italicIndex}`}>
+              {italicPart}
+            </React.Fragment>
+          );
+        }
+      });
+    });
+
+    return nodes;
+  };
+
+  const renderMessageText = (msg, index) => {
+    if (msg.role !== 'assistant') {
+      return msg.text;
+    }
+
+    const lines = String(msg.text).split('\n');
+    return lines.map((line, lineIndex) => (
+      <React.Fragment key={`msg-${index}-line-${lineIndex}`}>
+        {renderInlineFormattedText(line, `msg-${index}-line-${lineIndex}`)}
+        {lineIndex < lines.length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
+
   const setIsOpen = (next) => {
     const resolved = typeof next === 'function' ? next(isOpen) : next;
     if (typeof controlledIsOpen !== 'boolean') {
@@ -62,7 +121,7 @@ export default function ChatbotWidget({
         history: messages.slice(-6),
       });
       const answer = res.data?.answer ?? 'Sorry, I couldn\'t get a response.';
-      setMessages(prev => [...prev, { role: 'assistant', text: answer }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: formatAssistantText(answer) }]);
     } catch (err) {
       const status = err?.response?.status;
       const detail = err?.response?.data?.detail;
@@ -76,7 +135,7 @@ export default function ChatbotWidget({
       }
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: errorText },
+        { role: 'assistant', text: formatAssistantText(errorText) },
       ]);
     } finally {
       setLoading(false);
@@ -140,7 +199,7 @@ export default function ChatbotWidget({
               key={i}
               className={`chatbot-widget__msg chatbot-widget__msg--${msg.role}`}
             >
-              {msg.text}
+              {renderMessageText(msg, i)}
             </div>
           ))}
           {loading && (
