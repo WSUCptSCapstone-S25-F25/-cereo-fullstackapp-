@@ -2080,6 +2080,7 @@ function ArcgisUploadPanel({
             onSublayerCheckbox={handleSublayerCheckbox}
             onContextMenu={handleContextMenu}
             depth={depth}
+            layerInfoOpen={layerInfoOpen}
         />
     );
 
@@ -2643,7 +2644,7 @@ function ArcgisUploadPanel({
                                                                     return (
                                                                         <div key={service.key} className="tree-node" data-service-key={service.key}>
                                                                             <div
-                                                                                className={`upload-item${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
+                                                                                className={`upload-item${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}${serviceInfoOpenKey === service.key ? ' service-info-active' : ''}`}
                                                                                 style={searchResult?.matchedServiceKeys?.has(service.key) ? { fontWeight: 'bold' } : undefined}
                                                                                 data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                                                 onClick={() => handleServiceClick(service.key)}
@@ -2832,7 +2833,7 @@ function ArcgisUploadPanel({
                                         return (
                                             <div key={service.key} className="tree-node" data-service-key={service.key}>
                                                 <div
-                                                    className="upload-item"
+                                                    className={`upload-item${serviceInfoOpenKey === service.key ? ' service-info-active' : ''}`}
                                                     onClick={() => handleServiceClick(service.key)}
                                                     onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                                 >

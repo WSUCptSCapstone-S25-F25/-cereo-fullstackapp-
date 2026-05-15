@@ -1304,6 +1304,7 @@ function CustomLayersPanel({
             onLayerDragEnd={handleLayerDragEnd}
             draggingLayerId={dragLayerItem?.layerId}
             dragOverLayerId={dragOverLayerItem?.layerId}
+            layerInfoOpen={layerInfoOpen}
         />
     );
 
@@ -1609,7 +1610,7 @@ function CustomLayersPanel({
                                             return (
                                                 <div key={service.key} style={{ opacity: isServiceDragging ? 0.4 : 1 }}>
                                                     <div
-                                                        className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
+                                                        className={`custom-layers-item${isServiceDragOver ? ' drag-over' : ''}${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}${serviceInfoOpenKey === service.key ? ' service-info-active' : ''}`}
                                                         data-onboarding-target="custom-layers-service-row"
                                                         data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                         onClick={() => handleServiceClick(service.key)}

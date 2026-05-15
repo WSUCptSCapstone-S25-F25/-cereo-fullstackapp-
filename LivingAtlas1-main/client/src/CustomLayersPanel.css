@@ -200,7 +200,8 @@
     min-width: 0;
 }
 
-.custom-layers-item:hover {
+.custom-layers-item:hover,
+.custom-layers-item.service-info-active {
     background: #f2f7fc;
     border-color: #bfd0e2;
 }
@@ -424,7 +425,8 @@
 }
 
 .custom-layers-panel .upload-layer-group:hover,
-.custom-layers-panel .upload-layer-row:hover {
+.custom-layers-panel .upload-layer-row:hover,
+.upload-layer-row.layer-info-active {
     background: #e3eef9;
 }
 

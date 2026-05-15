@@ -261,7 +261,8 @@
     flex-wrap: wrap;
 }
 
-.upload-item:hover {
+.upload-item:hover,
+.upload-item.service-info-active {
     background: #f2f7fc;
     border-color: #bfd0e2;
 }
@@ -337,6 +338,12 @@
     font-size: 11px !important;
     margin-bottom: 0;
     gap: 3px;
+}
+
+.upload-layer-row:hover,
+.upload-layer-row.layer-info-active {
+    background: #f2f7fc;
+    border-color: #bfd0e2;
 }
 
 .upload-layer-row input[type="checkbox"] {

@@ -68,6 +68,7 @@ export function LayerTreeNode({
     onLayerDragEnd,
     draggingLayerId,
     dragOverLayerId,
+    layerInfoOpen,
 }) {
     const isGroupLayer = node.type === 'Group Layer';
     const expandKey = `${service.key}-${node.id}`;
@@ -88,7 +89,7 @@ export function LayerTreeNode({
 
         return (
             <div key={node.id}
-                className={`tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}${currentMatchId && currentMatchId === groupMatchId ? ' search-nav-current' : ''}`}
+                className={`tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}${currentMatchId && currentMatchId === groupMatchId ? ' search-nav-current' : ''}${layerInfoOpen?.serviceKey === service.key && layerInfoOpen?.layerId === node.id ? ' layer-info-active' : ''}`}
                 data-layer-id={node.id}
                 data-search-match-id={groupMatchId}
                 style={depth === 0 && draggingLayerId === node.id ? { opacity: 0.4 } : undefined}
@@ -151,6 +152,7 @@ export function LayerTreeNode({
                                 onSublayerCheckbox={onSublayerCheckbox}
                                 onContextMenu={onContextMenu}
                                 depth={depth + 1}
+                                layerInfoOpen={layerInfoOpen}
                             />
                         )}
                     </div>
@@ -171,7 +173,7 @@ export function LayerTreeNode({
     const leafMatchId = isBold(node.name) ? `layer-${service.key}-${node.id}` : undefined;
 
     return (
-        <li key={node.id} className={`upload-layer-row tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}${currentMatchId && currentMatchId === leafMatchId ? ' search-nav-current' : ''}`}
+        <li key={node.id} className={`upload-layer-row tree-node${depth === 0 && dragOverLayerId === node.id ? ' drag-over' : ''}${currentMatchId && currentMatchId === leafMatchId ? ' search-nav-current' : ''}${layerInfoOpen?.serviceKey === service.key && layerInfoOpen?.layerId === node.id ? ' layer-info-active' : ''}`}
             data-layer-id={node.id}
             data-search-match-id={leafMatchId}
             style={{
