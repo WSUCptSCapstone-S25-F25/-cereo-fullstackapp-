@@ -112,6 +112,7 @@ function CustomLayersPanel({
     const [layerInfoOpen, setLayerInfoOpen] = useState(null);
     const [layerInfoCache, setLayerInfoCache] = useState({});
     const [layerInfoLoading, setLayerInfoLoading] = useState(false);
+    const [layerFilter, setLayerFilter] = useState(null); // { field, operator, value } for current layer filtering
 
     const showStatus = (msg) => {
         setStatusMsg(msg);
@@ -1193,7 +1194,10 @@ function CustomLayersPanel({
             setLayerInfoLoading(false);
         }
     };
-    const closeLayerInfo = () => setLayerInfoOpen(null);
+    const closeLayerInfo = () => {
+        setLayerInfoOpen(null);
+        setLayerFilter(null); // Reset filter when closing modal
+    };
 
     // Save a layer to custom layers
     const handleSaveLayerToCustomLayers = async () => {
@@ -2042,6 +2046,143 @@ function CustomLayersPanel({
                                         }
                                         return null;
                                     })()}
+
+                                    {/* Filter UI */}
+                                    {info.fields && info.fields.length > 0 && (
+                                        <div className="arcgis-service-info-row" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                            <strong>Filter by Field:</strong>
+                                            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {/* Field selector */}
+                                                <select
+                                                    value={layerFilter?.field || ''}
+                                                    onChange={(e) => setLayerFilter({ ...layerFilter, field: e.target.value })}
+                                                    style={{
+                                                        padding: '6px 8px',
+                                                        borderRadius: '4px',
+                                                        border: '1px solid #ddd',
+                                                        fontSize: '13px',
+                                                        fontFamily: 'inherit'
+                                                    }}
+                                                >
+                                                    <option value="">Select a field...</option>
+                                                    {info.fields.map((field) => (
+                                                        <option key={field.name} value={field.name}>
+                                                            {field.alias || field.name} ({field.type})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                
+                                                {/* Operator selector */}
+                                                {layerFilter?.field && (
+                                                    <select
+                                                        value={layerFilter?.operator || '='}
+                                                        onChange={(e) => setLayerFilter({ ...layerFilter, operator: e.target.value })}
+                                                        style={{
+                                                            padding: '6px 8px',
+                                                            borderRadius: '4px',
+                                                            border: '1px solid #ddd',
+                                                            fontSize: '13px',
+                                                            fontFamily: 'inherit'
+                                                        }}
+                                                    >
+                                                        <option value="=">=</option>
+                                                        <option value="!=">!=</option>
+                                                        <option value=">">&gt;</option>
+                                                        <option value=">=">&gt;=</option>
+                                                        <option value="<">&lt;</option>
+                                                        <option value="<=">&lt;=</option>
+                                                        <option value="LIKE">LIKE</option>
+                                                        <option value="IN">IN</option>
+                                                    </select>
+                                                )}
+                                                
+                                                {/* Value input */}
+                                                {layerFilter?.field && (
+                                                    <input
+                                                        type="text"
+                                                        placeholder={layerFilter?.operator === 'IN' ? 'Comma-separated values' : 'Enter value...'}
+                                                        value={layerFilter?.value || ''}
+                                                        onChange={(e) => setLayerFilter({ ...layerFilter, value: e.target.value })}
+                                                        style={{
+                                                            padding: '6px 8px',
+                                                            borderRadius: '4px',
+                                                            border: '1px solid #ddd',
+                                                            fontSize: '13px',
+                                                            fontFamily: 'inherit'
+                                                        }}
+                                                    />
+                                                )}
+                                                
+                                                {/* Apply/Clear buttons */}
+                                                {layerFilter?.field && layerFilter?.value && (
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <button
+                                                            type="button"
+                                                            style={{
+                                                                flex: 1,
+                                                                padding: '6px 10px',
+                                                                backgroundColor: '#28a745',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '13px',
+                                                                fontWeight: '500'
+                                                            }}
+                                                            onClick={() => {
+                                                                const field = layerFilter.field;
+                                                                const operator = layerFilter.operator || '=';
+                                                                let value = layerFilter.value;
+                                                                
+                                                                // Build where clause
+                                                                let whereClause = '';
+                                                                if (operator === 'IN') {
+                                                                    const values = value.split(',').map(v => `'${v.trim()}'`).join(',');
+                                                                    whereClause = `${field} IN (${values})`;
+                                                                } else if (operator === 'LIKE') {
+                                                                    whereClause = `${field} LIKE '%${value}%'`;
+                                                                } else if (['<', '>', '<=', '>=', '=', '!='].includes(operator)) {
+                                                                    // Check if value is numeric
+                                                                    if (!isNaN(value) && value.trim() !== '') {
+                                                                        whereClause = `${field}${operator}${value}`;
+                                                                    } else {
+                                                                        whereClause = `${field}${operator}'${value}'`;
+                                                                    }
+                                                                }
+                                                                
+                                                                if (whereClause) {
+                                                                    console.log('[CustomLayersPanel] Applying filter:', whereClause);
+                                                                    showStatus(`Filter applied: ${whereClause}`);
+                                                                }
+                                                            }}
+                                                        >
+                                                            Apply Filter
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            style={{
+                                                                flex: 1,
+                                                                padding: '6px 10px',
+                                                                backgroundColor: '#6c757d',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '13px',
+                                                                fontWeight: '500'
+                                                            }}
+                                                            onClick={() => {
+                                                                setLayerFilter(null);
+                                                                showStatus('Filter cleared');
+                                                            }}
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Link to the actual layer page and Save button */}
                                     <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
