@@ -7,6 +7,12 @@ function ChangelogHistory() {
             <h1>Update History</h1>
             <div className="changelog-history-body">
 
+                <h3>Update Date: 5/15/2026</h3>
+                <p>Improved chatbot response formatting and style, making answers cleaner, more structured, and easier to read.</p>
+                <p>Refactored the left sidebar Search Panel to support searching across homepage features and jumping directly to trigger matching functions.</p>
+                <p>Fixed an issue where user preferences could reset after backend restart; preferences are now persisted in the database reliably.</p>
+                <hr />
+
                 <h3>Update Date: 5/14/2026</h3>
                 <p>Fixed the Living Atlas Helper Chatbot API issues so the chatbot is now operational.</p>
                 <p>Improved the chatbot knowledge base content to provide better user-facing answers.</p>

@@ -14,10 +14,10 @@ function ChangelogModal({ isOpen, onClose }) {
                 <button className="changelog-modal-close" onClick={onClose} aria-label="Close">x</button>
             </div>
             <div className="changelog-modal-body">
-                <h3>Update Date: 5/14/2026</h3>
-                <p>Fixed the Living Atlas Helper Chatbot API issues so the chatbot is now operational.</p>
-                <p>Improved the chatbot knowledge base content to provide better user-facing answers.</p>
-                <p>Added a chatbot display mode switch between floating widget and left sidebar panel.</p>
+                <h3>Update Date: 5/15/2026</h3>
+                <p>Improved chatbot response formatting and style, making answers cleaner, more structured, and easier to read.</p>
+                <p>Refactored the left sidebar Search Panel to support searching across homepage features and jumping directly to trigger matching functions.</p>
+                <p>Fixed an issue where user preferences could reset after backend restart; preferences are now persisted in the database reliably.</p>
 
             </div>
             <div className="changelog-modal-footer">

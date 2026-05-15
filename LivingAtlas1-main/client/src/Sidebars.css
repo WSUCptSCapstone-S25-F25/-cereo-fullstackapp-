@@ -224,8 +224,8 @@
     border: 1px solid #bfd0e2;
     border-left: none;
     border-radius: 0 6px 6px 0;
-    background: #ffffff;
-    color: #60758b;
+    background: #eef4fb;
+    color: #27425d;
     padding: 0 11px;
     cursor: pointer;
     font-size: 13px;
@@ -242,7 +242,7 @@
 }
 
 .search-mini-clear-button:hover {
-    background: #f2f7fc;
+    background: #dce8f5;
     border-color: #8eabc8;
     color: #1f3852;
 }
