@@ -278,6 +278,7 @@ def get_user_preferences(email: str):
         row = cur.fetchone()
 
         if not row or row[0] is None:
+            conn.commit()
             return {"email": email, "preferences": {}}
 
         preferences = row[0]
@@ -287,10 +288,15 @@ def get_user_preferences(email: str):
         if not isinstance(preferences, dict):
             preferences = {}
 
+        conn.commit()
         return {"email": email, "preferences": preferences}
     except HTTPException:
         raise
     except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         return {"error": str(e)}
 
 

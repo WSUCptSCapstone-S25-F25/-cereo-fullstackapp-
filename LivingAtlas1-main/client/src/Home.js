@@ -150,6 +150,7 @@ function Home(props) {
     const miniSearchInputRef = useRef(null);
     const isSearchModalOpenRef = useRef(false);
     const searchPanelOpenedByOnboardingRef = useRef(false);
+    const uiPrefsWriteInitializedRef = useRef(false);
 
     useEffect(() => {
         isSearchModalOpenRef.current = isSearchModalOpen;
@@ -860,6 +861,11 @@ function Home(props) {
 
     useEffect(() => {
         if (!props.isLoggedIn || !props.email || !preferencesLoaded) {
+            return;
+        }
+
+        if (!uiPrefsWriteInitializedRef.current) {
+            uiPrefsWriteInitializedRef.current = true;
             return;
         }
 
