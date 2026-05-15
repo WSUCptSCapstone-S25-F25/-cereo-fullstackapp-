@@ -39,7 +39,7 @@ import {
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faSquare } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faSquare, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import {
     useArcgisLoadingMessages,
@@ -2313,6 +2313,30 @@ function ArcgisUploadPanel({
         }
     };
 
+    // Save a layer to custom layers
+    const handleSaveLayerToCustomLayers = async () => {
+        if (!layerInfoOpen) return;
+        const email = localStorage.getItem('email') || '';
+        if (!email) {
+            setShowLoginPrompt(true);
+            return;
+        }
+        try {
+            const service = layerInfoOpen.service;
+            if (!service) return;
+            const layerToSave = {
+                ...service,
+                label: `${service.label} - ${layerInfoOpen.layerName}`,
+                layerId: layerInfoOpen.layerId
+            };
+            await saveCustomLayer(email, layerToSave);
+            showFinishedMessage(`Saved "${layerInfoOpen.layerName}" to Custom Layers`);
+            onCustomLayerSaved?.();
+        } catch (err) {
+            alert(`Failed to save: ${err.message}`);
+        }
+    };
+
     // Open service info modal (fetch & cache)
     const openServiceInfo = async (service) => {
         setServiceInfoOpenKey(service.key);
@@ -2354,7 +2378,8 @@ function ArcgisUploadPanel({
             serviceKey: service.key,
             layerId: layer.id,
             layerName: layer.name,
-            serviceUrl: service.url
+            serviceUrl: service.url,
+            service: service
         };
         setLayerInfoOpen(layerData);
         
@@ -2364,6 +2389,13 @@ function ArcgisUploadPanel({
         setLayerInfoLoading(true);
         try {
             const info = await fetchArcgisLayerInfo(service.url, layer.id);
+            if (serviceLegends[service.key] === undefined && service.url) {
+                fetchArcgisLegend(service.url).then(legend => {
+                    setServiceLegends(prev => ({ ...prev, [service.key]: legend || {} }));
+                }).catch(() => {
+                    setServiceLegends(prev => ({ ...prev, [service.key]: {} }));
+                });
+            }
             setLayerInfoCache(prev => ({ ...prev, [cacheKey]: info || {} }));
         } finally {
             setLayerInfoLoading(false);
@@ -2871,11 +2903,34 @@ function ArcgisUploadPanel({
                                         <div className="arcgis-service-info-empty">No information available.</div>
                                         {currentService && currentService.url && (
                                             <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                                <button
+                                                    type="button"
+                                                    className="arcgis-service-info-save-btn"
+                                                    onClick={handleSaveToCustomLayers}
+                                                    title="Save to Custom Layers"
+                                                    style={{
+                                                        padding: '6px 10px',
+                                                        backgroundColor: '#1976d2',
+                                                        color: '#fff',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        fontWeight: '500',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        whiteSpace: 'nowrap'
+                                                    }}
+                                                >
+                                                    <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                                                    Save
+                                                </button>
                                                 <a 
                                                     href={currentService.url} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
-                                                    style={{ color: '#1976d2', textDecoration: 'none' }}
+                                                    style={{ color: '#1976d2', textDecoration: 'none', fontSize: '13px' }}
                                                 >
                                                     View ArcGIS Service Page →
                                                 </a>
@@ -3262,11 +3317,35 @@ function ArcgisUploadPanel({
                                     {/* Add the ArcGIS service page link at the bottom */}
                                     {currentService && currentService.url && (
                                         <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                            <button
+                                                type="button"
+                                                className="arcgis-service-info-save-btn"
+                                                onClick={handleSaveToCustomLayers}
+                                                title="Save to Custom Layers"
+                                                style={{
+                                                    padding: '6px 10px',
+                                                    backgroundColor: '#1976d2',
+                                                    color: '#fff',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '13px',
+                                                    fontWeight: '500',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    whiteSpace: 'nowrap',
+                                                    marginBottom: '12px'
+                                                }}
+                                            >
+                                                <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                                                Save
+                                            </button>
                                             <a 
                                                 href={currentService.url} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                style={{ color: '#1976d2', textDecoration: 'none' }}
+                                                style={{ color: '#1976d2', textDecoration: 'none', fontSize: '13px' }}
                                             >
                                                 View ArcGIS Service Page →
                             </a>
@@ -3379,14 +3458,116 @@ function ArcgisUploadPanel({
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Legend display */}
+                                    {(() => {
+                                        const legend = serviceLegends[layerInfoOpen.serviceKey];
+                                        if (legend && legend.layers) {
+                                            const legendLayer = legend.layers.find(l => l.layerId === layerInfoOpen.layerId);
+                                            if (legendLayer && legendLayer.legend && legendLayer.legend.length > 0) {
+                                                return (
+                                                    <div className="arcgis-service-info-row">
+                                                        <strong>Legend:</strong>
+                                                        <div style={{ marginTop: '8px', paddingLeft: '12px' }}>
+                                                            {legendLayer.legend.map((item, idx) => (
+                                                                <div key={idx} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                    {item.imageData && (
+                                                                        <img src={`data:image/png;base64,${item.imageData}`} alt={item.label} style={{ width: '20px', height: '20px' }} />
+                                                                    )}
+                                                                    <span style={{ fontSize: '13px' }}>{item.label || item.value || 'N/A'}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                        }
+                                        return null;
+                                    })()}
+
+                                    {/* Parent layer link */}
+                                    {info.parentLayerId !== undefined && info.parentLayerId !== -1 && (() => {
+                                        const rawLayers = serviceLayers[layerInfoOpen.serviceKey] || [];
+                                        const parentLayer = rawLayers.find(l => l.id === info.parentLayerId);
+                                        if (parentLayer) {
+                                            return (
+                                                <div className="arcgis-service-info-row">
+                                                    <strong>Parent Layer:</strong>
+                                                    <button
+                                                        type="button"
+                                                        className="arcgis-service-info-layer-link"
+                                                        onClick={() => openLayerInfo(layerInfoOpen.service, { id: parentLayer.id, name: parentLayer.name })}
+                                                        style={{ marginLeft: '8px' }}
+                                                    >
+                                                        {parentLayer.name}
+                                                    </button>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
+                                    {/* Child layers links */}
+                                    {info.subLayerIds && info.subLayerIds.length > 0 && (() => {
+                                        const rawLayers = serviceLayers[layerInfoOpen.serviceKey] || [];
+                                        const childLayers = info.subLayerIds
+                                            .map(id => rawLayers.find(l => l.id === id))
+                                            .filter(l => l);
+                                        
+                                        if (childLayers.length > 0) {
+                                            return (
+                                                <div className="arcgis-service-info-row">
+                                                    <strong>Child Layers:</strong>
+                                                    <div style={{ marginTop: '8px', paddingLeft: '12px' }}>
+                                                        {childLayers.map(child => (
+                                                            <div key={child.id} style={{ marginBottom: '6px' }}>
+                                                                <button
+                                                                    type="button"
+                                                                    className="arcgis-service-info-layer-link"
+                                                                    onClick={() => openLayerInfo(layerInfoOpen.service, { id: child.id, name: child.name })}
+                                                                >
+                                                                    {child.name}
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                     
-                                    {/* Link to the actual layer page */}
+                                    {/* Link to the actual layer page and Save button */}
                                     <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                        <button
+                                            type="button"
+                                            className="arcgis-service-info-save-btn"
+                                            onClick={handleSaveLayerToCustomLayers}
+                                            title="Save to Custom Layers"
+                                            style={{
+                                                padding: '6px 10px',
+                                                backgroundColor: '#1976d2',
+                                                color: '#fff',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '13px',
+                                                fontWeight: '500',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                whiteSpace: 'nowrap',
+                                                marginBottom: '12px'
+                                            }}
+                                        >
+                                            <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                                            Save
+                                        </button>
                                         <a 
                                             href={`${layerInfoOpen.serviceUrl}/${layerInfoOpen.layerId}`} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
-                                            style={{ color: '#1976d2', textDecoration: 'none' }}
+                                            style={{ color: '#1976d2', textDecoration: 'none', fontSize: '13px' }}
                                         >
                                             View ArcGIS Layer Page →
                                         </a>
