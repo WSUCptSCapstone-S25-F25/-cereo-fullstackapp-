@@ -145,6 +145,7 @@ function Home(props) {
     const [sidebarSearchRequestId, setSidebarSearchRequestId] = useState(0);
 
     const [miniSearchTerm, setMiniSearchTerm] = useState('');
+    const [miniFeatureResults, setMiniFeatureResults] = useState([]);
     const miniSearchInputRef = useRef(null);
 
     useEffect(() => {
@@ -153,17 +154,561 @@ function Home(props) {
         }
     }, [isSearchModalOpen]);
 
-    useEffect(() => {
-        setMiniSearchTerm(searchCondition || '');
-    }, [searchCondition]);
+    const triggerAndHighlight = (selector, fallbackAction) => {
+        const target = document.querySelector(selector);
+        if (target) {
+            target.click();
+            target.focus({ preventScroll: false });
+            target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            target.classList.add('feature-search-hit');
+            window.setTimeout(() => {
+                target.classList.remove('feature-search-hit');
+            }, 900);
+            return;
+        }
+
+        if (typeof fallbackAction === 'function') {
+            fallbackAction();
+        }
+    };
+
+    const highlightElement = (target) => {
+        if (!target) return;
+        target.focus({ preventScroll: false });
+        target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        target.classList.add('feature-search-hit');
+        window.setTimeout(() => {
+            target.classList.remove('feature-search-hit');
+        }, 900);
+    };
+
+    const clickElementByTitle = ({
+        titles,
+        rootSelector,
+        ensureOpen,
+        retries = 10,
+        delay = 120,
+    }) => {
+        const titleList = Array.isArray(titles) ? titles : [titles];
+        const normalizedTitles = titleList.map(title => String(title || '').toLowerCase());
+
+        if (typeof ensureOpen === 'function') {
+            ensureOpen();
+        }
+
+        const attempt = (remaining) => {
+            const root = rootSelector ? document.querySelector(rootSelector) : document;
+            if (!root) {
+                if (remaining > 0) {
+                    window.setTimeout(() => attempt(remaining - 1), delay);
+                }
+                return;
+            }
+
+            const target = Array.from(root.querySelectorAll('button[title], a[title]')).find((element) => {
+                const title = (element.getAttribute('title') || '').toLowerCase();
+                return normalizedTitles.includes(title);
+            });
+
+            if (target) {
+                target.click();
+                highlightElement(target);
+                return;
+            }
+
+            if (remaining > 0) {
+                window.setTimeout(() => attempt(remaining - 1), delay);
+            }
+        };
+
+        attempt(retries);
+    };
+
+    const clickElementBySelector = ({ selector, ensureOpen, retries = 10, delay = 120 }) => {
+        if (typeof ensureOpen === 'function') {
+            ensureOpen();
+        }
+
+        const attempt = (remaining) => {
+            const target = document.querySelector(selector);
+            if (target) {
+                target.click();
+                highlightElement(target);
+                return;
+            }
+
+            if (remaining > 0) {
+                window.setTimeout(() => attempt(remaining - 1), delay);
+            }
+        };
+
+        attempt(retries);
+    };
+
+    const clickElementByTitleContains = ({ containsText, rootSelector, ensureOpen, retries = 10, delay = 120 }) => {
+        const targetText = String(containsText || '').toLowerCase();
+
+        if (typeof ensureOpen === 'function') {
+            ensureOpen();
+        }
+
+        const attempt = (remaining) => {
+            const root = rootSelector ? document.querySelector(rootSelector) : document;
+            if (!root) {
+                if (remaining > 0) {
+                    window.setTimeout(() => attempt(remaining - 1), delay);
+                }
+                return;
+            }
+
+            const target = Array.from(root.querySelectorAll('button[title], a[title]')).find((element) => {
+                const title = (element.getAttribute('title') || '').toLowerCase();
+                return title.includes(targetText);
+            });
+
+            if (target) {
+                target.click();
+                highlightElement(target);
+                return;
+            }
+
+            if (remaining > 0) {
+                window.setTimeout(() => attempt(remaining - 1), delay);
+            }
+        };
+
+        attempt(retries);
+    };
+
+    const clickBasemapStyle = (styleLabel) => {
+        setIsBasemapOpen(true);
+
+        const targetLabel = String(styleLabel || '').toLowerCase();
+        const attempt = (remaining = 10) => {
+            const panel = document.querySelector('.basemap-switcher-panel');
+            if (!panel) {
+                if (remaining > 0) {
+                    window.setTimeout(() => attempt(remaining - 1), 120);
+                }
+                return;
+            }
+
+            const item = Array.from(panel.querySelectorAll('.basemap-switcher-item')).find((element) => {
+                const label = element.querySelector('.basemap-switcher-label')?.textContent?.trim()?.toLowerCase() || '';
+                return label === targetLabel;
+            });
+
+            if (item) {
+                item.click();
+                highlightElement(item);
+                return;
+            }
+
+            if (remaining > 0) {
+                window.setTimeout(() => attempt(remaining - 1), 120);
+            }
+        };
+
+        attempt();
+    };
+
+    const ensureCardPanelOpen = () => setIsCollapsed(false);
+    const ensureUploadPanelOpen = () => {
+        setIsUploadPanelOpen(true);
+        setIsCustomLayerPanelOpen(false);
+    };
+    const ensureCustomLayersPanelOpen = () => {
+        setIsCustomLayerPanelOpen(true);
+        setIsUploadPanelOpen(false);
+    };
+    const ensureBasemapPanelOpen = () => setIsBasemapOpen(true);
+
+    const getFeatureCatalog = () => ([
+        // Global / left sidebar functions
+        {
+            id: 'add-card',
+            label: 'Add Card',
+            keywords: ['add', 'add card', 'create card', 'new card', 'create card modal', 'card form'],
+            action: () => {
+                ensureCardPanelOpen();
+                window.dispatchEvent(new CustomEvent('atlas:open-create-card-modal'));
+            },
+        },
+        {
+            id: 'view-all-cards',
+            label: 'View All Cards',
+            keywords: ['view', 'view all cards', 'show cards', 'open cards', 'card container', 'cards panel', 'card list'],
+            action: () => ensureCardPanelOpen(),
+        },
+        {
+            id: 'hide-cards',
+            label: 'Hide Cards',
+            keywords: ['hide cards', 'close cards', 'collapse cards', 'close card panel'],
+            action: () => setIsCollapsed(true),
+        },
+        {
+            id: 'toggle-layers',
+            label: 'Toggle Layers',
+            keywords: ['layers', 'toggle layers', 'arcgis layers', 'gis layers', 'open layers'],
+            action: () => triggerAndHighlight('[data-onboarding-target="left-sidebar-gis"]', () => ensureUploadPanelOpen()),
+        },
+        {
+            id: 'custom-layers',
+            label: 'Custom Layers',
+            keywords: ['custom', 'custom layers', 'my layers', 'layer folder'],
+            action: () => triggerAndHighlight('[data-onboarding-target="left-sidebar-customlayers"]', () => ensureCustomLayersPanelOpen()),
+        },
+        {
+            id: 'change-basemap',
+            label: 'Change Basemap',
+            keywords: ['basemap', 'change basemap', 'map style', 'background map'],
+            action: () => triggerAndHighlight('[data-onboarding-target="left-sidebar-basemap"]', () => ensureBasemapPanelOpen()),
+        },
+        {
+            id: 'chatbot',
+            label: 'Open Chatbot',
+            keywords: ['chat', 'chatbot', 'ai chat', 'assistant'],
+            action: () => {
+                if (chatbotDisplayMode === 'sidebar') {
+                    triggerAndHighlight('[data-onboarding-target="left-sidebar-chatbot"]', () => setIsChatbotOpen(v => !v));
+                    return;
+                }
+                setIsChatbotOpen(true);
+            },
+        },
+        {
+            id: 'whats-new',
+            label: "What's New",
+            keywords: ['what\'s new', 'whats new', 'changelog', 'release notes', 'updates'],
+            action: () => triggerAndHighlight('[data-onboarding-target="left-sidebar-changelog"]', () => setIsChangelogOpen(true)),
+        },
+        {
+            id: 'app-onboarding',
+            label: 'App Onboarding',
+            keywords: ['onboarding', 'tutorial', 'help tour', 'guide'],
+            action: () => triggerAndHighlight('[data-onboarding-target="left-sidebar-general-onboarding"]', () => setIsGeneralOnboardingOpen(true)),
+        },
+        {
+            id: 'search-features',
+            label: 'Feature Search',
+            keywords: ['search', 'feature search', 'find feature'],
+            action: () => setIsSearchModalOpen(true),
+        },
+
+        // Card container functions
+        {
+            id: 'card-help',
+            label: 'Card Panel Help',
+            keywords: ['card help', 'card panel help', 'cards help', 'manual card container'],
+            action: () => clickElementByTitle({ titles: 'Help', rootSelector: '#content-2', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-onboarding',
+            label: 'Card Panel Onboarding',
+            keywords: ['card onboarding', 'card tutorial', 'start onboarding cards'],
+            action: () => clickElementByTitle({ titles: 'Start onboarding', rootSelector: '#content-2', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-close-panel',
+            label: 'Close Card Panel',
+            keywords: ['close card panel', 'collapse card panel', 'hide card container'],
+            action: () => clickElementByTitle({ titles: 'Close panel', rootSelector: '#content-2', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-toggle-markers',
+            label: 'Toggle Markers',
+            keywords: ['markers', 'toggle markers', 'hide markers', 'show markers', 'card markers'],
+            action: () => clickElementByTitle({ titles: ['Hide Markers', 'Show Markers'], rootSelector: '#content-2', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-favorites-filter',
+            label: 'Favorites Filter',
+            keywords: ['favorites', 'favorite cards', 'bookmark filter', 'show favorited cards'],
+            action: () => clickElementByTitle({ titles: ['Show only favorited cards', 'Log in to use favorites filter'], rootSelector: '#content-2', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-scope-toggle',
+            label: 'Scope Toggle',
+            keywords: ['scope', 'in view', 'all cards', 'view scope', 'filter by map view'],
+            action: () => clickElementBySelector({ selector: '#content-2 .card-toolbar-button--scope', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-view-mode',
+            label: 'Grid/List View Toggle',
+            keywords: ['grid view', 'list view', 'view mode', 'card layout', 'toggle list grid'],
+            action: () => clickElementByTitle({ titles: ['Grid View', 'List View'], rootSelector: '#content-2', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-sort',
+            label: 'Sort Cards',
+            keywords: ['sort cards', 'card sorting', 'order cards', 'sort dropdown'],
+            action: () => clickElementByTitle({ titles: 'Sort cards', rootSelector: '#content-2', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-filter',
+            label: 'Filter Cards',
+            keywords: ['filter cards', 'card filter', 'tag filter', 'category filter'],
+            action: () => clickElementByTitle({ titles: 'Filter cards', rootSelector: '#content-2', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-move-side',
+            label: 'Move Card Panel Side',
+            keywords: ['move panel left', 'move panel right', 'swap card panel side', 'card panel side'],
+            action: () => clickElementByTitle({ titles: ['Move panel to right', 'Move panel to left'], rootSelector: '#content-2', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-search',
+            label: 'Card Search',
+            keywords: ['card search', 'search cards', 'find cards', 'search in card container'],
+            action: () => clickElementByTitle({ titles: 'Search', rootSelector: '#content-2 .card-panel-searchbar', ensureOpen: ensureCardPanelOpen }),
+        },
+        {
+            id: 'card-clear-search',
+            label: 'Clear Card Search',
+            keywords: ['clear card search', 'reset card search', 'remove card keyword'],
+            action: () => clickElementByTitle({ titles: 'Clear Search', rootSelector: '#content-2 .card-panel-searchbar', ensureOpen: ensureCardPanelOpen }),
+        },
+
+        // Upload panel functions
+        {
+            id: 'upload-help',
+            label: 'Upload Panel Help',
+            keywords: ['upload panel help', 'arcgis panel help', 'gis help'],
+            action: () => clickElementByTitle({ titles: 'Help', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-close',
+            label: 'Close Upload Panel',
+            keywords: ['close upload panel', 'hide upload panel', 'close arcgis panel'],
+            action: () => clickElementBySelector({ selector: '.upload-panel .upload-panel-header-close-btn:not(.upload-panel-header-close-btn--help):not(.upload-panel-header-close-btn--play)', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-tutorial',
+            label: 'Upload Panel Tutorial',
+            keywords: ['upload tutorial', 'arcgis tutorial', 'gis tutorial'],
+            action: () => clickElementByTitle({ titles: 'Tutorial', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-search',
+            label: 'Upload Panel Search',
+            keywords: ['upload search', 'search services', 'search arcgis services', 'find layers'],
+            action: () => clickElementByTitle({ titles: 'Search', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-clear-search',
+            label: 'Clear Upload Search',
+            keywords: ['clear upload search', 'reset upload search', 'clear services search'],
+            action: () => clickElementByTitle({ titles: 'Clear Search', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-update-services',
+            label: 'Update ArcGIS Services Data',
+            keywords: ['update services', 'refresh services', 'sync arcgis services', 'fetch latest arcgis'],
+            action: () => clickElementByTitle({ titles: 'Update services data from ArcGIS REST servers', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-clear-all-layers',
+            label: 'Clear All Upload Layers',
+            keywords: ['clear all layers', 'uncheck all layers', 'remove all upload layers'],
+            action: () => clickElementByTitle({ titles: 'Uncheck all layers on map', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-prev-match',
+            label: 'Previous Upload Match',
+            keywords: ['previous match upload', 'prev search match upload', 'navigate previous upload result'],
+            action: () => clickElementByTitle({ titles: 'Previous match', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-next-match',
+            label: 'Next Upload Match',
+            keywords: ['next match upload', 'next search match upload', 'navigate next upload result'],
+            action: () => clickElementByTitle({ titles: 'Next match', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-back',
+            label: 'Upload Panel Back',
+            keywords: ['upload back', 'arcgis back', 'back breadcrumb upload'],
+            action: () => clickElementByTitle({ titles: 'Back', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-learn-more',
+            label: 'Upload Service Learn More',
+            keywords: ['upload learn more', 'service info', 'arcgis service details', 'open service info'],
+            action: () => clickElementByTitle({ titles: 'Learn more', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-open-state-folder',
+            label: 'Open Upload Folder/State',
+            keywords: ['open upload folder', 'open upload state', 'browse state services', 'click to open upload'],
+            action: () => clickElementByTitle({ titles: 'Click to open', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+        {
+            id: 'upload-load-state-services',
+            label: 'Load State Services',
+            keywords: ['load state services', 'load wa services', 'load id services', 'load or services'],
+            action: () => clickElementByTitleContains({ containsText: 'load', rootSelector: '.upload-panel', ensureOpen: ensureUploadPanelOpen }),
+        },
+
+        // Custom layers panel functions
+        {
+            id: 'custom-help',
+            label: 'Custom Layers Help',
+            keywords: ['custom layers help', 'custom panel help', 'layer help'],
+            action: () => clickElementByTitle({ titles: 'Help', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-close',
+            label: 'Close Custom Layers Panel',
+            keywords: ['close custom layers panel', 'hide custom layers panel', 'close custom panel'],
+            action: () => clickElementBySelector({ selector: '.custom-layers-panel .custom-layers-panel-close-btn:not(.custom-layers-panel-close-btn--help):not(.custom-layers-panel-close-btn--play)', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-tutorial',
+            label: 'Custom Layers Tutorial',
+            keywords: ['custom layers tutorial', 'custom panel tutorial', 'custom onboarding'],
+            action: () => clickElementByTitle({ titles: 'Tutorial', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-new-folder',
+            label: 'Create New Custom Folder',
+            keywords: ['new folder', 'create folder', 'add folder', 'custom folder'],
+            action: () => clickElementByTitle({ titles: 'New Folder', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-search',
+            label: 'Custom Layers Search',
+            keywords: ['custom search', 'search custom layers', 'find custom service'],
+            action: () => clickElementByTitle({ titles: 'Search', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-clear-search',
+            label: 'Clear Custom Search',
+            keywords: ['clear custom search', 'reset custom search', 'clear custom keyword'],
+            action: () => clickElementByTitle({ titles: 'Clear Search', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-clear-all-layers',
+            label: 'Clear All Custom Layers',
+            keywords: ['clear all custom layers', 'uncheck custom layers', 'remove custom layers from map'],
+            action: () => clickElementByTitle({ titles: 'Uncheck all layers on map', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-prev-match',
+            label: 'Previous Custom Match',
+            keywords: ['previous custom match', 'prev custom search result'],
+            action: () => clickElementByTitle({ titles: 'Previous match', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-next-match',
+            label: 'Next Custom Match',
+            keywords: ['next custom match', 'next custom search result'],
+            action: () => clickElementByTitle({ titles: 'Next match', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-back',
+            label: 'Custom Layers Back',
+            keywords: ['custom back', 'custom breadcrumb back', 'navigate custom folder back'],
+            action: () => clickElementByTitle({ titles: 'Back', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-reorder',
+            label: 'Reorder Custom Service',
+            keywords: ['drag to reorder', 'reorder custom services', 'sort custom services'],
+            action: () => clickElementByTitle({ titles: 'Drag to reorder', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+        {
+            id: 'custom-learn-more',
+            label: 'Custom Service Learn More',
+            keywords: ['custom learn more', 'custom service info', 'custom service details'],
+            action: () => clickElementByTitle({ titles: 'Learn more', rootSelector: '.custom-layers-panel', ensureOpen: ensureCustomLayersPanelOpen }),
+        },
+
+        // Basemap modal functions
+        {
+            id: 'basemap-help',
+            label: 'Basemap Help',
+            keywords: ['basemap help', 'map style help', 'basemap manual'],
+            action: () => clickElementByTitle({ titles: 'Help', rootSelector: '.basemap-switcher-panel', ensureOpen: ensureBasemapPanelOpen }),
+        },
+        {
+            id: 'basemap-tutorial',
+            label: 'Basemap Tutorial',
+            keywords: ['basemap tutorial', 'map style tutorial', 'basemap onboarding'],
+            action: () => clickElementByTitle({ titles: 'Tutorial', rootSelector: '.basemap-switcher-panel', ensureOpen: ensureBasemapPanelOpen }),
+        },
+        {
+            id: 'basemap-close',
+            label: 'Close Basemap Panel',
+            keywords: ['close basemap', 'hide basemap panel', 'dismiss map style panel'],
+            action: () => clickElementByTitle({ titles: 'Close', rootSelector: '.basemap-switcher-panel', ensureOpen: ensureBasemapPanelOpen }),
+        },
+        {
+            id: 'basemap-navigation-day',
+            label: 'Basemap: navigation-day-v1',
+            keywords: ['navigation day', 'navigation-day-v1', 'day map style', 'basemap navigation day'],
+            action: () => clickBasemapStyle('navigation-day-v1'),
+        },
+        {
+            id: 'basemap-navigation-night',
+            label: 'Basemap: navigation-night-v1',
+            keywords: ['navigation night', 'navigation-night-v1', 'night map style', 'basemap navigation night'],
+            action: () => clickBasemapStyle('navigation-night-v1'),
+        },
+        {
+            id: 'basemap-outdoors',
+            label: 'Basemap: outdoors-v12',
+            keywords: ['outdoors', 'outdoors-v12', 'terrain basemap', 'outdoor map style'],
+            action: () => clickBasemapStyle('outdoors-v12'),
+        },
+        {
+            id: 'basemap-satellite-streets',
+            label: 'Basemap: satellite-streets-v12',
+            keywords: ['satellite streets', 'satellite-streets-v12', 'hybrid basemap', 'satellite with labels'],
+            action: () => clickBasemapStyle('satellite-streets-v12'),
+        },
+        {
+            id: 'basemap-satellite',
+            label: 'Basemap: satellite-v9',
+            keywords: ['satellite', 'satellite-v9', 'imagery basemap', 'aerial map'],
+            action: () => clickBasemapStyle('satellite-v9'),
+        },
+        {
+            id: 'basemap-streets',
+            label: 'Basemap: streets-v12',
+            keywords: ['streets', 'streets-v12', 'street basemap', 'default basemap'],
+            action: () => clickBasemapStyle('streets-v12'),
+        },
+    ]);
+
+    const runFeatureSearch = (rawTerm) => {
+        const term = (rawTerm || '').trim().toLowerCase();
+        if (!term) {
+            setMiniFeatureResults([]);
+            return;
+        }
+
+        const results = getFeatureCatalog().filter(feature => {
+            const normalizedKeywords = feature.keywords.map(keyword => keyword.toLowerCase());
+            return normalizedKeywords.some(keyword => keyword.includes(term) || term.includes(keyword));
+        });
+        setMiniFeatureResults(results);
+    };
 
     const handleMiniSearch = (e) => {
         e.preventDefault();
-        const term = miniSearchTerm.trim().toLowerCase();
-        setSearchTriggerSource('sidebar-mini');
-        setSidebarSearchRequestId(prev => prev + 1);
-        setSearchCondition(term);
-        setIsCollapsed(false);
+        runFeatureSearch(miniSearchTerm);
+    };
+
+    const handleMiniSearchInputChange = (e) => {
+        const value = e.target.value;
+        setMiniSearchTerm(value);
+        runFeatureSearch(value);
+    };
+
+    const handleFeatureResultClick = (feature) => {
+        if (!feature || typeof feature.action !== 'function') return;
+        feature.action();
+        setIsSearchModalOpen(false);
     };
 
     const handleCardClick = (coords) => {
@@ -603,14 +1148,29 @@ function Home(props) {
                         ref={miniSearchInputRef}
                         type="text"
                         className="search-mini-input"
-                        placeholder="Search cards..."
+                        placeholder="Search homepage features..."
                         value={miniSearchTerm}
-                        onChange={e => setMiniSearchTerm(e.target.value)}
+                        onChange={handleMiniSearchInputChange}
                     />
                     <button type="submit" className="search-mini-button">
                         <FontAwesomeIcon icon={faSearch} />
                     </button>
                 </form>
+                <div className="search-mini-results" aria-live="polite">
+                    {!!miniSearchTerm.trim() && miniFeatureResults.length === 0 && (
+                        <div className="search-mini-results-empty">No features matched this keyword.</div>
+                    )}
+                    {miniFeatureResults.map((feature) => (
+                        <button
+                            key={feature.id}
+                            type="button"
+                            className="search-mini-result-item"
+                            onClick={() => handleFeatureResultClick(feature)}
+                        >
+                            {feature.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Main Map + Right Sidebar */}

@@ -86,6 +86,18 @@ function Content2(props) {
         return () => window.removeEventListener('map-point-tool-start', handler);
     }, [props.isLoggedIn]);
 
+    useEffect(() => {
+        const handler = () => {
+            if (!props.isLoggedIn) {
+                setShowLoginPrompt(true);
+                return;
+            }
+            openModal();
+        };
+        window.addEventListener('atlas:open-create-card-modal', handler);
+        return () => window.removeEventListener('atlas:open-create-card-modal', handler);
+    }, [props.isLoggedIn]);
+
     function useDidMount() {
         const mountRef = useRef(false);
         useEffect(() => { mountRef.current = true }, []);
