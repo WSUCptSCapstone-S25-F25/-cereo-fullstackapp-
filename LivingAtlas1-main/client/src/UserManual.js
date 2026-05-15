@@ -65,6 +65,7 @@ const ADD_CARDS_FROM_MAP_SECTIONS = [
 
 const SECTIONS = [
   { id: 'home',          label: '🏠  Overview' },
+  { id: 'feature-search-panel', label: 'Feature Search Panel' },
   { id: 'card-container', label: 'Card Container' },
   { id: 'toolbar',        label: 'Card Panel Toolbar' },
   { id: 'add-card',       label: 'Card Creation Form' },
@@ -165,6 +166,7 @@ function UserManual() {
             >
               <span className="um-home-card-title">{s.label}</span>
               {{
+                'feature-search-panel': 'Use the left sidebar search panel to locate app features by keyword and launch them directly.',
                 'card-container': 'How cards are displayed, navigated, pinned, and favorited.',
                 'toolbar':        'Tools for adding cards, sorting, filtering, and switching views.',
                 'detail-view':    'The full-screen modal with editing, images, files, and ArcGIS layers.',
@@ -181,6 +183,100 @@ function UserManual() {
               }[s.id]}
             </button>
           ))}
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'feature-search-panel' && (
+      <section className="um-section">
+        <h2>Feature Search Panel</h2>
+        <p className="um-section-desc">
+          The Feature Search Panel slides out from the left sidebar search icon. It helps
+          you quickly find actions across the homepage by keyword, then run those actions
+          directly from the result list.
+        </p>
+
+        <div className="um-feature-list">
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ alignItems: 'stretch', minWidth: '280px' }}>
+                <div style={{
+                  background: 'linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%)',
+                  border: '1px solid #d8e1ea',
+                  borderRadius: '10px',
+                  padding: '10px',
+                  width: '100%',
+                  boxShadow: '0 6px 18px rgba(16, 33, 54, 0.15)'
+                }}>
+                  <div className="search-mini-form" style={{ marginBottom: '8px' }}>
+                    <input className="search-mini-input" value="add" readOnly />
+                    <button type="button" className="search-mini-button" style={{ pointerEvents: 'none' }}>
+                      <FontAwesomeIcon icon={faSearch} />
+                    </button>
+                    <button type="button" className="search-mini-clear-button" style={{ pointerEvents: 'none' }}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                  <div className="search-mini-results">
+                    <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>
+                      Add Card
+                    </button>
+                    <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>
+                      Add Single Point
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Panel Layout</p>
+              <p className="um-feature-desc">
+                The panel contains a keyword input, a <strong>Search</strong> button, a
+                <strong> Clear Search</strong> button, and a clickable results list below.
+                It shares the same visual style as other side panels for consistency.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px' }}>
+                <div className="search-mini-results" style={{ maxHeight: 'none' }}>
+                  <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>View All Cards</button>
+                  <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>Upload Panel Search</button>
+                  <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>Basemap: streets-v12</button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Keyword Search</p>
+              <p className="um-feature-desc">
+                Enter words like <strong>view</strong>, <strong>add</strong>,
+                <strong> basemap</strong>, or <strong>search</strong> to match mapped
+                feature keywords. Results update and can be launched directly.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ gap: '10px' }}>
+                <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>
+                  Add Card
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Run Feature by Clicking Result</p>
+              <p className="um-feature-desc">
+                Clicking a result immediately runs the mapped action. Example:
+                <strong> Add Card</strong> opens the Create Card modal;
+                <strong> View All Cards</strong> opens the card container.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
       )}

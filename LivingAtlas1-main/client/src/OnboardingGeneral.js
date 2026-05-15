@@ -66,7 +66,13 @@ const STEP_DEFINITIONS = [
     {
         selector: '[data-onboarding-target="left-sidebar-search"]',
         title: 'Search Button',
-        description: 'Open mini search to quickly find cards by keyword.',
+        description: 'Open mini search to quickly find app features by keyword.',
+        placement: 'right',
+    },
+    {
+        selector: '[data-onboarding-target="left-sidebar-search-panel"]',
+        title: 'Search Panel',
+        description: 'Type a keyword to find app features, click Search to list matches, and click any result to run that feature directly.',
         placement: 'right',
     },
     {
@@ -228,6 +234,16 @@ function GeneralOnboarding({ isOpen, onClose }) {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, goPrev, goNext, onClose]);
+
+    useEffect(() => {
+        if (!activeStep) return;
+        window.dispatchEvent(new CustomEvent('atlas:general-onboarding-step-change', {
+            detail: {
+                selector: activeStep.selector,
+                isOpen,
+            },
+        }));
+    }, [activeStep, isOpen]);
 
     if (!isOpen || !activeStep) return null;
 

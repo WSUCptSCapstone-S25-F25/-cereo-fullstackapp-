@@ -5,6 +5,7 @@ import Content2 from './Content2';
 import Content1 from './Content1';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import { faAngleDoubleLeft, faAngleDoubleRight } from '@fortawesome/free-solid-svg-icons';
 import { faClone } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
@@ -147,12 +148,50 @@ function Home(props) {
     const [miniSearchTerm, setMiniSearchTerm] = useState('');
     const [miniFeatureResults, setMiniFeatureResults] = useState([]);
     const miniSearchInputRef = useRef(null);
+    const isSearchModalOpenRef = useRef(false);
+    const searchPanelOpenedByOnboardingRef = useRef(false);
+
+    useEffect(() => {
+        isSearchModalOpenRef.current = isSearchModalOpen;
+    }, [isSearchModalOpen]);
 
     useEffect(() => {
         if (isSearchModalOpen && miniSearchInputRef.current) {
             miniSearchInputRef.current.focus();
         }
     }, [isSearchModalOpen]);
+
+    useEffect(() => {
+        const handler = (event) => {
+            const selector = event?.detail?.selector;
+            const isOpen = !!event?.detail?.isOpen;
+            const isSearchPanelStep = selector === '[data-onboarding-target="left-sidebar-search-panel"]';
+
+            if (!isOpen) {
+                if (searchPanelOpenedByOnboardingRef.current) {
+                    setIsSearchModalOpen(false);
+                    searchPanelOpenedByOnboardingRef.current = false;
+                }
+                return;
+            }
+
+            if (isSearchPanelStep) {
+                if (!isSearchModalOpenRef.current) {
+                    setIsSearchModalOpen(true);
+                    searchPanelOpenedByOnboardingRef.current = true;
+                }
+                return;
+            }
+
+            if (searchPanelOpenedByOnboardingRef.current) {
+                setIsSearchModalOpen(false);
+                searchPanelOpenedByOnboardingRef.current = false;
+            }
+        };
+
+        window.addEventListener('atlas:general-onboarding-step-change', handler);
+        return () => window.removeEventListener('atlas:general-onboarding-step-change', handler);
+    }, []);
 
     const triggerAndHighlight = (selector, fallbackAction) => {
         const target = document.querySelector(selector);
@@ -705,6 +744,14 @@ function Home(props) {
         runFeatureSearch(value);
     };
 
+    const handleMiniSearchClear = () => {
+        setMiniSearchTerm('');
+        setMiniFeatureResults([]);
+        if (miniSearchInputRef.current) {
+            miniSearchInputRef.current.focus();
+        }
+    };
+
     const handleFeatureResultClick = (feature) => {
         if (!feature || typeof feature.action !== 'function') return;
         feature.action();
@@ -1007,7 +1054,11 @@ function Home(props) {
         <div className="home-container">
             <div className={`left-sidebar ${isSidebarOpen ? 'open' : ''}`} data-onboarding-target="left-sidebar-root">
                 {/* Left Sidebar Search Button */}
-                <button className="left-sidebar-search-button" data-onboarding-target="left-sidebar-search" onClick={toggleSearchModal}>
+                <button
+                    className={`left-sidebar-search-button${isSearchModalOpen ? ' active' : ''}`}
+                    data-onboarding-target="left-sidebar-search"
+                    onClick={toggleSearchModal}
+                >
                     <FontAwesomeIcon icon={faSearch} />
                 </button>
 
@@ -1142,7 +1193,10 @@ function Home(props) {
             </div>
 
             {/* Mini Search Modal */}
-            <div className={`search-mini-modal${isSearchModalOpen ? ' search-mini-modal--open' : ''}`}>
+            <div
+                className={`search-mini-modal${isSearchModalOpen ? ' search-mini-modal--open' : ''}`}
+                data-onboarding-target="left-sidebar-search-panel"
+            >
                 <form className="search-mini-form" onSubmit={handleMiniSearch}>
                     <input
                         ref={miniSearchInputRef}
@@ -1154,6 +1208,15 @@ function Home(props) {
                     />
                     <button type="submit" className="search-mini-button">
                         <FontAwesomeIcon icon={faSearch} />
+                    </button>
+                    <button
+                        type="button"
+                        className="search-mini-clear-button"
+                        onClick={handleMiniSearchClear}
+                        title="Clear Search"
+                        aria-label="Clear Search"
+                    >
+                        <FontAwesomeIcon icon={faTimes} />
                     </button>
                 </form>
                 <div className="search-mini-results" aria-live="polite">
