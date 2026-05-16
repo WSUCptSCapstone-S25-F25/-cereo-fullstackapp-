@@ -1261,6 +1261,7 @@ function Home(props) {
                 setIsCollapsed={setIsCollapsed}
                 isSidebarOpen={isSidebarOpen}
                 isUploadPanelOpen={isUploadPanelOpen}
+                isCustomLayerPanelOpen={isCustomLayerPanelOpen}
                 selectedCardCoords={selectedCardCoords}
                 onMarkerCardSelect={setSelectedCardIdFromMap}
                 cardPanelWidth={cardPanelWidth}

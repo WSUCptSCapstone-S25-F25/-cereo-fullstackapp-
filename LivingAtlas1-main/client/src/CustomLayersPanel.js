@@ -17,7 +17,7 @@ import ArcgisRenameItem from './ArcgisRenameItem';
 import { useLayerContextMenu, LayerContextMenuPopup } from './LayerContextMenu';
 import './CustomLayersPanel.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faSearch, faFolderPlus, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faFloppyDisk, faEye } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import ClearAllLayersButton from './ClearAllLayersButton';
 import CustomLayersPanelOnboarding from './OnboardingCustomLayersPanel';
@@ -1374,16 +1374,6 @@ function CustomLayersPanel({
                         onKeyDown={e => { if (e.key === 'Enter') doSearch(); }}
                         placeholder={currentPath ? `Search in "${currentPath.includes('/') ? currentPath.slice(currentPath.lastIndexOf('/') + 1) : currentPath}"…` : 'Search folders, services, or layers…'}
                     />
-                    <select
-                        value={searchType}
-                        onChange={e => setSearchType(e.target.value)}
-                        className="upload-panel-searchbar-dropdown"
-                    >
-                        <option value="any">Any</option>
-                        <option value="folder">Folder</option>
-                        <option value="service">Service</option>
-                        <option value="layer">Layer</option>
-                    </select>
                     <button
                         className="search-btn upload-panel-searchbar-btn search"
                         title="Search"
@@ -1421,46 +1411,50 @@ function CustomLayersPanel({
                     />
                     <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
                 </div>
-
-                {/* Show only added to map */}
-                <div className="upload-panel-added-checkbox-row">
-                    <label>
-                        <input
-                            type="checkbox"
-                            checked={showAddedOnly}
-                            onChange={e => {
-                                setShowAddedOnly(e.target.checked);
-                                if (e.target.checked) {
-                                    const foldersWithAdded = [];
-                                    const servicesWithAdded = [];
-                                    folderNames.forEach(folder => {
-                                        const hasAdded = servicesByFolder[folder].some(service =>
-                                            (checkedLayerIds[service.key] || []).length > 0
-                                        );
-                                        if (hasAdded) foldersWithAdded.push(folder);
-                                        servicesByFolder[folder].forEach(service => {
-                                            if ((checkedLayerIds[service.key] || []).length > 0) {
-                                                servicesWithAdded.push(service.key);
-                                            }
+                <div className="upload-panel-controls-row">
+                    <div className="upload-panel-controls-actions">
+                        <button
+                            type="button"
+                            className={`clear-all-layers-btn clear-all-layers-btn--toggle${showAddedOnly ? ' is-active' : ''}`}
+                            onClick={() => {
+                                setShowAddedOnly(prev => {
+                                    const next = !prev;
+                                    if (next) {
+                                        const foldersWithAdded = [];
+                                        const servicesWithAdded = [];
+                                        folderNames.forEach(folder => {
+                                            const hasAdded = servicesByFolder[folder].some(service =>
+                                                (checkedLayerIds[service.key] || []).length > 0
+                                            );
+                                            if (hasAdded) foldersWithAdded.push(folder);
+                                            servicesByFolder[folder].forEach(service => {
+                                                if ((checkedLayerIds[service.key] || []).length > 0) {
+                                                    servicesWithAdded.push(service.key);
+                                                }
+                                            });
                                         });
-                                    });
-                                    setExpandedFolders(new Set(foldersWithAdded));
-                                    setExpandedServices(new Set(servicesWithAdded));
-                                } else {
-                                    setExpandedFolders(new Set());
-                                    setExpandedServices(new Set());
-                                    setExpandedLayers(new Set());
-                                }
+                                        setExpandedFolders(new Set(foldersWithAdded));
+                                        setExpandedServices(new Set(servicesWithAdded));
+                                    } else {
+                                        setExpandedFolders(new Set());
+                                        setExpandedServices(new Set());
+                                        setExpandedLayers(new Set());
+                                    }
+                                    return next;
+                                });
                             }}
-                            style={{ marginRight: 8 }}
+                            aria-pressed={showAddedOnly}
+                            title={showAddedOnly ? 'Show all services' : 'Show only services added to the map'}
+                        >
+                            <FontAwesomeIcon icon={faEye} />
+                            <span>{showAddedOnly ? 'Showing Added Only' : 'Show Added Only'}</span>
+                        </button>
+                        <ClearAllLayersButton
+                            onClick={handleClearAllLayers}
+                            disabled={!Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0)}
                         />
-                        Show only services added to map
-                    </label>
+                    </div>
                 </div>
-                <ClearAllLayersButton
-                    onClick={handleClearAllLayers}
-                    disabled={!Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0)}
-                />
             </div>
 
             {isLoading && (

@@ -39,7 +39,7 @@ import {
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faSquare, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faSquare, faFloppyDisk, faEye } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import {
     useArcgisLoadingMessages,
@@ -2138,41 +2138,6 @@ function ArcgisUploadPanel({
                     Searching… loading more results ({Object.keys(serviceLayersLoading).length} remaining)
                 </div>
             )}
-            <div className="upload-panel-added-checkbox-row">
-                <label>
-                    <input
-                        type="checkbox"
-                        checked={showAddedOnly}
-                        onChange={e => {
-                            setShowAddedOnly(e.target.checked);
-                            if (e.target.checked) {
-                                // Expand all folders and services that have added layers
-                                const foldersWithAdded = [];
-                                const servicesWithAdded = [];
-                                folderNames.forEach(folder => {
-                                    const hasAdded = servicesByFolder[folder].some(service =>
-                                        (checkedLayerIds[service.key] || []).length > 0
-                                    );
-                                    if (hasAdded) foldersWithAdded.push(folder);
-                                    servicesByFolder[folder].forEach(service => {
-                                        if ((checkedLayerIds[service.key] || []).length > 0) {
-                                            servicesWithAdded.push(service.key);
-                                        }
-                                    });
-                                });
-                                setExpandedFolders(new Set(foldersWithAdded));
-                                setExpandedServices(new Set(servicesWithAdded));
-                            } else {
-                                setExpandedFolders(new Set());
-                                setExpandedServices(new Set());
-                                setExpandedLayers(new Set());
-                            }
-                        }}
-                        style={{ marginRight: 8 }}
-                    />
-                    Show only services added to map
-                </label>
-            </div>
         </div>
         );
     };
@@ -2527,7 +2492,7 @@ function ArcgisUploadPanel({
                                     value={layerOpacity}
                                     onChange={e => handleOpacityChange(parseFloat(e.target.value))}
                                     className="upload-panel-opacity-slider"
-                                    style={{ background: `linear-gradient(to right, #1976d2 ${layerOpacity * 100}%, #d0d0d0 ${layerOpacity * 100}%)` }}
+                                    style={{ '--slider-pct': `${layerOpacity * 100}%` }}
                                 />
                                 <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
                             </div>
@@ -2540,10 +2505,48 @@ function ArcgisUploadPanel({
                                 >
                                     <FontAwesomeIcon icon={faSync} spin={isUpdating} />
                                 </button>
-                                <ClearAllLayersButton
-                                    onClick={handleClearAllLayers}
-                                    disabled={!Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0)}
-                                />
+                                <div className="upload-panel-controls-actions">
+                                    <button
+                                        type="button"
+                                        className={`clear-all-layers-btn clear-all-layers-btn--toggle${showAddedOnly ? ' is-active' : ''}`}
+                                        onClick={() => {
+                                            setShowAddedOnly(prev => {
+                                                const next = !prev;
+                                                if (next) {
+                                                    const foldersWithAdded = [];
+                                                    const servicesWithAdded = [];
+                                                    folderNames.forEach(folder => {
+                                                        const hasAdded = servicesByFolder[folder].some(service =>
+                                                            (checkedLayerIds[service.key] || []).length > 0
+                                                        );
+                                                        if (hasAdded) foldersWithAdded.push(folder);
+                                                        servicesByFolder[folder].forEach(service => {
+                                                            if ((checkedLayerIds[service.key] || []).length > 0) {
+                                                                servicesWithAdded.push(service.key);
+                                                            }
+                                                        });
+                                                    });
+                                                    setExpandedFolders(new Set(foldersWithAdded));
+                                                    setExpandedServices(new Set(servicesWithAdded));
+                                                } else {
+                                                    setExpandedFolders(new Set());
+                                                    setExpandedServices(new Set());
+                                                    setExpandedLayers(new Set());
+                                                }
+                                                return next;
+                                            });
+                                        }}
+                                        aria-pressed={showAddedOnly}
+                                        title={showAddedOnly ? 'Show all services' : 'Show only services added to the map'}
+                                    >
+                                        <FontAwesomeIcon icon={faEye} />
+                                        <span>{showAddedOnly ? 'Showing Added Only' : 'Show Added Only'}</span>
+                                    </button>
+                                    <ClearAllLayersButton
+                                        onClick={handleClearAllLayers}
+                                        disabled={!Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0)}
+                                    />
+                                </div>
                             </div>
                             {/* Update progress display */}
                             {(updateProgress || updateResults) && (
