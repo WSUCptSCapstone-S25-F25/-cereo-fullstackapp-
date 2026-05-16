@@ -319,8 +319,12 @@ const Content1 = (props) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'image/png') {
-      alert('The map image tool currently supports PNG files only.');
+    const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']);
+    const hasValidType = allowedTypes.has((file.type || '').toLowerCase());
+    const hasValidExtension = /\.(png|jpe?g|webp|gif)$/i.test(file.name || '');
+
+    if (!hasValidType && !hasValidExtension) {
+      alert('The map image tool supports PNG, JPG, JPEG, GIF, and WebP files.');
       e.target.value = '';
       return;
     }
@@ -328,7 +332,7 @@ const Content1 = (props) => {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result !== 'string') {
-        alert('Unable to load the selected PNG file.');
+        alert('Unable to load the selected image file.');
         return;
       }
 
@@ -340,7 +344,7 @@ const Content1 = (props) => {
       setIsImageToolDrawing(true);
     };
     reader.onerror = () => {
-      alert('Unable to load the selected PNG file.');
+      alert('Unable to load the selected image file.');
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -1565,7 +1569,7 @@ const Content1 = (props) => {
         <input
           ref={imageToolInputRef}
           type="file"
-          accept="image/png"
+          accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/jpg,image/gif,image/webp"
           style={{ display: 'none' }}
           onChange={handleImageToolInputChange}
         />

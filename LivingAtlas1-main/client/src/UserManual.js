@@ -1272,7 +1272,7 @@ function UserManual() {
                 <div className="form-modal-polygon-section">
                   <button type="button" className="location_button" style={{ marginBottom: 0 }}>
                     <FontAwesomeIcon icon={faImage} style={{ marginRight: '6px' }} />
-                    Add PNG image to map
+                    Add Image to Map
                   </button>
                   <div className="form-modal-polygon-summary">
                     <span className="form-modal-polygon-check">&#10003;</span>
@@ -1284,8 +1284,8 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Image Overlay Mode</p>
               <p className="um-feature-desc">
-                Switch to <strong>Image Overlay</strong>, then click <strong>Add PNG image to map</strong>
-                to upload and place a PNG. After placement, use move/rotate/resize and click
+                Switch to <strong>Image Overlay</strong>, then click <strong>Add Image to Map</strong>
+                to upload and place a supported image (PNG, JPG/JPEG, GIF, or WebP). After placement, use move/rotate/resize and click
                 <strong> Save</strong>. The form stores four corner vertices and shows a saved summary.
               </p>
             </div>
@@ -3671,10 +3671,10 @@ function UserManual() {
 
       {activeSection === 'add-png' && (
       <section className="um-section">
-        <h2>Add PNG</h2>
+        <h2>Add Image Overlay</h2>
         <p className="um-section-desc">
           Use <strong>Add Cards from Map</strong> in the top-right toolbar, then choose
-          <strong> Add PNG</strong> to select a PNG file and place it on the map.
+          <strong> image</strong> to select an image file and place it on the map.
         </p>
 
         <div className="um-feature-list">
@@ -3686,15 +3686,15 @@ function UserManual() {
                 </div>
                 <span style={{ fontSize: '11px', color: '#888' }}>→</span>
                 <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
-                  <button className="um-mapctrl-btn" title="Add PNG image to map"><FontAwesomeIcon icon={faImage} /></button>
+                  <button className="um-mapctrl-btn" title="Add image to map"><FontAwesomeIcon icon={faImage} /></button>
                 </div>
               </div>
             </div>
             <div className="um-feature-info">
-              <p className="um-feature-title">Step 1: Select PNG File</p>
+              <p className="um-feature-title">Step 1: Select Image File</p>
               <p className="um-feature-desc">
-                Click <strong>+</strong> in map controls, then choose <strong>Add PNG</strong>.
-                Select a PNG file from your device to enter overlay placement mode.
+                Click <strong>+</strong> in map controls, then choose <strong>image</strong>.
+                Select an image file (PNG, JPG/JPEG, GIF, or WebP) from your device to enter overlay placement mode.
               </p>
             </div>
           </div>

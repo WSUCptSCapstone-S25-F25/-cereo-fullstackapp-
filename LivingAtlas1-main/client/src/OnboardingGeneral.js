@@ -132,7 +132,7 @@ const STEP_DEFINITIONS = [
     {
         selector: '[data-onboarding-target="map-control-add-cards"]',
         title: 'Add Cards From Map',
-        description: 'Open the map creation menu for Add Single Point, Polygon Tools, and Add PNG. These creation shortcuts require login.',
+        description: 'Open the map creation menu for single point, polygon, and image overlay placement. These creation shortcuts require login.',
         placement: 'left',
     },
     {

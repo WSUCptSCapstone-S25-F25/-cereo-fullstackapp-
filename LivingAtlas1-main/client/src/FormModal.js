@@ -645,9 +645,9 @@ const FormModal = (props) => {
 
                     {locationType === 'image' && (
                         <div className="form-modal-location-content form-modal-polygon-section">
-                            <p className="form-modal-location-description">Place a georeferenced PNG overlay onto the map using four corner points.</p>
+                            <p className="form-modal-location-description">Place a georeferenced image overlay (PNG, JPG/JPEG, GIF, WebP) onto the map using four corner points.</p>
                             <button type="button" className="location_button" onClick={handleStartImageOverlayPlacement}>
-                                Add PNG Image to Map
+                                Add Image to Map
                             </button>
                             {polygonVertices.length >= 4 && (() => {
                                 const cLat = polygonVertices.reduce((s, v) => s + v.lat, 0) / polygonVertices.length;
