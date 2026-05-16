@@ -140,6 +140,7 @@ const createZoomAxisControl = (targetMap) => {
     onAdd: () => {
       container = document.createElement('div');
       container.className = 'mapboxgl-ctrl atlas-z-axis-control';
+      container.setAttribute('data-onboarding-target', 'map-control-z-axis');
 
       scale = document.createElement('div');
       scale.className = 'atlas-z-axis__scale';
@@ -797,6 +798,11 @@ const Content1 = (props) => {
 
     map.addControl(searchBar);
 
+    const geocoderControl = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-geocoder');
+    if (geocoderControl) {
+      geocoderControl.setAttribute('data-onboarding-target', 'map-control-search');
+    }
+
     searchBar.on('result', (e) => {
       const [lng, lat] = e.result.center;
       searchLocationCoordinates = { lat, lng };
@@ -818,6 +824,7 @@ const Content1 = (props) => {
 
         const addToolsBtn = document.createElement('button');
         addToolsBtn.className = 'mapbox-gl-draw_ctrl-draw-btn map-add-tools-btn';
+        addToolsBtn.setAttribute('data-onboarding-target', 'map-control-add-cards');
         addToolsBtn.title = 'Add card from map';
         addToolsBtn.type = 'button';
         addToolsBtn.innerHTML = icon(faPlus).html[0];
@@ -828,16 +835,19 @@ const Content1 = (props) => {
         const pointOption = document.createElement('button');
         pointOption.type = 'button';
         pointOption.className = 'map-add-tools-menu-item';
+        pointOption.setAttribute('data-onboarding-target', 'map-control-add-point');
         pointOption.innerHTML = `${icon(faLocationDot).html[0]}<span>Add Single Point</span>`;
 
         const polygonOption = document.createElement('button');
         polygonOption.type = 'button';
         polygonOption.className = 'map-add-tools-menu-item';
+        polygonOption.setAttribute('data-onboarding-target', 'map-control-add-polygon');
         polygonOption.innerHTML = `${icon(faDrawPolygon).html[0]}<span>Polygon Tools</span>`;
 
         const imageOption = document.createElement('button');
         imageOption.type = 'button';
         imageOption.className = 'map-add-tools-menu-item';
+        imageOption.setAttribute('data-onboarding-target', 'map-control-add-png');
         imageOption.innerHTML = `${icon(faImage).html[0]}<span>Add PNG</span>`;
 
         addToolsMenu.appendChild(pointOption);
@@ -897,6 +907,7 @@ const Content1 = (props) => {
 
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'mapbox-gl-draw_ctrl-draw-btn marker-visibility-toggle active';
+        toggleBtn.setAttribute('data-onboarding-target', 'map-control-visibility');
         toggleBtn.title = 'Toggle markers & polygons visibility';
         toggleBtn.type = 'button';
         toggleBtn.innerHTML = icon(faEye).html[0];
@@ -933,6 +944,7 @@ const Content1 = (props) => {
 
         const resetViewBtn = document.createElement('button');
         resetViewBtn.className = 'mapbox-gl-draw_ctrl-draw-btn reset-view-btn';
+        resetViewBtn.setAttribute('data-onboarding-target', 'map-control-reset-view');
         resetViewBtn.title = 'Reset Map View';
         resetViewBtn.type = 'button';
         resetViewBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="1.5" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="14.5" y2="8"/><circle cx="8" cy="8" r="2"/></svg>';
@@ -943,6 +955,7 @@ const Content1 = (props) => {
 
         const screenshotBtn = document.createElement('button');
         screenshotBtn.className = 'mapbox-gl-draw_ctrl-draw-btn screenshot-btn';
+        screenshotBtn.setAttribute('data-onboarding-target', 'map-control-screenshot');
         screenshotBtn.title = 'Screenshot Map';
         screenshotBtn.type = 'button';
         screenshotBtn.innerHTML = icon(faCamera).html[0];
@@ -1007,6 +1020,22 @@ const Content1 = (props) => {
 
     map.addControl(currentLocation, 'top-left');
     map.addControl(createZoomAxisControl(map), 'top-left');
+
+    const fullscreenButton = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-fullscreen');
+    if (fullscreenButton) {
+      fullscreenButton.setAttribute('data-onboarding-target', 'map-control-fullscreen');
+    }
+
+    const zoomInButton = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-zoom-in');
+    const navigationGroup = zoomInButton?.closest('.mapboxgl-ctrl-group');
+    if (navigationGroup) {
+      navigationGroup.setAttribute('data-onboarding-target', 'map-control-navigation');
+    }
+
+    const geolocateButton = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-geolocate');
+    if (geolocateButton) {
+      geolocateButton.setAttribute('data-onboarding-target', 'map-control-geolocate');
+    }
 
     const syncBottomRightMeta = () => {
       if (!atlasMapRef.current) return;

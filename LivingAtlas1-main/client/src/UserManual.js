@@ -3085,7 +3085,7 @@ function UserManual() {
           The map canvas has two groups of controls: a vertical stack in the
           <strong> top-left</strong> and a vertical stack in the <strong>top-right</strong>.
           Together they provide search, fullscreen, zoom, compass, location, drawing, card
-          creation shortcuts, and utility tools. View/navigation controls are available to
+          creation shortcuts, a draggable z-axis zoom control, and utility tools. View/navigation controls are available to
           everyone; card-creation shortcuts require login.
         </p>
 
@@ -3109,6 +3109,13 @@ function UserManual() {
             </div>
             <div className="um-mapctrl-group">
               <button className="um-mapctrl-btn" title="Geolocate"><FontAwesomeIcon icon={faLocationCrosshairs} /></button>
+            </div>
+            <div className="um-mapctrl-zaxis" aria-hidden="true">
+              <div className="um-mapctrl-zaxis__scale">
+                <div className="um-mapctrl-zaxis__spine" />
+                <div className="um-mapctrl-zaxis__pointer" />
+              </div>
+              <div className="um-mapctrl-zaxis__value">5.5</div>
             </div>
           </div>
 
@@ -3252,6 +3259,29 @@ function UserManual() {
                   Add PNG
                 </button>
                 .
+              </p>
+            </div>
+          </div>
+
+          {/* 5b. Z-axis */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-zaxis" aria-hidden="true">
+                  <div className="um-mapctrl-zaxis__scale">
+                    <div className="um-mapctrl-zaxis__spine" />
+                    <div className="um-mapctrl-zaxis__pointer" />
+                  </div>
+                  <div className="um-mapctrl-zaxis__value">8.0</div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Z-Axis Zoom Slider</p>
+              <p className="um-feature-desc">
+                The custom vertical z-axis shows the current map zoom level in real time.
+                Drag the pointer up or down to change zoom directly, or click along the axis
+                for a quick jump to a new zoom level.
               </p>
             </div>
           </div>

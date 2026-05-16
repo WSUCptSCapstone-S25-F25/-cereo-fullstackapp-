@@ -673,6 +673,54 @@ nav.um-nav-sidebar {
   pointer-events: none;
 }
 
+.um-mapctrl-zaxis {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+  padding: 6px 8px;
+  pointer-events: none;
+}
+
+.um-mapctrl-zaxis__scale {
+  position: relative;
+  width: 18px;
+  height: 112px;
+  display: flex;
+  justify-content: center;
+}
+
+.um-mapctrl-zaxis__spine {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: linear-gradient(180deg, #d0dae6 0%, #7d94ab 100%);
+  border-radius: 999px;
+}
+
+.um-mapctrl-zaxis__pointer {
+  position: absolute;
+  top: 38px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid #27425d;
+}
+
+.um-mapctrl-zaxis__value {
+  min-width: 28px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #27425d;
+  text-align: center;
+}
+
 /* ---- Draw Polygon Panel demo ---- */
 .um-polydraw-demo-wrapper {
   max-width: 260px;
