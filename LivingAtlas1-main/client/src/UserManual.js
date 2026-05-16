@@ -71,6 +71,8 @@ const ARCGIS_SECTIONS = [
   { id: 'custom-layers', label: 'Custom Layers Panel' },
   { id: 'service-layer-info', label: 'Service / Layer Info Modal' },
 ];
+              { id: 'light-v11',           label: 'light-v11',           bg: '#eef2f6' },
+              { id: 'dark-v11',            label: 'dark-v11',            bg: '#141a24' },
 
 const SECTION_GROUPS = [
   {
@@ -1702,6 +1704,12 @@ function UserManual() {
                   <button className="learn-more-modal-delete-btn" title="Delete card" style={{ pointerEvents: 'none' }}>
                     <FontAwesomeIcon icon={faTrashCan} />
                   </button>
+                  <button className="learn-more-modal-help-btn" title="Help" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faQuestionCircle} />
+                  </button>
+                  <button className="learn-more-modal-onboarding-btn" title="Onboarding" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faCirclePlay} />
+                  </button>
                 </div>
                 <button className="learn-more-modal-close" style={{ pointerEvents: 'none' }}>×</button>
               </div>
@@ -1709,10 +1717,12 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Detail View Toolbar</p>
               <p className="um-feature-desc">
-                The toolbar at the top provides four action buttons:
+                The toolbar at the top provides six action buttons:
                 <br />• <strong>Edit</strong> (pencil icon) — enter edit mode to modify card content
                 <br />• <strong>Download PDF</strong> (download icon) — save the card as a PDF
                 <br />• <strong>Delete</strong> (trash icon) — permanently delete the card
+                <br />• <strong>Help</strong> (question icon) — open the Detail View user manual section
+                <br />• <strong>Onboarding</strong> (play icon) — start the guided walkthrough
                 <br />• <strong>Close</strong> (×) — close the Detail View and return to the map
                 <br />Edit and Delete require you to be the card owner or an administrator.
               </p>
@@ -3143,10 +3153,10 @@ function UserManual() {
       <section className="um-section">
         <h2>Basemap Panel</h2>
         <p className="um-section-desc">
-          The Basemap Panel lets you switch between six Mapbox map styles directly from the
+          The Basemap Panel lets you switch between multiple Mapbox map styles directly from the
           map view. Click the map icon on the left sidebar to open or close it. Switching
           styles preserves all custom ArcGIS layers, the current camera position, zoom,
-          bearing, and pitch.
+          bearing, and pitch. You can also search styles by label or description.
         </p>
 
         {/* ---- Overview demo ---- */}
@@ -3210,7 +3220,7 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 2. Six styles */}
+          {/* 2. Available styles */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 0, minWidth: '240px' }}>
@@ -3227,18 +3237,41 @@ function UserManual() {
               </div>
             </div>
             <div className="um-feature-info">
-              <p className="um-feature-title">Six Built-in Styles</p>
+              <p className="um-feature-title">Available Built-in Styles</p>
               <p className="um-feature-desc">
-                The panel lists six Mapbox basemap styles:{' '}
-                <em>streets-v12</em>, <em>outdoors-v12</em>, <em>satellite-v9</em>,{' '}
-                <em>satellite-streets-v12</em>, <em>navigation-day-v1</em>, and{' '}
-                <em>navigation-night-v1</em>. Each entry shows a color preview thumbnail
-                and the style name.
+                The panel currently lists eight styles:{' '}
+                <em>Satellite (Imagery)</em>, <em>Satellite + Streets</em>, <em>Navigation Day</em>,{' '}
+                <em>Navigation Night</em>, <em>Outdoors</em>, <em>Streets</em>, <em>Light</em>, and <em>Dark</em>.
+                Each entry shows a preview thumbnail, style name, and short description.
               </p>
             </div>
           </div>
 
-          {/* 3. Active selection */}
+          {/* 3. Search map styles */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', gap: '8px' }}>
+                <div className="upload-panel-searchbar" style={{ pointerEvents: 'none' }}>
+                  <input type="text" readOnly defaultValue="satellite" />
+                  <button type="button" className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faSearch} />
+                  </button>
+                  <button type="button" className="upload-panel-searchbar-btn clear" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Search Styles</p>
+              <p className="um-feature-desc">
+                Enter a keyword and press <strong>Enter</strong> or click Search to filter
+                styles by both title and description. Click Clear to reset the full list.
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Active selection */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 0, minWidth: '240px' }}>

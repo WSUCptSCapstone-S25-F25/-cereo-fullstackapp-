@@ -12,18 +12,34 @@ The Basemap Panel lets you change the background map style — for example, swit
 2. Click the **map style button** (usually a layers or map icon) in the sidebar.
 3. The Basemap Panel opens showing available map styles with preview thumbnails.
 
+The panel header also includes:
+- **Help** button (opens User Manual basemap section)
+- **Tutorial** button (starts basemap onboarding)
+- **Close** button (closes panel)
+
+---
+
+## Search Map Styles
+
+1. In the panel search row, type a keyword such as `satellite`, `dark`, or `navigation`.
+2. Press **Enter** or click the **Search** icon button.
+3. The basemap list is filtered by both style name and style description text.
+4. Click **Clear** to reset the full list.
+
 ---
 
 ## How to Change the Map Style (Basemap)
 
 1. Open the Basemap Panel (see above).
 2. Browse the available styles:
+   - **Satellite (Imagery)** — pure satellite imagery, no labels
+   - **Satellite + Streets** — satellite imagery with road labels
    - **Navigation Day** — clean road map, light theme
    - **Navigation Night** — dark theme road map
    - **Outdoors** — terrain and hiking-style map
-   - **Satellite Streets** — satellite imagery with road labels
-   - **Satellite** — pure satellite imagery, no labels
    - **Streets** — standard street map
+   - **Light** — minimal light basemap
+   - **Dark** — dark basemap with reduced glare
 3. Click the style you want.
 4. The map updates immediately to use the selected style.
 5. Your custom layers and card overlays are preserved when switching styles.
@@ -50,4 +66,7 @@ A: No. Your custom layers and card overlays are preserved when you switch basema
 A: Yes. If you are logged in, your preference is saved to your account. If not, it is saved in your browser for the current session.
 
 **Q: How do I switch to satellite view?**
-A: Open the Basemap Panel from the left sidebar and click "Satellite" or "Satellite Streets".
+A: Open the Basemap Panel from the left sidebar and click "Satellite (Imagery)" or "Satellite + Streets".
+
+**Q: Can I search styles instead of scrolling?**
+A: Yes. Use the search row in the panel and search by style name or description.

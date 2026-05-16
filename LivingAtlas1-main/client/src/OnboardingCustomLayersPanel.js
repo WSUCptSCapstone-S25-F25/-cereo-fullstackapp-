@@ -30,7 +30,7 @@ const ONBOARDING_STEPS = [
     {
         selector: '[data-onboarding-target="custom-layers-search-area"]',
         title: 'Search',
-        description: 'Search by folder, service, or layer name. The panel searches the current scope directly without a separate search-type dropdown.',
+        description: 'Search by folder, service, or layer name. Use the search-type dropdown (Any/Folder/Service/Layer) to narrow what gets matched.',
         placement: 'left',
     },
     {

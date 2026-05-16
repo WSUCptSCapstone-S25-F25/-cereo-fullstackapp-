@@ -16,15 +16,27 @@ const ONBOARDING_STEPS = [
         placement: 'right',
     },
     {
+        selector: '.basemap-switcher-icon-btn--play',
+        title: 'Tutorial Button',
+        description: 'Click here to start this guided walkthrough for the Basemap Panel.',
+        placement: 'right',
+    },
+    {
+        selector: '[data-onboarding-target="basemap-search-row"]',
+        title: 'Search Map Styles',
+        description: 'Use this search row to find map styles by name or description, then click Search or press Enter.',
+        placement: 'right',
+    },
+    {
         selector: '[data-onboarding-target="basemap-list"]',
         title: 'Basemap List',
-        description: 'All available basemap styles are listed here, including streets, satellite, and navigation styles.',
+        description: 'All available map styles are listed here, including satellite, navigation, outdoors, streets, light, and dark styles.',
         placement: 'right',
     },
     {
         selector: '[data-onboarding-target="basemap-item"]',
         title: 'Basemap Item',
-        description: 'Each basemap item shows a preview thumbnail and the basemap name. Click one to apply it to the map.',
+        description: 'Each basemap item shows a preview thumbnail, style name, and a short description. Click one to apply it to the map.',
         placement: 'right',
     },
     {

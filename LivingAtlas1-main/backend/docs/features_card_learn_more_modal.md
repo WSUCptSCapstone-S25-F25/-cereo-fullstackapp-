@@ -11,7 +11,7 @@ From this modal you can also **edit** or **delete** the card if you have permiss
 ## How to Open a Card's Details
 
 1. Find the card in the card list on the left side.
-2. Click on the card.
+2. Click **Open Detail View** on the card.
 3. The Learn More modal opens with all card details.
 
 To close, click the **X** (close) button in the top-right corner of the modal.
@@ -66,6 +66,15 @@ Only the card's creator or an administrator can delete a card. Deletion is perma
 1. Open the card (click it in the card list).
 2. In the top toolbar, click the **Download PDF** button.
 3. A PDF file is generated and downloaded — it includes the card's metadata, description, tags, links, and images.
+
+---
+
+## Help and Onboarding Buttons
+
+In the top-right of the modal toolbar:
+1. **Help** (question icon) opens the Detail View section of the User Manual.
+2. **Onboarding** (play icon) starts the guided walkthrough for Learn More / Detail View.
+3. During onboarding, some close behaviors may be temporarily locked to keep the tour stable.
 
 ---
 
