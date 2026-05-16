@@ -418,6 +418,7 @@
     .left-sidebar-search-button,
     .left-sidebar-gis-button,
     .left-sidebar-cards-button,
+    .left-sidebar-basemap-button,
     .left-sidebar-customlayers-button,
     .left-sidebar-chatbot-button
 ).active {
@@ -425,6 +426,7 @@
     color: #f5f8ff;
     border-color: rgba(255, 255, 255, 0.22);
     border-radius: 6px;
+    transform: translateY(-1px);
 }
 
 .left-sidebar :is(

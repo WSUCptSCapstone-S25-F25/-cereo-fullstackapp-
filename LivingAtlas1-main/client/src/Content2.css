@@ -85,13 +85,17 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  background: #fff;
+  border: 1px solid #d8e1ea;
+  border-radius: 8px;
+  margin: 4px 10px 10px;
   /* Always reserve scrollbar space so grid width stays stable when scrollbar appears */
   scrollbar-gutter: stable;
   display: grid;
   /* Always keep two columns and let each card size adapt to panel width. */
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-gap: 16px;
-  padding: 16px;
+  grid-gap: 14px;
+  padding: 10px;
   justify-content: start;
   align-content: start;
   z-index: 1;
@@ -339,7 +343,9 @@
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 6px 0 2px !important;
+  padding: 6px 0 6px !important;
+  border-bottom: 1px solid #d8e1ea;
+  margin-bottom: 2px;
 }
 
 .card-panel-titlebar-text-group {

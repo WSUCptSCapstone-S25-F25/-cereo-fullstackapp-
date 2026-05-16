@@ -338,6 +338,8 @@ function Home(props) {
     };
 
     const clickBasemapStyle = (styleLabel) => {
+        setIsUploadPanelOpen(false);
+        setIsCustomLayerPanelOpen(false);
         setIsBasemapOpen(true);
 
         const targetLabel = String(styleLabel || '').toLowerCase();
@@ -351,6 +353,10 @@ function Home(props) {
             }
 
             const item = Array.from(panel.querySelectorAll('.basemap-switcher-item')).find((element) => {
+                const basemapId = (element.getAttribute('data-basemap-id') || '').toLowerCase();
+                if (basemapId === targetLabel) {
+                    return true;
+                }
                 const label = element.querySelector('.basemap-switcher-label')?.textContent?.trim()?.toLowerCase() || '';
                 return label === targetLabel;
             });
@@ -373,12 +379,18 @@ function Home(props) {
     const ensureUploadPanelOpen = () => {
         setIsUploadPanelOpen(true);
         setIsCustomLayerPanelOpen(false);
+        setIsBasemapOpen(false);
     };
     const ensureCustomLayersPanelOpen = () => {
         setIsCustomLayerPanelOpen(true);
         setIsUploadPanelOpen(false);
+        setIsBasemapOpen(false);
     };
-    const ensureBasemapPanelOpen = () => setIsBasemapOpen(true);
+    const ensureBasemapPanelOpen = () => {
+        setIsUploadPanelOpen(false);
+        setIsCustomLayerPanelOpen(false);
+        setIsBasemapOpen(true);
+    };
 
     const getFeatureCatalog = () => ([
         // Global / left sidebar functions
@@ -1099,7 +1111,7 @@ function Home(props) {
                 <button
                     className={`left-sidebar-gis-button${isUploadPanelOpen ? ' active' : ''}`}
                     data-onboarding-target="left-sidebar-gis"
-                    onClick={() => { setIsUploadPanelOpen(v => !v); setIsCustomLayerPanelOpen(false); }}
+                    onClick={() => { setIsUploadPanelOpen(v => !v); setIsCustomLayerPanelOpen(false); setIsBasemapOpen(false); }}
                     title="Toggle Layers"
                 >
                     <FontAwesomeIcon icon={faLayerGroup} />
@@ -1124,7 +1136,7 @@ function Home(props) {
                 <button
                     className={`left-sidebar-customlayers-button${isCustomLayerPanelOpen ? ' active' : ''}`}
                     data-onboarding-target="left-sidebar-customlayers"
-                    onClick={() => { setIsCustomLayerPanelOpen(v => !v); setIsUploadPanelOpen(false); }}
+                    onClick={() => { setIsCustomLayerPanelOpen(v => !v); setIsUploadPanelOpen(false); setIsBasemapOpen(false); }}
                     title="Custom Layers"
                 >
                     <FontAwesomeIcon icon={faObjectGroup} />
@@ -1141,9 +1153,14 @@ function Home(props) {
 
                 {/* Basemap Switcher Button */}
                 <button
-                    className="left-sidebar-basemap-button"
+                    className={`left-sidebar-basemap-button${isBasemapOpen ? ' active' : ''}`}
                     data-onboarding-target="left-sidebar-basemap"
-                    onClick={() => setIsBasemapOpen(v => !v)}
+                    onClick={() => {
+                        const shouldForceOpen = isUploadPanelOpen || isCustomLayerPanelOpen;
+                        setIsUploadPanelOpen(false);
+                        setIsCustomLayerPanelOpen(false);
+                        setIsBasemapOpen(v => (shouldForceOpen ? true : !v));
+                    }}
                     title="Change Basemap"
                 >
                     <FontAwesomeIcon icon={faMap} />
@@ -1167,6 +1184,7 @@ function Home(props) {
                 <BasemapSwitcher
                     isOpen={isBasemapOpen}
                     onClose={() => setIsBasemapOpen(false)}
+                    splitBottom={cardPanelSide === 'left' && !isCollapsed}
                     mapInstance={getMapboxMap}
                     currentBasemapId={preferredBasemapId}
                     onBasemapChange={setPreferredBasemapId}
@@ -1279,6 +1297,7 @@ function Home(props) {
                 isSidebarOpen={isSidebarOpen}
                 isUploadPanelOpen={isUploadPanelOpen}
                 isCustomLayerPanelOpen={isCustomLayerPanelOpen}
+                isBasemapOpen={isBasemapOpen}
                 selectedCardCoords={selectedCardCoords}
                 onMarkerCardSelect={setSelectedCardIdFromMap}
                 cardPanelWidth={cardPanelWidth}

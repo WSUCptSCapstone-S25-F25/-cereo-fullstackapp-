@@ -1531,7 +1531,7 @@ const Content1 = (props) => {
   const leftSidebarWidth = props.isSidebarOpen
     ? 'var(--app-left-sidebar-expanded-width)'
     : 'var(--app-left-sidebar-collapsed-width)';
-  const hasLeftPanel = props.isUploadPanelOpen || props.isCustomLayerPanelOpen;
+  const hasLeftPanel = props.isUploadPanelOpen || props.isCustomLayerPanelOpen || props.isBasemapOpen;
   const cardPanelW = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
   const cardOnLeft = props.cardPanelSide === 'left';
   const bothOnLeft = cardOnLeft && !props.isCollapsed && hasLeftPanel;
