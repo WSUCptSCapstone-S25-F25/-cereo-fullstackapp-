@@ -1343,14 +1343,6 @@ function CustomLayersPanel({
             <div className="custom-layers-panel-header">
                 <h3>Custom Layers</h3>
                 <div className="custom-layers-panel-header-actions">
-                    <button
-                        className="custom-layers-panel-new-folder-btn"
-                        data-onboarding-target="custom-layers-new-folder-button"
-                        onClick={handleCreateFolder}
-                        title="New Folder"
-                    >
-                        <FontAwesomeIcon icon={faFolderPlus} />
-                    </button>
                     <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" title="Help" onClick={() => window.open('/user-manual?section=custom-layers', '_blank')}>
                         <FontAwesomeIcon icon={faQuestion} />
                     </button>
@@ -1413,6 +1405,15 @@ function CustomLayersPanel({
                 </div>
                 <div className="upload-panel-controls-row">
                     <div className="upload-panel-controls-actions">
+                        <button
+                            className="clear-all-layers-btn custom-layers-panel-new-folder-btn"
+                            data-onboarding-target="custom-layers-new-folder-button"
+                            onClick={handleCreateFolder}
+                            title="New Folder"
+                        >
+                            <FontAwesomeIcon icon={faFolderPlus} />
+                            <span>New Folder</span>
+                        </button>
                         <button
                             type="button"
                             className={`clear-all-layers-btn clear-all-layers-btn--toggle${showAddedOnly ? ' is-active' : ''}`}
