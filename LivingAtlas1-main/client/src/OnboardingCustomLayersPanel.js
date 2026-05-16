@@ -12,7 +12,7 @@ const ONBOARDING_STEPS = [
     {
         selector: '[data-onboarding-target="custom-layers-new-folder-button"]',
         title: 'New Folder',
-        description: 'Use this button to create a new folder for your saved custom layers.',
+        description: 'Use this action-row button to create a new folder for your saved custom layers.',
         placement: 'left',
     },
     {

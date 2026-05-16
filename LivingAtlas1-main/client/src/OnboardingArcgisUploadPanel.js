@@ -11,14 +11,14 @@ const ONBOARDING_STEPS = [
     },
     {
         selector: '[data-onboarding-target="arcgis-state-folder"]',
-        title: 'State Selection',
-        description: 'Choose a state to view available ArcGIS services. You can browse Washington, Idaho, or Oregon services.',
+        title: 'State Folders',
+        description: 'At the root of the panel, each state appears as a folder. Open Washington, Idaho, Oregon, or Built-in Layers to move into that scope.',
         placement: 'left',
     },
     {
         selector: '[data-onboarding-target="arcgis-folder-area"]',
-        title: 'Folders',
-        description: 'Browse the Washington State folders in the upload panel. Folder rows organize the available ArcGIS services by category.',
+        title: 'Folder Navigation',
+        description: 'Once you enter a state, this area shows its folders, breadcrumb path, and then services inside the selected folder.',
         placement: 'left',
     },
     {
@@ -30,7 +30,7 @@ const ONBOARDING_STEPS = [
     {
         selector: '[data-onboarding-target="arcgis-search-area"]',
         title: 'Search Services',
-        description: 'Use the search bar to find services by keyword. Filter results by service name or layer name.',
+        description: 'Use the search bar to find folders, services, or layers inside the current scope. Search results can continue loading additional layer matches in the background.',
         placement: 'left',
     },
     {

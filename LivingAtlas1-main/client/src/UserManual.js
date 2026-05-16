@@ -2049,9 +2049,9 @@ function UserManual() {
         <h2>ArcGIS Upload Panel</h2>
         <p className="um-section-desc">
           The ArcGIS Upload Panel lets you browse and add ArcGIS REST map layers directly
-          onto the main map. Open it by clicking the <strong>Layers</strong> button in the
-          map toolbar. Services are organized by state (WA / ID / OR), then by folder, then
-          by individual service and layer, with a built-in layers folder available alongside
+          onto the main map. Open it from the <strong>Layers</strong> button in the left
+          sidebar. Services are organized by state (WA / ID / OR), then by folder, then by
+          individual service and layer, with a built-in layers folder available alongside
           the state folders.
         </p>
 
@@ -2135,7 +2135,7 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Opening the Panel</p>
               <p className="um-feature-desc">
-                Click the <strong>Layers</strong> button in the map toolbar to open or close
+                Click the <strong>Layers</strong> button in the left sidebar to open or close
                 the ArcGIS Upload Panel. The panel slides in from the left edge of the screen.
                 When the card panel is also open, the two panels split the left side vertically.
               </p>
@@ -2184,11 +2184,12 @@ function UserManual() {
               <p className="um-feature-title">Service Search Bar</p>
               <p className="um-feature-desc">
                 Type a keyword and press <strong>Enter</strong> or click the search button
-                to search across all visible states, folders, services, and layers. Click
-                <strong> ×</strong> to clear the search and return to the full folder tree.
+                to search within the <strong>current scope</strong> shown in the panel:
+                the full root view, a single state, or the currently opened folder. Click
+                <strong> ×</strong> to clear the search and return to the normal navigation view.
               </p>
               <span className="um-feature-note">
-                While a search is active, a result-navigation counter appears with ▲ / ▼ arrows to jump between matches.
+                While a search is active, a result-navigation counter appears with ▲ / ▼ arrows to jump between matches, and the panel may continue loading additional layer results in the background.
               </span>
             </div>
           </div>
@@ -2298,11 +2299,12 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Service Tree Hierarchy</p>
               <p className="um-feature-desc">
-                Services are organized in a three-level tree:{' '}
-                <strong>State</strong> (WA, ID, OR) → <strong>Folder</strong> →{' '}
-                <strong>Service / Layer</strong>. Click a state heading to expand or
-                collapse all of its folders. Click a folder to drill into it. Click a
-                service to expand and show its individual layers.
+                Services are organized in a file-explorer style hierarchy:{' '}
+                <strong>Root</strong> → <strong>State</strong> (WA, ID, OR or Built-in Layers)
+                → <strong>Folder</strong> → <strong>Service / Layer</strong>. Click a state
+                folder to enter that state, click a folder to drill into it, and use the
+                breadcrumb bar to navigate back out. Inside a folder, click a service row to
+                expand and show its individual layers.
               </p>
             </div>
           </div>
@@ -2826,9 +2828,6 @@ function UserManual() {
             <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--play" style={{ pointerEvents: 'none' }}>
               <FontAwesomeIcon icon={faPlay} />
             </button>
-            <button className="custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }} title="New Folder">
-              <FontAwesomeIcon icon={faFolderPlus} />
-            </button>
             <button className="custom-layers-panel-close-btn" style={{ pointerEvents: 'none' }}>
               <FontAwesomeIcon icon={faTimes} />
             </button>
@@ -2882,7 +2881,7 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Opening the Panel</p>
               <p className="um-feature-desc">
-                Click the <strong>Custom Layers</strong> button in the map toolbar to open
+                Click the <strong>Custom Layers</strong> button in the left sidebar to open
                 or close the panel. You must be logged in; a login prompt appears otherwise.
                 When the ArcGIS Upload Panel is also open, the two panels share the left
                 side vertically.
@@ -2902,9 +2901,6 @@ function UserManual() {
                   <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--play" style={{ pointerEvents: 'none' }}>
                     <FontAwesomeIcon icon={faPlay} />
                   </button>
-                  <button className="custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }} title="New Folder">
-                    <FontAwesomeIcon icon={faFolderPlus} />
-                  </button>
                   <button className="custom-layers-panel-close-btn" style={{ pointerEvents: 'none' }}>
                     <FontAwesomeIcon icon={faTimes} />
                   </button>
@@ -2914,12 +2910,14 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Panel Header</p>
               <p className="um-feature-desc">
-                The header shows the panel title, a <strong>New Folder</strong>{' '}
-                <FontAwesomeIcon icon={faFolderPlus} style={{ fontSize: '12px' }} /> button,
-                plus <strong>Help</strong>, <strong>Tutorial</strong>, and <strong>×</strong> close buttons.
-                Help opens the manual, Tutorial starts the guided walkthrough, and closing the
-                panel does not remove layers already added to the map.
+                The header shows the panel title plus <strong>Help</strong>, <strong>Tutorial</strong>,
+                and <strong>×</strong> close buttons. Help opens the manual, Tutorial starts the
+                guided walkthrough, and closing the panel does not remove layers already added
+                to the map.
               </p>
+              <span className="um-feature-note">
+                The <strong>New Folder</strong> button now lives in the action row below the opacity slider, alongside Show Added Only and Clear All.
+              </span>
             </div>
           </div>
 
