@@ -38,8 +38,16 @@ let searchLocationCoordinates = { lat: 0, lng: 0 };
 
 const createZoomAxisControl = (targetMap) => {
   let container = null;
+  let scale = null;
   let pointer = null;
   let value = null;
+  let isDragging = false;
+  let handleScaleMouseDown = null;
+  let handleScaleTouchStart = null;
+  let handleWindowMouseMove = null;
+  let handleWindowTouchMove = null;
+  let handleWindowMouseUp = null;
+  let handleWindowTouchEnd = null;
 
   const clampZoom = (z) => {
     const min = targetMap.getMinZoom();
@@ -87,12 +95,53 @@ const createZoomAxisControl = (targetMap) => {
     }
   };
 
+  const getClientY = (event) => {
+    if (event.touches && event.touches.length > 0) return event.touches[0].clientY;
+    if (event.changedTouches && event.changedTouches.length > 0) return event.changedTouches[0].clientY;
+    return event.clientY;
+  };
+
+  const updateZoomFromClientY = (clientY) => {
+    if (!scale) return;
+    const rect = scale.getBoundingClientRect();
+    if (!rect.height) return;
+
+    const min = targetMap.getMinZoom();
+    const max = targetMap.getMaxZoom();
+    if (max <= min) return;
+
+    const clampedY = Math.min(rect.bottom - SPINE_MARGIN_PX, Math.max(rect.top + SPINE_MARGIN_PX, clientY));
+    const relativeY = clampedY - rect.top - SPINE_MARGIN_PX;
+    const usableHeight = rect.height - 2 * SPINE_MARGIN_PX;
+    if (usableHeight <= 0) return;
+
+    const ratio = relativeY / usableHeight;
+    const targetZoom = clampZoom(max - ratio * (max - min));
+    targetMap.setZoom(targetZoom);
+    updatePointer();
+  };
+
+  const stopDragging = () => {
+    isDragging = false;
+    if (container) {
+      container.classList.remove('atlas-z-axis-control--dragging');
+    }
+  };
+
+  const startDragging = (event) => {
+    isDragging = true;
+    if (container) {
+      container.classList.add('atlas-z-axis-control--dragging');
+    }
+    updateZoomFromClientY(getClientY(event));
+  };
+
   return {
     onAdd: () => {
       container = document.createElement('div');
       container.className = 'mapboxgl-ctrl atlas-z-axis-control';
 
-      const scale = document.createElement('div');
+      scale = document.createElement('div');
       scale.className = 'atlas-z-axis__scale';
 
       const spine = document.createElement('div');
@@ -109,6 +158,45 @@ const createZoomAxisControl = (targetMap) => {
       value.className = 'atlas-z-axis__value';
       container.appendChild(value);
 
+      handleScaleMouseDown = (event) => {
+        event.preventDefault();
+        startDragging(event);
+      };
+
+      handleScaleTouchStart = (event) => {
+        event.preventDefault();
+        startDragging(event);
+      };
+
+      handleWindowMouseMove = (event) => {
+        if (!isDragging) return;
+        event.preventDefault();
+        updateZoomFromClientY(event.clientY);
+      };
+
+      handleWindowTouchMove = (event) => {
+        if (!isDragging) return;
+        event.preventDefault();
+        updateZoomFromClientY(getClientY(event));
+      };
+
+      handleWindowMouseUp = () => {
+        if (!isDragging) return;
+        stopDragging();
+      };
+
+      handleWindowTouchEnd = () => {
+        if (!isDragging) return;
+        stopDragging();
+      };
+
+      scale.addEventListener('mousedown', handleScaleMouseDown);
+      scale.addEventListener('touchstart', handleScaleTouchStart, { passive: false });
+      window.addEventListener('mousemove', handleWindowMouseMove);
+      window.addEventListener('touchmove', handleWindowTouchMove, { passive: false });
+      window.addEventListener('mouseup', handleWindowMouseUp);
+      window.addEventListener('touchend', handleWindowTouchEnd);
+
       targetMap.on('zoom', updatePointer);
       targetMap.on('zoomend', updatePointer);
       updatePointer();
@@ -118,12 +206,38 @@ const createZoomAxisControl = (targetMap) => {
     onRemove: () => {
       targetMap.off('zoom', updatePointer);
       targetMap.off('zoomend', updatePointer);
+      if (scale && handleScaleMouseDown) {
+        scale.removeEventListener('mousedown', handleScaleMouseDown);
+      }
+      if (scale && handleScaleTouchStart) {
+        scale.removeEventListener('touchstart', handleScaleTouchStart);
+      }
+      if (handleWindowMouseMove) {
+        window.removeEventListener('mousemove', handleWindowMouseMove);
+      }
+      if (handleWindowTouchMove) {
+        window.removeEventListener('touchmove', handleWindowTouchMove);
+      }
+      if (handleWindowMouseUp) {
+        window.removeEventListener('mouseup', handleWindowMouseUp);
+      }
+      if (handleWindowTouchEnd) {
+        window.removeEventListener('touchend', handleWindowTouchEnd);
+      }
+      stopDragging();
       if (container && container.parentNode) {
         container.parentNode.removeChild(container);
       }
       container = null;
+      scale = null;
       pointer = null;
       value = null;
+      handleScaleMouseDown = null;
+      handleScaleTouchStart = null;
+      handleWindowMouseMove = null;
+      handleWindowTouchMove = null;
+      handleWindowMouseUp = null;
+      handleWindowTouchEnd = null;
     },
     getDefaultPosition: () => 'top-left'
   };

@@ -119,6 +119,8 @@
   position: relative;
   width: 100%;
   height: var(--axis-height);
+  cursor: grab;
+  touch-action: none;
 }
 
 .atlas-z-axis__spine {
@@ -165,7 +167,17 @@
   border-radius: 0;
   box-shadow: none;
   transition: top 120ms ease-out;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.atlas-z-axis-control--dragging .atlas-z-axis__scale {
+  cursor: grabbing;
+}
+
+.atlas-z-axis-control--dragging .atlas-z-axis__pointer {
+  transition: none;
+  cursor: grabbing;
 }
 
 .atlas-z-axis__value {
