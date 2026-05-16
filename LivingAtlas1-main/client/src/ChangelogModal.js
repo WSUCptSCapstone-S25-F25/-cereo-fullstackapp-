@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Modal from 'react-modal';
 
 function ChangelogModal({ isOpen, onClose }) {
-    const [activeTab, setActiveTab] = useState('latest');
+    const [activeTab, setActiveTab] = useState('future');
 
     return (
         <Modal
@@ -18,16 +18,16 @@ function ChangelogModal({ isOpen, onClose }) {
             
             <div className="changelog-modal-tabs">
                 <button 
-                    className={`changelog-tab ${activeTab === 'latest' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('latest')}
-                >
-                    Latest Update
-                </button>
-                <button 
                     className={`changelog-tab ${activeTab === 'future' ? 'active' : ''}`}
                     onClick={() => setActiveTab('future')}
                 >
                     Future Works
+                </button>
+                <button 
+                    className={`changelog-tab ${activeTab === 'latest' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('latest')}
+                >
+                    Latest Update
                 </button>
             </div>
 
