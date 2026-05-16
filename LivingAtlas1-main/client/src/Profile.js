@@ -34,7 +34,16 @@ function Profile(props) {
             try {
                 const res = await api.get('/getProfileImage', { params: { email: props.email } });
                 if (res.data.success) {
-                    setProfileImage(res.data.profile_image);
+              const imageUrl = res.data.profile_image || '';
+              setProfileImage(imageUrl);
+              if (imageUrl) {
+                localStorage.setItem('profileImage', imageUrl);
+              } else {
+                localStorage.removeItem('profileImage');
+              }
+              window.dispatchEvent(new CustomEvent('atlas:profile-image-updated', {
+                detail: { profileImage: imageUrl }
+              }));
                 }
             } catch (err) {
                 console.error('Error fetching profile image:', err);
@@ -101,7 +110,16 @@ function Profile(props) {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
                 if (res.data.success) {
-                    setProfileImage(res.data.profile_image);
+                  const imageUrl = res.data.profile_image || '';
+                  setProfileImage(imageUrl);
+                  if (imageUrl) {
+                    localStorage.setItem('profileImage', imageUrl);
+                  } else {
+                    localStorage.removeItem('profileImage');
+                  }
+                  window.dispatchEvent(new CustomEvent('atlas:profile-image-updated', {
+                    detail: { profileImage: imageUrl }
+                  }));
                 }
             }
             setSelectedImageFile(null);

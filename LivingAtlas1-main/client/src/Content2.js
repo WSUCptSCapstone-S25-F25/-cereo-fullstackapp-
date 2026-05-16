@@ -80,7 +80,6 @@ function Content2(props) {
                 return;
             }
             setPendingPointToolSignal(Date.now());
-            setIsModalOpen(true);
         };
         window.addEventListener('map-point-tool-start', handler);
         return () => window.removeEventListener('map-point-tool-start', handler);
@@ -886,6 +885,7 @@ function Content2(props) {
                 email={props.email} 
                 isOpen={isModalOpen} 
                 onRequestClose={closeModal}
+                onPointLocationSelected={openModal}
                 initialPolygonData={pendingPolygonData}
                 initialImageOverlayData={pendingImageOverlayData}
                 initialPointToolSignal={pendingPointToolSignal}

@@ -159,6 +159,15 @@
     margin-right: 6px;
 }
 
+.profile-avatar-image {
+    width: clamp(24px, 2vw, 28px);
+    height: clamp(24px, 2vw, 28px);
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 6px;
+    display: block;
+}
+
 .username {
     font-size: var(--app-navbar-link-font-size);
     color: white;

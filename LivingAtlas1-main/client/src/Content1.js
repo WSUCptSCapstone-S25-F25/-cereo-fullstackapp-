@@ -836,19 +836,19 @@ const Content1 = (props) => {
         pointOption.type = 'button';
         pointOption.className = 'map-add-tools-menu-item';
         pointOption.setAttribute('data-onboarding-target', 'map-control-add-point');
-        pointOption.innerHTML = `${icon(faLocationDot).html[0]}<span>Add Single Point</span>`;
+        pointOption.innerHTML = `${icon(faLocationDot).html[0]}<span>Coordinate</span>`;
 
         const polygonOption = document.createElement('button');
         polygonOption.type = 'button';
         polygonOption.className = 'map-add-tools-menu-item';
         polygonOption.setAttribute('data-onboarding-target', 'map-control-add-polygon');
-        polygonOption.innerHTML = `${icon(faDrawPolygon).html[0]}<span>Polygon Tools</span>`;
+        polygonOption.innerHTML = `${icon(faDrawPolygon).html[0]}<span>Polygon</span>`;
 
         const imageOption = document.createElement('button');
         imageOption.type = 'button';
         imageOption.className = 'map-add-tools-menu-item';
         imageOption.setAttribute('data-onboarding-target', 'map-control-add-png');
-        imageOption.innerHTML = `${icon(faImage).html[0]}<span>Add PNG</span>`;
+        imageOption.innerHTML = `${icon(faImage).html[0]}<span>Image</span>`;
 
         addToolsMenu.appendChild(pointOption);
         addToolsMenu.appendChild(polygonOption);

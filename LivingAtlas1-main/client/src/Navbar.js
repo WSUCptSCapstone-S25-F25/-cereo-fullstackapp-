@@ -2,11 +2,59 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserCircle } from '@fortawesome/free-solid-svg-icons';
+import api from './api.js';
 import './Navbar.css';
 
-function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
+function Navbar({ isLoggedIn, isAdmin, username, email, onLogout }) {
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState(() => localStorage.getItem('profileImage') || '');
+
+  useEffect(() => {
+    if (!isLoggedIn || !email) {
+      setProfileImageUrl('');
+      return;
+    }
+
+    let isActive = true;
+    const loadProfileImage = async () => {
+      try {
+        const res = await api.get('/getProfileImage', { params: { email } });
+        const imageUrl = res?.data?.success ? (res.data.profile_image || '') : '';
+        if (!isActive) return;
+        setProfileImageUrl(imageUrl);
+        if (imageUrl) {
+          localStorage.setItem('profileImage', imageUrl);
+        } else {
+          localStorage.removeItem('profileImage');
+        }
+      } catch (error) {
+        if (!isActive) return;
+        const cachedImage = localStorage.getItem('profileImage') || '';
+        setProfileImageUrl(cachedImage);
+      }
+    };
+
+    loadProfileImage();
+    return () => {
+      isActive = false;
+    };
+  }, [isLoggedIn, email]);
+
+  useEffect(() => {
+    const handleProfileImageUpdated = (event) => {
+      const nextImage = event?.detail?.profileImage || '';
+      setProfileImageUrl(nextImage);
+      if (nextImage) {
+        localStorage.setItem('profileImage', nextImage);
+      } else {
+        localStorage.removeItem('profileImage');
+      }
+    };
+
+    window.addEventListener('atlas:profile-image-updated', handleProfileImageUpdated);
+    return () => window.removeEventListener('atlas:profile-image-updated', handleProfileImageUpdated);
+  }, []);
 
   useEffect(() => {
     console.log('[Navbar][Admin Debug] Render state:', {
@@ -69,7 +117,11 @@ function Navbar({ isLoggedIn, isAdmin, username, onLogout }) {
               data-onboarding-target="navbar-auth-link"
               onClick={toggleModal}
           >
-            <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+            {profileImageUrl ? (
+              <img src={profileImageUrl} alt="Profile" className="profile-avatar-image" />
+            ) : (
+              <FontAwesomeIcon icon={faUserCircle} className="profile-icon" />
+            )}
             <span className="username">{username}</span>
             {isModalOpen && (
               <div className="profile-modal" onClick={(e) => e.stopPropagation()}>

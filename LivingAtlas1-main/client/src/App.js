@@ -105,11 +105,12 @@ function App() {
     localStorage.setItem('email', '');
     localStorage.setItem('username', '');
     localStorage.setItem('isAdmin', JSON.stringify(false));
+    localStorage.removeItem('profileImage');
   };
 
   return (
     <Router>
-      <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} username={username} onLogout={handleLogout} />
+      <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} username={username} email={email} onLogout={handleLogout} />
       <Switch>
         <Route exact path="/">
           <Home isLoggedIn={isLoggedIn} username={username} email={email} isAdmin={isAdmin} />

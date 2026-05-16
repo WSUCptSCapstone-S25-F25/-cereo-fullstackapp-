@@ -31,6 +31,7 @@ const FormModal = (props) => {
     const isModalOpen = modalIsOpen || props.isOpen;
     const selectLocationMarker = useRef(null);
     const lastPointToolSignalRef = useRef(null);
+    const shouldCloseOnPointCancelRef = useRef(false);
 
     // Apply initial polygon data from Polygon Tool flow
     useEffect(() => {
@@ -360,6 +361,12 @@ const FormModal = (props) => {
                     latitude: lat.toFixed(6),
                     longitude: lng.toFixed(6),
                 }));
+
+                if (shouldCloseOnPointCancelRef.current && typeof props.onPointLocationSelected === 'function') {
+                    props.onPointLocationSelected();
+                }
+
+                shouldCloseOnPointCancelRef.current = false;
                 marker.remove();
                 selectLocationMarker.current = null;
                 setIsSelectingLocation(false);
@@ -393,6 +400,12 @@ const FormModal = (props) => {
             }
         }
         setIsSelectingLocation(false);
+
+        // Point-tool launch from map toolbar: cancel without plotting should fully close create-card flow.
+        if (shouldCloseOnPointCancelRef.current) {
+            shouldCloseOnPointCancelRef.current = false;
+            handleCloseModal();
+        }
     };
 
     const handleStartPolygonDraw = () => {
@@ -432,13 +445,14 @@ const FormModal = (props) => {
     useEffect(() => {
         const signal = props.initialPointToolSignal;
         if (!signal || signal === lastPointToolSignalRef.current) return;
-        if (!isModalOpen || isSelectingLocation || isDrawingPolygon) return;
+        if (isSelectingLocation || isDrawingPolygon) return;
 
         lastPointToolSignalRef.current = signal;
+        shouldCloseOnPointCancelRef.current = true;
         setLocationType('point');
         setPolygonVertices([]);
         handleSelectLocation();
-    }, [props.initialPointToolSignal, isModalOpen, isSelectingLocation, isDrawingPolygon, handleSelectLocation]);
+    }, [props.initialPointToolSignal, isSelectingLocation, isDrawingPolygon, handleSelectLocation]);
 
     return (
         <div>
