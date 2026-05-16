@@ -1097,15 +1097,25 @@ const Content1 = (props) => {
         }
 
         const el = document.createElement('div');
+        const normalizedCategory = (feature.category || '').toString().trim().toLowerCase();
 
-        if (feature.category === "River") {
+        if (normalizedCategory === 'river') {
           el.className = 'blue-marker';
           blueMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-        } else if (feature.category === "Watershed") {
+        } else if (normalizedCategory === 'watershed') {
           el.className = 'green-marker';
           greenMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-        } else {
+        } else if (normalizedCategory === 'places' || normalizedCategory === 'place') {
           el.className = 'yellow-marker';
+          yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+        } else if (normalizedCategory === 'other') {
+          el.className = 'other-marker';
+          yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+        } else if (normalizedCategory === '' || normalizedCategory === 'none' || normalizedCategory === 'uncategorized') {
+          el.className = 'none-marker';
+          yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+        } else {
+          el.className = 'other-marker';
           yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
         }
 

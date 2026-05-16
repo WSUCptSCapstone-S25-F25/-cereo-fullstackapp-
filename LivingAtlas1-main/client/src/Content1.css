@@ -513,10 +513,33 @@
   cursor: pointer;
 }
 
+.other-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #ff7043;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(64, 64, 64, 0.45);
+  cursor: pointer;
+}
+
+.none-marker {
+  width: 18px;
+  height: 18px;
+  background: #6c757d;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(64, 64, 64, 0.45);
+  transform: rotate(45deg);
+  transform-origin: center;
+  cursor: pointer;
+}
+
 .marker,
 .blue-marker,
 .green-marker,
-.yellow-marker {
+.yellow-marker,
+.other-marker,
+.none-marker {
   transition: transform 0.18s ease, filter 0.18s ease;
   transform-origin: bottom center;
 }
@@ -524,8 +547,14 @@
 .marker:hover,
 .blue-marker:hover,
 .green-marker:hover,
-.yellow-marker:hover {
+.yellow-marker:hover,
+.other-marker:hover {
   transform: translateY(-4px) scale(1.08);
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28));
+}
+
+.none-marker:hover {
+  transform: rotate(45deg) translateY(-3px) scale(1.08);
   filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28));
 }
 

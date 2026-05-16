@@ -102,6 +102,11 @@
     color: #374957;
 }
 
+.form-modal-required-star {
+    color: #d32f2f;
+    font-weight: 700;
+}
+
 .form-modal input[type="text"],
 .form-modal input[type="email"],
 .form-modal select,
@@ -576,9 +581,57 @@
     background: #e5ecf3;
 }
 
+.form-modal-location-content {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid #d8e1ea;
+    border-radius: 8px;
+    background: #f9fafb;
+    min-height: 148px;
+    box-sizing: border-box;
+    overflow: visible;
+}
+
+.form-modal-location-description {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: #5b6f82;
+    line-height: 1.35;
+}
+
+.form-modal-lat-lng-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.form-modal-lat-lng-field {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-modal-lat-lng-field input[type="text"] {
+    margin-bottom: 0;
+}
+
+.form-modal-location-content.form-modal-location-content--point .location_button {
+    margin-bottom: 8px;
+}
+
+.form-modal-location-content.form-modal-location-content--point .form-modal-lat-lng-field > label {
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+
+.form-modal-location-content.form-modal-location-content--point .form-modal-lat-lng-field > input[type="text"] {
+    padding: 6px 8px !important;
+    min-height: 34px;
+    margin-bottom: 0 !important;
+}
+
 /* Polygon section */
 .form-modal-polygon-section {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 .form-modal-polygon-summary {

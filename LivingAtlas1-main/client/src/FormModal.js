@@ -490,7 +490,7 @@ const FormModal = (props) => {
                 <div data-onboarding-target="create-card-modal-root">
                 <h2 data-onboarding-target="create-card-title">Create Card</h2>
                 <form onSubmit={handleSubmit}>
-                    <label>Author Name (required):</label>
+                    <label>Author Name <span className="form-modal-required-star">*</span>:</label>
                     <input 
                         type="text" 
                         name="name" 
@@ -499,13 +499,13 @@ const FormModal = (props) => {
                         required 
                     />
 
-                    <label>Email (required):</label>
+                    <label>Email <span className="form-modal-required-star">*</span>:</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
 
-                    <label>Title (required):</label>
+                    <label>Title <span className="form-modal-required-star">*</span>:</label>
                     <input type="text" name="title" value={formData.title} onChange={handleInputChange} required />
 
-                    <label>Category:</label>
+                    <label>Category (optional):</label>
                     <select name="category" value={formData.category} onChange={handleInputChange}>
                         <option value="">Select a Category</option>
                         <option value="River">River</option>
@@ -514,17 +514,17 @@ const FormModal = (props) => {
                         <option value="Other">Other</option>
                     </select>
 
-                    <label>Description:</label>
+                    <label>Description (optional):</label>
                     <textarea name="description" value={formData.description} onChange={handleInputChange} />
 
-                    <label>Funding:</label>
+                    <label>Funding (optional):</label>
                     <input type="text" name="funding" value={formData.funding} onChange={handleInputChange} />
 
-                    <label>Organization:</label>
+                    <label>Organization (optional):</label>
                     <input type="text" name="org" value={formData.org} onChange={handleInputChange} />
 
                     <div className="form-modal-links-section">
-                        <label className="form-modal-links-label">Links:</label>
+                        <label className="form-modal-links-label">Links (optional):</label>
                         {links.map((linkItem, idx) => (
                             <div key={idx} className="form-modal-link-row">
                                 <input
@@ -557,7 +557,7 @@ const FormModal = (props) => {
                         >+ Add More Links</button>
                     </div>
 
-                    <label>Location Type:</label>
+                    <label>Location Type (choose map placement mode) <span className="form-modal-required-star">*</span>:</label>
                     <div className="form-modal-location-tabs" data-onboarding-target="create-card-location-tabs">
                         <button
                             type="button"
@@ -583,33 +583,40 @@ const FormModal = (props) => {
                     </div>
 
                     {locationType === 'point' && (
-                        <>
+                        <div className="form-modal-location-content form-modal-location-content--point">
+                            <p className="form-modal-location-description">Use one latitude/longitude point to pin this card at a single location.</p>
                             <button type="button" className="location_button" onClick={handleSelectLocation}>
                                 Select a Location
                             </button>
 
-                            <label>Latitude (required):</label>
-                            <input
-                                type="text"
-                                name="latitude"
-                                value={formData.latitude}
-                                onChange={handleInputChange}
-                                required
-                            />
-
-                            <label>Longitude (required):</label>
-                            <input
-                                type="text"
-                                name="longitude"
-                                value={formData.longitude}
-                                onChange={handleInputChange}
-                                required
-                            />
-                        </>
+                            <div className="form-modal-lat-lng-row">
+                                <div className="form-modal-lat-lng-field">
+                                    <label>Latitude <span className="form-modal-required-star">*</span>:</label>
+                                    <input
+                                        type="text"
+                                        name="latitude"
+                                        value={formData.latitude}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-modal-lat-lng-field">
+                                    <label>Longitude <span className="form-modal-required-star">*</span>:</label>
+                                    <input
+                                        type="text"
+                                        name="longitude"
+                                        value={formData.longitude}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     )}
 
                     {locationType === 'polygon' && (
-                        <div className="form-modal-polygon-section">
+                        <div className="form-modal-location-content form-modal-polygon-section">
+                            <p className="form-modal-location-description">Draw a polygon area on the map to represent a region instead of a single point.</p>
                             <button type="button" className="location_button" onClick={handleStartPolygonDraw}>
                                 {polygonVertices.length >= 3 ? 'Redraw Polygon' : 'Draw Polygon on Map'}
                             </button>
@@ -623,7 +630,8 @@ const FormModal = (props) => {
                     )}
 
                     {locationType === 'image' && (
-                        <div className="form-modal-polygon-section">
+                        <div className="form-modal-location-content form-modal-polygon-section">
+                            <p className="form-modal-location-description">Place a georeferenced PNG overlay onto the map using four corner points.</p>
                             <button type="button" className="location_button" onClick={handleStartImageOverlayPlacement}>
                                 Add PNG Image to Map
                             </button>
@@ -640,16 +648,16 @@ const FormModal = (props) => {
                         </div>
                     )}
 
-                    <label>Tags (comma-separated):</label>
+                    <label>Tags (comma-separated) (optional):</label>
                     <input type="text" name="tags" value={formData.tags} onChange={handleInputChange} />
 
-                    <label>{locationType === 'image' ? 'Learn More Gallery Images:' : 'Images:'}</label>
+                    <label>Attach Images (optional):</label>
                     <div
                         className="form-modal-image-upload-area"
                         data-onboarding-target="create-card-image-upload"
                         onClick={() => imageInputRef.current?.click()}
                     >
-                        <p>{locationType === 'image' ? 'Click or drag to add optional Learn More gallery images' : 'Click or drag to add images (PNG, JPG, GIF, WebP)'}</p>
+                        <p>{locationType === 'image' ? 'Click or drag to add optional gallery images for the card details view' : 'Click or drag to add images (PNG, JPG, GIF, WebP)'}</p>
                         <span className="form-modal-image-upload-btn">Choose Images</span>
                         <input
                             ref={imageInputRef}
@@ -674,7 +682,7 @@ const FormModal = (props) => {
                         </div>
                     )}
 
-                    <label>Upload Files:</label>
+                    <label>Upload Files (optional):</label>
                     <div
                         className="form-modal-file-upload-area"
                         data-onboarding-target="create-card-file-upload"
@@ -700,7 +708,7 @@ const FormModal = (props) => {
                         </div>
                     )}
 
-                    <label>Linked ArcGIS Services <span style={{fontWeight:'normal',color:'#888'}}>(optional)</span>:</label>
+                    <label>Linked ArcGIS Services (optional):</label>
                     <button
                         type="button"
                         className="location_button"
