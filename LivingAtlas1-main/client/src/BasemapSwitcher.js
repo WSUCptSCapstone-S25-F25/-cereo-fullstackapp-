@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faQuestion, faPlay } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faQuestion, faPlay, faSearch } from '@fortawesome/free-solid-svg-icons';
 import './BasemapSwitcher.css';
 import BasemapPanelOnboarding from './OnboardingBasemapPanel';
 
@@ -32,45 +32,67 @@ function createRasterStyle(id, tileUrl, attribution = '') {
 
 const BASEMAPS = [
     {
+        id: 'satellite-v9',
+        label: 'Satellite (Imagery)',
+        description: 'Most realistic aerial imagery view with no labels.',
+        style: 'mapbox://styles/mapbox/satellite-v9',
+        thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
+    },
+    {
+        id: 'satellite-streets-v12',
+        label: 'Satellite + Streets',
+        description: 'Aerial imagery with roads and place labels overlaid.',
+        style: 'mapbox://styles/mapbox/satellite-streets-v12',
+        thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
+    },
+    {
         id: 'navigation-day-v1',
-        label: 'navigation-day-v1',
+        label: 'Navigation Day',
+        description: 'High-contrast daytime style optimized for routing.',
         style: 'mapbox://styles/mapbox/navigation-day-v1',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/navigation-day-v1/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
         thumbnailNeedsToken: true,
     },
     {
         id: 'navigation-night-v1',
-        label: 'navigation-night-v1',
+        label: 'Navigation Night',
+        description: 'Dark navigation style designed for low-light viewing.',
         style: 'mapbox://styles/mapbox/navigation-night-v1',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
         thumbnailNeedsToken: true,
     },
     {
         id: 'outdoors-v12',
-        label: 'outdoors-v12',
+        label: 'Outdoors',
+        description: 'Terrain-forward style emphasizing land and trails.',
         style: 'mapbox://styles/mapbox/outdoors-v12',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
         thumbnailNeedsToken: true,
     },
     {
-        id: 'satellite-streets-v12',
-        label: 'satellite-streets-v12',
-        style: 'mapbox://styles/mapbox/satellite-streets-v12',
-        thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
-        thumbnailNeedsToken: true,
-    },
-    {
-        id: 'satellite-v9',
-        label: 'satellite-v9',
-        style: 'mapbox://styles/mapbox/satellite-v9',
-        thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
-        thumbnailNeedsToken: true,
-    },
-    {
         id: 'streets-v12',
-        label: 'streets-v12',
+        label: 'Streets',
+        description: 'General-purpose street map for everyday exploration.',
         style: 'mapbox://styles/mapbox/streets-v12',
         thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
+    },
+    {
+        id: 'light-v11',
+        label: 'Light',
+        description: 'Minimal light basemap for data-overlay readability.',
+        style: 'mapbox://styles/mapbox/light-v11',
+        thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/light-v11/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
+        thumbnailNeedsToken: true,
+    },
+    {
+        id: 'dark-v11',
+        label: 'Dark',
+        description: 'Dark-theme basemap that reduces visual glare.',
+        style: 'mapbox://styles/mapbox/dark-v11',
+        thumbnail: 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/-122.4194,37.7749,12,0/200x140@2x?access_token=',
         thumbnailNeedsToken: true,
     },
 ];
@@ -86,11 +108,21 @@ function getAccessToken() {
     }
 }
 
-export default function BasemapSwitcher({ isOpen, onClose, mapInstance, currentBasemapId, onBasemapChange }) {
+export default function BasemapSwitcher({ isOpen, onClose, splitBottom = false, mapInstance, currentBasemapId, onBasemapChange }) {
     const [currentBasemap, setCurrentBasemap] = useState(currentBasemapId || 'streets-v12');
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
+    const [searchKeyword, setSearchKeyword] = useState('');
     const previousControlledBasemapRef = useRef(currentBasemapId || 'streets-v12');
     const token = getAccessToken();
+
+    const filteredBasemaps = BASEMAPS.filter((item) => {
+        if (!searchKeyword.trim()) {
+            return true;
+        }
+        const keyword = searchKeyword.trim().toLowerCase();
+        return item.label.toLowerCase().includes(keyword) || item.description.toLowerCase().includes(keyword);
+    });
 
     const applyBasemap = (map, basemap) => {
         if (!map || !basemap) return;
@@ -206,9 +238,18 @@ export default function BasemapSwitcher({ isOpen, onClose, mapInstance, currentB
 
     if (!isOpen) return null;
 
+    const runSearch = () => {
+        setSearchKeyword(searchInput.trim());
+    };
+
+    const clearSearch = () => {
+        setSearchInput('');
+        setSearchKeyword('');
+    };
+
     return (
         <>
-        <div className={`basemap-switcher-panel${isOnboardingOpen ? ' onboarding-locked' : ''}`}>
+        <div className={`basemap-switcher-panel${splitBottom ? ' basemap-switcher-panel--split-bottom' : ''}${isOnboardingOpen ? ' onboarding-locked' : ''}`}>
             <div className="basemap-switcher-header">
                 <span className="basemap-switcher-title">Map Style</span>
                 <div className="basemap-switcher-header-actions">
@@ -223,11 +264,43 @@ export default function BasemapSwitcher({ isOpen, onClose, mapInstance, currentB
                     </button>
                 </div>
             </div>
+            <div className="upload-panel-searchbar" data-onboarding-target="basemap-search-row">
+                <input
+                    type="text"
+                    placeholder="Search map style"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            runSearch();
+                        }
+                    }}
+                />
+                <button
+                    type="button"
+                    className="upload-panel-searchbar-btn search"
+                    title="Search"
+                    onClick={runSearch}
+                >
+                    <FontAwesomeIcon icon={faSearch} />
+                </button>
+                <button
+                    type="button"
+                    className="upload-panel-searchbar-btn clear"
+                    title="Clear Search"
+                    onClick={clearSearch}
+                    disabled={!searchInput && !searchKeyword}
+                >
+                    <FontAwesomeIcon icon={faTimes} />
+                </button>
+            </div>
             <div className="basemap-switcher-list" data-onboarding-target="basemap-list">
-                {BASEMAPS.map(basemap => (
+                {filteredBasemaps.map(basemap => (
                     <div
                         key={basemap.id}
                         className={`basemap-switcher-item${currentBasemap === basemap.id ? ' basemap-switcher-item--active' : ''}`}
+                        data-basemap-id={basemap.id}
                         data-onboarding-target={currentBasemap === basemap.id ? 'basemap-active-item' : 'basemap-item'}
                         onClick={() => handleSelect(basemap)}
                     >
@@ -237,9 +310,15 @@ export default function BasemapSwitcher({ isOpen, onClose, mapInstance, currentB
                             alt={basemap.label}
                             loading="lazy"
                         />
-                        <span className="basemap-switcher-label">{basemap.label}</span>
+                        <div className="basemap-switcher-text">
+                            <span className="basemap-switcher-label">{basemap.label}</span>
+                            <span className="basemap-switcher-desc">{basemap.description}</span>
+                        </div>
                     </div>
                 ))}
+                {filteredBasemaps.length === 0 && (
+                    <div className="basemap-switcher-empty">No map style matches your search.</div>
+                )}
             </div>
         </div>
         <BasemapPanelOnboarding
