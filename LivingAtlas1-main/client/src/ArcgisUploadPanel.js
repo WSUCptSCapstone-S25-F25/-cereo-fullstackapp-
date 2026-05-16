@@ -1665,7 +1665,7 @@ function ArcgisUploadPanel({
                         map,
                         { ...layer, serviceKey: service.key, serviceUrl: service.url },
                         showArcgisPopup,
-                        { minzoom: 6, maxzoom: 12 }
+                        { minzoom: 6 }
                     );
                     vectorAddedIds.add(id);
                 }
@@ -1750,6 +1750,7 @@ function ArcgisUploadPanel({
                                     id: sublayerLayerId,
                                     type: 'raster',
                                     source: sublayerSourceId,
+                                    minzoom: 6,
                                     paint: {
                                         'raster-opacity': layerOpacity
                                     }
@@ -1814,6 +1815,7 @@ function ArcgisUploadPanel({
                         id: rasterLayerId,
                         type: 'raster',
                         source: rasterSourceId,
+                        minzoom: 6,
                         paint: {
                             'raster-opacity': layerOpacity
                         }
@@ -1939,7 +1941,7 @@ function ArcgisUploadPanel({
                     minzoom: 6,
                     maxzoom: 12
                 });
-                map.addLayer({ id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': opacity } });
+                map.addLayer({ id: layerId, type: 'raster', source: sourceId, minzoom: 6, paint: { 'raster-opacity': opacity } });
             });
     }, [mapInstance, layerOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
 

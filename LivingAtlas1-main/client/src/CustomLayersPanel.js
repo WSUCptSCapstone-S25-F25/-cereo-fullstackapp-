@@ -473,7 +473,7 @@ function CustomLayersPanel({
                         map,
                         { ...layer, serviceKey: `custom-${service.key}`, serviceUrl: service.url },
                         showArcgisPopup,
-                        { minzoom: 6, maxzoom: 12 }
+                        { minzoom: 6 }
                     );
                 }
             });
@@ -538,6 +538,7 @@ function CustomLayersPanel({
                                     id: sublayerLayerId,
                                     type: 'raster',
                                     source: sublayerSourceId,
+                                    minzoom: 6,
                                     paint: { 'raster-opacity': layerOpacity }
                                 });
                             });
@@ -559,6 +560,7 @@ function CustomLayersPanel({
                         id: rasterLayerId,
                         type: 'raster',
                         source: rasterSourceId,
+                        minzoom: 6,
                         paint: { 'raster-opacity': layerOpacity }
                     });
                 }
