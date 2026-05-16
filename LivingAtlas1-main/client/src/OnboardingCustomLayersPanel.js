@@ -12,7 +12,7 @@ const ONBOARDING_STEPS = [
     {
         selector: '[data-onboarding-target="custom-layers-new-folder-button"]',
         title: 'New Folder',
-        description: 'Use this button to create a new folder for your saved custom layers.',
+        description: 'Use this action-row button to create a new folder for your saved custom layers.',
         placement: 'left',
     },
     {
@@ -30,7 +30,7 @@ const ONBOARDING_STEPS = [
     {
         selector: '[data-onboarding-target="custom-layers-search-area"]',
         title: 'Search',
-        description: 'Search by folder, service, or layer name. The dropdown lets you narrow the search type.',
+        description: 'Search by folder, service, or layer name. Use the search-type dropdown (Any/Folder/Service/Layer) to narrow what gets matched.',
         placement: 'left',
     },
     {
@@ -48,7 +48,43 @@ const ONBOARDING_STEPS = [
     {
         selector: '[data-onboarding-target="custom-layers-opacity-slider"]',
         title: 'Display Controls',
-        description: 'Use the opacity slider and added-only filter to fine-tune how saved layers are shown.',
+        description: 'Use the opacity slider to change how all saved layers appear on the map.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-panel-actions"]',
+        title: 'Panel Actions',
+        description: 'This action row groups New Folder, Show Added Only, and Clear All so you can organize saved services and focus on items already loaded on the map.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-service-info-modal"]',
+        title: 'Service Info Modal',
+        description: 'The tutorial opens the first saved service info modal automatically so you can review metadata, modal layout, and close controls in context.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-service-info-actions"]',
+        title: 'Save Service and Open Source Page',
+        description: 'Service info includes a Save button and a direct ArcGIS service page link, making it easy to preserve the service again or verify the original source.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-layer-info-modal"]',
+        title: 'Layer Info Modal',
+        description: 'Layer info shows layer metadata, legend content, and parent or child layer links when the ArcGIS service exposes them.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-layer-info-filter"]',
+        title: 'Field Filter Builder',
+        description: 'Choose a field, operator, and value to build a layer filter, apply it to the map, or clear it when you are finished.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-layer-info-actions"]',
+        title: 'Save Layer and Inspect REST Page',
+        description: 'The action area at the bottom of Layer Info lets you save the current layer and open the ArcGIS layer page for direct source inspection.',
         placement: 'left',
     },
 ];

@@ -11,16 +11,16 @@
 
 /* Left sidebar styles */
 .left-sidebar {
-    width: 48px;
+    width: var(--app-left-sidebar-collapsed-width);
     background-color: #333;
     color: white;
-    height: calc(100vh - 50px); /* Subtract navbar height */
+    height: calc(100vh - var(--app-navbar-height)); /* Subtract navbar height */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     position: fixed;
-    top: 50px; /* Place the sidebar below the navbar */
+    top: var(--app-navbar-height); /* Place the sidebar below the navbar */
     left: 0;
     z-index: 1000;
     transition: width 0.3s ease;
@@ -28,7 +28,7 @@
 }
 
 .left-sidebar.open {
-    width: 300px;
+    width: var(--app-left-sidebar-expanded-width);
 }
 
 /*
@@ -49,7 +49,7 @@
     box-sizing: border-box;
     background-color: #444;
     color: white;
-    height: calc(100vh - 70px); /* Subtract navbar and top button height */
+    height: calc(100vh - var(--app-navbar-height) - 20px); /* Subtract navbar and top button height */
     overflow-y: auto;
 }
 
@@ -63,13 +63,13 @@
 }
 
 .left-sidebar.open + .main {
-    margin-left: 300px; /* Adjust main content offset when sidebar is open */
-    width: calc(100% - 300px); /* Adjust width to fit the sidebar */
+    margin-left: var(--app-left-sidebar-expanded-width); /* Adjust main content offset when sidebar is open */
+    width: calc(100% - var(--app-left-sidebar-expanded-width)); /* Adjust width to fit the sidebar */
 }
 
 .left-sidebar + .main {
-    margin-left: 48px; /* Adjust main content offset when sidebar is closed */
-    width: calc(100% - 48px); /* Adjust width to fit the sidebar */
+    margin-left: var(--app-left-sidebar-collapsed-width); /* Adjust main content offset when sidebar is closed */
+    width: calc(100% - var(--app-left-sidebar-collapsed-width)); /* Adjust width to fit the sidebar */
 }
 
 /* Left Sidebar Toggle Button */
@@ -94,21 +94,23 @@
     .left-sidebar-upload-button,
     .left-sidebar-cards-button,
     .left-sidebar-basemap-button,
+    .left-sidebar-chatbot-button,
     .left-sidebar-layers-button,
     .left-sidebar-customlayers-button,
     .left-sidebar-trash-button,
     .left-sidebar-ai-button,
     .left-sidebar-tutorial-button,
-    .left-sidebar-changelog-button
+    .left-sidebar-changelog-button,
+    .left-sidebar-onboarding-button
 ) {
     appearance: none;
     background: transparent;
     border: 1px solid transparent;
     color: #ffffff;
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
+    width: var(--app-left-sidebar-icon-size);
+    height: var(--app-left-sidebar-icon-size);
+    min-width: var(--app-left-sidebar-icon-size);
+    min-height: var(--app-left-sidebar-icon-size);
     padding: 0;
     margin: 12px 0 0 0;
     border-radius: 10px;
@@ -126,14 +128,17 @@
 /* Mini Search Modal – slides out from behind the left sidebar */
 .search-mini-modal {
     position: fixed;
-    left: 48px;          /* flush against the right edge of the sidebar */
-    top: 50px;           /* flush below the topnav */
+    left: var(--app-left-sidebar-collapsed-width);          /* flush against the right edge of the sidebar */
+    top: var(--app-navbar-height);           /* flush below the topnav */
     z-index: 999;        /* below sidebar (1000) so it slides from behind it */
-    background: #d9d9d9;
-    box-shadow: 5px 6px 20px rgba(0, 0, 0, 0.18);
-    border-radius: 0 0 10px 0;   /* only bottom-right corner rounded */
-    border: 1px solid #b5b5b5;
-    padding: 10px 10px 10px 12px;
+    background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
+    box-shadow: 10px 0 24px rgba(16, 33, 54, 0.18);
+    border-radius: 0 10px 10px 0;
+    border: 1px solid #d8e1ea;
+    border-left: none;
+    padding: 10px;
+    min-width: min(300px, calc(100vw - var(--app-left-sidebar-collapsed-width) - 20px));
+    max-width: 340px;
     pointer-events: none;
     opacity: 0;
     transform: translateX(calc(-100% - 4px));
@@ -150,41 +155,44 @@
     display: flex;
     align-items: stretch;
     gap: 0;
-    height: 40px;
+    height: 38px;
+    margin-bottom: 10px;
 }
 
 .search-mini-input {
-    border: 1px solid #a8a8a8;
+    border: 1px solid #bfd0e2;
     border-right: none;
     border-radius: 6px 0 0 6px;
     padding: 0 12px;
     font-size: 14px;
-    width: 220px;
+    width: 100%;
     height: 100%;
     outline: none;
-    background: #f1f1f1;
-    color: #3f3f3f;
+    background: #ffffff;
+    color: #223244;
     box-sizing: border-box;
     display: block;
     margin: 0;
     line-height: 38px;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .search-mini-input:focus {
-    border-color: #7a7a7a;
-    background: #fbfbfb;
+    border-color: #8eabc8;
+    background: #fdfefe;
+    box-shadow: inset 0 0 0 1px rgba(142, 171, 200, 0.2);
 }
 
 .search-mini-input::placeholder {
-    color: #8e8e8e;
+    color: #7f93a8;
 }
 
 .search-mini-button {
-    border: 1px solid #7d7d7d;
-    border-radius: 0 6px 6px 0;
-    background: #7d7d7d;
-    color: #f5f5f5;
+    border: 1px solid #bfd0e2;
+    border-right: none;
+    border-radius: 0;
+    background: #eef4fb;
+    color: #27425d;
     padding: 0 13px;
     cursor: pointer;
     font-size: 14px;
@@ -198,17 +206,87 @@
     min-width: 44px;
     line-height: 1;
     appearance: none;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .search-mini-button:hover {
-    background: #686868;
-    border-color: #686868;
+    background: #dce8f5;
+    border-color: #8eabc8;
+    color: #1f3852;
 }
 
 .search-mini-button svg {
     display: block;
     line-height: 1;
+}
+
+.search-mini-clear-button {
+    border: 1px solid #bfd0e2;
+    border-left: none;
+    border-radius: 0 6px 6px 0;
+    background: #eef4fb;
+    color: #27425d;
+    padding: 0 11px;
+    cursor: pointer;
+    font-size: 13px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    margin: 0;
+    min-width: 40px;
+    line-height: 1;
+    appearance: none;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.search-mini-clear-button:hover {
+    background: #dce8f5;
+    border-color: #8eabc8;
+    color: #1f3852;
+}
+
+.search-mini-results {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    width: 100%;
+    border: 1px solid #d8e1ea;
+    border-radius: 8px;
+    background: #fafbfd;
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+.search-mini-results-empty {
+    font-size: 13px;
+    color: #60758b;
+    padding: 6px 4px;
+}
+
+.search-mini-result-item {
+    border: 1px solid #d8e1ea;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #223244;
+    text-align: left;
+    font-size: 13px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.search-mini-result-item:hover {
+    background: #f2f7fc;
+    border-color: #8eabc8;
+}
+
+.home-container :is(button, a).feature-search-hit {
+    box-shadow: 0 0 0 2px #ffbf47;
+    border-radius: 6px;
 }
 
 /* Buttons in Modal */
@@ -235,10 +313,10 @@
 /* Right sidebar styles */
 #right-sidebar {
     position: fixed; /* Fixed on the right side of the page */
-    top: 50px; /* Ensures it does not overlap with the navbar */
-    right: -48px;
-    width: 48px; /* Width of the right sidebar */
-    height: calc(100vh - 50px); /* Height adapts to the viewport minus the navbar height */
+    top: var(--app-navbar-height); /* Ensures it does not overlap with the navbar */
+    right: calc(-1 * var(--app-left-sidebar-collapsed-width));
+    width: var(--app-left-sidebar-collapsed-width); /* Width of the right sidebar */
+    height: calc(100vh - var(--app-navbar-height)); /* Height adapts to the viewport minus the navbar height */
     background-color: transparent; /* Background color */
     display: flex;
     flex-direction: column; /* Vertical alignment of child elements */
@@ -306,6 +384,10 @@
 }
 
 .left-sidebar-changelog-button {
+    margin-bottom: 8px;
+}
+
+.left-sidebar-onboarding-button {
     margin-bottom: 12px;
 }
 
@@ -316,12 +398,14 @@
     .left-sidebar-upload-button,
     .left-sidebar-cards-button,
     .left-sidebar-basemap-button,
+    .left-sidebar-chatbot-button,
     .left-sidebar-layers-button,
     .left-sidebar-customlayers-button,
     .left-sidebar-trash-button,
     .left-sidebar-ai-button,
     .left-sidebar-tutorial-button,
-    .left-sidebar-changelog-button
+    .left-sidebar-changelog-button,
+    .left-sidebar-onboarding-button
 ):hover {
     background-color: #444a53;
     color: #f5f8ff;
@@ -331,14 +415,18 @@
 }
 
 .left-sidebar :is(
+    .left-sidebar-search-button,
     .left-sidebar-gis-button,
     .left-sidebar-cards-button,
-    .left-sidebar-customlayers-button
+    .left-sidebar-basemap-button,
+    .left-sidebar-customlayers-button,
+    .left-sidebar-chatbot-button
 ).active {
     background-color: #444a53;
     color: #f5f8ff;
     border-color: rgba(255, 255, 255, 0.22);
     border-radius: 6px;
+    transform: translateY(-1px);
 }
 
 .left-sidebar :is(
@@ -347,12 +435,14 @@
     .left-sidebar-upload-button,
     .left-sidebar-cards-button,
     .left-sidebar-basemap-button,
+    .left-sidebar-chatbot-button,
     .left-sidebar-layers-button,
     .left-sidebar-customlayers-button,
     .left-sidebar-trash-button,
     .left-sidebar-ai-button,
     .left-sidebar-tutorial-button,
-    .left-sidebar-changelog-button
+    .left-sidebar-changelog-button,
+    .left-sidebar-onboarding-button
 ):active {
     transform: translateY(0);
     background-color: #3d434c;
@@ -364,14 +454,26 @@
     .left-sidebar-upload-button,
     .left-sidebar-cards-button,
     .left-sidebar-basemap-button,
+    .left-sidebar-chatbot-button,
     .left-sidebar-layers-button,
     .left-sidebar-customlayers-button,
     .left-sidebar-trash-button,
     .left-sidebar-ai-button,
     .left-sidebar-tutorial-button,
-    .left-sidebar-changelog-button
+    .left-sidebar-changelog-button,
+    .left-sidebar-onboarding-button
 ):focus-visible {
     outline: 2px solid #8ab4ff;
     outline-offset: 2px;
+}
+
+.left-sidebar .left-sidebar-chatbot-button:disabled,
+.left-sidebar .left-sidebar-chatbot-button:disabled:hover,
+.left-sidebar .left-sidebar-chatbot-button:disabled:active {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: transparent;
+    border-color: transparent;
+    transform: none;
 }
 

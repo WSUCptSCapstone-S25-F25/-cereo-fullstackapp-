@@ -31,6 +31,7 @@ import {
   faMinus,
   faLocationCrosshairs,
   faLocationDot,
+  faImage,
   faRotate,
   faShapes,
   faPalette,
@@ -39,6 +40,12 @@ import {
   faRotateLeft,
   faRotateRight,
   faTrash,
+  faEllipsisV,
+  faQuestion,
+  faPlay,
+  faCircleQuestion,
+  faCirclePlay,
+  faFloppyDisk,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart, faFolder } from '@fortawesome/free-regular-svg-icons';
 import './Card.css';
@@ -55,30 +62,105 @@ import './BasemapSwitcher.css';
 import './Content1.css';
 import './PolygonDrawingModal.css';
 
-const SECTIONS = [
-  { id: 'home',          label: '🏠  Overview' },
-  { id: 'card-container', label: 'Card Container' },
-  { id: 'toolbar',        label: 'Card Panel Toolbar' },
-  { id: 'add-card',       label: 'Add Card Form' },
-  { id: 'arcgis-picker',  label: 'ArcGIS Picker Modal' },
-  { id: 'detail-view',   label: 'Card Detail View' },
-  { id: 'arcgis-panel',     label: 'ArcGIS Upload Panel' },
-  { id: 'custom-layers',    label: 'Custom Layers Panel' },
-  { id: 'basemap-panel',     label: 'Basemap Panel' },
-  { id: 'map-controls',      label: 'Map Controls' },
-  { id: 'polygon-draw',      label: 'Draw Polygon Panel' },
+const ADD_CARDS_FROM_MAP_SECTIONS = [
+  { id: 'add-single-point', label: 'Add Single Point' },
+  { id: 'polygon-tools',    label: 'Polygon Tools' },
+  { id: 'add-png',          label: 'Add PNG' },
 ];
+
+const ARCGIS_SECTIONS = [
+  { id: 'arcgis-panel', label: 'ArcGIS Upload Panel' },
+  { id: 'custom-layers', label: 'Custom Layers Panel' },
+  { id: 'service-layer-info', label: 'Service / Layer Info Modal' },
+];
+
+const SECTION_GROUPS = [
+  {
+    id: 'getting-started',
+    label: 'Getting Started',
+    sections: [
+      { id: 'home', label: '🏠  Overview' },
+      { id: 'feature-search-panel', label: 'Feature Search Panel' },
+    ],
+  },
+  {
+    id: 'cards-workspace',
+    label: 'Cards Workspace',
+    sections: [
+      { id: 'card-container', label: 'Card Container' },
+      { id: 'toolbar', label: 'Card Panel Toolbar' },
+      { id: 'detail-view', label: 'Card Detail View' },
+    ],
+  },
+  {
+    id: 'card-creation',
+    label: 'Card Creation',
+    sections: [
+      { id: 'add-card', label: 'Card Creation Form', children: ADD_CARDS_FROM_MAP_SECTIONS },
+      { id: 'arcgis-picker', label: 'ArcGIS Picker Modal' },
+    ],
+  },
+  {
+    id: 'arcgis-related',
+    label: 'ArcGIS Related',
+    sections: ARCGIS_SECTIONS,
+  },
+  {
+    id: 'map-view',
+    label: 'Map View',
+    sections: [
+      { id: 'basemap-panel', label: 'Basemap Panel' },
+      { id: 'map-controls', label: 'Map Controls' },
+    ],
+  },
+];
+
+const flattenSections = (sections) => sections.flatMap((section) => [
+  { id: section.id, label: section.label },
+  ...(section.children || []),
+]);
+
+const ALL_SECTIONS = SECTION_GROUPS.flatMap((group) => flattenSections(group.sections));
+const HOME_CARD_SECTIONS = ALL_SECTIONS.filter((section) => section.id !== 'home');
+
+const findGroupForSection = (sectionId) => {
+  return SECTION_GROUPS.find((group) => group.sections.some((section) => {
+    if (section.id === sectionId) return true;
+    return (section.children || []).some((child) => child.id === sectionId);
+  })) || null;
+};
 
 function UserManual() {
   const [activeSection, setActiveSection] = useState('home');
+  const [openGroups, setOpenGroups] = useState(() => (
+    Object.fromEntries(SECTION_GROUPS.map((group) => [group.id, true]))
+  ));
+  const [isAddCardsFromMapOpen, setIsAddCardsFromMapOpen] = useState(true);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sec = params.get('section');
-    if (sec && SECTIONS.some(s => s.id === sec)) {
+    if (sec && ALL_SECTIONS.some(s => s.id === sec)) {
       setActiveSection(sec);
+      const owningGroup = findGroupForSection(sec);
+      if (owningGroup) {
+        setOpenGroups((prev) => ({ ...prev, [owningGroup.id]: true }));
+      }
+      if (ADD_CARDS_FROM_MAP_SECTIONS.some(s => s.id === sec)) {
+        setIsAddCardsFromMapOpen(true);
+      }
     }
   }, []);
-  const navTo = (id) => { setActiveSection(id); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const navTo = (id) => {
+    setActiveSection(id);
+    const owningGroup = findGroupForSection(id);
+    if (owningGroup) {
+      setOpenGroups((prev) => ({ ...prev, [owningGroup.id]: true }));
+    }
+    if (ADD_CARDS_FROM_MAP_SECTIONS.some(section => section.id === id)) {
+      setIsAddCardsFromMapOpen(true);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   return (
     <div className="user-manual">
       <h1>User Manual</h1>
@@ -86,15 +168,58 @@ function UserManual() {
       <div className="um-layout">
         <nav className="um-nav-sidebar">
           <span className="um-nav-heading">Sections</span>
-          {SECTIONS.map(s => (
-            <button
-              key={s.id}
-              className={`um-nav-item${activeSection === s.id ? ' active' : ''}`}
-              onClick={() => setActiveSection(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
+          {SECTION_GROUPS.map((group) => {
+            const isGroupActive = group.sections.some((section) => {
+              if (activeSection === section.id) return true;
+              return (section.children || []).some((child) => child.id === activeSection);
+            });
+            return (
+              <React.Fragment key={group.id}>
+                <button
+                  className={`um-nav-item um-nav-item--group${isGroupActive ? ' active' : ''}`}
+                  onClick={() => setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))}
+                  aria-expanded={openGroups[group.id]}
+                >
+                  <span>{group.label}</span>
+                  <FontAwesomeIcon icon={openGroups[group.id] ? faChevronDown : faChevronUp} />
+                </button>
+
+                {openGroups[group.id] && group.sections.map((section) => (
+                  <React.Fragment key={section.id}>
+                    <button
+                      className={`um-nav-item um-nav-item--child${activeSection === section.id ? ' active' : ''}`}
+                      onClick={() => navTo(section.id)}
+                    >
+                      {section.label}
+                    </button>
+
+                    {section.children && (
+                      <>
+                        <button
+                          className={`um-nav-item um-nav-item--subgroup${isAddCardsFromMapOpen ? ' active' : ''}`}
+                          onClick={() => setIsAddCardsFromMapOpen((prev) => !prev)}
+                          aria-expanded={isAddCardsFromMapOpen}
+                        >
+                          <span>Add Cards from Map</span>
+                          <FontAwesomeIcon icon={isAddCardsFromMapOpen ? faChevronDown : faChevronUp} />
+                        </button>
+
+                        {isAddCardsFromMapOpen && section.children.map((childSection) => (
+                          <button
+                            key={childSection.id}
+                            className={`um-nav-item um-nav-item--grandchild${activeSection === childSection.id ? ' active' : ''}`}
+                            onClick={() => navTo(childSection.id)}
+                          >
+                            {childSection.label}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </React.Fragment>
+                ))}
+              </React.Fragment>
+            );
+          })}
         </nav>
 
         <div className="um-content-area">
@@ -110,27 +235,125 @@ function UserManual() {
         </p>
 
         <div className="um-home-cards">
-          {SECTIONS.filter(s => s.id !== 'home').map(s => (
+          {HOME_CARD_SECTIONS.map(s => (
             <button
               key={s.id}
               className="um-home-card"
-              onClick={() => setActiveSection(s.id)}
+              onClick={() => navTo(s.id)}
             >
               <span className="um-home-card-title">{s.label}</span>
               {{
+                'feature-search-panel': 'Use the left sidebar search panel to locate app features by keyword and launch them directly.',
                 'card-container': 'How cards are displayed, navigated, pinned, and favorited.',
                 'toolbar':        'Tools for adding cards, sorting, filtering, and switching views.',
                 'detail-view':    'The full-screen modal with editing, images, files, and ArcGIS layers.',
-                'add-card':       'Submit a new research entry with location, description, links, images, files, and optional ArcGIS service associations.',
-                'arcgis-picker':  'Browse and select ArcGIS services and layers to link directly to a card — opened from the Add Card form.',
+                'add-card':       'Create a new card with required metadata, location mode, images/files, and optional ArcGIS links.',
+                'arcgis-picker':  'Browse and select ArcGIS services and layers to link directly to a card — opened from the Card Creation form.',
                 'arcgis-panel':   'Browse and toggle ArcGIS REST map layers organized by state, folder, and service.',
+                'service-layer-info': 'Detailed guide for Service/Layer Info modal features: metadata, opacity, historical filters, links, and layer fields.',
                 'custom-layers':  'Manage your personal saved layers with custom folders, drag-and-drop ordering, and pinned auto-load items.',
                 'basemap-panel':   'Switch between six Mapbox map styles while preserving your ArcGIS layers, camera position, and zoom level.',
                 'map-controls':    'All interactive buttons on the map canvas — search, fullscreen, zoom, compass, geolocate, draw, and more.',
-                'polygon-draw':    'Draw freehand or preset-shape polygons to spatially filter cards, with style, transform, and history tools.',
+                'add-single-point': 'Open Add Card and immediately start point selection on the map.',
+                'polygon-tools':   'Draw and edit polygon-based card locations with style and transform controls.',
+                'add-png':         'Place a PNG overlay on map and create an image-overlay card from it.',
               }[s.id]}
             </button>
           ))}
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'feature-search-panel' && (
+      <section className="um-section">
+        <h2>Feature Search Panel</h2>
+        <p className="um-section-desc">
+          The Feature Search Panel slides out from the left sidebar search icon. It helps
+          you quickly find actions across the homepage by keyword, then run those actions
+          directly from the result list.
+        </p>
+
+        <div className="um-feature-list">
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ alignItems: 'stretch', minWidth: '280px' }}>
+                <div style={{
+                  background: 'linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%)',
+                  border: '1px solid #d8e1ea',
+                  borderRadius: '10px',
+                  padding: '10px',
+                  width: '100%',
+                  boxShadow: '0 6px 18px rgba(16, 33, 54, 0.15)'
+                }}>
+                  <div className="search-mini-form" style={{ marginBottom: '8px' }}>
+                    <input className="search-mini-input" value="add" readOnly />
+                    <button type="button" className="search-mini-button" style={{ pointerEvents: 'none' }}>
+                      <FontAwesomeIcon icon={faSearch} />
+                    </button>
+                    <button type="button" className="search-mini-clear-button" style={{ pointerEvents: 'none' }}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                  <div className="search-mini-results">
+                    <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>
+                      Add Card
+                    </button>
+                    <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>
+                      Add Single Point
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Panel Layout</p>
+              <p className="um-feature-desc">
+                The panel contains a keyword input, a <strong>Search</strong> button, a
+                <strong> Clear Search</strong> button, and a clickable results list below.
+                It shares the same visual style as other side panels for consistency.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px' }}>
+                <div className="search-mini-results" style={{ maxHeight: 'none' }}>
+                  <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>View All Cards</button>
+                  <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>Upload Panel Search</button>
+                  <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>Basemap: streets-v12</button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Keyword Search</p>
+              <p className="um-feature-desc">
+                Enter words like <strong>view</strong>, <strong>add</strong>,
+                <strong> basemap</strong>, or <strong>search</strong> to match mapped
+                feature keywords. Results update and can be launched directly.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ gap: '10px' }}>
+                <button type="button" className="search-mini-result-item" style={{ pointerEvents: 'none' }}>
+                  Add Card
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Run Feature by Clicking Result</p>
+              <p className="um-feature-desc">
+                Clicking a result immediately runs the mapped action. Example:
+                <strong> Add Card</strong> opens the Create Card modal;
+                <strong> View All Cards</strong> opens the card container.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
       )}
@@ -815,11 +1038,14 @@ function UserManual() {
 
       {activeSection === 'add-card' && (
       <section className="um-section">
-        <h2>Add Card Form</h2>
+        <h2>Card Creation Form</h2>
         <p className="um-section-desc">
-          The Add Card form lets you submit a new research entry to the atlas. Click the{' '}
+          The Card Creation form lets you submit a new research entry to the atlas. Click the{' '}
           <strong>+</strong> button in the card panel toolbar to open it. You must be logged
-          in — a login prompt appears otherwise. Once submitted, the new card appears in the
+          in — a login prompt appears otherwise. You can also start location-first creation
+          from the map toolbar using <strong>Add Cards from Map</strong>, then choose
+          <strong> Add Single Point</strong>, <strong>Polygon Tools</strong>, or
+          <strong> Add PNG</strong>. Once submitted, the new card appears in the
           card container and is pinned to the map.
         </p>
 
@@ -852,6 +1078,7 @@ function UserManual() {
             <div className="form-modal-location-tabs" style={{ pointerEvents: 'none', marginBottom: '10px' }}>
               <button type="button" className="form-modal-location-tab active">Single Point</button>
               <button type="button" className="form-modal-location-tab">Polygon Area</button>
+              <button type="button" className="form-modal-location-tab">Image Overlay</button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
               <button type="button" style={{ background: '#0077c0', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 18px', fontWeight: 600, fontSize: '13px', cursor: 'default' }}>Submit</button>
@@ -876,8 +1103,9 @@ function UserManual() {
               <p className="um-feature-title">Opening the Form</p>
               <p className="um-feature-desc">
                 Click the <strong>+</strong> button in the card panel toolbar. Login is
-                required; if you are not logged in, a prompt appears instead. The form
-                slides in as a side panel over the map.
+                required; if you are not logged in, a prompt appears instead. You can also
+                open this form from map toolbar shortcuts (single point, polygon, image overlay)
+                with location pre-filled. The form slides in as a side panel over the map.
               </p>
             </div>
           </div>
@@ -962,6 +1190,7 @@ function UserManual() {
                 <div className="form-modal-location-tabs" style={{ pointerEvents: 'none' }}>
                   <button type="button" className="form-modal-location-tab active">Single Point</button>
                   <button type="button" className="form-modal-location-tab">Polygon Area</button>
+                  <button type="button" className="form-modal-location-tab">Image Overlay</button>
                 </div>
                 <button type="button" className="location_button" style={{ pointerEvents: 'none', marginBottom: 0 }}>
                   <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: '6px' }} />
@@ -979,8 +1208,9 @@ function UserManual() {
                 Choose <strong>Single Point</strong> to click on the map and confirm a
                 lat/lng coordinate, or enter coordinates manually. Choose{' '}
                 <strong>Polygon Area</strong> to draw a custom polygon directly on the
-                map. The polygon's centroid is stored as the card's primary location.
-                Location is required for card submission.
+                map. Choose <strong>Image Overlay</strong> to place a PNG on the map with
+                move/rotate/resize support. For polygon/image modes, centroid is stored as
+                the card's primary location. Location is required for card submission.
               </p>
             </div>
           </div>
@@ -993,6 +1223,7 @@ function UserManual() {
                 <div className="form-modal-location-tabs">
                   <button type="button" className="form-modal-location-tab">Single Point</button>
                   <button type="button" className="form-modal-location-tab active">Polygon Area</button>
+                  <button type="button" className="form-modal-location-tab">Image Overlay</button>
                 </div>
                 {/* polygon section */}
                 <div className="form-modal-polygon-section">
@@ -1011,7 +1242,7 @@ function UserManual() {
               <p className="um-feature-title">Polygon Area Mode</p>
               <p className="um-feature-desc">
                 After switching to <strong>Polygon Area</strong>, click{' '}
-                <strong>Draw Polygon on Map</strong> to open the Draw Polygon Panel
+                <strong>Draw Polygon on Map</strong> to open Polygon Tools
                 floating on the map. Place vertices by clicking the map, then click{' '}
                 <strong>Save</strong> in the panel to confirm. The form shows a
                 confirmation summary (e.g. "Polygon saved: 5 points"). You can click{' '}
@@ -1023,10 +1254,41 @@ function UserManual() {
                 <button
                   type="button"
                   className="um-inline-link"
-                  onClick={() => navTo('polygon-draw')}
+                  onClick={() => navTo('polygon-tools')}
                 >
-                  Draw Polygon Panel
+                  Polygon Tools
                 </button>{' '}tab.
+              </p>
+            </div>
+          </div>
+
+          {/* 5c. Image Overlay sub-options */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '240px', gap: '10px', pointerEvents: 'none' }}>
+                <div className="form-modal-location-tabs">
+                  <button type="button" className="form-modal-location-tab">Single Point</button>
+                  <button type="button" className="form-modal-location-tab">Polygon Area</button>
+                  <button type="button" className="form-modal-location-tab active">Image Overlay</button>
+                </div>
+                <div className="form-modal-polygon-section">
+                  <button type="button" className="location_button" style={{ marginBottom: 0 }}>
+                    <FontAwesomeIcon icon={faImage} style={{ marginRight: '6px' }} />
+                    Add Image to Map
+                  </button>
+                  <div className="form-modal-polygon-summary">
+                    <span className="form-modal-polygon-check">&#10003;</span>
+                    Overlay saved: 4 corners
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Image Overlay Mode</p>
+              <p className="um-feature-desc">
+                Switch to <strong>Image Overlay</strong>, then click <strong>Add Image to Map</strong>
+                to upload and place a supported image (PNG, JPG/JPEG, GIF, or WebP). After placement, use move/rotate/resize and click
+                <strong> Save</strong>. The form stores four corner vertices and shows a saved summary.
               </p>
             </div>
           </div>
@@ -1049,7 +1311,9 @@ function UserManual() {
               <p className="um-feature-title">Images &amp; File Attachments</p>
               <p className="um-feature-desc">
                 Upload one or more images (PNG, JPG, GIF, WebP, max 5 MB each). The
-                first image becomes the card's thumbnail. Upload supporting files
+                first image becomes the card's thumbnail for point/polygon cards. For
+                image-overlay cards, the map representation image is managed separately,
+                and these images are used for the Learn More gallery. Upload supporting files
                 (PDFs, spreadsheets, etc., max 5 MB each) that viewers can download
                 from the Card Detail View.
               </p>
@@ -1127,7 +1391,7 @@ function UserManual() {
         <p className="um-section-desc">
           The ArcGIS Picker lets you search and select ArcGIS services or individual layers
           to link to a card. It opens from the <strong>+ Link ArcGIS Service / Layer</strong>{' '}
-          button inside the Add Card form. Selected items are attached to the card and can be
+          button inside the Card Creation form. Selected items are attached to the card and can be
           toggled on the map from the Card Detail View.
         </p>
 
@@ -1319,7 +1583,7 @@ function UserManual() {
               <p className="um-feature-desc">
                 The footer shows how many items are currently selected. <strong>Add</strong>{' '}
                 is enabled once at least one item is selected; clicking it inserts all
-                selected services and layers as linked items in the Add Card form.{' '}
+                selected services and layers as linked items in the Card Creation form.{' '}
                 <strong>Cancel</strong> closes the picker without changing the form.
               </p>
             </div>
@@ -1440,6 +1704,12 @@ function UserManual() {
                   <button className="learn-more-modal-delete-btn" title="Delete card" style={{ pointerEvents: 'none' }}>
                     <FontAwesomeIcon icon={faTrashCan} />
                   </button>
+                  <button className="learn-more-modal-help-btn" title="Help" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faCircleQuestion} />
+                  </button>
+                  <button className="learn-more-modal-onboarding-btn" title="Onboarding" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faCirclePlay} />
+                  </button>
                 </div>
                 <button className="learn-more-modal-close" style={{ pointerEvents: 'none' }}>×</button>
               </div>
@@ -1447,10 +1717,12 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Detail View Toolbar</p>
               <p className="um-feature-desc">
-                The toolbar at the top provides four action buttons:
+                The toolbar at the top provides six action buttons:
                 <br />• <strong>Edit</strong> (pencil icon) — enter edit mode to modify card content
                 <br />• <strong>Download PDF</strong> (download icon) — save the card as a PDF
                 <br />• <strong>Delete</strong> (trash icon) — permanently delete the card
+                <br />• <strong>Help</strong> (question icon) — open the Detail View user manual section
+                <br />• <strong>Onboarding</strong> (play icon) — start the guided walkthrough
                 <br />• <strong>Close</strong> (×) — close the Detail View and return to the map
                 <br />Edit and Delete require you to be the card owner or an administrator.
               </p>
@@ -1787,18 +2059,27 @@ function UserManual() {
         <h2>ArcGIS Upload Panel</h2>
         <p className="um-section-desc">
           The ArcGIS Upload Panel lets you browse and add ArcGIS REST map layers directly
-          onto the main map. Open it by clicking the <strong>Layers</strong> button in the
-          map toolbar. Services are organized by state (WA / ID / OR), then by folder, then
-          by individual service and layer.
+          onto the main map. Open it from the <strong>Layers</strong> button in the left
+          sidebar. Services are organized by state (WA / ID / OR), then by folder, then by
+          individual service and layer, with a built-in layers folder available alongside
+          the state folders.
         </p>
 
         {/* ---- Panel shell demo ---- */}
         <div className="um-arcgis-panel-mock">
           <div className="upload-panel-header">
             <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#223244' }}>Browse ArcGIS Services</h3>
-            <button className="upload-panel-header-close-btn" style={{ pointerEvents: 'none' }}>
-              <FontAwesomeIcon icon={faTimes} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button className="upload-panel-header-close-btn upload-panel-header-close-btn--help" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faQuestion} />
+              </button>
+              <button className="upload-panel-header-close-btn upload-panel-header-close-btn--play" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faPlay} />
+              </button>
+              <button className="upload-panel-header-close-btn" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
           </div>
           <div style={{ padding: '6px 10px 8px' }}>
             <div className="upload-panel-searchbar">
@@ -1864,7 +2145,7 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Opening the Panel</p>
               <p className="um-feature-desc">
-                Click the <strong>Layers</strong> button in the map toolbar to open or close
+                Click the <strong>Layers</strong> button in the left sidebar to open or close
                 the ArcGIS Upload Panel. The panel slides in from the left edge of the screen.
                 When the card panel is also open, the two panels split the left side vertically.
               </p>
@@ -1886,9 +2167,10 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Panel Header</p>
               <p className="um-feature-desc">
-                The header displays the panel title and an <strong>×</strong> close button
-                to dismiss the panel. Closing the panel does <em>not</em> remove any layers
-                already added to the map — they remain visible until you uncheck them.
+                The header displays the panel title plus <strong>Help</strong>, <strong>Tutorial</strong>,
+                and <strong>×</strong> close buttons. Help opens the ArcGIS Upload Panel section of the
+                manual, Tutorial launches the guided onboarding flow, and closing the panel does
+                <em> not</em> remove any layers already added to the map.
               </p>
             </div>
           </div>
@@ -1912,12 +2194,12 @@ function UserManual() {
               <p className="um-feature-title">Service Search Bar</p>
               <p className="um-feature-desc">
                 Type a keyword and press <strong>Enter</strong> or click the search button
-                to search across all states. The type dropdown (any / folder / service /
-                layer) narrows the scope. Click <strong>×</strong> to clear the search and
-                return to the full folder tree.
+                to search within the <strong>current scope</strong> shown in the panel:
+                the full root view, a single state, or the currently opened folder. Click
+                <strong> ×</strong> to clear the search and return to the normal navigation view.
               </p>
               <span className="um-feature-note">
-                While a search is active, a result-navigation counter appears with ▲ / ▼ arrows to jump between matches.
+                While a search is active, a result-navigation counter appears with ▲ / ▼ arrows to jump between matches, and the panel may continue loading additional layer results in the background.
               </span>
             </div>
           </div>
@@ -1925,20 +2207,19 @@ function UserManual() {
           {/* 4. Show Added Only */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
-              <div className="um-isolated-demo">
-                <div className="upload-panel-added-checkbox-row">
-                  <input type="checkbox" id="um-show-added" defaultChecked readOnly style={{ marginRight: '6px', accentColor: '#1976d2' }} />
-                  <label htmlFor="um-show-added" style={{ cursor: 'default', userSelect: 'none', fontSize: '13px', color: '#1976d2' }}>Show added layers only</label>
-                </div>
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                <button type="button" className="clear-all-layers-btn clear-all-layers-btn--toggle is-active" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faEye} />
+                  <span>Showing Added Only</span>
+                </button>
               </div>
             </div>
             <div className="um-feature-info">
               <p className="um-feature-title">Show Added Only</p>
               <p className="um-feature-desc">
-                When checked, the folder tree collapses to display only services and layers
-                that are currently active (checked) on the map. This makes it easy to
-                review or remove layers you have already loaded without scrolling through
-                the full service tree.
+                <strong>Show Added Only</strong> is a toggle button in the action row. When active,
+                the panel expands only folders and services that currently have checked layers on
+                the map, making it easier to review or remove what is already loaded.
               </p>
             </div>
           </div>
@@ -1980,8 +2261,7 @@ function UserManual() {
                 <button className="upload-panel-update-btn" title="Update services" style={{ pointerEvents: 'none' }}>
                   <FontAwesomeIcon icon={faSync} />
                 </button>
-                <button type="button" className="card-toolbar-button" title="Clear All Layers" style={{ pointerEvents: 'none' }}>
-                  <FontAwesomeIcon icon={faTimes} />
+                <button type="button" className="clear-all-layers-btn" title="Clear All Layers" style={{ pointerEvents: 'none' }}>
                   <span>Clear All</span>
                 </button>
               </div>
@@ -2029,11 +2309,12 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Service Tree Hierarchy</p>
               <p className="um-feature-desc">
-                Services are organized in a three-level tree:{' '}
-                <strong>State</strong> (WA, ID, OR) → <strong>Folder</strong> →{' '}
-                <strong>Service / Layer</strong>. Click a state heading to expand or
-                collapse all of its folders. Click a folder to drill into it. Click a
-                service to expand and show its individual layers.
+                Services are organized in a file-explorer style hierarchy:{' '}
+                <strong>Root</strong> → <strong>State</strong> (WA, ID, OR or Built-in Layers)
+                → <strong>Folder</strong> → <strong>Service / Layer</strong>. Click a state
+                folder to enter that state, click a folder to drill into it, and use the
+                breadcrumb bar to navigate back out. Inside a folder, click a service row to
+                expand and show its individual layers.
               </p>
             </div>
           </div>
@@ -2067,11 +2348,11 @@ function UserManual() {
                 Each service or layer is shown as a row with a checkbox and name.
                 <strong> Right-click</strong> any row to open a context menu:
                 <br />• <strong>Rename</strong> — rename the service (admin only)
-                <br />• <strong>Learn More</strong> — open a popup with metadata from the ArcGIS REST endpoint (description, extent, layer details)
+                <br />• <strong>Learn More</strong> — open the Service / Layer Info modal with ArcGIS REST metadata
                 <br />• <strong>Pin (Auto-load)</strong> — pin the item so it loads automatically every time the panel opens; right-click again and choose <strong>Unpin</strong> to remove it
               </p>
               <span className="um-feature-note">
-                Check the checkbox next to a layer to toggle its visibility on the map.
+                You can also click the <strong>three-dot button</strong> on a service row (same as Learn More) to open Service info directly.
               </span>
             </div>
           </div>
@@ -2152,8 +2433,34 @@ function UserManual() {
                       <div className="arcgis-service-info-row"><strong>Service Description:</strong>
                         <div className="arcgis-service-info-description">WA Dept of Ecology hydrography layer.</div>
                       </div>
-                      <div className="arcgis-service-info-row"><strong>Spatial Reference:</strong> WKID 4326</div>
+                      <div className="arcgis-service-info-row"><strong>Service Item Id:</strong> 8f6b3e4f2a1c</div>
                       <div className="arcgis-service-info-row"><strong>Copyright Text:</strong> © WA Ecology 2024</div>
+                      <div className="arcgis-service-info-row"><strong>Spatial Reference:</strong> WKID 4326</div>
+                      <div className="arcgis-service-info-row"><strong>Service Opacity:</strong> 70%</div>
+                      <div className="arcgis-service-info-row"><strong>Historical View:</strong> Date Range / Timeline</div>
+                      <div className="arcgis-service-info-row"><strong>Layers / Sublayers:</strong> clickable layer links</div>
+                      <div style={{ marginTop: '10px', marginBottom: '8px' }}>
+                        <button
+                          type="button"
+                          className="arcgis-service-info-save-btn"
+                          style={{
+                            pointerEvents: 'none',
+                            padding: '6px 10px',
+                            backgroundColor: '#1976d2',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                          Save
+                        </button>
+                      </div>
                       <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #ddd', fontSize: '12px', color: '#1976d2' }}>View ArcGIS Service Page →</div>
                     </div>
                   </div>
@@ -2163,12 +2470,346 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Service / Layer Info Modal</p>
               <p className="um-feature-desc">
-                Right-clicking a service or layer row and selecting <strong>Learn More</strong>,
-                or clicking the info (ℹ) button on a row, opens a floating info panel beside
-                the ArcGIS Upload Panel. It shows the service description, spatial reference,
-                copyright text, and a direct link to the ArcGIS REST endpoint. A similar
-                panel opens for individual layers showing their geometry type, description,
-                and a link to the layer endpoint.
+                This modal now has a dedicated tab in the manual with complete coverage of
+                each internal feature, including service metadata, service opacity,
+                historical filters (Date Range and Timeline), Layers / Sublayers links,
+                and layer-level metadata fields.
+              </p>
+              <p className="um-feature-desc" style={{ marginTop: '8px' }}>
+                Open the detailed guide here:{' '}
+                <button
+                  type="button"
+                  className="um-inline-link"
+                  onClick={() => navTo('service-layer-info')}
+                >
+                  Service / Layer Info Modal
+                </button>
+                .
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'service-layer-info' && (
+      <section className="um-section um-section--service-layer-info">
+        <h2>Service / Layer Info Modal</h2>
+        <p className="um-section-desc">
+          This tab documents the floating info modal used by both the ArcGIS Upload Panel and
+          the Custom Layers Panel. The modal appears on the right side and has two variants:
+          <strong> Service info</strong> and <strong>Layer Info</strong>. The content below follows
+          the current implementation in the shared modal UI, with upload-only historical view
+          controls called out explicitly where they differ.
+        </p>
+
+        <div className="um-feature-list">
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+                <div className="layer-context-menu" style={{ position: 'static', boxShadow: 'none' }}>
+                  <button style={{ pointerEvents: 'none' }}>Learn More</button>
+                </div>
+                <button className="arcgis-service-row-action-btn" style={{ pointerEvents: 'none' }} title="Learn more">
+                  <FontAwesomeIcon icon={faEllipsisV} />
+                </button>
+                <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none' }}>
+                  WA Major Rivers (Layer 2)
+                </button>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">1) Ways to Open the Modal</p>
+              <p className="um-feature-desc">
+                There are three entry paths:
+                <br />• Right-click a service or layer row and choose <strong>Learn More</strong>.
+                <br />• Click the service row <strong>three-dot Learn more button</strong>.
+                <br />• In Service info, click a <strong>Layers / Sublayers</strong> link to open Layer Info directly.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '280px', alignItems: 'stretch' }}>
+                <div className="arcgis-service-info-modal" style={{ position: 'static' }}>
+                  <div className="arcgis-service-info-modal-header">
+                    <strong style={{ fontSize: '13px' }}>Service info</strong>
+                    <button type="button" className="arcgis-service-info-modal-close" style={{ pointerEvents: 'none' }}>&times;</button>
+                  </div>
+                  <div className="arcgis-service-info-modal-content" style={{ pointerEvents: 'none' }}>
+                    <div className="arcgis-service-info-row"><strong>Loading state:</strong> Loading service info…</div>
+                    <div className="arcgis-service-info-row"><strong>Empty state:</strong> No information available.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">2) Header, Close, Loading, and Empty States</p>
+              <p className="um-feature-desc">
+                The header title changes by mode (<strong>Service info</strong> vs <strong>Layer Info: &lt;name&gt;</strong>),
+                and the <strong>×</strong> button closes the current modal. While fetching REST metadata,
+                loading text is shown. If the endpoint returns no useful data, an empty message
+                is displayed and an endpoint link is still provided.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '280px', alignItems: 'stretch' }}>
+                <div className="arcgis-service-info-modal" style={{ position: 'static' }}>
+                  <div className="arcgis-service-info-modal-content" style={{ pointerEvents: 'none' }}>
+                    <div className="arcgis-service-info-row"><strong>Service Description:</strong> Hydrography base service.</div>
+                    <div className="arcgis-service-info-row"><strong>Service Item Id:</strong> 8f6b3e4f2a1c</div>
+                    <div className="arcgis-service-info-row"><strong>Copyright Text:</strong> © WA Ecology 2024</div>
+                    <div className="arcgis-service-info-row"><strong>Spatial Reference:</strong> WKID 4326</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">3) Service Metadata Block</p>
+              <p className="um-feature-desc">
+                Service info normalizes and shows core metadata from ArcGIS REST:
+                description/serviceDescription, service item id, copyright text,
+                and spatial reference (latest WKID, WKID, or WKT fallback).
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ minWidth: '280px' }}>
+                <div className="arcgis-service-info-row service-info-opacity-row" style={{ width: '100%' }}>
+                  <strong>Service Opacity:</strong>
+                  <div className="service-info-opacity-controls" style={{ flex: 1 }}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value="0.7"
+                      readOnly
+                      className="service-info-opacity-slider"
+                      style={{ background: 'linear-gradient(to right, #27425d 70%, #d8e1ea 70%)' }}
+                    />
+                    <span className="service-info-opacity-value">70%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">4) Per-Service Opacity Control</p>
+              <p className="um-feature-desc">
+                The <strong>Service Opacity</strong> slider adjusts map opacity only for the active
+                service key. Value is tracked per service in modal state and applied live to map layers.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px', gap: '8px' }}>
+                <div className="service-info-time-tabs" style={{ pointerEvents: 'none' }}>
+                  <button className="service-info-time-tab active">Date Range</button>
+                  <button className="service-info-time-tab">Timeline</button>
+                </div>
+                <div className="service-info-time-row" style={{ pointerEvents: 'none' }}>
+                  <label className="service-info-time-label">From</label>
+                  <input type="date" className="service-info-time-input" readOnly />
+                  <label className="service-info-time-label">To</label>
+                  <input type="date" className="service-info-time-input" readOnly />
+                </div>
+                <div className="service-info-time-actions" style={{ pointerEvents: 'none' }}>
+                  <button className="service-info-time-btn">Apply</button>
+                  <button className="service-info-time-btn service-info-time-btn-clear">Clear</button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">5) Historical View: Date Range + Timeline</p>
+              <p className="um-feature-desc">
+                Historical View contains two tabs:
+                <br />• <strong>Date Range</strong>: select From/To dates, Apply to filter, Clear to remove.
+                <br />• <strong>Timeline</strong>: year and month sliders with draggable handles.
+                <br />When active, the modal shows a time-filter summary line with the current date span.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', minWidth: '280px', gap: '8px' }}>
+                <div className="arcgis-service-info-row" style={{ width: '100%' }}>
+                  <strong>Layers / Sublayers:</strong>
+                  <div className="arcgis-service-info-layer-links" style={{ marginTop: '6px' }}>
+                    <div className="arcgis-service-info-layer-link-row">
+                      <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none' }}>Hydrology</button>
+                    </div>
+                    <div className="arcgis-service-info-layer-link-row" style={{ marginLeft: 12 }}>
+                      <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none' }}>Rivers</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">6) Layers / Sublayers Link Tree</p>
+              <p className="um-feature-desc">
+                Service info renders a hierarchical layer tree. Clicking a layer link opens
+                the corresponding Layer Info modal for that layer id. This is the fastest
+                path from service-level metadata to layer-level details.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ padding: 0, minWidth: '280px', alignItems: 'stretch' }}>
+                <div className="arcgis-service-info-modal" style={{ position: 'static' }}>
+                  <div className="arcgis-service-info-modal-header">
+                    <strong style={{ fontSize: '13px' }}>Layer Info: WA Rivers</strong>
+                    <button type="button" className="arcgis-service-info-modal-close" style={{ pointerEvents: 'none' }}>&times;</button>
+                  </div>
+                  <div className="arcgis-service-info-modal-content" style={{ pointerEvents: 'none' }}>
+                    <div className="arcgis-service-info-row"><strong>Layer Name:</strong> WA Rivers</div>
+                    <div className="arcgis-service-info-row"><strong>Geometry Type:</strong> esriGeometryPolyline</div>
+                    <div className="arcgis-service-info-row"><strong>Min Scale:</strong> 24,000</div>
+                    <div className="arcgis-service-info-row"><strong>Max Scale:</strong> 1,000,000</div>
+                    <div className="arcgis-service-info-row"><strong>Default Visibility:</strong> Visible</div>
+                    <div className="arcgis-service-info-row"><strong>Has Attachments:</strong> No</div>
+                    <div className="arcgis-service-info-row"><strong>Fields:</strong> 18 field(s)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">7) Layer Info Fields (Detailed)</p>
+              <p className="um-feature-desc">
+                Layer Info includes all available layer-level fields from REST metadata:
+                description, layer name, geometry type, copyright text,
+                min/max scale, default visibility, attachment support,
+                and fields summary (count + first few field names).
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                <div style={{ fontSize: '12px', color: '#1976d2' }}>View ArcGIS Service Page →</div>
+                <div style={{ fontSize: '12px', color: '#1976d2' }}>View ArcGIS Layer Page →</div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">8) Endpoint Links and Data Source Verification</p>
+              <p className="um-feature-desc">
+                Both modal types provide direct links to the corresponding ArcGIS REST pages.
+                Use these links to verify source metadata, inspect native JSON responses,
+                and cross-check map behavior against upstream service/layer definitions.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="arcgis-service-info-save-btn"
+                  style={{
+                    pointerEvents: 'none',
+                    padding: '6px 10px',
+                    backgroundColor: '#1976d2',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                  Save
+                </button>
+                <div style={{ fontSize: '12px', color: '#1976d2' }}>Saved into Custom Layers for later reuse</div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">9) Save to Custom Layers Actions</p>
+              <p className="um-feature-desc">
+                Both <strong>Service info</strong> and <strong>Layer Info</strong> include a
+                <strong> Save</strong> action at the bottom. This lets you persist either the whole
+                service or the currently focused layer into <strong>Custom Layers</strong> without
+                leaving the modal.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px', gap: '10px' }}>
+                <div className="arcgis-service-info-row" style={{ width: '100%' }}>
+                  <strong>Legend:</strong>
+                  <div style={{ marginTop: '8px', paddingLeft: '12px' }}>
+                    <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '20px', height: '20px', background: '#78a9d4', borderRadius: '3px', display: 'inline-block' }} />
+                      <span style={{ fontSize: '13px' }}>Perennial river</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="arcgis-service-info-row" style={{ width: '100%' }}>
+                  <strong>Parent Layer:</strong>
+                  <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none', marginLeft: '8px' }}>Hydrology</button>
+                </div>
+                <div className="arcgis-service-info-row" style={{ width: '100%' }}>
+                  <strong>Child Layers:</strong>
+                  <div style={{ marginTop: '8px', border: '1px solid #eee', borderRadius: '4px', padding: '8px 8px 2px 12px' }}>
+                    <div style={{ marginBottom: '6px' }}>
+                      <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none' }}>Streams</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">10) Legend and Layer Hierarchy Navigation</p>
+              <p className="um-feature-desc">
+                Layer Info can show a symbol legend, a clickable <strong>Parent Layer</strong> link,
+                and a scrollable list of <strong>Child Layers</strong>. These links let you move
+                through group-layer hierarchies without returning to the panel tree.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px', gap: '8px' }}>
+                <select style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }} defaultValue="OBJECTID" disabled>
+                  <option value="OBJECTID">OBJECTID (esriFieldTypeOID)</option>
+                </select>
+                <select style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }} defaultValue="= " disabled>
+                  <option value="= ">=</option>
+                </select>
+                <input type="text" value="42" readOnly style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }} />
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button type="button" style={{ flex: 1, padding: '6px 10px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', pointerEvents: 'none' }}>Apply Filter</button>
+                  <button type="button" style={{ flex: 1, padding: '6px 10px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', pointerEvents: 'none' }}>Clear</button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">11) Field Filter Builder</p>
+              <p className="um-feature-desc">
+                When layer field metadata is available, Layer Info provides a field filter builder.
+                Choose a field, select an operator such as <strong>=</strong>, <strong>LIKE</strong>,
+                or <strong>IN</strong>, enter a value, then apply the generated expression directly to
+                the map layer. <strong>Clear</strong> resets the filter back to the default view.
               </p>
             </div>
           </div>
@@ -2191,8 +2832,11 @@ function UserManual() {
         <div className="um-arcgis-panel-mock">
           <div className="custom-layers-panel-header" style={{ padding: '10px 12px 8px', borderBottom: '1px solid #d8e1ea' }}>
             <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#223244', flex: 1 }}>Custom Layers</h3>
-            <button className="custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }} title="New Folder">
-              <FontAwesomeIcon icon={faFolderPlus} />
+            <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faQuestion} />
+            </button>
+            <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--play" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faPlay} />
             </button>
             <button className="custom-layers-panel-close-btn" style={{ pointerEvents: 'none' }}>
               <FontAwesomeIcon icon={faTimes} />
@@ -2201,9 +2845,6 @@ function UserManual() {
           <div style={{ padding: '6px 10px 8px' }}>
             <div className="upload-panel-searchbar">
               <input type="text" placeholder="Search folders, services, or layers…" readOnly />
-              <select className="upload-panel-searchbar-dropdown" defaultValue="any" style={{ pointerEvents: 'none' }}>
-                <option value="any">Any</option>
-              </select>
               <button className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
                 <FontAwesomeIcon icon={faSearch} />
               </button>
@@ -2250,7 +2891,7 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Opening the Panel</p>
               <p className="um-feature-desc">
-                Click the <strong>Custom Layers</strong> button in the map toolbar to open
+                Click the <strong>Custom Layers</strong> button in the left sidebar to open
                 or close the panel. You must be logged in; a login prompt appears otherwise.
                 When the ArcGIS Upload Panel is also open, the two panels share the left
                 side vertically.
@@ -2264,8 +2905,11 @@ function UserManual() {
               <div className="um-isolated-demo" style={{ padding: 0, minWidth: '260px' }}>
                 <div className="custom-layers-panel-header" style={{ border: '1px solid #d8e1ea', borderRadius: '6px', padding: '8px 12px' }}>
                   <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#223244', flex: 1 }}>Custom Layers</h3>
-                  <button className="custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }} title="New Folder">
-                    <FontAwesomeIcon icon={faFolderPlus} />
+                  <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faQuestion} />
+                  </button>
+                  <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--play" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faPlay} />
                   </button>
                   <button className="custom-layers-panel-close-btn" style={{ pointerEvents: 'none' }}>
                     <FontAwesomeIcon icon={faTimes} />
@@ -2276,11 +2920,14 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Panel Header</p>
               <p className="um-feature-desc">
-                The header shows the panel title, a <strong>New Folder</strong>{' '}
-                <FontAwesomeIcon icon={faFolderPlus} style={{ fontSize: '12px' }} /> button
-                to create a custom folder, and an <strong>×</strong> close button. Closing
-                the panel does not remove layers already added to the map.
+                The header shows the panel title plus <strong>Help</strong>, <strong>Tutorial</strong>,
+                and <strong>×</strong> close buttons. Help opens the manual, Tutorial starts the
+                guided walkthrough, and closing the panel does not remove layers already added
+                to the map.
               </p>
+              <span className="um-feature-note">
+                The <strong>New Folder</strong> button now lives in the action row below the opacity slider, alongside Show Added Only and Clear All.
+              </span>
             </div>
           </div>
 
@@ -2290,9 +2937,6 @@ function UserManual() {
               <div className="um-isolated-demo" style={{ minWidth: '280px' }}>
                 <div className="upload-panel-searchbar">
                   <input type="text" defaultValue="streams" readOnly />
-                  <select className="upload-panel-searchbar-dropdown" defaultValue="layer" style={{ pointerEvents: 'none' }}>
-                    <option value="layer">Layer</option>
-                  </select>
                   <button className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
                     <FontAwesomeIcon icon={faSearch} />
                   </button>
@@ -2305,10 +2949,10 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Search Bar</p>
               <p className="um-feature-desc">
-                Search across all your custom services and folders. The type dropdown
-                narrows results to <strong>Any</strong>, <strong>Folder</strong>,{' '}
-                <strong>Service</strong>, or <strong>Layer</strong>. Navigation arrows
-                appear when there are multiple matches.
+                Search across all your custom folders, services, and layers within the
+                current scope. Press <strong>Enter</strong> or use the search button to run
+                the query, and use the clear button to reset back to the full list. Navigation
+                arrows appear when there are multiple matches.
               </p>
             </div>
           </div>
@@ -2345,19 +2989,26 @@ function UserManual() {
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-                <div className="upload-panel-added-checkbox-row">
-                  <input type="checkbox" id="um-cl-show-added" defaultChecked readOnly style={{ marginRight: '6px', accentColor: '#1976d2' }} />
-                  <label htmlFor="um-cl-show-added" style={{ cursor: 'default', userSelect: 'none', fontSize: '13px', color: '#1976d2' }}>Show only services added to map</label>
-                </div>
+                <button type="button" className="clear-all-layers-btn custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faFolderPlus} />
+                  <span>New Folder</span>
+                </button>
+                <button type="button" className="clear-all-layers-btn clear-all-layers-btn--toggle is-active" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faEye} />
+                  <span>Showing Added Only</span>
+                </button>
+                <button type="button" className="clear-all-layers-btn" style={{ pointerEvents: 'none' }}>
+                  <span>Clear All</span>
+                </button>
               </div>
             </div>
             <div className="um-feature-info">
               <p className="um-feature-title">Show Added Only &amp; Clear All</p>
               <p className="um-feature-desc">
-                <strong>Show only services added to map</strong> collapses the list to
-                display only services with at least one active layer. <strong>Clear
-                All Layers</strong> (below the checkbox) unchecks every active layer in
-                one click. Both controls work the same as in the ArcGIS Upload Panel.
+                The action row groups <strong>New Folder</strong>, <strong>Show Added Only</strong>,
+                and <strong>Clear All</strong> in one place. Show Added Only collapses the list to
+                services with at least one active layer, while Clear All removes all checked
+                layers from the map in one click.
               </p>
             </div>
           </div>
@@ -2482,10 +3133,11 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Adding Layers from the Upload Panel</p>
               <p className="um-feature-desc">
-                In the ArcGIS Upload Panel, right-click any service row and choose{' '}
-                <strong>Save to Custom Layers</strong>. This copies the service into your
-                Custom Layers library where you can organize it into folders and reorder it
-                at will. The original service in the Upload Panel is unaffected.
+                In the ArcGIS Upload Panel, you can save content into Custom Layers either by
+                right-clicking a service row or by using the <strong>Save</strong> button at the
+                bottom of the Service Info or Layer Info modal. This copies the service or layer
+                into your Custom Layers library where you can organize it into folders and reorder
+                it at will. The original item in the Upload Panel is unaffected.
               </p>
               <span className="um-feature-note">
                 You must be logged in to save layers. A login prompt will appear if you are not.
@@ -2501,10 +3153,10 @@ function UserManual() {
       <section className="um-section">
         <h2>Basemap Panel</h2>
         <p className="um-section-desc">
-          The Basemap Panel lets you switch between six Mapbox map styles directly from the
+          The Basemap Panel lets you switch between multiple Mapbox map styles directly from the
           map view. Click the map icon on the left sidebar to open or close it. Switching
           styles preserves all custom ArcGIS layers, the current camera position, zoom,
-          bearing, and pitch.
+          bearing, and pitch. You can also search styles by label or description.
         </p>
 
         {/* ---- Overview demo ---- */}
@@ -2521,6 +3173,8 @@ function UserManual() {
               { id: 'satellite-streets-v12', label: 'satellite-streets-v12', bg: '#4a5a4a' },
               { id: 'navigation-day-v1',   label: 'navigation-day-v1',   bg: '#dce8f2' },
               { id: 'navigation-night-v1', label: 'navigation-night-v1', bg: '#1e2433' },
+              { id: 'light-v11',           label: 'light-v11',           bg: '#eef2f6' },
+              { id: 'dark-v11',            label: 'dark-v11',            bg: '#141a24' },
             ].map(bm => (
               <div
                 key={bm.id}
@@ -2568,7 +3222,7 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 2. Six styles */}
+          {/* 2. Available styles */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 0, minWidth: '240px' }}>
@@ -2585,18 +3239,41 @@ function UserManual() {
               </div>
             </div>
             <div className="um-feature-info">
-              <p className="um-feature-title">Six Built-in Styles</p>
+              <p className="um-feature-title">Available Built-in Styles</p>
               <p className="um-feature-desc">
-                The panel lists six Mapbox basemap styles:{' '}
-                <em>streets-v12</em>, <em>outdoors-v12</em>, <em>satellite-v9</em>,{' '}
-                <em>satellite-streets-v12</em>, <em>navigation-day-v1</em>, and{' '}
-                <em>navigation-night-v1</em>. Each entry shows a color preview thumbnail
-                and the style name.
+                The panel currently lists eight styles:{' '}
+                <em>Satellite (Imagery)</em>, <em>Satellite + Streets</em>, <em>Navigation Day</em>,{' '}
+                <em>Navigation Night</em>, <em>Outdoors</em>, <em>Streets</em>, <em>Light</em>, and <em>Dark</em>.
+                Each entry shows a preview thumbnail, style name, and short description.
               </p>
             </div>
           </div>
 
-          {/* 3. Active selection */}
+          {/* 3. Search map styles */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', gap: '8px' }}>
+                <div className="upload-panel-searchbar" style={{ pointerEvents: 'none' }}>
+                  <input type="text" readOnly defaultValue="satellite" />
+                  <button type="button" className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faSearch} />
+                  </button>
+                  <button type="button" className="upload-panel-searchbar-btn clear" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Search Styles</p>
+              <p className="um-feature-desc">
+                Enter a keyword and press <strong>Enter</strong> or click Search to filter
+                styles by both title and description. Click Clear to reset the full list.
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Active selection */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 0, minWidth: '240px' }}>
@@ -2660,9 +3337,9 @@ function UserManual() {
         <p className="um-section-desc">
           The map canvas has two groups of controls: a vertical stack in the
           <strong> top-left</strong> and a vertical stack in the <strong>top-right</strong>.
-          Together they provide search, fullscreen, zoom, compass, location, drawing, and
-          utility tools. All controls are built into the Mapbox/Mapbox-Draw interface and
-          require no account or sign-in.
+          Together they provide search, fullscreen, zoom, compass, location, drawing, card
+          creation shortcuts, a draggable z-axis zoom control, and utility tools. View/navigation controls are available to
+          everyone; card-creation shortcuts require login.
         </p>
 
         {/* ---- overview layout ---- */}
@@ -2686,14 +3363,19 @@ function UserManual() {
             <div className="um-mapctrl-group">
               <button className="um-mapctrl-btn" title="Geolocate"><FontAwesomeIcon icon={faLocationCrosshairs} /></button>
             </div>
+            <div className="um-mapctrl-zaxis" aria-hidden="true">
+              <div className="um-mapctrl-zaxis__scale">
+                <div className="um-mapctrl-zaxis__spine" />
+                <div className="um-mapctrl-zaxis__pointer" />
+              </div>
+              <div className="um-mapctrl-zaxis__value">5.5</div>
+            </div>
           </div>
 
           <div className="um-mapctrl-corner um-mapctrl-tr">
             <div className="um-mapctrl-label">Top-right</div>
             <div className="um-mapctrl-group">
-              <button className="um-mapctrl-btn" title="Draw Polygon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="m15 12.3v-4.6c.6-.3 1-1 1-1.7 0-1.1-.9-2-2-2-.7 0-1.4.4-1.7 1h-4.6c-.3-.6-1-1-1.7-1-1.1 0-2 .9-2 2 0 .7.4 1.4 1 1.7v4.6c-.6.3-1 1-1 1.7 0 1.1.9 2 2 2 .7 0 1.4-.4 1.7-1h4.6c.3.6 1 1 1.7 1 1.1 0 2-.9 2-2 0-.7-.4-1.4-1-1.7zm-8-.3v-4l1-1h4l1 1v4l-1 1h-4z"/></svg>
-              </button>
+              <button className="um-mapctrl-btn" title="Add cards from map"><FontAwesomeIcon icon={faPlus} /></button>
               <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Toggle Markers"><FontAwesomeIcon icon={faEye} /></button>
               <button className="um-mapctrl-btn um-mapctrl-btn--sep" title="Reset View">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2798,30 +3480,61 @@ function UserManual() {
             </div>
           </div>
 
-          {/* 5. Draw polygon */}
+          {/* 5. Add cards from map */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo">
                 <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
-                  <button className="um-mapctrl-btn" title="Draw Polygon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="m15 12.3v-4.6c.6-.3 1-1 1-1.7 0-1.1-.9-2-2-2-.7 0-1.4.4-1.7 1h-4.6c-.3-.6-1-1-1.7-1-1.1 0-2 .9-2 2 0 .7.4 1.4 1 1.7v4.6c-.6.3-1 1-1 1.7 0 1.1.9 2 2 2 .7 0 1.4-.4 1.7-1h4.6c.3.6 1 1 1.7 1 1.1 0 2-.9 2-2 0-.7-.4-1.4-1-1.7zm-8-.3v-4l1-1h4l1 1v4l-1 1h-4z"/></svg>
+                  <button className="um-mapctrl-btn" title="Add cards from map">
+                    <FontAwesomeIcon icon={faPlus} />
                   </button>
                 </div>
               </div>
             </div>
             <div className="um-feature-info">
-              <p className="um-feature-title">Draw Polygon Filter</p>
+              <p className="um-feature-title">Add Cards from Map (Collapsible Menu)</p>
               <p className="um-feature-desc">
-                Click to activate polygon-drawing mode, then click on the map to place
-                vertices and close the shape. Cards whose location markers fall inside the
-                polygon are shown; all others are hidden. The polygon can be deleted from
-                the drawing panel that opens after completing the shape.
+                A single <strong>+</strong> button opens a small menu with three creation flows:
+                <strong> Add Single Point</strong>, <strong>Polygon Tools</strong>, and
+                <strong> Add PNG</strong>.
               </p>
               <p className="um-feature-desc" style={{ marginTop: '8px' }}>
-                For all drawing tools, shape presets, style options, and transform modes, see the{' '}
-                <button type="button" className="um-inline-link" onClick={() => navTo('polygon-draw')}>
-                  Draw Polygon Panel
-                </button>{' '}tab.
+                See each dedicated tab for details:{' '}
+                <button type="button" className="um-inline-link" onClick={() => navTo('add-single-point')}>
+                  Add Single Point
+                </button>
+                ,{' '}
+                <button type="button" className="um-inline-link" onClick={() => navTo('polygon-tools')}>
+                  Polygon Tools
+                </button>
+                ,{' '}
+                <button type="button" className="um-inline-link" onClick={() => navTo('add-png')}>
+                  Add PNG
+                </button>
+                .
+              </p>
+            </div>
+          </div>
+
+          {/* 5b. Z-axis */}
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-zaxis" aria-hidden="true">
+                  <div className="um-mapctrl-zaxis__scale">
+                    <div className="um-mapctrl-zaxis__spine" />
+                    <div className="um-mapctrl-zaxis__pointer" />
+                  </div>
+                  <div className="um-mapctrl-zaxis__value">8.0</div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Z-Axis Zoom Slider</p>
+              <p className="um-feature-desc">
+                The custom vertical z-axis shows the current map zoom level in real time.
+                Drag the pointer up or down to change zoom directly, or click along the axis
+                for a quick jump to a new zoom level.
               </p>
             </div>
           </div>
@@ -2899,12 +3612,245 @@ function UserManual() {
       </section>
       )}
 
-      {activeSection === 'polygon-draw' && (
+      {activeSection === 'add-single-point' && (
       <section className="um-section">
-        <h2>Draw Polygon Panel</h2>
+        <h2>Add Single Point</h2>
         <p className="um-section-desc">
-          The Draw Polygon Panel appears on the map after you click the polygon tool in the
-          top-right control group. It lets you place vertices by clicking the map, then
+          Use <strong>Add Cards from Map</strong> in the top-right toolbar, then select
+          <strong> Add Single Point</strong>. The Card Creation form opens and immediately enters
+          location-picking mode for a single point.
+        </p>
+
+        <div className="um-feature-list">
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add cards from map"><FontAwesomeIcon icon={faPlus} /></button>
+                </div>
+                <span style={{ fontSize: '11px', color: '#888' }}>→</span>
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add single point card"><FontAwesomeIcon icon={faLocationDot} /></button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 1: Start the Shortcut</p>
+              <p className="um-feature-desc">
+                Click <strong>+</strong> in map controls, then choose{' '}
+                <strong>Add Single Point</strong>. The Card Creation form opens and immediately
+                starts map point selection mode.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '260px', gap: '8px', pointerEvents: 'none' }}>
+                <div className="location-select-hint" style={{ position: 'static', top: 'auto', left: 'auto', transform: 'none', zIndex: 1, padding: '8px 12px', fontSize: '12px', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                  <span>Click on the map to select a location</span>
+                  <button type="button">Cancel</button>
+                </div>
+
+                <div className="location-select-mapbox-popup mapboxgl-popup" style={{ position: 'static', maxWidth: 'none' }}>
+                  <div className="mapboxgl-popup-content">
+                    <div className="location-select-popup">
+                      <div style={{ fontSize: '12px', marginBottom: '6px', color: '#333' }}>
+                        45.609618, -117.344663
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button className="location-select-confirm">OK</button>
+                        <button className="location-select-cancel">Cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="text" readOnly value="47.6123" className="um-form-input-mock" style={{ margin: 0 }} />
+                  <input type="text" readOnly value="-122.3355" className="um-form-input-mock" style={{ margin: 0 }} />
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 2: Pick and Confirm</p>
+              <p className="um-feature-desc">
+                While picking, the top hint shows <strong>"Click on the map to select a location"</strong>
+                with a <strong>Cancel</strong> action. After a map click, a marker popup shows
+                coordinates in 6-decimal format with <strong>OK</strong> and <strong>Cancel</strong>.
+                Click <strong>OK</strong> to fill latitude/longitude fields; click popup
+                <strong> Cancel</strong> to discard that point and click elsewhere.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+                <span style={{ fontSize: '12px', color: '#3f536a' }}>Result after confirm:</span>
+                <span style={{ fontSize: '12px', color: '#1f7a45', fontWeight: 600 }}>Point location is attached to the new card</span>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 3: Complete Card Data</p>
+              <p className="um-feature-desc">
+                After the point is confirmed, continue filling title, category, description,
+                links, images, files, and optional ArcGIS links. Submit to create a point-based
+                card marker on the map.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'add-png' && (
+      <section className="um-section">
+        <h2>Add Image Overlay</h2>
+        <p className="um-section-desc">
+          Use <strong>Add Cards from Map</strong> in the top-right toolbar, then choose
+          <strong> image</strong> to select an image file and place it on the map.
+        </p>
+
+        <div className="um-feature-list">
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo">
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add cards from map"><FontAwesomeIcon icon={faPlus} /></button>
+                </div>
+                <span style={{ fontSize: '11px', color: '#888' }}>→</span>
+                <div className="um-mapctrl-group" style={{ pointerEvents: 'none' }}>
+                  <button className="um-mapctrl-btn" title="Add image to map"><FontAwesomeIcon icon={faImage} /></button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 1: Select Image File</p>
+              <p className="um-feature-desc">
+                Click <strong>+</strong> in map controls, then choose <strong>image</strong>.
+                Select an image file (PNG, JPG/JPEG, GIF, or WebP) from your device to enter overlay placement mode.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '250px', gap: '8px', pointerEvents: 'none' }}>
+                <div className="polygon-draw-modal" style={{ position: 'static', top: 'auto', right: 'auto', width: '100%', maxHeight: 'none' }}>
+                  <div className="polygon-draw-modal-header">
+                    <h3>Place Image</h3>
+                    <span className="polygon-draw-modal-hint">Click and drag on the map to place the image</span>
+                  </div>
+
+                  <div className="polygon-draw-style-toolbar">
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn polygon-draw-drag-active" title="Move">
+                        <FontAwesomeIcon icon={faHand} style={{ fontSize: 14 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn" title="Rotate">
+                        <FontAwesomeIcon icon={faRotate} style={{ fontSize: 14 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn" title="Resize">
+                        <FontAwesomeIcon icon={faUpRightAndDownLeftFromCenter} style={{ fontSize: 13 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn" title="Undo (Ctrl+Z)">
+                        <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: 13 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn" title="Redo (Ctrl+Y)">
+                        <FontAwesomeIcon icon={faRotateRight} style={{ fontSize: 13 }} />
+                      </button>
+                    </div>
+                    <div className="polygon-draw-style-btn-wrap">
+                      <button type="button" className="polygon-draw-style-btn polygon-draw-clear-btn" title="Clear All">
+                        <FontAwesomeIcon icon={faTrash} style={{ fontSize: 12 }} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="polygon-draw-modal-vertices">
+                    <div className="polygon-draw-modal-vertex-row">
+                      <span className="polygon-draw-modal-vertex-num">1</span>
+                      <div className="polygon-draw-modal-vertex-coords">47.620100, -122.349300</div>
+                    </div>
+                    <div className="polygon-draw-modal-vertex-row">
+                      <span className="polygon-draw-modal-vertex-num">2</span>
+                      <div className="polygon-draw-modal-vertex-coords">47.620100, -122.342000</div>
+                    </div>
+                    <div className="polygon-draw-modal-vertex-row">
+                      <span className="polygon-draw-modal-vertex-num">3</span>
+                      <div className="polygon-draw-modal-vertex-coords">47.615900, -122.342000</div>
+                    </div>
+                    <div className="polygon-draw-modal-vertex-row">
+                      <span className="polygon-draw-modal-vertex-num">4</span>
+                      <div className="polygon-draw-modal-vertex-coords">47.615900, -122.349300</div>
+                    </div>
+                  </div>
+
+                  <div className="polygon-draw-modal-actions">
+                    <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-save">Save</button>
+                    <button type="button" className="polygon-draw-modal-btn polygon-draw-modal-btn-cancel">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 2: Place and Edit Overlay</p>
+              <p className="um-feature-desc">
+                After file selection, the <strong>Place Image</strong> modal appears. The header
+                hint starts as <strong>"Click and drag on the map to place the image"</strong>,
+                then changes based on mode (move/rotate/resize). Position the image and adjust
+                with toolbar controls until alignment is correct.
+              </p>
+              <p className="um-feature-desc" style={{ marginTop: '8px' }}>
+                The same toolbar also includes <strong>Undo</strong>, <strong>Redo</strong>, and
+                <strong> Clear All (delete)</strong> so you can revert recent edits or reset
+                placement quickly.
+              </p>
+              <p className="um-feature-desc" style={{ marginTop: '8px' }}>
+                <strong>Save</strong> is enabled after valid placement (4 corners). Click
+                <strong> Cancel</strong> to exit placement without applying changes.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+                <span style={{ fontSize: '12px', color: '#3f536a' }}>Saved data:</span>
+                <span style={{ fontSize: '12px', color: '#1f7a45', fontWeight: 600 }}>4 corner vertices + overlay image</span>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">Step 3: Continue in Image Overlay Mode</p>
+              <p className="um-feature-desc">
+                After saving placement, Card Creation opens in <strong>Image Overlay</strong>
+                mode and shows summary like <strong>"Image placement saved: 4 corners"</strong>.
+                The overlay image is used as card map
+                representation, while additional uploaded images are optional Learn More gallery
+                images.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      )}
+
+      {activeSection === 'polygon-tools' && (
+      <section className="um-section">
+        <h2>Polygon Tools</h2>
+        <p className="um-section-desc">
+          Polygon Tools appears after choosing <strong>Polygon Tools</strong> from
+          <strong> Add Cards from Map</strong> in the top-right control group. It lets you place
+          vertices by clicking the map, then
           style, transform, and save the shape to use as a spatial filter — cards whose
           markers fall inside the polygon are shown; all others are hidden.
         </p>

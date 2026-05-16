@@ -13,7 +13,7 @@ import api from './api.js';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import html2canvas from 'html2canvas';
 import { icon } from '@fortawesome/fontawesome-svg-core';
-import { faEye, faEyeSlash, faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faCamera, faImage, faLocationDot, faPlus, faDrawPolygon } from '@fortawesome/free-solid-svg-icons';
 
 // Mapbox Token
 mapboxgl.accessToken =
@@ -36,6 +36,214 @@ let yellowMarkers = [];
 let curLocationCoordinates = { lat: 0, lng: 0 };
 let searchLocationCoordinates = { lat: 0, lng: 0 };
 
+const createZoomAxisControl = (targetMap) => {
+  let container = null;
+  let scale = null;
+  let pointer = null;
+  let value = null;
+  let isDragging = false;
+  let handleScaleMouseDown = null;
+  let handleScaleTouchStart = null;
+  let handleWindowMouseMove = null;
+  let handleWindowTouchMove = null;
+  let handleWindowMouseUp = null;
+  let handleWindowTouchEnd = null;
+
+  const clampZoom = (z) => {
+    const min = targetMap.getMinZoom();
+    const max = targetMap.getMaxZoom();
+    if (max <= min) return min;
+    return Math.min(max, Math.max(min, z));
+  };
+
+  const SPINE_MARGIN_PX = 8;  // must match top/bottom on .atlas-z-axis__spine
+  const AXIS_HEIGHT_PX = 140; // must match --axis-height CSS variable
+  const zoomToTopPercent = (z) => {
+    const min = targetMap.getMinZoom();
+    const max = targetMap.getMaxZoom();
+    if (max <= min) return 100;
+    const clamped = clampZoom(z);
+    const rawPercent = (max - clamped) / (max - min);
+    const topPx = SPINE_MARGIN_PX + rawPercent * (AXIS_HEIGHT_PX - 2 * SPINE_MARGIN_PX);
+    return (topPx / AXIS_HEIGHT_PX) * 100;
+  };
+
+  const buildTickValues = () => {
+    const min = Math.floor(targetMap.getMinZoom());
+    const max = Math.ceil(targetMap.getMaxZoom());
+    const values = [];
+    const step = Math.max(1, Math.round((max - min) / 5));
+
+    for (let current = min; current <= max; current += step) {
+      values.push(current);
+    }
+
+    if (values[values.length - 1] !== max) {
+      values.push(max);
+    }
+
+    return values;
+  };
+
+  const updatePointer = () => {
+    const currentZoom = targetMap.getZoom();
+    if (pointer) {
+      pointer.style.top = `${zoomToTopPercent(currentZoom)}%`;
+    }
+    if (value) {
+      value.textContent = `z ${currentZoom.toFixed(1)}`;
+    }
+  };
+
+  const getClientY = (event) => {
+    if (event.touches && event.touches.length > 0) return event.touches[0].clientY;
+    if (event.changedTouches && event.changedTouches.length > 0) return event.changedTouches[0].clientY;
+    return event.clientY;
+  };
+
+  const updateZoomFromClientY = (clientY) => {
+    if (!scale) return;
+    const rect = scale.getBoundingClientRect();
+    if (!rect.height) return;
+
+    const min = targetMap.getMinZoom();
+    const max = targetMap.getMaxZoom();
+    if (max <= min) return;
+
+    const clampedY = Math.min(rect.bottom - SPINE_MARGIN_PX, Math.max(rect.top + SPINE_MARGIN_PX, clientY));
+    const relativeY = clampedY - rect.top - SPINE_MARGIN_PX;
+    const usableHeight = rect.height - 2 * SPINE_MARGIN_PX;
+    if (usableHeight <= 0) return;
+
+    const ratio = relativeY / usableHeight;
+    const targetZoom = clampZoom(max - ratio * (max - min));
+    targetMap.setZoom(targetZoom);
+    updatePointer();
+  };
+
+  const stopDragging = () => {
+    isDragging = false;
+    if (container) {
+      container.classList.remove('atlas-z-axis-control--dragging');
+    }
+  };
+
+  const startDragging = (event) => {
+    isDragging = true;
+    if (container) {
+      container.classList.add('atlas-z-axis-control--dragging');
+    }
+    updateZoomFromClientY(getClientY(event));
+  };
+
+  return {
+    onAdd: () => {
+      container = document.createElement('div');
+      container.className = 'mapboxgl-ctrl atlas-z-axis-control';
+      container.setAttribute('data-onboarding-target', 'map-control-z-axis');
+
+      scale = document.createElement('div');
+      scale.className = 'atlas-z-axis__scale';
+
+      const spine = document.createElement('div');
+      spine.className = 'atlas-z-axis__spine';
+      scale.appendChild(spine);
+
+      pointer = document.createElement('div');
+      pointer.className = 'atlas-z-axis__pointer';
+
+      scale.appendChild(pointer);
+      container.appendChild(scale);
+
+      value = document.createElement('div');
+      value.className = 'atlas-z-axis__value';
+      container.appendChild(value);
+
+      handleScaleMouseDown = (event) => {
+        event.preventDefault();
+        startDragging(event);
+      };
+
+      handleScaleTouchStart = (event) => {
+        event.preventDefault();
+        startDragging(event);
+      };
+
+      handleWindowMouseMove = (event) => {
+        if (!isDragging) return;
+        event.preventDefault();
+        updateZoomFromClientY(event.clientY);
+      };
+
+      handleWindowTouchMove = (event) => {
+        if (!isDragging) return;
+        event.preventDefault();
+        updateZoomFromClientY(getClientY(event));
+      };
+
+      handleWindowMouseUp = () => {
+        if (!isDragging) return;
+        stopDragging();
+      };
+
+      handleWindowTouchEnd = () => {
+        if (!isDragging) return;
+        stopDragging();
+      };
+
+      scale.addEventListener('mousedown', handleScaleMouseDown);
+      scale.addEventListener('touchstart', handleScaleTouchStart, { passive: false });
+      window.addEventListener('mousemove', handleWindowMouseMove);
+      window.addEventListener('touchmove', handleWindowTouchMove, { passive: false });
+      window.addEventListener('mouseup', handleWindowMouseUp);
+      window.addEventListener('touchend', handleWindowTouchEnd);
+
+      targetMap.on('zoom', updatePointer);
+      targetMap.on('zoomend', updatePointer);
+      updatePointer();
+
+      return container;
+    },
+    onRemove: () => {
+      targetMap.off('zoom', updatePointer);
+      targetMap.off('zoomend', updatePointer);
+      if (scale && handleScaleMouseDown) {
+        scale.removeEventListener('mousedown', handleScaleMouseDown);
+      }
+      if (scale && handleScaleTouchStart) {
+        scale.removeEventListener('touchstart', handleScaleTouchStart);
+      }
+      if (handleWindowMouseMove) {
+        window.removeEventListener('mousemove', handleWindowMouseMove);
+      }
+      if (handleWindowTouchMove) {
+        window.removeEventListener('touchmove', handleWindowTouchMove);
+      }
+      if (handleWindowMouseUp) {
+        window.removeEventListener('mouseup', handleWindowMouseUp);
+      }
+      if (handleWindowTouchEnd) {
+        window.removeEventListener('touchend', handleWindowTouchEnd);
+      }
+      stopDragging();
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+      container = null;
+      scale = null;
+      pointer = null;
+      value = null;
+      handleScaleMouseDown = null;
+      handleScaleTouchStart = null;
+      handleWindowMouseMove = null;
+      handleWindowTouchMove = null;
+      handleWindowMouseUp = null;
+      handleWindowTouchEnd = null;
+    },
+    getDefaultPosition: () => 'top-left'
+  };
+};
+
 // helper to convert mapbox bounds → your Home.js bounding format
 const convertBounds = (b) => ({
   NE: { Lat: b._ne.lat, Lng: b._ne.lng },
@@ -56,6 +264,11 @@ const Content1 = (props) => {
   const [mouseCoordinates, setMouseCoordinates] = useState({ lat: 0, lng: 0 });
   const [bounds, setBounds] = useState({});
   const [isPolygonToolDrawing, setIsPolygonToolDrawing] = useState(false);
+  const [isImageToolDrawing, setIsImageToolDrawing] = useState(false);
+  const [pendingMapImageFile, setPendingMapImageFile] = useState(null);
+  const [pendingMapImageDimensions, setPendingMapImageDimensions] = useState(null);
+  const [pendingMapImageUrl, setPendingMapImageUrl] = useState('');
+  const imageToolInputRef = useRef(null);
   const markersVisibleRef = useRef(true);
 
   const closeMarkerPopup = useCallback(() => {
@@ -76,6 +289,69 @@ const Content1 = (props) => {
     const baseURL = (api.defaults.baseURL || '').replace(/\/$/, '');
     if (!baseURL) return url;
     return url.startsWith('/') ? `${baseURL}${url}` : `${baseURL}/${url}`;
+  }, []);
+
+  const arrayBufferToDataUrl = useCallback((arrayBuffer, contentType = 'image/png') => {
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    return `data:${contentType};base64,${btoa(binary)}`;
+  }, []);
+
+  const fetchImageDataUrlViaProxy = useCallback(async (rawUrl) => {
+    const resolvedUrl = resolveImageUrl(rawUrl);
+    if (!resolvedUrl) return null;
+
+    const response = await api.get('/imageUrlProxy', {
+      params: { url: resolvedUrl },
+      responseType: 'arraybuffer'
+    });
+
+    const contentType = response.headers?.['content-type'] || 'image/png';
+    return arrayBufferToDataUrl(response.data, contentType);
+  }, [arrayBufferToDataUrl, resolveImageUrl]);
+
+  const handleImageToolInputChange = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']);
+    const hasValidType = allowedTypes.has((file.type || '').toLowerCase());
+    const hasValidExtension = /\.(png|jpe?g|webp|gif)$/i.test(file.name || '');
+
+    if (!hasValidType && !hasValidExtension) {
+      alert('The map image tool supports PNG, JPG, JPEG, GIF, and WebP files.');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        alert('Unable to load the selected image file.');
+        return;
+      }
+
+      setPendingMapImageFile(file);
+      setPendingMapImageUrl(reader.result);
+      const img = new window.Image();
+      img.onload = () => setPendingMapImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+      img.src = reader.result;
+      setIsImageToolDrawing(true);
+    };
+    reader.onerror = () => {
+      alert('Unable to load the selected image file.');
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }, []);
+
+  const handleStartImageToolFlow = useCallback(() => {
+    imageToolInputRef.current?.click();
   }, []);
 
   const buildMarkerPopupContent = useCallback((feature) => {
@@ -130,7 +406,7 @@ const Content1 = (props) => {
     mediaContainer.appendChild(nextButton);
     mediaContainer.appendChild(indicators);
 
-    const initialImage = feature.thumbnail_link && String(feature.thumbnail_link).trim() !== ''
+    const initialImage = (feature.location_type !== 'image' && feature.thumbnail_link && String(feature.thumbnail_link).trim() !== '')
       ? resolveImageUrl(feature.thumbnail_link)
       : '/CEREO-logo.png';
 
@@ -437,6 +713,7 @@ const Content1 = (props) => {
     props.isCollapsed,
     props.cardPanelWidth,
     props.isUploadPanelOpen,
+    props.isCustomLayerPanelOpen,
     props.isSidebarOpen
   ]);
 
@@ -525,6 +802,11 @@ const Content1 = (props) => {
 
     map.addControl(searchBar);
 
+    const geocoderControl = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-geocoder');
+    if (geocoderControl) {
+      geocoderControl.setAttribute('data-onboarding-target', 'map-control-search');
+    }
+
     searchBar.on('result', (e) => {
       const [lng, lat] = e.result.center;
       searchLocationCoordinates = { lat, lng };
@@ -540,8 +822,96 @@ const Content1 = (props) => {
     {
       const drawGroup = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-top-right .mapboxgl-ctrl-group');
       if (drawGroup) {
+        drawGroup.classList.add('map-add-tools-group');
+
+        let isAddToolsMenuOpen = false;
+
+        const addToolsBtn = document.createElement('button');
+        addToolsBtn.className = 'mapbox-gl-draw_ctrl-draw-btn map-add-tools-btn';
+        addToolsBtn.setAttribute('data-onboarding-target', 'map-control-add-cards');
+        addToolsBtn.title = 'Add card from map';
+        addToolsBtn.type = 'button';
+        addToolsBtn.innerHTML = icon(faPlus).html[0];
+
+        const addToolsMenu = document.createElement('div');
+        addToolsMenu.className = 'map-add-tools-menu';
+
+        const pointOption = document.createElement('button');
+        pointOption.type = 'button';
+        pointOption.className = 'map-add-tools-menu-item';
+        pointOption.setAttribute('data-onboarding-target', 'map-control-add-point');
+        pointOption.innerHTML = `${icon(faLocationDot).html[0]}<span>Coordinate</span>`;
+
+        const polygonOption = document.createElement('button');
+        polygonOption.type = 'button';
+        polygonOption.className = 'map-add-tools-menu-item';
+        polygonOption.setAttribute('data-onboarding-target', 'map-control-add-polygon');
+        polygonOption.innerHTML = `${icon(faDrawPolygon).html[0]}<span>Polygon</span>`;
+
+        const imageOption = document.createElement('button');
+        imageOption.type = 'button';
+        imageOption.className = 'map-add-tools-menu-item';
+        imageOption.setAttribute('data-onboarding-target', 'map-control-add-png');
+        imageOption.innerHTML = `${icon(faImage).html[0]}<span>Image</span>`;
+
+        addToolsMenu.appendChild(pointOption);
+        addToolsMenu.appendChild(polygonOption);
+        addToolsMenu.appendChild(imageOption);
+        drawGroup.appendChild(addToolsMenu);
+
+        const closeAddToolsMenu = () => {
+          isAddToolsMenuOpen = false;
+          addToolsMenu.classList.remove('open');
+          addToolsBtn.classList.remove('active');
+        };
+
+        const toggleAddToolsMenu = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          isAddToolsMenuOpen = !isAddToolsMenuOpen;
+          addToolsMenu.classList.toggle('open', isAddToolsMenuOpen);
+          addToolsBtn.classList.toggle('active', isAddToolsMenuOpen);
+        };
+
+        addToolsBtn.addEventListener('click', toggleAddToolsMenu);
+
+        pointOption.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeAddToolsMenu();
+          window.dispatchEvent(new CustomEvent('map-point-tool-start'));
+        });
+
+        polygonOption.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeAddToolsMenu();
+          setIsPolygonToolDrawing(true);
+        });
+
+        imageOption.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeAddToolsMenu();
+          window.dispatchEvent(new CustomEvent('map-image-tool-start'));
+        });
+
+        addToolsMenu.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+
+        const handleDocPointerDown = (e) => {
+          if (!drawGroup.contains(e.target)) {
+            closeAddToolsMenu();
+          }
+        };
+        document.addEventListener('mousedown', handleDocPointerDown);
+
+        drawGroup.insertBefore(addToolsBtn, drawGroup.firstChild);
+
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'mapbox-gl-draw_ctrl-draw-btn marker-visibility-toggle active';
+        toggleBtn.setAttribute('data-onboarding-target', 'map-control-visibility');
         toggleBtn.title = 'Toggle markers & polygons visibility';
         toggleBtn.type = 'button';
         toggleBtn.innerHTML = icon(faEye).html[0];
@@ -562,7 +932,13 @@ const Content1 = (props) => {
           const style = map.getStyle();
           if (style && style.layers) {
             style.layers.forEach(layer => {
-              if (layer.id.startsWith('card-polygon-fill-') || layer.id.startsWith('card-polygon-line-')) {
+              if (
+                layer.id.startsWith('card-polygon-fill-') ||
+                layer.id.startsWith('card-polygon-line-') ||
+                layer.id.startsWith('card-image-layer-') ||
+                layer.id.startsWith('card-image-outline-') ||
+                layer.id.startsWith('card-image-hit-')
+              ) {
                 map.setLayoutProperty(layer.id, 'visibility', visible ? 'visible' : 'none');
               }
             });
@@ -572,6 +948,7 @@ const Content1 = (props) => {
 
         const resetViewBtn = document.createElement('button');
         resetViewBtn.className = 'mapbox-gl-draw_ctrl-draw-btn reset-view-btn';
+        resetViewBtn.setAttribute('data-onboarding-target', 'map-control-reset-view');
         resetViewBtn.title = 'Reset Map View';
         resetViewBtn.type = 'button';
         resetViewBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="1.5" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="14.5" y2="8"/><circle cx="8" cy="8" r="2"/></svg>';
@@ -582,6 +959,7 @@ const Content1 = (props) => {
 
         const screenshotBtn = document.createElement('button');
         screenshotBtn.className = 'mapbox-gl-draw_ctrl-draw-btn screenshot-btn';
+        screenshotBtn.setAttribute('data-onboarding-target', 'map-control-screenshot');
         screenshotBtn.title = 'Screenshot Map';
         screenshotBtn.type = 'button';
         screenshotBtn.innerHTML = icon(faCamera).html[0];
@@ -606,6 +984,10 @@ const Content1 = (props) => {
           });
         });
         drawGroup.appendChild(screenshotBtn);
+
+        map.on('remove', () => {
+          document.removeEventListener('mousedown', handleDocPointerDown);
+        });
       }
     }
 
@@ -641,6 +1023,23 @@ const Content1 = (props) => {
     });
 
     map.addControl(currentLocation, 'top-left');
+    map.addControl(createZoomAxisControl(map), 'top-left');
+
+    const fullscreenButton = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-fullscreen');
+    if (fullscreenButton) {
+      fullscreenButton.setAttribute('data-onboarding-target', 'map-control-fullscreen');
+    }
+
+    const zoomInButton = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-zoom-in');
+    const navigationGroup = zoomInButton?.closest('.mapboxgl-ctrl-group');
+    if (navigationGroup) {
+      navigationGroup.setAttribute('data-onboarding-target', 'map-control-navigation');
+    }
+
+    const geolocateButton = mapContainerRef.current?.querySelector('.mapboxgl-ctrl-geolocate');
+    if (geolocateButton) {
+      geolocateButton.setAttribute('data-onboarding-target', 'map-control-geolocate');
+    }
 
     const syncBottomRightMeta = () => {
       if (!atlasMapRef.current) return;
@@ -693,21 +1092,34 @@ const Content1 = (props) => {
       for (let feature of markersData) {
         if (!isActive) return;
 
-        // Skip polygon cards — they are rendered by renderCardPolygons
-        if (feature.location_type === 'polygon' && feature.polygon_vertices && feature.polygon_vertices.length >= 3) {
+        // Skip overlay cards — they are rendered by renderCardPolygons
+        if (
+          (feature.location_type === 'polygon' && feature.polygon_vertices && feature.polygon_vertices.length >= 3) ||
+          (feature.location_type === 'image' && feature.polygon_vertices && feature.polygon_vertices.length >= 4)
+        ) {
           continue;
         }
 
         const el = document.createElement('div');
+        const normalizedCategory = (feature.category || '').toString().trim().toLowerCase();
 
-        if (feature.category === "River") {
+        if (normalizedCategory === 'river') {
           el.className = 'blue-marker';
           blueMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-        } else if (feature.category === "Watershed") {
+        } else if (normalizedCategory === 'watershed') {
           el.className = 'green-marker';
           greenMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
-        } else {
+        } else if (normalizedCategory === 'places' || normalizedCategory === 'place') {
           el.className = 'yellow-marker';
+          yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+        } else if (normalizedCategory === 'other') {
+          el.className = 'other-marker';
+          yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+        } else if (normalizedCategory === '' || normalizedCategory === 'none' || normalizedCategory === 'uncategorized') {
+          el.className = 'none-marker';
+          yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
+        } else {
+          el.className = 'other-marker';
           yellowMarkers.push([feature.category, feature.tags, [feature.longitude, feature.latitude]]);
         }
 
@@ -742,14 +1154,26 @@ const Content1 = (props) => {
     };
 
     const renderCardPolygons = (markersData, mapInstance) => {
-      // Remove existing polygon layers/sources
+      // Remove existing overlay layers/sources
       markersData.forEach(feature => {
         const sourceId = `card-polygon-${feature.cardID}`;
         const fillLayerId = `card-polygon-fill-${feature.cardID}`;
         const lineLayerId = `card-polygon-line-${feature.cardID}`;
+        const imageSourceId = `card-image-${feature.cardID}`;
+        const imageLayerId = `card-image-layer-${feature.cardID}`;
+        const imageHitSourceId = `card-image-hit-source-${feature.cardID}`;
+        const imageHitLayerId = `card-image-hit-${feature.cardID}`;
+        const imageOutlineSourceId = `card-image-outline-source-${feature.cardID}`;
+        const imageOutlineLayerId = `card-image-outline-${feature.cardID}`;
         if (mapInstance.getLayer(fillLayerId)) mapInstance.removeLayer(fillLayerId);
         if (mapInstance.getLayer(lineLayerId)) mapInstance.removeLayer(lineLayerId);
         if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
+        if (mapInstance.getLayer(imageHitLayerId)) mapInstance.removeLayer(imageHitLayerId);
+        if (mapInstance.getLayer(imageLayerId)) mapInstance.removeLayer(imageLayerId);
+        if (mapInstance.getLayer(imageOutlineLayerId)) mapInstance.removeLayer(imageOutlineLayerId);
+        if (mapInstance.getSource(imageHitSourceId)) mapInstance.removeSource(imageHitSourceId);
+        if (mapInstance.getSource(imageSourceId)) mapInstance.removeSource(imageSourceId);
+        if (mapInstance.getSource(imageOutlineSourceId)) mapInstance.removeSource(imageOutlineSourceId);
       });
 
       // Line style dash patterns (must match PolygonDrawingModal.js)
@@ -762,55 +1186,107 @@ const Content1 = (props) => {
 
       for (let feature of markersData) {
         const vertices = feature.polygon_vertices;
-        if (!vertices || !Array.isArray(vertices) || vertices.length < 3) continue;
-        if (feature.location_type !== 'polygon') continue;
+        if (!vertices || !Array.isArray(vertices)) continue;
 
-        const coords = vertices.map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
-        coords.push(coords[0]); // close polygon
+        if (feature.location_type === 'polygon' && vertices.length >= 3) {
+          const coords = vertices.map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
+          coords.push(coords[0]);
 
-        const sourceId = `card-polygon-${feature.cardID}`;
-        const fillLayerId = `card-polygon-fill-${feature.cardID}`;
-        const lineLayerId = `card-polygon-line-${feature.cardID}`;
+          const sourceId = `card-polygon-${feature.cardID}`;
+          const fillLayerId = `card-polygon-fill-${feature.cardID}`;
+          const lineLayerId = `card-polygon-line-${feature.cardID}`;
+          const fillColor = feature.polygon_fill_color || '#0077c0';
+          const lineDash = LINE_STYLE_DASH[feature.polygon_line_style] || [];
 
-        // Use the user-chosen color saved on the card; fall back to default blue
-        const fillColor = feature.polygon_fill_color || '#0077c0';
-        const lineDash = LINE_STYLE_DASH[feature.polygon_line_style] || [];
+          mapInstance.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              geometry: { type: 'Polygon', coordinates: [coords] }
+            }
+          });
 
-        mapInstance.addSource(sourceId, {
+          mapInstance.addLayer({
+            id: fillLayerId,
+            type: 'fill',
+            source: sourceId,
+            paint: {
+              'fill-color': fillColor,
+              'fill-opacity': 0.2
+            }
+          });
+
+          const linePaint = {
+            'line-color': fillColor,
+            'line-width': 2
+          };
+          if (lineDash.length > 0) {
+            linePaint['line-dasharray'] = lineDash;
+          }
+
+          mapInstance.addLayer({
+            id: lineLayerId,
+            type: 'line',
+            source: sourceId,
+            paint: linePaint
+          });
+
+          mapInstance.on('click', fillLayerId, (e) => {
+            e.originalEvent.stopPropagation();
+            preventGenericClickClose = true;
+            if (markerPopupRef.current && openMarkerIdRef.current === feature.cardID) {
+              closeMarkerPopup();
+              return;
+            }
+            marker_clicked = true;
+            setSearchCondition(feature.title);
+            openMarkerPopup(feature, e.lngLat, mapInstance);
+          });
+
+          mapInstance.on('mouseenter', fillLayerId, () => {
+            mapInstance.getCanvas().style.cursor = 'pointer';
+          });
+          mapInstance.on('mouseleave', fillLayerId, () => {
+            mapInstance.getCanvas().style.cursor = '';
+          });
+          continue;
+        }
+
+        if (feature.location_type !== 'image' || vertices.length < 4) continue;
+
+        const imageCoords = vertices.slice(0, 4).map(v => [parseFloat(v.lng), parseFloat(v.lat)]);
+        const hasValidImageCoords = imageCoords.length === 4 && imageCoords.every((coord) => (
+          Array.isArray(coord)
+          && Number.isFinite(coord[0])
+          && Number.isFinite(coord[1])
+        ));
+        if (!hasValidImageCoords) continue;
+
+        const imageSourceId = `card-image-${feature.cardID}`;
+        const imageLayerId = `card-image-layer-${feature.cardID}`;
+        const imageHitSourceId = `card-image-hit-source-${feature.cardID}`;
+        const imageHitLayerId = `card-image-hit-${feature.cardID}`;
+        const imageHitCoords = [...imageCoords, imageCoords[0]];
+
+        mapInstance.addSource(imageHitSourceId, {
           type: 'geojson',
           data: {
             type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [coords] }
+            geometry: { type: 'Polygon', coordinates: [imageHitCoords] }
           }
         });
 
         mapInstance.addLayer({
-          id: fillLayerId,
+          id: imageHitLayerId,
           type: 'fill',
-          source: sourceId,
+          source: imageHitSourceId,
           paint: {
-            'fill-color': fillColor,
-            'fill-opacity': 0.2
+            'fill-color': '#000000',
+            'fill-opacity': 0
           }
         });
 
-        const linePaint = {
-          'line-color': fillColor,
-          'line-width': 2
-        };
-        if (lineDash.length > 0) {
-          linePaint['line-dasharray'] = lineDash;
-        }
-
-        mapInstance.addLayer({
-          id: lineLayerId,
-          type: 'line',
-          source: sourceId,
-          paint: linePaint
-        });
-
-        // Click handler for polygon fill — open card popup
-        mapInstance.on('click', fillLayerId, (e) => {
+        mapInstance.on('click', imageHitLayerId, (e) => {
           e.originalEvent.stopPropagation();
           preventGenericClickClose = true;
           if (markerPopupRef.current && openMarkerIdRef.current === feature.cardID) {
@@ -822,13 +1298,38 @@ const Content1 = (props) => {
           openMarkerPopup(feature, e.lngLat, mapInstance);
         });
 
-        // Cursor style on hover
-        mapInstance.on('mouseenter', fillLayerId, () => {
+        mapInstance.on('mouseenter', imageHitLayerId, () => {
           mapInstance.getCanvas().style.cursor = 'pointer';
         });
-        mapInstance.on('mouseleave', fillLayerId, () => {
+        mapInstance.on('mouseleave', imageHitLayerId, () => {
           mapInstance.getCanvas().style.cursor = '';
         });
+
+        (async () => {
+          try {
+            const imageDataUrl = await fetchImageDataUrlViaProxy(feature.thumbnail_link);
+            if (!imageDataUrl || !window.atlasMapInstance || !mapInstance.getStyle()) return;
+            if (!mapInstance.getSource(imageSourceId)) {
+              mapInstance.addSource(imageSourceId, {
+                type: 'image',
+                url: imageDataUrl,
+                coordinates: imageCoords
+              });
+            }
+            if (!mapInstance.getLayer(imageLayerId)) {
+              mapInstance.addLayer({
+                id: imageLayerId,
+                type: 'raster',
+                source: imageSourceId,
+                paint: {
+                  'raster-opacity': 1
+                }
+              });
+            }
+          } catch (error) {
+            console.warn('Skipping image overlay raster due to proxy/image load failure:', feature.cardID, error?.message || error);
+          }
+        })();
       }
     };
 
@@ -1032,17 +1533,27 @@ const Content1 = (props) => {
     };
   }, []);
 
+  useEffect(() => {
+    const handler = () => {
+      handleStartImageToolFlow();
+    };
+    window.addEventListener('map-image-tool-start', handler);
+    return () => window.removeEventListener('map-image-tool-start', handler);
+  }, [handleStartImageToolFlow]);
+
   // Compute styles for outer map container to respond to card panel state
-  const leftSidebarWidth = props.isSidebarOpen ? 300 : 48;
-  const hasLeftPanel = props.isUploadPanelOpen;
+  const leftSidebarWidth = props.isSidebarOpen
+    ? 'var(--app-left-sidebar-expanded-width)'
+    : 'var(--app-left-sidebar-collapsed-width)';
+  const hasLeftPanel = props.isUploadPanelOpen || props.isCustomLayerPanelOpen || props.isBasemapOpen;
   const cardPanelW = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
   const cardOnLeft = props.cardPanelSide === 'left';
   const bothOnLeft = cardOnLeft && !props.isCollapsed && hasLeftPanel;
   // When both card panel and upload panel are on left, they stack vertically in same column
   const cardLeftExtra = (cardOnLeft && !bothOnLeft) ? cardPanelW : 0;
   const mapContainerLeft = hasLeftPanel
-    ? `calc(${leftSidebarWidth + cardLeftExtra}px + 25vw)`
-    : `${leftSidebarWidth + cardLeftExtra}px`;
+    ? `calc(${leftSidebarWidth} + ${cardLeftExtra}px + var(--app-secondary-panel-width))`
+    : `calc(${leftSidebarWidth} + ${cardLeftExtra}px)`;
   const mapContainerRight = cardOnLeft ? 0 : cardPanelW;
 
   return (
@@ -1055,6 +1566,13 @@ const Content1 = (props) => {
       }}
     >
       <div className="AtlasMap__container" ref={mapContainerRef}>
+        <input
+          ref={imageToolInputRef}
+          type="file"
+          accept=".png,.jpg,.jpeg,.gif,.webp,image/png,image/jpeg,image/jpg,image/gif,image/webp"
+          style={{ display: 'none' }}
+          onChange={handleImageToolInputChange}
+        />
         <div className="AtlasMap__info-bottomleft">
           <div>
             Map Center - Lat: {lat} | Long: {lng} | Zoom: {zoom}
@@ -1075,6 +1593,7 @@ const Content1 = (props) => {
 
       {isPolygonToolDrawing && (
         <PolygonDrawingModal
+          mode="polygon"
           onSave={(vertices, centroid, style) => {
             setIsPolygonToolDrawing(false);
             window.dispatchEvent(new CustomEvent('polygon-tool-save', {
@@ -1082,6 +1601,36 @@ const Content1 = (props) => {
             }));
           }}
           onCancel={() => setIsPolygonToolDrawing(false)}
+        />
+      )}
+
+      {isImageToolDrawing && pendingMapImageUrl && (
+        <PolygonDrawingModal
+          mode="image"
+          title="Place Image"
+          initialImageUrl={pendingMapImageUrl}
+          initialImageDimensions={pendingMapImageDimensions}
+          onSave={(vertices, centroid) => {
+            setIsImageToolDrawing(false);
+            window.dispatchEvent(new CustomEvent('map-image-tool-save', {
+              detail: {
+                vertices,
+                centroid,
+                imageFile: pendingMapImageFile,
+                previewUrl: pendingMapImageUrl
+              }
+            }));
+            setPendingMapImageFile(null);
+            setPendingMapImageUrl('');
+            setPendingMapImageDimensions(null);
+          }}
+          onCancel={() => {
+            setIsImageToolDrawing(false);
+            setPendingMapImageFile(null);
+            setPendingMapImageUrl('');
+            setPendingMapImageDimensions(null);
+            window.dispatchEvent(new CustomEvent('map-image-tool-cancel'));
+          }}
         />
       )}
     </div>

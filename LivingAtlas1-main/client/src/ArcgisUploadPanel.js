@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { addArcgisVectorLayer } from './arcgisVectorUtils';
+import { addArcgisVectorLayer, applyArcgisVectorLayerFilter } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
     fetchArcgisLayers,
@@ -39,7 +39,7 @@ import {
 import './ArcgisUploadPanel.css';
 import './ArcgisUploadPanelStateMenu.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faSquare } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faTimes, faSync, faChevronUp, faChevronDown, faQuestion, faEllipsisV, faPlay, faSquare, faFloppyDisk, faEye } from '@fortawesome/free-solid-svg-icons';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 import {
     useArcgisLoadingMessages,
@@ -306,6 +306,15 @@ function ArcgisUploadPanel({
         return findInNodes(layerTree);
     }, [serviceLayers]);
 
+    const findFirstInfoLayer = useCallback((service) => {
+        if (!service) return null;
+        const rawLayers = serviceLayers[service.key]?.length > 0 ? serviceLayers[service.key] : (service.layers || []);
+        const layers = Array.isArray(rawLayers) ? rawLayers : [];
+        return layers.find(layer => layer && layer.id !== undefined && layer.type !== 'Group Layer')
+            || layers.find(layer => layer && layer.id !== undefined)
+            || null;
+    }, [serviceLayers]);
+
     useEffect(() => {
         if (isOnboardingOpen) {
             onboardingSnapshotRef.current = {
@@ -328,6 +337,8 @@ function ArcgisUploadPanel({
             setExpandedServices(new Set());
             setExpandedLayers(new Set());
             setServiceInfoOpenKey(null);
+            setLayerInfoOpen(null);
+            setLayerFilter(null);
             return;
         }
 
@@ -463,6 +474,7 @@ function ArcgisUploadPanel({
     const [layerInfoOpen, setLayerInfoOpen] = useState(null); // { serviceKey, layerId, layerName, serviceUrl }
     const [layerInfoCache, setLayerInfoCache] = useState({}); // { "serviceKey-layerId": info }
     const [layerInfoLoading, setLayerInfoLoading] = useState(false);
+    const [layerFilter, setLayerFilter] = useState(null); // { field, operator, value } for current layer filtering
 
     // Add new state for sublayer checkboxes (add this near other state declarations)
     const [checkedSublayerIds, setCheckedSublayerIds] = useState({});
@@ -1664,7 +1676,7 @@ function ArcgisUploadPanel({
                         map,
                         { ...layer, serviceKey: service.key, serviceUrl: service.url },
                         showArcgisPopup,
-                        { minzoom: 6, maxzoom: 12 }
+                        { minzoom: 6 }
                     );
                     vectorAddedIds.add(id);
                 }
@@ -1749,6 +1761,7 @@ function ArcgisUploadPanel({
                                     id: sublayerLayerId,
                                     type: 'raster',
                                     source: sublayerSourceId,
+                                    minzoom: 6,
                                     paint: {
                                         'raster-opacity': layerOpacity
                                     }
@@ -1813,6 +1826,7 @@ function ArcgisUploadPanel({
                         id: rasterLayerId,
                         type: 'raster',
                         source: rasterSourceId,
+                        minzoom: 6,
                         paint: {
                             'raster-opacity': layerOpacity
                         }
@@ -1938,15 +1952,17 @@ function ArcgisUploadPanel({
                     minzoom: 6,
                     maxzoom: 12
                 });
-                map.addLayer({ id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': opacity } });
+                map.addLayer({ id: layerId, type: 'raster', source: sourceId, minzoom: 6, paint: { 'raster-opacity': opacity } });
             });
     }, [mapInstance, layerOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const INFO_MODAL_WIDTH = 380;
 
     const getInfoModalStyle = () => {
         const panelEl = panelRootRef.current;
         if (!panelEl || typeof window === 'undefined') return undefined;
         const rect = panelEl.getBoundingClientRect();
-        const modalWidth = 380;
+        const modalWidth = INFO_MODAL_WIDTH;
         const left = Math.min(rect.right + 2, window.innerWidth - modalWidth - 8);
         const top = Math.max(8, rect.top);
         const maxHeight = Math.max(240, window.innerHeight - rect.top - 16);
@@ -1954,6 +1970,24 @@ function ArcgisUploadPanel({
             top: `${top}px`,
             left: `${left}px`,
             maxHeight: `${maxHeight}px`,
+        };
+    };
+
+    const getLayerInfoModalStyle = () => {
+        const serviceModalStyle = getInfoModalStyle();
+        if (!serviceModalStyle) return undefined;
+        if (!serviceInfoOpenKey) return serviceModalStyle;
+
+        const serviceLeft = Number.parseFloat(serviceModalStyle.left);
+        const serviceTop = Number.parseFloat(serviceModalStyle.top);
+        if (Number.isNaN(serviceLeft) || Number.isNaN(serviceTop)) {
+            return serviceModalStyle;
+        }
+
+        return {
+            ...serviceModalStyle,
+            left: `${serviceLeft + INFO_MODAL_WIDTH}px`,
+            top: `${serviceTop}px`,
         };
     };
 
@@ -2060,6 +2094,7 @@ function ArcgisUploadPanel({
             onSublayerCheckbox={handleSublayerCheckbox}
             onContextMenu={handleContextMenu}
             depth={depth}
+            layerInfoOpen={layerInfoOpen}
         />
     );
 
@@ -2114,41 +2149,6 @@ function ArcgisUploadPanel({
                     Searching… loading more results ({Object.keys(serviceLayersLoading).length} remaining)
                 </div>
             )}
-            <div className="upload-panel-added-checkbox-row">
-                <label>
-                    <input
-                        type="checkbox"
-                        checked={showAddedOnly}
-                        onChange={e => {
-                            setShowAddedOnly(e.target.checked);
-                            if (e.target.checked) {
-                                // Expand all folders and services that have added layers
-                                const foldersWithAdded = [];
-                                const servicesWithAdded = [];
-                                folderNames.forEach(folder => {
-                                    const hasAdded = servicesByFolder[folder].some(service =>
-                                        (checkedLayerIds[service.key] || []).length > 0
-                                    );
-                                    if (hasAdded) foldersWithAdded.push(folder);
-                                    servicesByFolder[folder].forEach(service => {
-                                        if ((checkedLayerIds[service.key] || []).length > 0) {
-                                            servicesWithAdded.push(service.key);
-                                        }
-                                    });
-                                });
-                                setExpandedFolders(new Set(foldersWithAdded));
-                                setExpandedServices(new Set(servicesWithAdded));
-                            } else {
-                                setExpandedFolders(new Set());
-                                setExpandedServices(new Set());
-                                setExpandedLayers(new Set());
-                            }
-                        }}
-                        style={{ marginRight: 8 }}
-                    />
-                    Show only services added to map
-                </label>
-            </div>
         </div>
         );
     };
@@ -2313,6 +2313,30 @@ function ArcgisUploadPanel({
         }
     };
 
+    // Save a layer to custom layers
+    const handleSaveLayerToCustomLayers = async () => {
+        if (!layerInfoOpen) return;
+        const email = localStorage.getItem('email') || '';
+        if (!email) {
+            setShowLoginPrompt(true);
+            return;
+        }
+        try {
+            const service = layerInfoOpen.service;
+            if (!service) return;
+            const layerToSave = {
+                ...service,
+                label: `${service.label} - ${layerInfoOpen.layerName}`,
+                layerId: layerInfoOpen.layerId
+            };
+            await saveCustomLayer(email, layerToSave);
+            showFinishedMessage(`Saved "${layerInfoOpen.layerName}" to Custom Layers`);
+            onCustomLayerSaved?.();
+        } catch (err) {
+            alert(`Failed to save: ${err.message}`);
+        }
+    };
+
     // Open service info modal (fetch & cache)
     const openServiceInfo = async (service) => {
         setServiceInfoOpenKey(service.key);
@@ -2354,7 +2378,8 @@ function ArcgisUploadPanel({
             serviceKey: service.key,
             layerId: layer.id,
             layerName: layer.name,
-            serviceUrl: service.url
+            serviceUrl: service.url,
+            service: service
         };
         setLayerInfoOpen(layerData);
         
@@ -2364,6 +2389,13 @@ function ArcgisUploadPanel({
         setLayerInfoLoading(true);
         try {
             const info = await fetchArcgisLayerInfo(service.url, layer.id);
+            if (serviceLegends[service.key] === undefined && service.url) {
+                fetchArcgisLegend(service.url).then(legend => {
+                    setServiceLegends(prev => ({ ...prev, [service.key]: legend || {} }));
+                }).catch(() => {
+                    setServiceLegends(prev => ({ ...prev, [service.key]: {} }));
+                });
+            }
             setLayerInfoCache(prev => ({ ...prev, [cacheKey]: info || {} }));
         } finally {
             setLayerInfoLoading(false);
@@ -2372,7 +2404,44 @@ function ArcgisUploadPanel({
 
     const closeLayerInfo = () => {
         setLayerInfoOpen(null);
+        setLayerFilter(null); // Reset filter when closing modal
     };
+
+    useEffect(() => {
+        if (!isOnboardingOpen) return;
+
+        const onboardingFolderName = findFirstVisibleFolder(onboardingStateCode);
+        const onboardingService = findFirstVisibleService(onboardingStateCode, onboardingFolderName);
+        const infoLayer = findFirstInfoLayer(onboardingService);
+
+        if (onboardingStepIndex >= 8 && onboardingService) {
+            if (serviceInfoOpenKey !== onboardingService.key) {
+                openServiceInfo(onboardingService);
+            }
+        } else if (serviceInfoOpenKey) {
+            setServiceInfoOpenKey(null);
+        }
+
+        if (onboardingStepIndex >= 10 && onboardingService && infoLayer) {
+            const isSameLayer = layerInfoOpen
+                && layerInfoOpen.serviceKey === onboardingService.key
+                && layerInfoOpen.layerId === infoLayer.id;
+            if (!isSameLayer) {
+                openLayerInfo(onboardingService, infoLayer);
+            }
+        } else if (layerInfoOpen) {
+            setLayerInfoOpen(null);
+            setLayerFilter(null);
+        }
+    }, [
+        isOnboardingOpen,
+        onboardingStepIndex,
+        serviceInfoOpenKey,
+        layerInfoOpen,
+        findFirstVisibleFolder,
+        findFirstVisibleService,
+        findFirstInfoLayer,
+    ]);
 
     // Helper: convert HTML to plain text (for Service Description)
     function toPlainText(html) {
@@ -2470,11 +2539,11 @@ function ArcgisUploadPanel({
                                     value={layerOpacity}
                                     onChange={e => handleOpacityChange(parseFloat(e.target.value))}
                                     className="upload-panel-opacity-slider"
-                                    style={{ background: `linear-gradient(to right, #1976d2 ${layerOpacity * 100}%, #d0d0d0 ${layerOpacity * 100}%)` }}
+                                    style={{ '--slider-pct': `${layerOpacity * 100}%` }}
                                 />
                                 <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
                             </div>
-                            <div className="upload-panel-controls-row">
+                            <div className="upload-panel-controls-row" data-onboarding-target="arcgis-panel-actions">
                                 <button 
                                     className="upload-panel-update-btn"
                                     onClick={handleUpdateServices}
@@ -2483,10 +2552,49 @@ function ArcgisUploadPanel({
                                 >
                                     <FontAwesomeIcon icon={faSync} spin={isUpdating} />
                                 </button>
-                                <ClearAllLayersButton
-                                    onClick={handleClearAllLayers}
-                                    disabled={!Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0)}
-                                />
+                                <div className="upload-panel-controls-actions">
+                                    <button
+                                        type="button"
+                                        data-onboarding-target="arcgis-show-added-button"
+                                        className={`clear-all-layers-btn clear-all-layers-btn--toggle${showAddedOnly ? ' is-active' : ''}`}
+                                        onClick={() => {
+                                            setShowAddedOnly(prev => {
+                                                const next = !prev;
+                                                if (next) {
+                                                    const foldersWithAdded = [];
+                                                    const servicesWithAdded = [];
+                                                    folderNames.forEach(folder => {
+                                                        const hasAdded = servicesByFolder[folder].some(service =>
+                                                            (checkedLayerIds[service.key] || []).length > 0
+                                                        );
+                                                        if (hasAdded) foldersWithAdded.push(folder);
+                                                        servicesByFolder[folder].forEach(service => {
+                                                            if ((checkedLayerIds[service.key] || []).length > 0) {
+                                                                servicesWithAdded.push(service.key);
+                                                            }
+                                                        });
+                                                    });
+                                                    setExpandedFolders(new Set(foldersWithAdded));
+                                                    setExpandedServices(new Set(servicesWithAdded));
+                                                } else {
+                                                    setExpandedFolders(new Set());
+                                                    setExpandedServices(new Set());
+                                                    setExpandedLayers(new Set());
+                                                }
+                                                return next;
+                                            });
+                                        }}
+                                        aria-pressed={showAddedOnly}
+                                        title={showAddedOnly ? 'Show all services' : 'Show only services added to the map'}
+                                    >
+                                        <FontAwesomeIcon icon={faEye} />
+                                        <span>{showAddedOnly ? 'Showing Added Only' : 'Show Added Only'}</span>
+                                    </button>
+                                    <ClearAllLayersButton
+                                        onClick={handleClearAllLayers}
+                                        disabled={!Object.values(checkedLayerIds).some(ids => Array.isArray(ids) && ids.length > 0)}
+                                    />
+                                </div>
                             </div>
                             {/* Update progress display */}
                             {(updateProgress || updateResults) && (
@@ -2591,7 +2699,7 @@ function ArcgisUploadPanel({
                                                                     return (
                                                                         <div key={service.key} className="tree-node" data-service-key={service.key}>
                                                                             <div
-                                                                                className={`upload-item${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}`}
+                                                                                className={`upload-item${currentMatchId === `service-${service.key}` ? ' search-nav-current' : ''}${serviceInfoOpenKey === service.key ? ' service-info-active' : ''}`}
                                                                                 style={searchResult?.matchedServiceKeys?.has(service.key) ? { fontWeight: 'bold' } : undefined}
                                                                                 data-search-match-id={searchResult?.matchedServiceKeys?.has(service.key) ? `service-${service.key}` : undefined}
                                                                                 onClick={() => handleServiceClick(service.key)}
@@ -2780,7 +2888,7 @@ function ArcgisUploadPanel({
                                         return (
                                             <div key={service.key} className="tree-node" data-service-key={service.key}>
                                                 <div
-                                                    className="upload-item"
+                                                    className={`upload-item${serviceInfoOpenKey === service.key ? ' service-info-active' : ''}`}
                                                     onClick={() => handleServiceClick(service.key)}
                                                     onContextMenu={(e) => handleContextMenu(e, 'service', { service, layersToShow: allFeatureLayers })}
                                                 >
@@ -2848,7 +2956,7 @@ function ArcgisUploadPanel({
 
             {/* Service info modal (right side) */}
             {serviceInfoOpenKey && (
-                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()} data-onboarding-target="arcgis-service-info-modal">
                     <div className="arcgis-service-info-modal-header">
                         <strong>Service info</strong>
                         <button
@@ -2871,11 +2979,34 @@ function ArcgisUploadPanel({
                                         <div className="arcgis-service-info-empty">No information available.</div>
                                         {currentService && currentService.url && (
                                             <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                                <button
+                                                    type="button"
+                                                    className="arcgis-service-info-save-btn"
+                                                    onClick={handleSaveToCustomLayers}
+                                                    title="Save to Custom Layers"
+                                                    style={{
+                                                        padding: '6px 10px',
+                                                        backgroundColor: '#1976d2',
+                                                        color: '#fff',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '13px',
+                                                        fontWeight: '500',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        whiteSpace: 'nowrap'
+                                                    }}
+                                                >
+                                                    <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                                                    Save
+                                                </button>
                                                 <a 
                                                     href={currentService.url} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
-                                                    style={{ color: '#1976d2', textDecoration: 'none' }}
+                                                    style={{ color: '#1976d2', textDecoration: 'none', fontSize: '13px' }}
                                                 >
                                                     View ArcGIS Service Page →
                                                 </a>
@@ -2910,7 +3041,7 @@ function ArcgisUploadPanel({
                                         <strong>Spatial Reference:</strong> {srText}
                                     </div>
 
-                                    <div className="arcgis-service-info-row service-info-opacity-row">
+                                    <div className="arcgis-service-info-row service-info-opacity-row" data-onboarding-target="arcgis-service-info-opacity">
                                         <strong>Service Opacity:</strong>
                                         <div className="service-info-opacity-controls">
                                             <input
@@ -3003,7 +3134,7 @@ function ArcgisUploadPanel({
                                         };
 
                                         return (
-                                            <div className="arcgis-service-info-row">
+                                            <div className="arcgis-service-info-row" data-onboarding-target="arcgis-service-info-time-filter">
                                                 <strong>Historical View:</strong>
                                                 <div className="service-info-time-filter">
                                                     {/* ── Tabs ── */}
@@ -3253,7 +3384,7 @@ function ArcgisUploadPanel({
                                     })()}
 
                                     {currentService && (
-                                        <div className="arcgis-service-info-row">
+                                        <div className="arcgis-service-info-row" data-onboarding-target="arcgis-service-info-layer-links">
                                             <strong>Layers / Sublayers:</strong>
                                             {renderServiceLayerLinks(currentService)}
                                         </div>
@@ -3261,12 +3392,36 @@ function ArcgisUploadPanel({
                                     
                                     {/* Add the ArcGIS service page link at the bottom */}
                                     {currentService && currentService.url && (
-                                        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                        <div data-onboarding-target="arcgis-service-info-actions" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                            <button
+                                                type="button"
+                                                className="arcgis-service-info-save-btn"
+                                                onClick={handleSaveToCustomLayers}
+                                                title="Save to Custom Layers"
+                                                style={{
+                                                    padding: '6px 10px',
+                                                    backgroundColor: '#1976d2',
+                                                    color: '#fff',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '13px',
+                                                    fontWeight: '500',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    whiteSpace: 'nowrap',
+                                                    marginBottom: '12px'
+                                                }}
+                                            >
+                                                <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                                                Save
+                                            </button>
                                             <a 
                                                 href={currentService.url} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                style={{ color: '#1976d2', textDecoration: 'none' }}
+                                                style={{ color: '#1976d2', textDecoration: 'none', fontSize: '13px' }}
                                             >
                                                 View ArcGIS Service Page →
                             </a>
@@ -3281,7 +3436,7 @@ function ArcgisUploadPanel({
 
             {/* Layer Info Modal */}
             {layerInfoOpen && (
-                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
+                <div className="arcgis-service-info-modal" style={getLayerInfoModalStyle()} data-onboarding-target="arcgis-layer-info-modal">
                     <div className="arcgis-service-info-modal-header">
                         <strong>Layer Info: {layerInfoOpen.layerName}</strong>
                         <button
@@ -3379,14 +3534,290 @@ function ArcgisUploadPanel({
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Legend display */}
+                                    {(() => {
+                                        const legend = serviceLegends[layerInfoOpen.serviceKey];
+                                        if (legend && legend.layers) {
+                                            const legendLayer = legend.layers.find(l => l.layerId === layerInfoOpen.layerId);
+                                            if (legendLayer && legendLayer.legend && legendLayer.legend.length > 0) {
+                                                return (
+                                                    <div className="arcgis-service-info-row">
+                                                        <strong>Legend:</strong>
+                                                        <div style={{ marginTop: '8px', paddingLeft: '12px' }}>
+                                                            {legendLayer.legend.map((item, idx) => (
+                                                                <div key={idx} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                    {item.imageData && (
+                                                                        <img src={`data:image/png;base64,${item.imageData}`} alt={item.label} style={{ width: '20px', height: '20px' }} />
+                                                                    )}
+                                                                    <span style={{ fontSize: '13px' }}>{item.label || item.value || 'N/A'}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                        }
+                                        return null;
+                                    })()}
+
+                                    {/* Parent layer link */}
+                                    {info.parentLayerId !== undefined && info.parentLayerId !== -1 && (() => {
+                                        const rawLayers = serviceLayers[layerInfoOpen.serviceKey] || [];
+                                        const parentLayer = rawLayers.find(l => l.id === info.parentLayerId);
+                                        if (parentLayer) {
+                                            return (
+                                                <div className="arcgis-service-info-row">
+                                                    <strong>Parent Layer:</strong>
+                                                    <button
+                                                        type="button"
+                                                        className="arcgis-service-info-layer-link"
+                                                        onClick={() => openLayerInfo(layerInfoOpen.service, { id: parentLayer.id, name: parentLayer.name })}
+                                                        style={{ marginLeft: '8px' }}
+                                                    >
+                                                        {parentLayer.name}
+                                                    </button>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
+                                    {/* Child layers links */}
+                                    {(() => {
+                                        const rawLayers = serviceLayers[layerInfoOpen.serviceKey] || [];
+                                        const childFromIds = Array.isArray(info.subLayerIds)
+                                            ? info.subLayerIds
+                                                .map(id => rawLayers.find(l => l.id === id) || { id, name: `Layer ${id}` })
+                                            : [];
+                                        const childFromSubLayers = Array.isArray(info.subLayers)
+                                            ? info.subLayers
+                                                .map(sl => {
+                                                    const subId = sl?.id;
+                                                    if (subId === undefined || subId === null) return null;
+                                                    return rawLayers.find(l => l.id === subId) || { id: subId, name: sl?.name || `Layer ${subId}` };
+                                                })
+                                                .filter(Boolean)
+                                            : [];
+                                        const dedupMap = new Map();
+                                        [...childFromIds, ...childFromSubLayers].forEach((layer) => {
+                                            dedupMap.set(layer.id, layer);
+                                        });
+                                        const childLayers = Array.from(dedupMap.values());
+
+                                        if (childLayers.length > 0) {
+                                            return (
+                                                <div className="arcgis-service-info-row">
+                                                    <strong>Child Layers:</strong>
+                                                    <div style={{ marginTop: '8px', paddingLeft: '12px', maxHeight: '180px', overflowY: 'auto', border: '1px solid #eee', borderRadius: '4px', padding: '8px 8px 2px 12px' }}>
+                                                        {childLayers.map(child => (
+                                                            <div key={child.id} style={{ marginBottom: '6px' }}>
+                                                                <button
+                                                                    type="button"
+                                                                    className="arcgis-service-info-layer-link"
+                                                                    onClick={() => openLayerInfo(layerInfoOpen.service, { id: child.id, name: child.name })}
+                                                                >
+                                                                    {child.name}
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                     
-                                    {/* Link to the actual layer page */}
-                                    <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                    {/* Filter UI */}
+                                    {info.fields && info.fields.length > 0 && (
+                                        <div className="arcgis-service-info-row" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }} data-onboarding-target="arcgis-layer-info-filter">
+                                            <strong>Filter by Field:</strong>
+                                            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {/* Field selector */}
+                                                <select
+                                                    value={layerFilter?.field || ''}
+                                                    onChange={(e) => setLayerFilter({ ...layerFilter, field: e.target.value })}
+                                                    style={{
+                                                        padding: '6px 8px',
+                                                        borderRadius: '4px',
+                                                        border: '1px solid #ddd',
+                                                        fontSize: '13px',
+                                                        fontFamily: 'inherit'
+                                                    }}
+                                                >
+                                                    <option value="">Select a field...</option>
+                                                    {info.fields.map((field) => (
+                                                        <option key={field.name} value={field.name}>
+                                                            {field.alias || field.name} ({field.type})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                
+                                                {/* Operator selector */}
+                                                {layerFilter?.field && (
+                                                    <select
+                                                        value={layerFilter?.operator || '='}
+                                                        onChange={(e) => setLayerFilter({ ...layerFilter, operator: e.target.value })}
+                                                        style={{
+                                                            padding: '6px 8px',
+                                                            borderRadius: '4px',
+                                                            border: '1px solid #ddd',
+                                                            fontSize: '13px',
+                                                            fontFamily: 'inherit'
+                                                        }}
+                                                    >
+                                                        <option value="=">=</option>
+                                                        <option value="!=">!=</option>
+                                                        <option value=">">&gt;</option>
+                                                        <option value=">=">&gt;=</option>
+                                                        <option value="<">&lt;</option>
+                                                        <option value="<=">&lt;=</option>
+                                                        <option value="LIKE">LIKE</option>
+                                                        <option value="IN">IN</option>
+                                                    </select>
+                                                )}
+                                                
+                                                {/* Value input */}
+                                                {layerFilter?.field && (
+                                                    <input
+                                                        type="text"
+                                                        placeholder={layerFilter?.operator === 'IN' ? 'Comma-separated values' : 'Enter value...'}
+                                                        value={layerFilter?.value || ''}
+                                                        onChange={(e) => setLayerFilter({ ...layerFilter, value: e.target.value })}
+                                                        style={{
+                                                            padding: '6px 8px',
+                                                            borderRadius: '4px',
+                                                            border: '1px solid #ddd',
+                                                            fontSize: '13px',
+                                                            fontFamily: 'inherit'
+                                                        }}
+                                                    />
+                                                )}
+                                                
+                                                {/* Apply/Clear buttons */}
+                                                {layerFilter?.field && layerFilter?.value && (
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <button
+                                                            type="button"
+                                                            style={{
+                                                                flex: 1,
+                                                                padding: '6px 10px',
+                                                                backgroundColor: '#28a745',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '13px',
+                                                                fontWeight: '500'
+                                                            }}
+                                                            onClick={() => {
+                                                                const field = layerFilter.field;
+                                                                const operator = layerFilter.operator || '=';
+                                                                let value = layerFilter.value;
+                                                                
+                                                                // Build where clause
+                                                                let whereClause = '';
+                                                                if (operator === 'IN') {
+                                                                    const values = value.split(',').map(v => `'${v.trim()}'`).join(',');
+                                                                    whereClause = `${field} IN (${values})`;
+                                                                } else if (operator === 'LIKE') {
+                                                                    whereClause = `${field} LIKE '%${value}%'`;
+                                                                } else if (['<', '>', '<=', '>=', '=', '!='].includes(operator)) {
+                                                                    // Check if value is numeric
+                                                                    if (!isNaN(value) && value.trim() !== '') {
+                                                                        whereClause = `${field}${operator}${value}`;
+                                                                    } else {
+                                                                        whereClause = `${field}${operator}'${value}'`;
+                                                                    }
+                                                                }
+                                                                
+                                                                if (whereClause) {
+                                                                    console.log('[ArcgisUploadPanel] Applying filter:', whereClause);
+                                                                    // Apply filter to map layer
+                                                                    const map = mapInstance && mapInstance();
+                                                                    if (map && layerInfoOpen) {
+                                                                        applyArcgisVectorLayerFilter(
+                                                                            map,
+                                                                            layerInfoOpen.serviceUrl,
+                                                                            layerInfoOpen.layerId,
+                                                                            layerInfoOpen.serviceKey,
+                                                                            whereClause
+                                                                        );
+                                                                    }
+                                                                    showFinishedMessage(`Filter applied: ${whereClause}`);
+                                                                }
+                                                            }}
+                                                        >
+                                                            Apply Filter
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            style={{
+                                                                flex: 1,
+                                                                padding: '6px 10px',
+                                                                backgroundColor: '#6c757d',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '13px',
+                                                                fontWeight: '500'
+                                                            }}
+                                                            onClick={() => {
+                                                                // Clear filter from map layer
+                                                                const map = mapInstance && mapInstance();
+                                                                if (map && layerInfoOpen) {
+                                                                    applyArcgisVectorLayerFilter(
+                                                                        map,
+                                                                        layerInfoOpen.serviceUrl,
+                                                                        layerInfoOpen.layerId,
+                                                                        layerInfoOpen.serviceKey,
+                                                                        '1=1'
+                                                                    );
+                                                                }
+                                                                setLayerFilter(null);
+                                                                showFinishedMessage('Filter cleared');
+                                                            }}
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Link to the actual layer page and Save button */}
+                                    <div data-onboarding-target="arcgis-layer-info-actions" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                        <button
+                                            type="button"
+                                            className="arcgis-service-info-save-btn"
+                                            onClick={handleSaveLayerToCustomLayers}
+                                            title="Save to Custom Layers"
+                                            style={{
+                                                padding: '6px 10px',
+                                                backgroundColor: '#1976d2',
+                                                color: '#fff',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '13px',
+                                                fontWeight: '500',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                whiteSpace: 'nowrap',
+                                                marginBottom: '12px'
+                                            }}
+                                        >
+                                            <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                                            Save
+                                        </button>
                                         <a 
                                             href={`${layerInfoOpen.serviceUrl}/${layerInfoOpen.layerId}`} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
-                                            style={{ color: '#1976d2', textDecoration: 'none' }}
+                                            style={{ color: '#1976d2', textDecoration: 'none', fontSize: '13px' }}
                                         >
                                             View ArcGIS Layer Page →
                                         </a>

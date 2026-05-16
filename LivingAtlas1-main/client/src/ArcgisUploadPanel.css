@@ -1,9 +1,9 @@
 .upload-panel {
     position: fixed;
-    top: 50px;
-    left: 48px;
-    height: calc(100vh - 50px);
-    width: 25vw;
+    top: var(--app-navbar-height);
+    left: var(--app-left-sidebar-collapsed-width);
+    height: calc(100vh - var(--app-navbar-height));
+    width: var(--app-secondary-panel-width);
     background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
     border: 1px solid #d8e1ea;
     box-shadow: 10px 0 24px rgba(16, 33, 54, 0.18);
@@ -18,8 +18,8 @@
 
 /* When card panel is also on left, upload panel takes bottom half */
 .upload-panel.upload-panel--split-bottom {
-    top: 50vh;
-    height: 50vh;
+    top: calc(var(--app-navbar-height) + ((100vh - var(--app-navbar-height)) / 2));
+    height: calc((100vh - var(--app-navbar-height)) / 2);
 }
 
 .upload-panel * {
@@ -261,7 +261,8 @@
     flex-wrap: wrap;
 }
 
-.upload-item:hover {
+.upload-item:hover,
+.upload-item.service-info-active {
     background: #f2f7fc;
     border-color: #bfd0e2;
 }
@@ -337,6 +338,12 @@
     font-size: 11px !important;
     margin-bottom: 0;
     gap: 3px;
+}
+
+.upload-layer-row:hover,
+.upload-layer-row.layer-info-active {
+    background: #f2f7fc;
+    border-color: #bfd0e2;
 }
 
 .upload-layer-row input[type="checkbox"] {
@@ -802,6 +809,15 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
+}
+
+.arcgis-service-info-modal-header strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
 }
 
 .arcgis-service-info-modal-close {
@@ -810,6 +826,9 @@
     font-size: 18px;
     cursor: pointer;
     color: #222;
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
 }
 
 .arcgis-service-info-modal-content {
@@ -1237,6 +1256,16 @@
     gap: 8px;
     margin: 4px 0 2px 0;
     padding: 0;
+    flex-wrap: wrap;
+}
+
+.upload-panel-controls-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 /* Clear All Layers button (shared by Upload Panel and Custom Layers Panel) */
@@ -1280,6 +1309,18 @@
     border-color: #d8e1ea;
     background: #f0f2f5;
     color: #a0adb8 !important;
+}
+
+.clear-all-layers-btn--toggle.is-active {
+    border-color: #7fb0d6;
+    background: #eef6fd;
+    color: #1976d2 !important;
+}
+
+.clear-all-layers-btn--toggle.is-active:hover {
+    border-color: #5b97cb;
+    background: #e3f0fb;
+    color: #1565c0 !important;
 }
 
 /* Datasource toggle switch */

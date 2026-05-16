@@ -22,6 +22,8 @@ function Content2(props) {
     const bothOnLeft = isOnLeft && !props.isCollapsed && props.isUploadPanelOpen;
     const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
     const [pendingPolygonData, setPendingPolygonData] = useState(null);
+    const [pendingImageOverlayData, setPendingImageOverlayData] = useState(null);
+    const [pendingPointToolSignal, setPendingPointToolSignal] = useState(null);
     const containerWidth = props.cardPanelWidth ?? 300;
     const containerRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -36,7 +38,12 @@ function Content2(props) {
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
     const openModal = () => setIsModalOpen(true);
-    const closeModal = () => { setIsModalOpen(false); setPendingPolygonData(null); };
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setPendingPolygonData(null);
+        setPendingImageOverlayData(null);
+        setPendingPointToolSignal(null);
+    };
 
 
     // Listen for polygon-tool-save from Content1's Polygon Tool
@@ -51,6 +58,43 @@ function Content2(props) {
         };
         window.addEventListener('polygon-tool-save', handler);
         return () => window.removeEventListener('polygon-tool-save', handler);
+    }, [props.isLoggedIn]);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (!props.isLoggedIn) {
+                setShowLoginPrompt(true);
+                return;
+            }
+            setPendingImageOverlayData(e.detail);
+            setIsModalOpen(true);
+        };
+        window.addEventListener('map-image-tool-save', handler);
+        return () => window.removeEventListener('map-image-tool-save', handler);
+    }, [props.isLoggedIn]);
+
+    useEffect(() => {
+        const handler = () => {
+            if (!props.isLoggedIn) {
+                setShowLoginPrompt(true);
+                return;
+            }
+            setPendingPointToolSignal(Date.now());
+        };
+        window.addEventListener('map-point-tool-start', handler);
+        return () => window.removeEventListener('map-point-tool-start', handler);
+    }, [props.isLoggedIn]);
+
+    useEffect(() => {
+        const handler = () => {
+            if (!props.isLoggedIn) {
+                setShowLoginPrompt(true);
+                return;
+            }
+            openModal();
+        };
+        window.addEventListener('atlas:open-create-card-modal', handler);
+        return () => window.removeEventListener('atlas:open-create-card-modal', handler);
     }, [props.isLoggedIn]);
 
     function useDidMount() {
@@ -841,7 +885,11 @@ function Content2(props) {
                 email={props.email} 
                 isOpen={isModalOpen} 
                 onRequestClose={closeModal}
+                onPointLocationSelected={openModal}
                 initialPolygonData={pendingPolygonData}
+                initialImageOverlayData={pendingImageOverlayData}
+                initialPointToolSignal={pendingPointToolSignal}
+                onStartOnboarding={() => setIsOnboardingOpen(true)}
             />
     
             <section

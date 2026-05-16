@@ -5,9 +5,9 @@
 
 .user-manual {
   font-family: 'Roboto', sans-serif;
-  /* Sidebar is 220px wide; center the remaining space */
-  margin-left: calc(220px + (100vw - 220px) / 2 - 460px);
-  width: min(900px, 100vw - 220px - 48px);
+  /* Sidebar width is responsive; center the remaining space */
+  margin-left: calc(var(--app-user-manual-nav-width) + (100vw - var(--app-user-manual-nav-width)) / 2 - 460px);
+  width: min(900px, calc(100vw - var(--app-user-manual-nav-width) - 48px));
   padding: 40px 24px 60px;
   color: #333;
 }
@@ -78,10 +78,10 @@
 nav.um-nav-sidebar {
   /* Fixed to the left edge of the viewport, below the navbar */
   position: fixed;
-  top: 50px;
+  top: var(--app-navbar-height);
   left: 0;
   bottom: 0;
-  width: 220px;
+  width: var(--app-user-manual-nav-width);
   z-index: 100;
   /* layout */
   display: flex;
@@ -156,6 +156,40 @@ nav.um-nav-sidebar {
   color: #1a3a5c;
   font-weight: 700;
   border-left-color: #3b82f6;
+}
+
+.um-nav-sidebar .um-nav-item--group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.um-nav-sidebar .um-nav-item--group svg {
+  font-size: 0.72rem;
+  color: #7b8ca1;
+}
+
+.um-nav-sidebar .um-nav-item--child {
+  padding-left: 30px;
+  font-size: 0.84rem;
+}
+
+.um-nav-sidebar .um-nav-item--subgroup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 30px;
+  font-size: 0.82rem;
+}
+
+.um-nav-sidebar .um-nav-item--subgroup svg {
+  font-size: 0.7rem;
+  color: #7b8ca1;
+}
+
+.um-nav-sidebar .um-nav-item--grandchild {
+  padding-left: 46px;
+  font-size: 0.8rem;
 }
 
 .um-content-area {
@@ -657,6 +691,54 @@ nav.um-nav-sidebar {
   pointer-events: none;
 }
 
+.um-mapctrl-zaxis {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+  padding: 6px 8px;
+  pointer-events: none;
+}
+
+.um-mapctrl-zaxis__scale {
+  position: relative;
+  width: 18px;
+  height: 112px;
+  display: flex;
+  justify-content: center;
+}
+
+.um-mapctrl-zaxis__spine {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: linear-gradient(180deg, #d0dae6 0%, #7d94ab 100%);
+  border-radius: 999px;
+}
+
+.um-mapctrl-zaxis__pointer {
+  position: absolute;
+  top: 38px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid #27425d;
+}
+
+.um-mapctrl-zaxis__value {
+  min-width: 28px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #27425d;
+  text-align: center;
+}
+
 /* ---- Draw Polygon Panel demo ---- */
 .um-polydraw-demo-wrapper {
   max-width: 260px;
@@ -724,6 +806,15 @@ nav.um-nav-sidebar {
 }
 .um-card-popup-demo-wrapper .card-pin-popup-panel {
   overflow-y: visible !important;
+}
+
+/* Keep Service/Layer Info tab demo layers below the main navbar (navbar z-index: 1000). */
+.um-section--service-layer-info .arcgis-service-info-modal,
+.um-section--service-layer-info .layer-context-menu,
+.um-section--service-layer-info .service-info-time-filter,
+.um-section--service-layer-info .service-info-time-tabs,
+.um-section--service-layer-info .service-info-timeline-handle-icon {
+  z-index: 900 !important;
 }
 
 

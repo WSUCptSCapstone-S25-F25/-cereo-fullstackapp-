@@ -863,3 +863,6 @@ Render_MCP.md
 .claude/scheduled_tasks.lock
 .claude/settings.json
 CLAUDE.md
+.claude/worktrees/amazing-cartwright-b1f772/
+documentation/chatbot_development_progress.md
+LivingAtlas1-main/chatbot_implementation_tasks.md

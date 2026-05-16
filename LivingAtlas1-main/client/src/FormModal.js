@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import Modal from 'react-modal';
 import mapboxgl from 'mapbox-gl';
@@ -6,6 +6,9 @@ import './FormModal.css';
 import api from './api.js';
 import PolygonDrawingModal from './PolygonDrawingModal';
 import ArcGISPickerModal from './ArcGISPickerModal';
+import CreateCardModalOnboarding from './OnboardingCreateCardModal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faQuestion, faPlay } from '@fortawesome/free-solid-svg-icons';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -19,12 +22,16 @@ const FormModal = (props) => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
     const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
-    const [locationType, setLocationType] = useState('point'); // 'point' or 'polygon'
+    const [isPlacingImageOverlay, setIsPlacingImageOverlay] = useState(false);
+    const [isCreateCardOnboardingOpen, setIsCreateCardOnboardingOpen] = useState(false);
+    const [locationType, setLocationType] = useState('point'); // 'point' | 'polygon' | 'image'
     const [polygonVertices, setPolygonVertices] = useState([]);
     const [polygonFillColor, setPolygonFillColor] = useState('#0077c0');
     const [polygonLineStyle, setPolygonLineStyle] = useState('solid');
     const isModalOpen = modalIsOpen || props.isOpen;
     const selectLocationMarker = useRef(null);
+    const lastPointToolSignalRef = useRef(null);
+    const shouldCloseOnPointCancelRef = useRef(false);
 
     // Apply initial polygon data from Polygon Tool flow
     useEffect(() => {
@@ -42,9 +49,36 @@ const FormModal = (props) => {
         }
     }, [props.initialPolygonData]);
 
+    useEffect(() => {
+        if (props.initialImageOverlayData) {
+            const { vertices, centroid, imageFile, previewUrl } = props.initialImageOverlayData;
+            setLocationType('image');
+            setPolygonVertices(vertices || []);
+            setOverlayImageFile(imageFile || null);
+            setOverlayImagePreview(previewUrl || '');
+            setIsPlacingImageOverlay(false);
+            setFormData(prev => ({
+                ...prev,
+                latitude: centroid?.lat?.toFixed(6) || prev.latitude,
+                longitude: centroid?.lng?.toFixed(6) || prev.longitude,
+            }));
+        }
+    }, [props.initialImageOverlayData]);
+
+    useEffect(() => {
+        const handleImageToolCancel = () => {
+            setIsPlacingImageOverlay(false);
+        };
+
+        window.addEventListener('map-image-tool-cancel', handleImageToolCancel);
+        return () => window.removeEventListener('map-image-tool-cancel', handleImageToolCancel);
+    }, []);
+
     const handleCloseModal = () => {
         setModalIsOpen(false);
         setIsDrawingPolygon(false);
+        setIsPlacingImageOverlay(false);
+        setIsCreateCardOnboardingOpen(false);
         if (selectLocationMarker.current) {
             selectLocationMarker.current.remove();
             selectLocationMarker.current = null;
@@ -53,6 +87,22 @@ const FormModal = (props) => {
             props.onRequestClose();
         }
     };
+
+    const handleOpenCreateCardHelp = () => {
+        window.open('/user-manual?section=add-card', '_blank');
+    };
+
+    const handleStartCreateCardOnboarding = () => {
+        setIsCreateCardOnboardingOpen(true);
+    };
+
+    const isCreateCardModalVisible = isModalOpen && !isSelectingLocation && !isDrawingPolygon && !isPlacingImageOverlay;
+
+    useEffect(() => {
+        if (!isCreateCardModalVisible && isCreateCardOnboardingOpen) {
+            setIsCreateCardOnboardingOpen(false);
+        }
+    }, [isCreateCardModalVisible, isCreateCardOnboardingOpen]);
 
     const [formData, setFormData] = useState({
         username: props.username || '',   // required account login
@@ -74,6 +124,8 @@ const FormModal = (props) => {
     const [selectedFiles, setSelectedFiles] = useState([]);   // <-- multiple files
     const [imageFiles, setImageFiles] = useState([]);         // multi-image upload
     const [imagePreviews, setImagePreviews] = useState([]);
+    const [overlayImageFile, setOverlayImageFile] = useState(null);
+    const [overlayImagePreview, setOverlayImagePreview] = useState('');
     const [pendingArcgisItems, setPendingArcgisItems] = useState([]);
     const [isArcgisPickerOpen, setIsArcgisPickerOpen] = useState(false);
     const imageInputRef = useRef(null);
@@ -143,6 +195,9 @@ const FormModal = (props) => {
         if (!formData.title.trim() || formData.title.length > 255) errors.push("Title is required and must be <256 chars.");
         if (locationType === 'polygon') {
             if (polygonVertices.length < 3) errors.push("Polygon must have at least 3 points.");
+        } else if (locationType === 'image') {
+            if (polygonVertices.length < 4) errors.push("Image overlay must have 4 corner points.");
+            if (!overlayImageFile && !overlayImagePreview) errors.push("A PNG image is required for the map image overlay.");
         } else {
             if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.latitude)) errors.push("Latitude format is invalid.");
             if (!/^(-?\d+(\.\d{1,8})?)$/.test(formData.longitude)) errors.push("Longitude format is invalid.");
@@ -183,7 +238,7 @@ const FormModal = (props) => {
 
         // Add location type and polygon data
         formData2.append('location_type', locationType);
-        if (locationType === 'polygon' && polygonVertices.length >= 3) {
+        if ((locationType === 'polygon' && polygonVertices.length >= 3) || (locationType === 'image' && polygonVertices.length >= 4)) {
             // Embed style inside JSON so it always travels with vertices
             formData2.append('polygon_coordinates', JSON.stringify({
                 vertices: polygonVertices,
@@ -202,7 +257,14 @@ const FormModal = (props) => {
         }
         
         // append multiple images
-        if (imageFiles.length > 0) {
+        if (locationType === 'image') {
+            if (overlayImageFile) {
+                formData2.append('thumbnail', overlayImageFile);
+            }
+            imageFiles.forEach((file) => {
+                formData2.append('images', file);
+            });
+        } else if (imageFiles.length > 0) {
             formData2.append('thumbnail', imageFiles[0]); // first image as thumbnail
             imageFiles.forEach((file) => {
                 formData2.append('images', file);
@@ -244,7 +306,7 @@ const FormModal = (props) => {
         });
     };
 
-    const handleSelectLocation = () => {
+    const handleSelectLocation = useCallback(() => {
         const map = window.atlasMapInstance;
 
         if (!map) {
@@ -299,6 +361,12 @@ const FormModal = (props) => {
                     latitude: lat.toFixed(6),
                     longitude: lng.toFixed(6),
                 }));
+
+                if (shouldCloseOnPointCancelRef.current && typeof props.onPointLocationSelected === 'function') {
+                    props.onPointLocationSelected();
+                }
+
+                shouldCloseOnPointCancelRef.current = false;
                 marker.remove();
                 selectLocationMarker.current = null;
                 setIsSelectingLocation(false);
@@ -317,7 +385,7 @@ const FormModal = (props) => {
 
         // Store ref so we can clean up
         selectLocationMarker.current = { _onMapClick: onMapClick, remove: () => {} };
-    };
+    }, []);
 
     const cancelSelectLocation = () => {
         const map = window.atlasMapInstance;
@@ -332,10 +400,21 @@ const FormModal = (props) => {
             }
         }
         setIsSelectingLocation(false);
+
+        // Point-tool launch from map toolbar: cancel without plotting should fully close create-card flow.
+        if (shouldCloseOnPointCancelRef.current) {
+            shouldCloseOnPointCancelRef.current = false;
+            handleCloseModal();
+        }
     };
 
     const handleStartPolygonDraw = () => {
         setIsDrawingPolygon(true);
+    };
+
+    const handleStartImageOverlayPlacement = () => {
+        setIsPlacingImageOverlay(true);
+        window.dispatchEvent(new CustomEvent('map-image-tool-start'));
     };
 
     const handlePolygonSave = (vertices, centroid, style) => {
@@ -363,6 +442,18 @@ const FormModal = (props) => {
         }
     };
 
+    useEffect(() => {
+        const signal = props.initialPointToolSignal;
+        if (!signal || signal === lastPointToolSignalRef.current) return;
+        if (isSelectingLocation || isDrawingPolygon) return;
+
+        lastPointToolSignalRef.current = signal;
+        shouldCloseOnPointCancelRef.current = true;
+        setLocationType('point');
+        setPolygonVertices([]);
+        handleSelectLocation();
+    }, [props.initialPointToolSignal, isSelectingLocation, isDrawingPolygon, handleSelectLocation]);
+
     return (
         <div>
             {/* Floating hint when selecting location */}
@@ -382,18 +473,38 @@ const FormModal = (props) => {
             )}
 
             <Modal
-                isOpen={isModalOpen && !isSelectingLocation && !isDrawingPolygon}
+                isOpen={isCreateCardModalVisible}
                 onRequestClose={handleCloseModal}
                 className="form-modal"
                 overlayClassName="form-modal-overlay"
                 ariaHideApp={false}
             >
+                <div className="form-modal-top-actions" data-onboarding-target="create-card-top-actions">
+                    <button
+                        type="button"
+                        className="form-modal-top-action-btn form-modal-top-action-btn--onboarding card-panel-titlebar-btn card-panel-titlebar-btn--onboarding"
+                        title="Help"
+                        onClick={handleOpenCreateCardHelp}
+                    >
+                        <FontAwesomeIcon icon={faQuestion} />
+                    </button>
+                    <button
+                        type="button"
+                        className="form-modal-top-action-btn form-modal-top-action-btn--onboarding card-panel-titlebar-btn card-panel-titlebar-btn--onboarding"
+                        title="Start onboarding"
+                        data-onboarding-target="create-card-onboarding-button"
+                        onClick={handleStartCreateCardOnboarding}
+                    >
+                        <FontAwesomeIcon icon={faPlay} />
+                    </button>
+                </div>
                 <button className="close-modal-button" onClick={handleCloseModal}>
                     &times;
                 </button>
-                <h2>Create Card</h2>
+                <div data-onboarding-target="create-card-modal-root">
+                <h2 data-onboarding-target="create-card-title">Create Card</h2>
                 <form onSubmit={handleSubmit}>
-                    <label>Author Name (required):</label>
+                    <label>Author Name <span className="form-modal-required-star">*</span>:</label>
                     <input 
                         type="text" 
                         name="name" 
@@ -402,13 +513,13 @@ const FormModal = (props) => {
                         required 
                     />
 
-                    <label>Email (required):</label>
+                    <label>Email <span className="form-modal-required-star">*</span>:</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
 
-                    <label>Title (required):</label>
+                    <label>Title <span className="form-modal-required-star">*</span>:</label>
                     <input type="text" name="title" value={formData.title} onChange={handleInputChange} required />
 
-                    <label>Category:</label>
+                    <label>Category (optional):</label>
                     <select name="category" value={formData.category} onChange={handleInputChange}>
                         <option value="">Select a Category</option>
                         <option value="River">River</option>
@@ -417,17 +528,17 @@ const FormModal = (props) => {
                         <option value="Other">Other</option>
                     </select>
 
-                    <label>Description:</label>
+                    <label>Description (optional):</label>
                     <textarea name="description" value={formData.description} onChange={handleInputChange} />
 
-                    <label>Funding:</label>
+                    <label>Funding (optional):</label>
                     <input type="text" name="funding" value={formData.funding} onChange={handleInputChange} />
 
-                    <label>Organization:</label>
+                    <label>Organization (optional):</label>
                     <input type="text" name="org" value={formData.org} onChange={handleInputChange} />
 
                     <div className="form-modal-links-section">
-                        <label className="form-modal-links-label">Links:</label>
+                        <label className="form-modal-links-label">Links (optional):</label>
                         {links.map((linkItem, idx) => (
                             <div key={idx} className="form-modal-link-row">
                                 <input
@@ -460,8 +571,8 @@ const FormModal = (props) => {
                         >+ Add More Links</button>
                     </div>
 
-                    <label>Location Type:</label>
-                    <div className="form-modal-location-tabs">
+                    <label>Location Type (choose map placement mode) <span className="form-modal-required-star">*</span>:</label>
+                    <div className="form-modal-location-tabs" data-onboarding-target="create-card-location-tabs">
                         <button
                             type="button"
                             className={`form-modal-location-tab ${locationType === 'point' ? 'active' : ''}`}
@@ -476,36 +587,50 @@ const FormModal = (props) => {
                         >
                             Polygon Area
                         </button>
+                        <button
+                            type="button"
+                            className={`form-modal-location-tab ${locationType === 'image' ? 'active' : ''}`}
+                            onClick={() => handleLocationTypeChange('image')}
+                        >
+                            Image Overlay
+                        </button>
                     </div>
 
                     {locationType === 'point' && (
-                        <>
+                        <div className="form-modal-location-content form-modal-location-content--point">
+                            <p className="form-modal-location-description">Use one latitude/longitude point to pin this card at a single location.</p>
                             <button type="button" className="location_button" onClick={handleSelectLocation}>
                                 Select a Location
                             </button>
 
-                            <label>Latitude (required):</label>
-                            <input
-                                type="text"
-                                name="latitude"
-                                value={formData.latitude}
-                                onChange={handleInputChange}
-                                required
-                            />
-
-                            <label>Longitude (required):</label>
-                            <input
-                                type="text"
-                                name="longitude"
-                                value={formData.longitude}
-                                onChange={handleInputChange}
-                                required
-                            />
-                        </>
+                            <div className="form-modal-lat-lng-row">
+                                <div className="form-modal-lat-lng-field">
+                                    <label>Latitude <span className="form-modal-required-star">*</span>:</label>
+                                    <input
+                                        type="text"
+                                        name="latitude"
+                                        value={formData.latitude}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-modal-lat-lng-field">
+                                    <label>Longitude <span className="form-modal-required-star">*</span>:</label>
+                                    <input
+                                        type="text"
+                                        name="longitude"
+                                        value={formData.longitude}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     )}
 
                     {locationType === 'polygon' && (
-                        <div className="form-modal-polygon-section">
+                        <div className="form-modal-location-content form-modal-polygon-section">
+                            <p className="form-modal-location-description">Draw a polygon area on the map to represent a region instead of a single point.</p>
                             <button type="button" className="location_button" onClick={handleStartPolygonDraw}>
                                 {polygonVertices.length >= 3 ? 'Redraw Polygon' : 'Draw Polygon on Map'}
                             </button>
@@ -518,15 +643,35 @@ const FormModal = (props) => {
                         </div>
                     )}
 
-                    <label>Tags (comma-separated):</label>
+                    {locationType === 'image' && (
+                        <div className="form-modal-location-content form-modal-polygon-section">
+                            <p className="form-modal-location-description">Place a georeferenced image overlay (PNG, JPG/JPEG, GIF, WebP) onto the map using four corner points.</p>
+                            <button type="button" className="location_button" onClick={handleStartImageOverlayPlacement}>
+                                Add Image to Map
+                            </button>
+                            {polygonVertices.length >= 4 && (() => {
+                                const cLat = polygonVertices.reduce((s, v) => s + v.lat, 0) / polygonVertices.length;
+                                const cLng = polygonVertices.reduce((s, v) => s + v.lng, 0) / polygonVertices.length;
+                                return (
+                                    <div className="form-modal-polygon-summary">
+                                        <span className="form-modal-polygon-check">&#10003;</span>
+                                        Image placed (center: {cLat.toFixed(4)}, {cLng.toFixed(4)})
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
+
+                    <label>Tags (comma-separated) (optional):</label>
                     <input type="text" name="tags" value={formData.tags} onChange={handleInputChange} />
 
-                    <label>Images:</label>
+                    <label>Attach Images (optional):</label>
                     <div
                         className="form-modal-image-upload-area"
+                        data-onboarding-target="create-card-image-upload"
                         onClick={() => imageInputRef.current?.click()}
                     >
-                        <p>Click or drag to add images (PNG, JPG, GIF, WebP)</p>
+                        <p>{locationType === 'image' ? 'Click or drag to add optional gallery images for the card details view' : 'Click or drag to add images (PNG, JPG, GIF, WebP)'}</p>
                         <span className="form-modal-image-upload-btn">Choose Images</span>
                         <input
                             ref={imageInputRef}
@@ -551,9 +696,10 @@ const FormModal = (props) => {
                         </div>
                     )}
 
-                    <label>Upload Files:</label>
+                    <label>Upload Files (optional):</label>
                     <div
                         className="form-modal-file-upload-area"
+                        data-onboarding-target="create-card-file-upload"
                         onClick={() => fileInputRef.current?.click()}
                     >
                         <p>Click to add files (max 5 MB each)</p>
@@ -576,7 +722,7 @@ const FormModal = (props) => {
                         </div>
                     )}
 
-                    <label>Linked ArcGIS Services <span style={{fontWeight:'normal',color:'#888'}}>(optional)</span>:</label>
+                    <label>Linked ArcGIS Services (optional):</label>
                     <button
                         type="button"
                         className="location_button"
@@ -598,12 +744,18 @@ const FormModal = (props) => {
                         </div>
                     )}
 
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }} data-onboarding-target="create-card-submit-actions">
                         <button type="submit">Submit</button>
                         <button type="button" className="cancel_button" onClick={handleCloseModal}>Cancel</button>
                     </div>
                 </form>
+                </div>
             </Modal>
+
+            <CreateCardModalOnboarding
+                isOpen={isCreateCardOnboardingOpen}
+                onClose={() => setIsCreateCardOnboardingOpen(false)}
+            />
 
             {isArcgisPickerOpen && ReactDOM.createPortal(
                 <ArcGISPickerModal

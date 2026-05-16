@@ -1,0 +1,238 @@
+import React, { useState, useRef, useEffect } from 'react';
+import api from './api';
+import './ChatbotWidget.css';
+
+export default function ChatbotWidget({
+  displayMode = 'floating',
+  isOpen: controlledIsOpen,
+  onOpenChange,
+  onDisplayModeChange,
+  splitBottom = false,
+}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = typeof controlledIsOpen === 'boolean' ? controlledIsOpen : internalIsOpen;
+  const [messages, setMessages] = useState([{
+    role: 'assistant',
+    text: 'Hi! I\'m the RWC Living Atlas Helper. Ask me anything about using the app.',
+  }]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const formatAssistantText = (rawText) => {
+    if (typeof rawText !== 'string') return '';
+
+    return rawText
+      .replace(/\r\n/g, '\n')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/([^\n])\s(\d+\.\s)/g, '$1\n$2')
+      .replace(/([^\n])\s([\-*]\s)/g, '$1\n$2')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
+
+  const renderInlineFormattedText = (text, keyPrefix) => {
+    const boldParts = String(text).split(/(\*\*[^*]+\*\*)/g);
+    const nodes = [];
+
+    boldParts.forEach((boldPart, boldIndex) => {
+      const boldMatch = boldPart.match(/^\*\*([^*]+)\*\*$/);
+      if (boldMatch) {
+        nodes.push(
+          <strong key={`${keyPrefix}-b-${boldIndex}`}>{boldMatch[1]}</strong>
+        );
+        return;
+      }
+
+      const italicParts = boldPart.split(/(\*[^*]+\*)/g);
+      italicParts.forEach((italicPart, italicIndex) => {
+        const italicMatch = italicPart.match(/^\*([^*]+)\*$/);
+        if (italicMatch) {
+          nodes.push(
+            <em key={`${keyPrefix}-i-${boldIndex}-${italicIndex}`}>{italicMatch[1]}</em>
+          );
+        } else if (italicPart) {
+          nodes.push(
+            <React.Fragment key={`${keyPrefix}-t-${boldIndex}-${italicIndex}`}>
+              {italicPart}
+            </React.Fragment>
+          );
+        }
+      });
+    });
+
+    return nodes;
+  };
+
+  const renderMessageText = (msg, index) => {
+    if (msg.role !== 'assistant') {
+      return msg.text;
+    }
+
+    const lines = String(msg.text).split('\n');
+    return lines.map((line, lineIndex) => (
+      <React.Fragment key={`msg-${index}-line-${lineIndex}`}>
+        {renderInlineFormattedText(line, `msg-${index}-line-${lineIndex}`)}
+        {lineIndex < lines.length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
+
+  const setIsOpen = (next) => {
+    const resolved = typeof next === 'function' ? next(isOpen) : next;
+    if (typeof controlledIsOpen !== 'boolean') {
+      setInternalIsOpen(resolved);
+    }
+    if (onOpenChange) {
+      onOpenChange(resolved);
+    }
+  };
+
+  const handleDisplayModeToggle = () => {
+    const nextMode = displayMode === 'floating' ? 'sidebar' : 'floating';
+    if (onDisplayModeChange) {
+      onDisplayModeChange(nextMode);
+    }
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 200);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  const sendMessage = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+
+    setMessages(prev => [...prev, { role: 'user', text }]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const res = await api.post('/chat/ask', {
+        question: text,
+        history: messages.slice(-6),
+      });
+      const answer = res.data?.answer ?? 'Sorry, I couldn\'t get a response.';
+      setMessages(prev => [...prev, { role: 'assistant', text: formatAssistantText(answer) }]);
+    } catch (err) {
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail;
+      let errorText = 'Sorry, something went wrong. Please try again later.';
+      if (status === 402) {
+        errorText = detail ?? 'The chatbot is temporarily unavailable due to insufficient API credits. Please contact the administrator.';
+      } else if (status === 503) {
+        errorText = detail ?? 'The chatbot is temporarily unavailable. Please contact the administrator.';
+      } else if (detail) {
+        errorText = detail;
+      }
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', text: formatAssistantText(errorText) },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  return (
+    <div className={`chatbot-widget chatbot-widget--${displayMode}${splitBottom ? ' chatbot-widget--split-bottom' : ''}${isOpen ? ' chatbot-widget--open' : ''}`}>
+      {displayMode === 'floating' && (
+        <div
+          className="chatbot-widget__handle"
+          onClick={() => setIsOpen(v => !v)}
+          role="button"
+          aria-expanded={isOpen}
+          aria-label="RWC Living Atlas Helper"
+        >
+          <span className="chatbot-widget__handle-icon">💬</span>
+          <span className="chatbot-widget__handle-label">RWC Living Atlas Helper</span>
+          <span className="chatbot-widget__handle-arrow">{isOpen ? '✕' : ''}</span>
+        </div>
+      )}
+
+      {/* Chat panel: toggled by click */}
+      <div className="chatbot-widget__panel" aria-hidden={!isOpen}>
+        <div className="chatbot-widget__header">
+          <div className="chatbot-widget__header-main">
+            <span className="chatbot-widget__title">RWC Living Atlas Helper - Beta Version</span>
+            <div className="chatbot-widget__header-actions">
+              <button
+                className="chatbot-widget__mode-toggle"
+                onClick={handleDisplayModeToggle}
+                type="button"
+              >
+                {displayMode === 'floating' ? 'Use Sidebar Button' : 'Use Floating Widget'}
+              </button>
+              <button
+                className="chatbot-widget__close"
+                onClick={() => setIsOpen(false)}
+                type="button"
+                aria-label="Close Chatbot"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <p className="chatbot-widget__notice">
+            Beta: The chatbot is functional, but still under testing. Responses may be inaccurate.
+          </p>
+        </div>
+
+        <div className="chatbot-widget__messages">
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`chatbot-widget__msg chatbot-widget__msg--${msg.role}`}
+            >
+              {renderMessageText(msg, i)}
+            </div>
+          ))}
+          {loading && (
+            <div className="chatbot-widget__msg chatbot-widget__msg--assistant chatbot-widget__msg--typing">
+              <span className="chatbot-widget__dot" />
+              <span className="chatbot-widget__dot" />
+              <span className="chatbot-widget__dot" />
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="chatbot-widget__input-row">
+          <textarea
+            ref={inputRef}
+            className="chatbot-widget__input"
+            placeholder="Ask a question…"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            disabled={loading}
+          />
+          <button
+            className="chatbot-widget__send"
+            onClick={sendMessage}
+            disabled={loading || !input.trim()}
+            aria-label="Send"
+          >
+            ➤
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

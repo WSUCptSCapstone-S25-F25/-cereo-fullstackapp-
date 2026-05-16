@@ -34,6 +34,8 @@ function Main(props) {
                 setIsCollapsed={props.setIsCollapsed}
 
                 isUploadPanelOpen={props.isUploadPanelOpen}
+                isCustomLayerPanelOpen={props.isCustomLayerPanelOpen}
+                isBasemapOpen={props.isBasemapOpen}
                 isLayerPanelOpen={props.isLayerPanelOpen}
                 isModalOpen={props.isModalOpen}
                 isSidebarOpen={props.isSidebarOpen}
