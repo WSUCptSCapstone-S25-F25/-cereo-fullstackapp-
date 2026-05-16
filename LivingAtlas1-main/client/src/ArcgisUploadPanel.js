@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { addArcgisVectorLayer } from './arcgisVectorUtils';
+import { addArcgisVectorLayer, applyArcgisVectorLayerFilter } from './arcgisVectorUtils';
 import { showArcgisPopup } from './arcgisPopupUtils';
 import {
     fetchArcgisLayers,
@@ -3680,6 +3680,17 @@ function ArcgisUploadPanel({
                                                                 
                                                                 if (whereClause) {
                                                                     console.log('[ArcgisUploadPanel] Applying filter:', whereClause);
+                                                                    // Apply filter to map layer
+                                                                    const map = mapInstance && mapInstance();
+                                                                    if (map && layerInfoOpen) {
+                                                                        applyArcgisVectorLayerFilter(
+                                                                            map,
+                                                                            layerInfoOpen.serviceUrl,
+                                                                            layerInfoOpen.layerId,
+                                                                            layerInfoOpen.serviceKey,
+                                                                            whereClause
+                                                                        );
+                                                                    }
                                                                     showFinishedMessage(`Filter applied: ${whereClause}`);
                                                                 }
                                                             }}
@@ -3700,6 +3711,17 @@ function ArcgisUploadPanel({
                                                                 fontWeight: '500'
                                                             }}
                                                             onClick={() => {
+                                                                // Clear filter from map layer
+                                                                const map = mapInstance && mapInstance();
+                                                                if (map && layerInfoOpen) {
+                                                                    applyArcgisVectorLayerFilter(
+                                                                        map,
+                                                                        layerInfoOpen.serviceUrl,
+                                                                        layerInfoOpen.layerId,
+                                                                        layerInfoOpen.serviceKey,
+                                                                        '1=1'
+                                                                    );
+                                                                }
                                                                 setLayerFilter(null);
                                                                 showFinishedMessage('Filter cleared');
                                                             }}

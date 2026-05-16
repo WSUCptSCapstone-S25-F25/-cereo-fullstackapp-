@@ -14,8 +14,9 @@ const pinnedFeatures = {};
  * @param {mapboxgl.Map} map
  * @param {Object} layer - Should include .id and .serviceUrl
  * @param {Function} showArcgisPopup
+ * @param {Object} options - { minzoom, maxzoom, whereClause }
  */
-export function addArcgisVectorLayer(map, layer, showArcgisPopup, { minzoom, maxzoom } = {}) {
+export function addArcgisVectorLayer(map, layer, showArcgisPopup, { minzoom, maxzoom, whereClause } = {}) {
     const serviceKey = layer.serviceKey || '';
     const sourceId = `arcgis-vector-source-${serviceKey}-${layer.id}`;
     const fillLayerId = `arcgis-vector-layer-${serviceKey}-${layer.id}`;
@@ -42,8 +43,9 @@ export function addArcgisVectorLayer(map, layer, showArcgisPopup, { minzoom, max
         map.off('mouseleave', circleLayerId, refs.handleCircleMouseLeave);
     }
 
-    // ArcGIS FeatureServer GeoJSON endpoint
-    const geojsonUrl = `${layer.serviceUrl}/${layer.id}/query?where=1=1&outFields=*&f=geojson`;
+    // ArcGIS FeatureServer GeoJSON endpoint with where clause support
+    const where = whereClause || '1=1';
+    const geojsonUrl = `${layer.serviceUrl}/${layer.id}/query?where=${encodeURIComponent(where)}&outFields=*&f=geojson`;
 
     // Add source with generateId for feature-state hover support
     map.addSource(sourceId, {
@@ -221,4 +223,30 @@ export function resetArcgisVectorLayerFilter(map, serviceKey, layerId) {
     if (map.getLayer(fillId)) map.setFilter(fillId, ['==', '$type', 'Polygon']);
     if (map.getLayer(lineId)) map.setFilter(lineId, ['==', '$type', 'LineString']);
     if (map.getLayer(circleId)) map.setFilter(circleId, ['==', '$type', 'Point']);
+}
+
+/**
+ * Update vector layer data with a new where clause (applies filter).
+ * @param {mapboxgl.Map} map
+ * @param {string} serviceUrl - Base URL of the ArcGIS service
+ * @param {string} layerId - Layer ID
+ * @param {string} serviceKey - Service key
+ * @param {string} whereClause - SQL where clause (e.g., "OBJECTID>10")
+ */
+export function applyArcgisVectorLayerFilter(map, serviceUrl, layerId, serviceKey, whereClause) {
+    const sourceId = `arcgis-vector-source-${serviceKey}-${layerId}`;
+    const source = map.getSource(sourceId);
+    
+    if (!source) {
+        console.warn('[arcgisVectorUtils] Source not found:', sourceId);
+        return;
+    }
+    
+    // Build new GeoJSON URL with where clause
+    const where = whereClause || '1=1';
+    const geojsonUrl = `${serviceUrl}/${layerId}/query?where=${encodeURIComponent(where)}&outFields=*&f=geojson`;
+    
+    // Update the source data
+    source.setData(geojsonUrl);
+    console.log('[arcgisVectorUtils] Applied filter to', sourceId, ':', whereClause);
 }
