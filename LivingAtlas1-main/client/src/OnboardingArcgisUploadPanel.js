@@ -52,6 +52,12 @@ const ONBOARDING_STEPS = [
         placement: 'left',
     },
     {
+        selector: '[data-onboarding-target="arcgis-panel-actions"]',
+        title: 'Panel Actions',
+        description: 'Use the action row to refresh ArcGIS services from upstream servers, toggle Show Added Only, and clear all active layers from the map.',
+        placement: 'left',
+    },
+    {
         selector: '[data-onboarding-target="arcgis-service-info-modal"]',
         title: 'Service Info Modal',
         description: 'The tutorial now opens the first available service info modal automatically so you can inspect service metadata, close controls, and the live modal layout.',

@@ -30,7 +30,7 @@ const ONBOARDING_STEPS = [
     {
         selector: '[data-onboarding-target="custom-layers-search-area"]',
         title: 'Search',
-        description: 'Search by folder, service, or layer name. The dropdown lets you narrow the search type.',
+        description: 'Search by folder, service, or layer name. The panel searches the current scope directly without a separate search-type dropdown.',
         placement: 'left',
     },
     {
@@ -48,7 +48,13 @@ const ONBOARDING_STEPS = [
     {
         selector: '[data-onboarding-target="custom-layers-opacity-slider"]',
         title: 'Display Controls',
-        description: 'Use the opacity slider and added-only filter to fine-tune how saved layers are shown.',
+        description: 'Use the opacity slider to change how all saved layers appear on the map.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-panel-actions"]',
+        title: 'Panel Actions',
+        description: 'This action row groups New Folder, Show Added Only, and Clear All so you can organize saved services and focus on items already loaded on the map.',
         placement: 'left',
     },
     {

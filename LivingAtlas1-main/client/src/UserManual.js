@@ -41,6 +41,9 @@ import {
   faRotateRight,
   faTrash,
   faEllipsisV,
+  faQuestion,
+  faPlay,
+  faFloppyDisk,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart, faFolder } from '@fortawesome/free-regular-svg-icons';
 import './Card.css';
@@ -1976,16 +1979,25 @@ function UserManual() {
           The ArcGIS Upload Panel lets you browse and add ArcGIS REST map layers directly
           onto the main map. Open it by clicking the <strong>Layers</strong> button in the
           map toolbar. Services are organized by state (WA / ID / OR), then by folder, then
-          by individual service and layer.
+          by individual service and layer, with a built-in layers folder available alongside
+          the state folders.
         </p>
 
         {/* ---- Panel shell demo ---- */}
         <div className="um-arcgis-panel-mock">
           <div className="upload-panel-header">
             <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#223244' }}>Browse ArcGIS Services</h3>
-            <button className="upload-panel-header-close-btn" style={{ pointerEvents: 'none' }}>
-              <FontAwesomeIcon icon={faTimes} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button className="upload-panel-header-close-btn upload-panel-header-close-btn--help" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faQuestion} />
+              </button>
+              <button className="upload-panel-header-close-btn upload-panel-header-close-btn--play" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faPlay} />
+              </button>
+              <button className="upload-panel-header-close-btn" style={{ pointerEvents: 'none' }}>
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
           </div>
           <div style={{ padding: '6px 10px 8px' }}>
             <div className="upload-panel-searchbar">
@@ -2073,9 +2085,10 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Panel Header</p>
               <p className="um-feature-desc">
-                The header displays the panel title and an <strong>×</strong> close button
-                to dismiss the panel. Closing the panel does <em>not</em> remove any layers
-                already added to the map — they remain visible until you uncheck them.
+                The header displays the panel title plus <strong>Help</strong>, <strong>Tutorial</strong>,
+                and <strong>×</strong> close buttons. Help opens the ArcGIS Upload Panel section of the
+                manual, Tutorial launches the guided onboarding flow, and closing the panel does
+                <em> not</em> remove any layers already added to the map.
               </p>
             </div>
           </div>
@@ -2099,9 +2112,8 @@ function UserManual() {
               <p className="um-feature-title">Service Search Bar</p>
               <p className="um-feature-desc">
                 Type a keyword and press <strong>Enter</strong> or click the search button
-                to search across all states. The type dropdown (any / folder / service /
-                layer) narrows the scope. Click <strong>×</strong> to clear the search and
-                return to the full folder tree.
+                to search across all visible states, folders, services, and layers. Click
+                <strong> ×</strong> to clear the search and return to the full folder tree.
               </p>
               <span className="um-feature-note">
                 While a search is active, a result-navigation counter appears with ▲ / ▼ arrows to jump between matches.
@@ -2112,20 +2124,19 @@ function UserManual() {
           {/* 4. Show Added Only */}
           <div className="um-feature-row">
             <div className="um-feature-demo">
-              <div className="um-isolated-demo">
-                <div className="upload-panel-added-checkbox-row">
-                  <input type="checkbox" id="um-show-added" defaultChecked readOnly style={{ marginRight: '6px', accentColor: '#1976d2' }} />
-                  <label htmlFor="um-show-added" style={{ cursor: 'default', userSelect: 'none', fontSize: '13px', color: '#1976d2' }}>Show added layers only</label>
-                </div>
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                <button type="button" className="clear-all-layers-btn clear-all-layers-btn--toggle is-active" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faEye} />
+                  <span>Showing Added Only</span>
+                </button>
               </div>
             </div>
             <div className="um-feature-info">
               <p className="um-feature-title">Show Added Only</p>
               <p className="um-feature-desc">
-                When checked, the folder tree collapses to display only services and layers
-                that are currently active (checked) on the map. This makes it easy to
-                review or remove layers you have already loaded without scrolling through
-                the full service tree.
+                <strong>Show Added Only</strong> is a toggle button in the action row. When active,
+                the panel expands only folders and services that currently have checked layers on
+                the map, making it easier to review or remove what is already loaded.
               </p>
             </div>
           </div>
@@ -2167,8 +2178,7 @@ function UserManual() {
                 <button className="upload-panel-update-btn" title="Update services" style={{ pointerEvents: 'none' }}>
                   <FontAwesomeIcon icon={faSync} />
                 </button>
-                <button type="button" className="card-toolbar-button" title="Clear All Layers" style={{ pointerEvents: 'none' }}>
-                  <FontAwesomeIcon icon={faTimes} />
+                <button type="button" className="clear-all-layers-btn" title="Clear All Layers" style={{ pointerEvents: 'none' }}>
                   <span>Clear All</span>
                 </button>
               </div>
@@ -2345,6 +2355,28 @@ function UserManual() {
                       <div className="arcgis-service-info-row"><strong>Service Opacity:</strong> 70%</div>
                       <div className="arcgis-service-info-row"><strong>Historical View:</strong> Date Range / Timeline</div>
                       <div className="arcgis-service-info-row"><strong>Layers / Sublayers:</strong> clickable layer links</div>
+                      <div style={{ marginTop: '10px', marginBottom: '8px' }}>
+                        <button
+                          type="button"
+                          className="arcgis-service-info-save-btn"
+                          style={{
+                            pointerEvents: 'none',
+                            padding: '6px 10px',
+                            backgroundColor: '#1976d2',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                          Save
+                        </button>
+                      </div>
                       <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #ddd', fontSize: '12px', color: '#1976d2' }}>View ArcGIS Service Page →</div>
                     </div>
                   </div>
@@ -2716,6 +2748,12 @@ function UserManual() {
         <div className="um-arcgis-panel-mock">
           <div className="custom-layers-panel-header" style={{ padding: '10px 12px 8px', borderBottom: '1px solid #d8e1ea' }}>
             <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#223244', flex: 1 }}>Custom Layers</h3>
+            <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faQuestion} />
+            </button>
+            <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--play" style={{ pointerEvents: 'none' }}>
+              <FontAwesomeIcon icon={faPlay} />
+            </button>
             <button className="custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }} title="New Folder">
               <FontAwesomeIcon icon={faFolderPlus} />
             </button>
@@ -2726,9 +2764,6 @@ function UserManual() {
           <div style={{ padding: '6px 10px 8px' }}>
             <div className="upload-panel-searchbar">
               <input type="text" placeholder="Search folders, services, or layers…" readOnly />
-              <select className="upload-panel-searchbar-dropdown" defaultValue="any" style={{ pointerEvents: 'none' }}>
-                <option value="any">Any</option>
-              </select>
               <button className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
                 <FontAwesomeIcon icon={faSearch} />
               </button>
@@ -2789,6 +2824,12 @@ function UserManual() {
               <div className="um-isolated-demo" style={{ padding: 0, minWidth: '260px' }}>
                 <div className="custom-layers-panel-header" style={{ border: '1px solid #d8e1ea', borderRadius: '6px', padding: '8px 12px' }}>
                   <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#223244', flex: 1 }}>Custom Layers</h3>
+                  <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--help" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faQuestion} />
+                  </button>
+                  <button className="custom-layers-panel-close-btn custom-layers-panel-close-btn--play" style={{ pointerEvents: 'none' }}>
+                    <FontAwesomeIcon icon={faPlay} />
+                  </button>
                   <button className="custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }} title="New Folder">
                     <FontAwesomeIcon icon={faFolderPlus} />
                   </button>
@@ -2802,9 +2843,10 @@ function UserManual() {
               <p className="um-feature-title">Panel Header</p>
               <p className="um-feature-desc">
                 The header shows the panel title, a <strong>New Folder</strong>{' '}
-                <FontAwesomeIcon icon={faFolderPlus} style={{ fontSize: '12px' }} /> button
-                to create a custom folder, and an <strong>×</strong> close button. Closing
-                the panel does not remove layers already added to the map.
+                <FontAwesomeIcon icon={faFolderPlus} style={{ fontSize: '12px' }} /> button,
+                plus <strong>Help</strong>, <strong>Tutorial</strong>, and <strong>×</strong> close buttons.
+                Help opens the manual, Tutorial starts the guided walkthrough, and closing the
+                panel does not remove layers already added to the map.
               </p>
             </div>
           </div>
@@ -2815,9 +2857,6 @@ function UserManual() {
               <div className="um-isolated-demo" style={{ minWidth: '280px' }}>
                 <div className="upload-panel-searchbar">
                   <input type="text" defaultValue="streams" readOnly />
-                  <select className="upload-panel-searchbar-dropdown" defaultValue="layer" style={{ pointerEvents: 'none' }}>
-                    <option value="layer">Layer</option>
-                  </select>
                   <button className="upload-panel-searchbar-btn search" style={{ pointerEvents: 'none' }}>
                     <FontAwesomeIcon icon={faSearch} />
                   </button>
@@ -2830,10 +2869,10 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Search Bar</p>
               <p className="um-feature-desc">
-                Search across all your custom services and folders. The type dropdown
-                narrows results to <strong>Any</strong>, <strong>Folder</strong>,{' '}
-                <strong>Service</strong>, or <strong>Layer</strong>. Navigation arrows
-                appear when there are multiple matches.
+                Search across all your custom folders, services, and layers within the
+                current scope. Press <strong>Enter</strong> or use the search button to run
+                the query, and use the clear button to reset back to the full list. Navigation
+                arrows appear when there are multiple matches.
               </p>
             </div>
           </div>
@@ -2870,19 +2909,26 @@ function UserManual() {
           <div className="um-feature-row">
             <div className="um-feature-demo">
               <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-                <div className="upload-panel-added-checkbox-row">
-                  <input type="checkbox" id="um-cl-show-added" defaultChecked readOnly style={{ marginRight: '6px', accentColor: '#1976d2' }} />
-                  <label htmlFor="um-cl-show-added" style={{ cursor: 'default', userSelect: 'none', fontSize: '13px', color: '#1976d2' }}>Show only services added to map</label>
-                </div>
+                <button type="button" className="clear-all-layers-btn custom-layers-panel-new-folder-btn" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faFolderPlus} />
+                  <span>New Folder</span>
+                </button>
+                <button type="button" className="clear-all-layers-btn clear-all-layers-btn--toggle is-active" style={{ pointerEvents: 'none' }}>
+                  <FontAwesomeIcon icon={faEye} />
+                  <span>Showing Added Only</span>
+                </button>
+                <button type="button" className="clear-all-layers-btn" style={{ pointerEvents: 'none' }}>
+                  <span>Clear All</span>
+                </button>
               </div>
             </div>
             <div className="um-feature-info">
               <p className="um-feature-title">Show Added Only &amp; Clear All</p>
               <p className="um-feature-desc">
-                <strong>Show only services added to map</strong> collapses the list to
-                display only services with at least one active layer. <strong>Clear
-                All Layers</strong> (below the checkbox) unchecks every active layer in
-                one click. Both controls work the same as in the ArcGIS Upload Panel.
+                The action row groups <strong>New Folder</strong>, <strong>Show Added Only</strong>,
+                and <strong>Clear All</strong> in one place. Show Added Only collapses the list to
+                services with at least one active layer, while Clear All removes all checked
+                layers from the map in one click.
               </p>
             </div>
           </div>
@@ -3007,10 +3053,11 @@ function UserManual() {
             <div className="um-feature-info">
               <p className="um-feature-title">Adding Layers from the Upload Panel</p>
               <p className="um-feature-desc">
-                In the ArcGIS Upload Panel, right-click any service row and choose{' '}
-                <strong>Save to Custom Layers</strong>. This copies the service into your
-                Custom Layers library where you can organize it into folders and reorder it
-                at will. The original service in the Upload Panel is unaffected.
+                In the ArcGIS Upload Panel, you can save content into Custom Layers either by
+                right-clicking a service row or by using the <strong>Save</strong> button at the
+                bottom of the Service Info or Layer Info modal. This copies the service or layer
+                into your Custom Layers library where you can organize it into folders and reorder
+                it at will. The original item in the Upload Panel is unaffected.
               </p>
               <span className="um-feature-note">
                 You must be logged in to save layers. A login prompt will appear if you are not.

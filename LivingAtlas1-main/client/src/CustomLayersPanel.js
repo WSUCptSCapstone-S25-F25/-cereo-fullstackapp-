@@ -1450,7 +1450,7 @@ function CustomLayersPanel({
                     />
                     <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
                 </div>
-                <div className="upload-panel-controls-row">
+                <div className="upload-panel-controls-row" data-onboarding-target="custom-layers-panel-actions">
                     <div className="upload-panel-controls-actions">
                         <button
                             className="clear-all-layers-btn custom-layers-panel-new-folder-btn"
@@ -1463,6 +1463,7 @@ function CustomLayersPanel({
                         </button>
                         <button
                             type="button"
+                            data-onboarding-target="custom-layers-show-added-button"
                             className={`clear-all-layers-btn clear-all-layers-btn--toggle${showAddedOnly ? ' is-active' : ''}`}
                             onClick={() => {
                                 setShowAddedOnly(prev => {

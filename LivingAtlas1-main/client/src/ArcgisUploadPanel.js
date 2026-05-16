@@ -2543,7 +2543,7 @@ function ArcgisUploadPanel({
                                 />
                                 <span className="upload-panel-opacity-value">{Math.round(layerOpacity * 100)}%</span>
                             </div>
-                            <div className="upload-panel-controls-row">
+                            <div className="upload-panel-controls-row" data-onboarding-target="arcgis-panel-actions">
                                 <button 
                                     className="upload-panel-update-btn"
                                     onClick={handleUpdateServices}
@@ -2555,6 +2555,7 @@ function ArcgisUploadPanel({
                                 <div className="upload-panel-controls-actions">
                                     <button
                                         type="button"
+                                        data-onboarding-target="arcgis-show-added-button"
                                         className={`clear-all-layers-btn clear-all-layers-btn--toggle${showAddedOnly ? ' is-active' : ''}`}
                                         onClick={() => {
                                             setShowAddedOnly(prev => {
