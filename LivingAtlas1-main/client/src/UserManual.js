@@ -2381,10 +2381,11 @@ function UserManual() {
       <section className="um-section um-section--service-layer-info">
         <h2>Service / Layer Info Modal</h2>
         <p className="um-section-desc">
-          This tab documents the floating info modal used by the ArcGIS Upload Panel.
-          The modal appears on the right side and has two variants: <strong>Service info</strong>
-          and <strong>Layer Info</strong>. The content below follows the current implementation
-          in ArcGIS Upload Panel code.
+          This tab documents the floating info modal used by both the ArcGIS Upload Panel and
+          the Custom Layers Panel. The modal appears on the right side and has two variants:
+          <strong> Service info</strong> and <strong>Layer Info</strong>. The content below follows
+          the current implementation in the shared modal UI, with upload-only historical view
+          controls called out explicitly where they differ.
         </p>
 
         <div className="um-feature-list">
@@ -2593,6 +2594,106 @@ function UserManual() {
                 Both modal types provide direct links to the corresponding ArcGIS REST pages.
                 Use these links to verify source metadata, inspect native JSON responses,
                 and cross-check map behavior against upstream service/layer definitions.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="arcgis-service-info-save-btn"
+                  style={{
+                    pointerEvents: 'none',
+                    padding: '6px 10px',
+                    backgroundColor: '#1976d2',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '12px' }} />
+                  Save
+                </button>
+                <div style={{ fontSize: '12px', color: '#1976d2' }}>Saved into Custom Layers for later reuse</div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">9) Save to Custom Layers Actions</p>
+              <p className="um-feature-desc">
+                Both <strong>Service info</strong> and <strong>Layer Info</strong> include a
+                <strong> Save</strong> action at the bottom. This lets you persist either the whole
+                service or the currently focused layer into <strong>Custom Layers</strong> without
+                leaving the modal.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px', gap: '10px' }}>
+                <div className="arcgis-service-info-row" style={{ width: '100%' }}>
+                  <strong>Legend:</strong>
+                  <div style={{ marginTop: '8px', paddingLeft: '12px' }}>
+                    <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '20px', height: '20px', background: '#78a9d4', borderRadius: '3px', display: 'inline-block' }} />
+                      <span style={{ fontSize: '13px' }}>Perennial river</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="arcgis-service-info-row" style={{ width: '100%' }}>
+                  <strong>Parent Layer:</strong>
+                  <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none', marginLeft: '8px' }}>Hydrology</button>
+                </div>
+                <div className="arcgis-service-info-row" style={{ width: '100%' }}>
+                  <strong>Child Layers:</strong>
+                  <div style={{ marginTop: '8px', border: '1px solid #eee', borderRadius: '4px', padding: '8px 8px 2px 12px' }}>
+                    <div style={{ marginBottom: '6px' }}>
+                      <button className="arcgis-service-info-layer-link" style={{ pointerEvents: 'none' }}>Streams</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">10) Legend and Layer Hierarchy Navigation</p>
+              <p className="um-feature-desc">
+                Layer Info can show a symbol legend, a clickable <strong>Parent Layer</strong> link,
+                and a scrollable list of <strong>Child Layers</strong>. These links let you move
+                through group-layer hierarchies without returning to the panel tree.
+              </p>
+            </div>
+          </div>
+
+          <div className="um-feature-row">
+            <div className="um-feature-demo">
+              <div className="um-isolated-demo" style={{ flexDirection: 'column', alignItems: 'stretch', minWidth: '280px', gap: '8px' }}>
+                <select style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }} defaultValue="OBJECTID" disabled>
+                  <option value="OBJECTID">OBJECTID (esriFieldTypeOID)</option>
+                </select>
+                <select style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }} defaultValue="= " disabled>
+                  <option value="= ">=</option>
+                </select>
+                <input type="text" value="42" readOnly style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }} />
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button type="button" style={{ flex: 1, padding: '6px 10px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', pointerEvents: 'none' }}>Apply Filter</button>
+                  <button type="button" style={{ flex: 1, padding: '6px 10px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', pointerEvents: 'none' }}>Clear</button>
+                </div>
+              </div>
+            </div>
+            <div className="um-feature-info">
+              <p className="um-feature-title">11) Field Filter Builder</p>
+              <p className="um-feature-desc">
+                When layer field metadata is available, Layer Info provides a field filter builder.
+                Choose a field, select an operator such as <strong>=</strong>, <strong>LIKE</strong>,
+                or <strong>IN</strong>, enter a value, then apply the generated expression directly to
+                the map layer. <strong>Clear</strong> resets the filter back to the default view.
               </p>
             </div>
           </div>

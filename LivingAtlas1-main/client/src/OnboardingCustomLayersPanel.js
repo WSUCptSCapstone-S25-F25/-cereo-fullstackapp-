@@ -51,6 +51,36 @@ const ONBOARDING_STEPS = [
         description: 'Use the opacity slider and added-only filter to fine-tune how saved layers are shown.',
         placement: 'left',
     },
+    {
+        selector: '[data-onboarding-target="custom-layers-service-info-modal"]',
+        title: 'Service Info Modal',
+        description: 'The tutorial opens the first saved service info modal automatically so you can review metadata, modal layout, and close controls in context.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-service-info-actions"]',
+        title: 'Save Service and Open Source Page',
+        description: 'Service info includes a Save button and a direct ArcGIS service page link, making it easy to preserve the service again or verify the original source.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-layer-info-modal"]',
+        title: 'Layer Info Modal',
+        description: 'Layer info shows layer metadata, legend content, and parent or child layer links when the ArcGIS service exposes them.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-layer-info-filter"]',
+        title: 'Field Filter Builder',
+        description: 'Choose a field, operator, and value to build a layer filter, apply it to the map, or clear it when you are finished.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="custom-layers-layer-info-actions"]',
+        title: 'Save Layer and Inspect REST Page',
+        description: 'The action area at the bottom of Layer Info lets you save the current layer and open the ArcGIS layer page for direct source inspection.',
+        placement: 'left',
+    },
 ];
 
 function clamp(value, min, max) {

@@ -197,6 +197,15 @@ function CustomLayersPanel({
         return findInNodes(layerTree);
     }, [serviceLayers]);
 
+    const findFirstInfoLayer = useCallback((service) => {
+        if (!service) return null;
+        const rawLayers = serviceLayers[service.key]?.length > 0 ? serviceLayers[service.key] : [];
+        const layers = Array.isArray(rawLayers) ? rawLayers : [];
+        return layers.find(layer => layer && layer.id !== undefined && layer.type !== 'Group Layer')
+            || layers.find(layer => layer && layer.id !== undefined)
+            || null;
+    }, [serviceLayers]);
+
     useEffect(() => {
         if (isOnboardingOpen) {
             onboardingSnapshotRef.current = {
@@ -219,6 +228,8 @@ function CustomLayersPanel({
             setExpandedServices(new Set());
             setExpandedLayers(new Set());
             setServiceInfoOpenKey(null);
+            setLayerInfoOpen(null);
+            setLayerFilter(null);
             return;
         }
 
@@ -1201,6 +1212,42 @@ function CustomLayersPanel({
         setLayerFilter(null); // Reset filter when closing modal
     };
 
+    useEffect(() => {
+        if (!isOnboardingOpen) return;
+
+        const firstFolder = findFirstRootFolder();
+        const firstService = findFirstServiceInFolder(firstFolder);
+        const infoLayer = findFirstInfoLayer(firstService);
+
+        if (onboardingStepIndex >= 8 && firstService) {
+            if (serviceInfoOpenKey !== firstService.key) {
+                openServiceInfo(firstService);
+            }
+        } else if (serviceInfoOpenKey) {
+            setServiceInfoOpenKey(null);
+        }
+
+        if (onboardingStepIndex >= 10 && firstService && infoLayer) {
+            const isSameLayer = layerInfoOpen
+                && layerInfoOpen.serviceKey === firstService.key
+                && layerInfoOpen.layerId === infoLayer.id;
+            if (!isSameLayer) {
+                openLayerInfo(firstService, infoLayer);
+            }
+        } else if (layerInfoOpen) {
+            setLayerInfoOpen(null);
+            setLayerFilter(null);
+        }
+    }, [
+        isOnboardingOpen,
+        onboardingStepIndex,
+        serviceInfoOpenKey,
+        layerInfoOpen,
+        findFirstRootFolder,
+        findFirstServiceInFolder,
+        findFirstInfoLayer,
+    ]);
+
     // Save a layer to custom layers
     const handleSaveLayerToCustomLayers = async () => {
         if (!layerInfoOpen) return;
@@ -1719,7 +1766,7 @@ function CustomLayersPanel({
 
             {/* Service Info Modal */}
             {serviceInfoOpenKey && (
-                <div className="arcgis-service-info-modal" style={getInfoModalStyle()}>
+                <div className="arcgis-service-info-modal" style={getInfoModalStyle()} data-onboarding-target="custom-layers-service-info-modal">
                     <div className="arcgis-service-info-modal-header">
                         <strong>Service info</strong>
                         <button
@@ -1798,7 +1845,7 @@ function CustomLayersPanel({
                                         <strong>Spatial Reference:</strong> {srText}
                                     </div>
 
-                                    <div className="arcgis-service-info-row service-info-opacity-row">
+                                    <div className="arcgis-service-info-row service-info-opacity-row" data-onboarding-target="custom-layers-service-info-opacity">
                                         <strong>Service Opacity:</strong>
                                         <div className="service-info-opacity-controls">
                                             <input
@@ -1820,13 +1867,13 @@ function CustomLayersPanel({
                                     </div>
 
                                     {currentService && (
-                                        <div className="arcgis-service-info-row">
+                                        <div className="arcgis-service-info-row" data-onboarding-target="custom-layers-service-info-layer-links">
                                             <strong>Layers / Sublayers:</strong>
                                             {renderServiceLayerLinks(currentService)}
                                         </div>
                                     )}
                                     {currentService && currentService.url && (
-                                        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                        <div data-onboarding-target="custom-layers-service-info-actions" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
                                             <button
                                                 type="button"
                                                 className="arcgis-service-info-save-btn"
@@ -1866,7 +1913,7 @@ function CustomLayersPanel({
 
             {/* Layer Info Modal */}
             {layerInfoOpen && (
-                <div className="arcgis-service-info-modal" style={getLayerInfoModalStyle()}>
+                <div className="arcgis-service-info-modal" style={getLayerInfoModalStyle()} data-onboarding-target="custom-layers-layer-info-modal">
                     <div className="arcgis-service-info-modal-header">
                         <strong>Layer Info: {layerInfoOpen.layerName}</strong>
                         <button
@@ -2046,7 +2093,7 @@ function CustomLayersPanel({
 
                                     {/* Filter UI */}
                                     {info.fields && info.fields.length > 0 && (
-                                        <div className="arcgis-service-info-row" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                        <div className="arcgis-service-info-row" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #ddd' }} data-onboarding-target="custom-layers-layer-info-filter">
                                             <strong>Filter by Field:</strong>
                                             <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                 {/* Field selector */}
@@ -2204,7 +2251,7 @@ function CustomLayersPanel({
                                     )}
 
                                     {/* Link to the actual layer page and Save button */}
-                                    <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
+                                    <div data-onboarding-target="custom-layers-layer-info-actions" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #ddd' }}>
                                         <button
                                             type="button"
                                             className="arcgis-service-info-save-btn"

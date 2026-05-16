@@ -51,6 +51,42 @@ const ONBOARDING_STEPS = [
         description: 'Adjust the opacity slider to change the transparency of selected layers on the map.',
         placement: 'left',
     },
+    {
+        selector: '[data-onboarding-target="arcgis-service-info-modal"]',
+        title: 'Service Info Modal',
+        description: 'The tutorial now opens the first available service info modal automatically so you can inspect service metadata, close controls, and the live modal layout.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="arcgis-service-info-time-filter"]',
+        title: 'Historical View Controls',
+        description: 'In ArcGIS Upload Panel, Service info includes Historical View tools. Use Date Range or Timeline controls to apply and clear time-based filtering on supported services.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="arcgis-service-info-actions"]',
+        title: 'Save Service and Open Source Page',
+        description: 'Use the Save button to store the current service in Custom Layers, or open the ArcGIS service page to verify the source metadata directly.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="arcgis-layer-info-modal"]',
+        title: 'Layer Info Modal',
+        description: 'The tutorial also opens a layer info modal automatically. This view contains layer metadata, legend entries, and parent or child layer navigation when those details exist.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="arcgis-layer-info-filter"]',
+        title: 'Field Filter Builder',
+        description: 'Build a field filter by choosing a field, operator, and value, then apply it to the map layer. Clear removes the active filter and restores the layer.',
+        placement: 'left',
+    },
+    {
+        selector: '[data-onboarding-target="arcgis-layer-info-actions"]',
+        title: 'Save Layer and Inspect REST Page',
+        description: 'At the bottom of Layer Info you can save the selected layer to Custom Layers or open the upstream ArcGIS layer page for direct REST inspection.',
+        placement: 'left',
+    },
 ];
 
 function clamp(value, min, max) {
