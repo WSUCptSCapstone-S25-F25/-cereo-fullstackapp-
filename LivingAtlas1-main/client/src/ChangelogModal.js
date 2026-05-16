@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Modal from 'react-modal';
 
 function ChangelogModal({ isOpen, onClose }) {
-    const [activeTab, setActiveTab] = useState('latest');
+    const [activeTab, setActiveTab] = useState('future');
 
     return (
         <Modal
@@ -18,16 +18,16 @@ function ChangelogModal({ isOpen, onClose }) {
             
             <div className="changelog-modal-tabs">
                 <button 
-                    className={`changelog-tab ${activeTab === 'latest' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('latest')}
-                >
-                    Latest Update
-                </button>
-                <button 
                     className={`changelog-tab ${activeTab === 'future' ? 'active' : ''}`}
                     onClick={() => setActiveTab('future')}
                 >
                     Future Works
+                </button>
+                <button 
+                    className={`changelog-tab ${activeTab === 'latest' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('latest')}
+                >
+                    Latest Update
                 </button>
             </div>
 
@@ -35,16 +35,18 @@ function ChangelogModal({ isOpen, onClose }) {
                 {activeTab === 'latest' && (
                     <>
                         <h3>Update Date: 5/16/2026</h3>
-                        <p>Enhanced Service/Layer Info Modal with improved display of child layers, legends, positioning, and active state indicators.</p>
-                        <p>Added field-based filtering for ArcGIS layers within the Layer Info Modal.</p>
-                        <p>Aligned rendering z-index for clickable vectors with raster image overlays.</p>
-                        <p>Improved map zoom control with draggable pointer for real-time z-value adjustment.</p>
-                        <p>Refined UI appearance of Upload Panel, Custom Layers Panel, and Learn More Modal.</p>
-                        <p>Implemented responsive sizing for Top Navigation Bar and Left Sidebar based on screen dimensions.</p>
-                        <p>Updated User Manual, onboarding workflows, and organized User Manual tabs.</p>
-                        <p>Enhanced Basemap Panel with additional options, functionality improvements, and visual refinements.</p>
-                        <p>Extended image overlay support from PNG-only to include JPEG format in Add Card from Map workflow.</p>
-                        <p>Updated User Manual, onboarding tutorials, and chatbot knowledge base for all new features and changes.</p>
+                        <ul className="changelog-list">
+                          <li>Enhanced Service/Layer Info Modal with improved display of child layers, legends, positioning, and active state indicators.</li>
+                          <li>Added field-based filtering for ArcGIS layers within the Layer Info Modal.</li>
+                          <li>Aligned rendering z-index for clickable vectors with raster image overlays.</li>
+                          <li>Improved map zoom control with draggable pointer for real-time z-value adjustment.</li>
+                          <li>Refined UI appearance of Upload Panel, Custom Layers Panel, and Learn More Modal.</li>
+                          <li>Implemented responsive sizing for Top Navigation Bar and Left Sidebar based on screen dimensions.</li>
+                          <li>Updated User Manual, onboarding workflows, and organized User Manual tabs.</li>
+                          <li>Enhanced Basemap Panel with additional options, functionality improvements, and visual refinements.</li>
+                          <li>Extended image overlay support from PNG-only to include JPEG format in Add Card from Map workflow.</li>
+                          <li>Updated User Manual, onboarding tutorials, and chatbot knowledge base for all new features and changes.</li>
+                        </ul>
                     </>
                 )}
 
@@ -74,6 +76,11 @@ function ChangelogModal({ isOpen, onClose }) {
                         <ul className="changelog-list">
                           <li>Expand app settings with global configuration options (e.g., theme style preferences).</li>
                         </ul>
+
+                                                <h4>Map Controls</h4>
+                                                <ul className="changelog-list">
+                                                    <li>Improve fullscreen mode by allowing top navbar, left sidebar, and other UI elements to slide out when hovering near the corresponding map edges, with support for opening the related panels and pages.</li>
+                                                </ul>
                     </>
                 )}
             </div>
