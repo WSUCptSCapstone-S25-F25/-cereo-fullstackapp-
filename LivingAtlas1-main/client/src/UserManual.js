@@ -43,6 +43,8 @@ import {
   faEllipsisV,
   faQuestion,
   faPlay,
+  faCircleQuestion,
+  faCirclePlay,
   faFloppyDisk,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as regularHeart, faFolder } from '@fortawesome/free-regular-svg-icons';
@@ -71,8 +73,6 @@ const ARCGIS_SECTIONS = [
   { id: 'custom-layers', label: 'Custom Layers Panel' },
   { id: 'service-layer-info', label: 'Service / Layer Info Modal' },
 ];
-              { id: 'light-v11',           label: 'light-v11',           bg: '#eef2f6' },
-              { id: 'dark-v11',            label: 'dark-v11',            bg: '#141a24' },
 
 const SECTION_GROUPS = [
   {
@@ -1705,7 +1705,7 @@ function UserManual() {
                     <FontAwesomeIcon icon={faTrashCan} />
                   </button>
                   <button className="learn-more-modal-help-btn" title="Help" style={{ pointerEvents: 'none' }}>
-                    <FontAwesomeIcon icon={faQuestionCircle} />
+                    <FontAwesomeIcon icon={faCircleQuestion} />
                   </button>
                   <button className="learn-more-modal-onboarding-btn" title="Onboarding" style={{ pointerEvents: 'none' }}>
                     <FontAwesomeIcon icon={faCirclePlay} />
@@ -3173,6 +3173,8 @@ function UserManual() {
               { id: 'satellite-streets-v12', label: 'satellite-streets-v12', bg: '#4a5a4a' },
               { id: 'navigation-day-v1',   label: 'navigation-day-v1',   bg: '#dce8f2' },
               { id: 'navigation-night-v1', label: 'navigation-night-v1', bg: '#1e2433' },
+              { id: 'light-v11',           label: 'light-v11',           bg: '#eef2f6' },
+              { id: 'dark-v11',            label: 'dark-v11',            bg: '#141a24' },
             ].map(bm => (
               <div
                 key={bm.id}

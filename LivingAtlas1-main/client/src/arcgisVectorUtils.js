@@ -1,5 +1,3 @@
-import mapboxgl from 'mapbox-gl';
-
 // Handler refs for event cleanup
 export const handlerRefs = {};
 
