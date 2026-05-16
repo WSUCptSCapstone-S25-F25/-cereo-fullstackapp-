@@ -1,6 +1,6 @@
 .home-container {
     position: fixed;
-    top: 65px;
+    top: var(--app-navbar-height);
     left: 0;
     right: 0;
     bottom: 0;

@@ -31,6 +31,8 @@ import {
     hasPreferenceValues,
 } from './userPreferencesLocalCache';
 
+const GENERAL_ONBOARDING_SEEN_KEY = 'general_onboarding_seen_v1';
+
 function Home(props) {
     const [filterCondition, setFilterCondition] = useState('');
     const [CategoryCondition, setCategoryConditionCondition] = useState('');
@@ -97,6 +99,20 @@ function Home(props) {
     };
 
     useEffect(() => {
+        if (hasAutoStartedGeneralOnboardingRef.current) return;
+        if (isChangelogOpen || isGeneralOnboardingOpen || isGeneralOnboardingTourOpen) return;
+
+        if (localStorage.getItem(GENERAL_ONBOARDING_SEEN_KEY)) {
+            hasAutoStartedGeneralOnboardingRef.current = true;
+            return;
+        }
+
+        hasAutoStartedGeneralOnboardingRef.current = true;
+        localStorage.setItem(GENERAL_ONBOARDING_SEEN_KEY, 'true');
+        setIsGeneralOnboardingTourOpen(true);
+    }, [isChangelogOpen, isGeneralOnboardingOpen, isGeneralOnboardingTourOpen]);
+
+    useEffect(() => {
         const previousOverflow = document.body.style.overflow;
         const previousOverscrollBehaviorY = document.body.style.overscrollBehaviorY;
 
@@ -151,6 +167,7 @@ function Home(props) {
     const isSearchModalOpenRef = useRef(false);
     const searchPanelOpenedByOnboardingRef = useRef(false);
     const uiPrefsWriteInitializedRef = useRef(false);
+    const hasAutoStartedGeneralOnboardingRef = useRef(false);
 
     useEffect(() => {
         isSearchModalOpenRef.current = isSearchModalOpen;

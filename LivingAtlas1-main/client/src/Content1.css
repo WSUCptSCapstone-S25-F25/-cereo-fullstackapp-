@@ -1,12 +1,12 @@
 /* AtlasMap root fills available space, avoids navbar and sidebars */
 .AtlasMap {
   position: fixed;
-  top: 50px; /* height of navbar */
-  left: 48px; /* width of left sidebar (closed) */
+  top: var(--app-navbar-height); /* height of navbar */
+  left: var(--app-left-sidebar-collapsed-width); /* width of left sidebar (closed) */
   right: 0px; /* width of right sidebar */
   bottom: 0;
   width: auto;
-  height: calc(100vh - 50px);
+  height: calc(100vh - var(--app-navbar-height));
   z-index: 0;
   background: #eaeaea;
   overflow: hidden;

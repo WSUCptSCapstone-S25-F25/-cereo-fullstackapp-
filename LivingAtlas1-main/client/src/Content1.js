@@ -1528,7 +1528,9 @@ const Content1 = (props) => {
   }, [handleStartImageToolFlow]);
 
   // Compute styles for outer map container to respond to card panel state
-  const leftSidebarWidth = props.isSidebarOpen ? 300 : 48;
+  const leftSidebarWidth = props.isSidebarOpen
+    ? 'var(--app-left-sidebar-expanded-width)'
+    : 'var(--app-left-sidebar-collapsed-width)';
   const hasLeftPanel = props.isUploadPanelOpen || props.isCustomLayerPanelOpen;
   const cardPanelW = props.isCollapsed ? 0 : (Number(props.cardPanelWidth) || 300);
   const cardOnLeft = props.cardPanelSide === 'left';
@@ -1536,8 +1538,8 @@ const Content1 = (props) => {
   // When both card panel and upload panel are on left, they stack vertically in same column
   const cardLeftExtra = (cardOnLeft && !bothOnLeft) ? cardPanelW : 0;
   const mapContainerLeft = hasLeftPanel
-    ? `calc(${leftSidebarWidth + cardLeftExtra}px + 25vw)`
-    : `${leftSidebarWidth + cardLeftExtra}px`;
+    ? `calc(${leftSidebarWidth} + ${cardLeftExtra}px + var(--app-secondary-panel-width))`
+    : `calc(${leftSidebarWidth} + ${cardLeftExtra}px)`;
   const mapContainerRight = cardOnLeft ? 0 : cardPanelW;
 
   return (

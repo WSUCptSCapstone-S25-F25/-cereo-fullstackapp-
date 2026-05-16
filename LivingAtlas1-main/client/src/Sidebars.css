@@ -11,16 +11,16 @@
 
 /* Left sidebar styles */
 .left-sidebar {
-    width: 48px;
+    width: var(--app-left-sidebar-collapsed-width);
     background-color: #333;
     color: white;
-    height: calc(100vh - 50px); /* Subtract navbar height */
+    height: calc(100vh - var(--app-navbar-height)); /* Subtract navbar height */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     position: fixed;
-    top: 50px; /* Place the sidebar below the navbar */
+    top: var(--app-navbar-height); /* Place the sidebar below the navbar */
     left: 0;
     z-index: 1000;
     transition: width 0.3s ease;
@@ -28,7 +28,7 @@
 }
 
 .left-sidebar.open {
-    width: 300px;
+    width: var(--app-left-sidebar-expanded-width);
 }
 
 /*
@@ -49,7 +49,7 @@
     box-sizing: border-box;
     background-color: #444;
     color: white;
-    height: calc(100vh - 70px); /* Subtract navbar and top button height */
+    height: calc(100vh - var(--app-navbar-height) - 20px); /* Subtract navbar and top button height */
     overflow-y: auto;
 }
 
@@ -63,13 +63,13 @@
 }
 
 .left-sidebar.open + .main {
-    margin-left: 300px; /* Adjust main content offset when sidebar is open */
-    width: calc(100% - 300px); /* Adjust width to fit the sidebar */
+    margin-left: var(--app-left-sidebar-expanded-width); /* Adjust main content offset when sidebar is open */
+    width: calc(100% - var(--app-left-sidebar-expanded-width)); /* Adjust width to fit the sidebar */
 }
 
 .left-sidebar + .main {
-    margin-left: 48px; /* Adjust main content offset when sidebar is closed */
-    width: calc(100% - 48px); /* Adjust width to fit the sidebar */
+    margin-left: var(--app-left-sidebar-collapsed-width); /* Adjust main content offset when sidebar is closed */
+    width: calc(100% - var(--app-left-sidebar-collapsed-width)); /* Adjust width to fit the sidebar */
 }
 
 /* Left Sidebar Toggle Button */
@@ -107,10 +107,10 @@
     background: transparent;
     border: 1px solid transparent;
     color: #ffffff;
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
+    width: var(--app-left-sidebar-icon-size);
+    height: var(--app-left-sidebar-icon-size);
+    min-width: var(--app-left-sidebar-icon-size);
+    min-height: var(--app-left-sidebar-icon-size);
     padding: 0;
     margin: 12px 0 0 0;
     border-radius: 10px;
@@ -128,8 +128,8 @@
 /* Mini Search Modal – slides out from behind the left sidebar */
 .search-mini-modal {
     position: fixed;
-    left: 48px;          /* flush against the right edge of the sidebar */
-    top: 50px;           /* flush below the topnav */
+    left: var(--app-left-sidebar-collapsed-width);          /* flush against the right edge of the sidebar */
+    top: var(--app-navbar-height);           /* flush below the topnav */
     z-index: 999;        /* below sidebar (1000) so it slides from behind it */
     background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
     box-shadow: 10px 0 24px rgba(16, 33, 54, 0.18);
@@ -137,7 +137,7 @@
     border: 1px solid #d8e1ea;
     border-left: none;
     padding: 10px;
-    min-width: 300px;
+    min-width: min(300px, calc(100vw - var(--app-left-sidebar-collapsed-width) - 20px));
     max-width: 340px;
     pointer-events: none;
     opacity: 0;
@@ -313,10 +313,10 @@
 /* Right sidebar styles */
 #right-sidebar {
     position: fixed; /* Fixed on the right side of the page */
-    top: 50px; /* Ensures it does not overlap with the navbar */
-    right: -48px;
-    width: 48px; /* Width of the right sidebar */
-    height: calc(100vh - 50px); /* Height adapts to the viewport minus the navbar height */
+    top: var(--app-navbar-height); /* Ensures it does not overlap with the navbar */
+    right: calc(-1 * var(--app-left-sidebar-collapsed-width));
+    width: var(--app-left-sidebar-collapsed-width); /* Width of the right sidebar */
+    height: calc(100vh - var(--app-navbar-height)); /* Height adapts to the viewport minus the navbar height */
     background-color: transparent; /* Background color */
     display: flex;
     flex-direction: column; /* Vertical alignment of child elements */

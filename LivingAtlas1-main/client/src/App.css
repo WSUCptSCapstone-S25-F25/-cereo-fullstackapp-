@@ -2,6 +2,21 @@
   box-sizing: border-box;
 }
 
+:root {
+  --app-navbar-height: clamp(48px, 5vh, 64px);
+  --app-left-sidebar-collapsed-width: clamp(44px, 4.5vw, 56px);
+  --app-left-sidebar-expanded-width: clamp(240px, 24vw, 320px);
+  --app-left-sidebar-icon-size: clamp(40px, 4vw, 46px);
+  --app-secondary-panel-width: clamp(280px, 25vw, 420px);
+  --app-basemap-panel-width: clamp(300px, 28vw, 360px);
+  --app-user-manual-nav-width: clamp(220px, 18vw, 300px);
+  --app-navbar-link-padding-x: clamp(8px, 1vw, 14px);
+  --app-navbar-link-font-size: clamp(12px, 0.95vw, 14px);
+  --app-navbar-brand-font-size: clamp(15px, 1.35vw, 18px);
+  --app-navbar-logo-width: clamp(96px, 11vw, 140px);
+  --app-navbar-logo-height: calc(var(--app-navbar-height) - 2px);
+}
+
 body {
   margin: 0;
   padding: 0;

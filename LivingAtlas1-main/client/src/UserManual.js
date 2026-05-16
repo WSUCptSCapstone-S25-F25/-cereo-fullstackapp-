@@ -66,43 +66,99 @@ const ADD_CARDS_FROM_MAP_SECTIONS = [
   { id: 'add-png',          label: 'Add PNG' },
 ];
 
-const SECTIONS = [
-  { id: 'home',          label: '🏠  Overview' },
-  { id: 'feature-search-panel', label: 'Feature Search Panel' },
-  { id: 'card-container', label: 'Card Container' },
-  { id: 'toolbar',        label: 'Card Panel Toolbar' },
-  { id: 'add-card',       label: 'Card Creation Form' },
-  { id: 'arcgis-picker',  label: 'ArcGIS Picker Modal' },
-  { id: 'detail-view',   label: 'Card Detail View' },
-  { id: 'arcgis-panel',     label: 'ArcGIS Upload Panel' },
+const ARCGIS_SECTIONS = [
+  { id: 'arcgis-panel', label: 'ArcGIS Upload Panel' },
+  { id: 'custom-layers', label: 'Custom Layers Panel' },
   { id: 'service-layer-info', label: 'Service / Layer Info Modal' },
-  { id: 'custom-layers',    label: 'Custom Layers Panel' },
-  { id: 'basemap-panel',     label: 'Basemap Panel' },
-  { id: 'map-controls',      label: 'Map Controls' },
 ];
 
-const ALL_SECTIONS = [...SECTIONS, ...ADD_CARDS_FROM_MAP_SECTIONS];
-const SECTIONS_WITH_ADD_CARDS_FROM_MAP = SECTIONS.flatMap((section) => {
-  if (section.id === 'add-card') {
-    return [section, ...ADD_CARDS_FROM_MAP_SECTIONS];
-  }
-  return [section];
-});
+const SECTION_GROUPS = [
+  {
+    id: 'getting-started',
+    label: 'Getting Started',
+    sections: [
+      { id: 'home', label: '🏠  Overview' },
+      { id: 'feature-search-panel', label: 'Feature Search Panel' },
+    ],
+  },
+  {
+    id: 'cards-workspace',
+    label: 'Cards Workspace',
+    sections: [
+      { id: 'card-container', label: 'Card Container' },
+      { id: 'toolbar', label: 'Card Panel Toolbar' },
+      { id: 'detail-view', label: 'Card Detail View' },
+    ],
+  },
+  {
+    id: 'card-creation',
+    label: 'Card Creation',
+    sections: [
+      { id: 'add-card', label: 'Card Creation Form', children: ADD_CARDS_FROM_MAP_SECTIONS },
+      { id: 'arcgis-picker', label: 'ArcGIS Picker Modal' },
+    ],
+  },
+  {
+    id: 'arcgis-related',
+    label: 'ArcGIS Related',
+    sections: ARCGIS_SECTIONS,
+  },
+  {
+    id: 'map-view',
+    label: 'Map View',
+    sections: [
+      { id: 'basemap-panel', label: 'Basemap Panel' },
+      { id: 'map-controls', label: 'Map Controls' },
+    ],
+  },
+];
+
+const flattenSections = (sections) => sections.flatMap((section) => [
+  { id: section.id, label: section.label },
+  ...(section.children || []),
+]);
+
+const ALL_SECTIONS = SECTION_GROUPS.flatMap((group) => flattenSections(group.sections));
+const HOME_CARD_SECTIONS = ALL_SECTIONS.filter((section) => section.id !== 'home');
+
+const findGroupForSection = (sectionId) => {
+  return SECTION_GROUPS.find((group) => group.sections.some((section) => {
+    if (section.id === sectionId) return true;
+    return (section.children || []).some((child) => child.id === sectionId);
+  })) || null;
+};
 
 function UserManual() {
   const [activeSection, setActiveSection] = useState('home');
+  const [openGroups, setOpenGroups] = useState(() => (
+    Object.fromEntries(SECTION_GROUPS.map((group) => [group.id, true]))
+  ));
   const [isAddCardsFromMapOpen, setIsAddCardsFromMapOpen] = useState(true);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sec = params.get('section');
     if (sec && ALL_SECTIONS.some(s => s.id === sec)) {
       setActiveSection(sec);
+      const owningGroup = findGroupForSection(sec);
+      if (owningGroup) {
+        setOpenGroups((prev) => ({ ...prev, [owningGroup.id]: true }));
+      }
       if (ADD_CARDS_FROM_MAP_SECTIONS.some(s => s.id === sec)) {
         setIsAddCardsFromMapOpen(true);
       }
     }
   }, []);
-  const navTo = (id) => { setActiveSection(id); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const navTo = (id) => {
+    setActiveSection(id);
+    const owningGroup = findGroupForSection(id);
+    if (owningGroup) {
+      setOpenGroups((prev) => ({ ...prev, [owningGroup.id]: true }));
+    }
+    if (ADD_CARDS_FROM_MAP_SECTIONS.some(section => section.id === id)) {
+      setIsAddCardsFromMapOpen(true);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   return (
     <div className="user-manual">
       <h1>User Manual</h1>
@@ -110,39 +166,55 @@ function UserManual() {
       <div className="um-layout">
         <nav className="um-nav-sidebar">
           <span className="um-nav-heading">Sections</span>
-          {SECTIONS.map(s => {
-            const isAddCardAnchor = s.id === 'add-card';
+          {SECTION_GROUPS.map((group) => {
+            const isGroupActive = group.sections.some((section) => {
+              if (activeSection === section.id) return true;
+              return (section.children || []).some((child) => child.id === activeSection);
+            });
             return (
-              <React.Fragment key={s.id}>
+              <React.Fragment key={group.id}>
                 <button
-                  className={`um-nav-item${activeSection === s.id ? ' active' : ''}`}
-                  onClick={() => setActiveSection(s.id)}
+                  className={`um-nav-item um-nav-item--group${isGroupActive ? ' active' : ''}`}
+                  onClick={() => setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))}
+                  aria-expanded={openGroups[group.id]}
                 >
-                  {s.label}
+                  <span>{group.label}</span>
+                  <FontAwesomeIcon icon={openGroups[group.id] ? faChevronDown : faChevronUp} />
                 </button>
 
-                {isAddCardAnchor && (
-                  <>
+                {openGroups[group.id] && group.sections.map((section) => (
+                  <React.Fragment key={section.id}>
                     <button
-                      className={`um-nav-item um-nav-item--group${isAddCardsFromMapOpen ? ' active' : ''}`}
-                      onClick={() => setIsAddCardsFromMapOpen(prev => !prev)}
-                      aria-expanded={isAddCardsFromMapOpen}
+                      className={`um-nav-item um-nav-item--child${activeSection === section.id ? ' active' : ''}`}
+                      onClick={() => navTo(section.id)}
                     >
-                      <span>Add Cards from Map</span>
-                      <FontAwesomeIcon icon={isAddCardsFromMapOpen ? faChevronDown : faChevronUp} />
+                      {section.label}
                     </button>
 
-                    {isAddCardsFromMapOpen && ADD_CARDS_FROM_MAP_SECTIONS.map(mapSection => (
-                      <button
-                        key={mapSection.id}
-                        className={`um-nav-item um-nav-item--child${activeSection === mapSection.id ? ' active' : ''}`}
-                        onClick={() => setActiveSection(mapSection.id)}
-                      >
-                        {mapSection.label}
-                      </button>
-                    ))}
-                  </>
-                )}
+                    {section.children && (
+                      <>
+                        <button
+                          className={`um-nav-item um-nav-item--subgroup${isAddCardsFromMapOpen ? ' active' : ''}`}
+                          onClick={() => setIsAddCardsFromMapOpen((prev) => !prev)}
+                          aria-expanded={isAddCardsFromMapOpen}
+                        >
+                          <span>Add Cards from Map</span>
+                          <FontAwesomeIcon icon={isAddCardsFromMapOpen ? faChevronDown : faChevronUp} />
+                        </button>
+
+                        {isAddCardsFromMapOpen && section.children.map((childSection) => (
+                          <button
+                            key={childSection.id}
+                            className={`um-nav-item um-nav-item--grandchild${activeSection === childSection.id ? ' active' : ''}`}
+                            onClick={() => navTo(childSection.id)}
+                          >
+                            {childSection.label}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </React.Fragment>
+                ))}
               </React.Fragment>
             );
           })}
@@ -161,11 +233,11 @@ function UserManual() {
         </p>
 
         <div className="um-home-cards">
-          {SECTIONS_WITH_ADD_CARDS_FROM_MAP.filter(s => s.id !== 'home').map(s => (
+          {HOME_CARD_SECTIONS.map(s => (
             <button
               key={s.id}
               className="um-home-card"
-              onClick={() => setActiveSection(s.id)}
+              onClick={() => navTo(s.id)}
             >
               <span className="um-home-card-title">{s.label}</span>
               {{

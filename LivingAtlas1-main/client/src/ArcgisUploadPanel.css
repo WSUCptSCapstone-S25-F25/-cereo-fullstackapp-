@@ -1,9 +1,9 @@
 .upload-panel {
     position: fixed;
-    top: 50px;
-    left: 48px;
-    height: calc(100vh - 50px);
-    width: 25vw;
+    top: var(--app-navbar-height);
+    left: var(--app-left-sidebar-collapsed-width);
+    height: calc(100vh - var(--app-navbar-height));
+    width: var(--app-secondary-panel-width);
     background: linear-gradient(180deg, #f4f6f9 0%, #eceff4 100%);
     border: 1px solid #d8e1ea;
     box-shadow: 10px 0 24px rgba(16, 33, 54, 0.18);
@@ -18,8 +18,8 @@
 
 /* When card panel is also on left, upload panel takes bottom half */
 .upload-panel.upload-panel--split-bottom {
-    top: 50vh;
-    height: 50vh;
+    top: calc(var(--app-navbar-height) + ((100vh - var(--app-navbar-height)) / 2));
+    height: calc((100vh - var(--app-navbar-height)) / 2);
 }
 
 .upload-panel * {

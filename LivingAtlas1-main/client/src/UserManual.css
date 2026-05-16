@@ -5,9 +5,9 @@
 
 .user-manual {
   font-family: 'Roboto', sans-serif;
-  /* Sidebar is 220px wide; center the remaining space */
-  margin-left: calc(220px + (100vw - 220px) / 2 - 460px);
-  width: min(900px, 100vw - 220px - 48px);
+  /* Sidebar width is responsive; center the remaining space */
+  margin-left: calc(var(--app-user-manual-nav-width) + (100vw - var(--app-user-manual-nav-width)) / 2 - 460px);
+  width: min(900px, calc(100vw - var(--app-user-manual-nav-width) - 48px));
   padding: 40px 24px 60px;
   color: #333;
 }
@@ -78,10 +78,10 @@
 nav.um-nav-sidebar {
   /* Fixed to the left edge of the viewport, below the navbar */
   position: fixed;
-  top: 50px;
+  top: var(--app-navbar-height);
   left: 0;
   bottom: 0;
-  width: 220px;
+  width: var(--app-user-manual-nav-width);
   z-index: 100;
   /* layout */
   display: flex;
@@ -172,6 +172,24 @@ nav.um-nav-sidebar {
 .um-nav-sidebar .um-nav-item--child {
   padding-left: 30px;
   font-size: 0.84rem;
+}
+
+.um-nav-sidebar .um-nav-item--subgroup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 30px;
+  font-size: 0.82rem;
+}
+
+.um-nav-sidebar .um-nav-item--subgroup svg {
+  font-size: 0.7rem;
+  color: #7b8ca1;
+}
+
+.um-nav-sidebar .um-nav-item--grandchild {
+  padding-left: 46px;
+  font-size: 0.8rem;
 }
 
 .um-content-area {
