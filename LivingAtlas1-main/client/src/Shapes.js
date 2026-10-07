@@ -3,7 +3,7 @@ const allMarkers = [];
 let stream_clicked = false;
 let marker_clicked = false;
 // function loadMarkers(map){
-//     fetch('https://api.mapbox.com/datasets/v1/f-alvarezpenate/clo4rbl4102hw2dpgdfccfp3l/features?access_token=pk.eyJ1IjoiZi1hbHZhcmV6cGVuYXRlIiwiYSI6ImNsZWh0ZXB6cTB5YnIzcW16NTJ5OGpvbGMifQ.0e-hIYt1VVSoRXujuzJnMA')
+//     fetch('https://api.mapbox.com/datasets/v1/f-alvarezpenate/clo4rbl4102hw2dpgdfccfp3l/features?access_token=' + process.env.REACT_APP_MAPBOX_TOKEN_2 + '')
 //       .then(response => response.json())
 //       .then(data => {
 //         // Create an empty array to store markers

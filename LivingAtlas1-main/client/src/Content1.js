@@ -17,7 +17,7 @@ import { faEye, faEyeSlash, faCamera, faImage, faLocationDot, faPlus, faDrawPoly
 
 // Mapbox Token
 mapboxgl.accessToken =
-  'pk.eyJ1IjoibGl2aW5nYXRsYXMiLCJhIjoiY2xwcDU4OHJyMHZwYTJpcGdvdDN3NWNneiJ9.86JTUg6ZUVm1PdqQ177WYQ';
+  '' + process.env.REACT_APP_MAPBOX_TOKEN + '';
 
 const draw = new MapboxDraw({
   displayControlsDefault: false,
