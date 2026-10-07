@@ -21,6 +21,6 @@ VALUES (NEXTVAL('users_userid_seq'), '{username}', '{email}', '{hashpass}', '{sa
 
 generate_admin_user_sql(
     username="Jan Boll",
-    email="j.boll@wsu.edu",
+    email="test-user@example.invalid",
     password="1234C5"
 )

@@ -1,3 +1,8 @@
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[3] / ".env.local", override=False)
+
 import os
 import urllib.parse as up
 import psycopg2
@@ -6,13 +11,12 @@ import hashlib
 def main():
 
     #up.uses_netloc.append("postgres")
-    #url = up.urlparse(os.environ["postgres://lvssvjaq:Xc8L5cPmMIIheJuDgfZF52JKpNKt8p9q@mahmud.db.elephantsql.com/lvssvjaq"])
 
     connectionsucceeded = False
 
     try:
         #conn = psycopg2.connect(database=url.path[1:], user=url.username, password=url.password, host=url.hostname, port=url.port)
-        conn = psycopg2.connect("dbname = 'lvssvjaq' user = 'lvssvjaq' host = 'mahmud.db.elephantsql.com' password = 'Xc8L5cPmMIIheJuDgfZF52JKpNKt8p9q'")
+        conn = psycopg2.connect(os.environ["LEGACY_DATABASE_URL_2"], connect_timeout=10)
         connectionsucceeded = True
 
     except:

@@ -2,6 +2,12 @@
 """
 Quick script to check ArcGIS services data in the database
 """
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env.local", override=False)
+
 
 import psycopg2
 from psycopg2 import OperationalError
@@ -9,14 +15,7 @@ from psycopg2 import OperationalError
 def check_database():
     try:
         # Connect to Azure PostgreSQL database
-        conn = psycopg2.connect(
-            dbname="postgres", 
-            user="CereoAtlas",
-            password="LivingAtlas25$",
-            host="cereo-livingatlas-db.postgres.database.azure.com",
-            port="5432",
-            sslmode="require"
-        )
+        conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=10)
         
         cur = conn.cursor()
         

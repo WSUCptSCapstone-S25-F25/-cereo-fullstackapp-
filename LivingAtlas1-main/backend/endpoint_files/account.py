@@ -6,6 +6,12 @@ account
 
 """
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[3] / ".env.local", override=False)
+
+import os
 import hashlib
 import secrets
 import smtplib
@@ -20,13 +26,11 @@ import requests
 # Email configuration for Gmail
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SENDER_EMAIL = "cereo.atlas@gmail.com"
-SENDER_PASSWORD = "yqbr duhc ytcv ydjq"
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "")
+SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "")
 
 # SMTP_SERVER = "smtp.gmail.com"
 # SMTP_PORT = 465
-# SENDER_EMAIL = "cereofullstack@gmail.com"
-# SENDER_PASSWORD = "ljun kiiz ngod ypjv"
 
 account_router = APIRouter()
 

@@ -16,7 +16,7 @@ def test_upload_form_no_tags():
        "/uploadForm",
        data={
            "name": "Mitchell",
-           "email": "mitchell.kolb@wsu.edu",
+           "email": "test-user@example.invalid",
            "title": "No Tags",
            "tags": "",
            "link": "",
@@ -36,7 +36,7 @@ def test_upload_form_one_tag():
        "/uploadForm",
        data={
            "name": "Mitchell",
-           "email": "mitchell.kolb@wsu.edu",
+           "email": "test-user@example.invalid",
            "title": "One Unique Tag",
            "tags": "yeller",
            "link": "",
@@ -56,7 +56,7 @@ def test_upload_form_one_existing_tag():
       "/uploadForm",
       data={
           "name": "Mitchell",
-          "email": "mitchell.kolb@wsu.edu",
+          "email": "test-user@example.invalid",
           "title": "One existing Tag",
           "tags": "Eastern WA",
           "link": "",
@@ -76,7 +76,7 @@ def test_upload_form_unique_then_existing_tag():
       "/uploadForm",
       data={
           "name": "Mitchell",
-          "email": "mitchell.kolb@wsu.edu",
+          "email": "test-user@example.invalid",
           "title": "Unique then Existing Tag",
           "tags": "TacoBell, Western WA",
           "link": "",
@@ -96,7 +96,7 @@ def test_upload_form_existing_then_unique_tag():
       "/uploadForm",
       data={
           "name": "Mitchell",
-          "email": "mitchell.kolb@wsu.edu",
+          "email": "test-user@example.invalid",
           "title": "Existing Tag then Unique",
           "tags": "Western WA, Havok",
           "link": "",
@@ -116,7 +116,7 @@ def test_upload_form_many_tags():
       "/uploadForm",
       data={
           "name": "Mitchell",
-          "email": "mitchell.kolb@wsu.edu",
+          "email": "test-user@example.invalid",
           "title": "Many Tags",
           "tags": "yeller, Dataset, NewTag,Havok,Smile,Water",
           "link": "",

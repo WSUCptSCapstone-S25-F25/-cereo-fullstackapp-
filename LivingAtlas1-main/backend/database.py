@@ -1,3 +1,9 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env.local", override=False)
+
 import psycopg2
 from psycopg2 import OperationalError, errorcodes, errors
 
@@ -5,19 +11,11 @@ conn = None  # Ensure conn is always defined
 
 try:
 
-    # psql "host=cereo-livingatlas-db.postgres.database.azure.com port=5432 dbname=postgres user=CereoAtlas password=LivingAtlas25$ sslmode=require"
+    # psql "host=cereo-livingatlas-db.postgres.database.azure.com port=5432 dbname=postgres user=CereoAtlas password=<removed-private-value> sslmode=require"
 
 
     # Azure PostgreSQL database connection
-    conn = psycopg2.connect(
-        dbname="postgres",
-        user="CereoAtlas",
-        password="LivingAtlas25$",
-        host="cereo-livingatlas-db.postgres.database.azure.com",
-        port="5432",
-        sslmode="require",  # Required for Azure PostgreSQL
-        connect_timeout=10  # Fail fast if host unreachable (prevents Render port-scan timeout)
-    )
+    conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=10)
     print("Database Connection Success!")
     connectionsucceeded = True
 

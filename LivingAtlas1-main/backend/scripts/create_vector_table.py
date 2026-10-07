@@ -1,4 +1,10 @@
 """Create pgvector extension and doc_chunks table for chatbot RAG."""
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[3] / ".env.local", override=False)
+
 
 import os
 import sys
@@ -13,15 +19,7 @@ def main() -> int:
 
     try:
         # Use the same Azure PostgreSQL connection pattern as backend/database.py
-        conn = psycopg2.connect(
-            dbname="postgres",
-            user="CereoAtlas",
-            password="LivingAtlas25$",
-            host="cereo-livingatlas-db.postgres.database.azure.com",
-            port="5432",
-            sslmode="require",
-            connect_timeout=10,
-        )
+        conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=10)
         cur = conn.cursor()
         print("[1/4] Connected to database.")
 

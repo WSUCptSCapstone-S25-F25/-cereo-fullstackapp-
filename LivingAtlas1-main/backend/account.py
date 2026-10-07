@@ -26,7 +26,7 @@ import os
 
 
 # SendGrid Email: wsu.cereoatlas26@gmail.com
-# SendGrid Password: LivingAtlas25$
+# SendGrid Password: <removed-private-value>
 # SendGrid Recovery Code: 8W6JXAUWQZWSNVJXA4VH2CXV
 # SendGrid API Key: 
 
@@ -45,8 +45,6 @@ RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "noreply@cereo-livingatl
 
 # SMTP_SERVER = "smtp.gmail.com"
 # SMTP_PORT = 465
-# SENDER_EMAIL = "wsu.cereoatlas26@gmail.com"
-# SENDER_PASSWORD = "vuzc jnhd uxmg nniu"
 
 # SMTP_EMAIL: wsu.cereoatlas26@gmail.com
 

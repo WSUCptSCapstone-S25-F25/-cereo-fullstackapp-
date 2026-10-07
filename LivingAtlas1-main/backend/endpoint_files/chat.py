@@ -5,6 +5,12 @@ Embedding: local fastembed (BAAI/bge-small-en-v1.5), runs in-process.
 Generation: DeepSeek API (OpenAI-compatible). Set DEEPSEEK_API on Render.
   Model is configured via DEEPSEEK_MODEL env var (default: deepseek-v4-flash).
 """
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[3] / ".env.local", override=False)
+
 
 import os
 from typing import Any
@@ -37,15 +43,7 @@ Do not answer questions unrelated to the Living Atlas or environmental/GIS topic
 
 def get_db_connection():
     """Use the same Azure PostgreSQL connection pattern as backend/database.py."""
-    return psycopg2.connect(
-        dbname="postgres",
-        user="CereoAtlas",
-        password="LivingAtlas25$",
-        host="cereo-livingatlas-db.postgres.database.azure.com",
-        port="5432",
-        sslmode="require",
-        connect_timeout=10,
-    )
+    return psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=10)
 
 
 def get_local_embedder():

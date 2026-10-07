@@ -1,4 +1,10 @@
 """Index backend/docs markdown files into doc_chunks with local embeddings."""
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[3] / ".env.local", override=False)
+
 
 import os
 import sys
@@ -12,15 +18,7 @@ LOCAL_EMBED_MODEL = os.environ.get("LOCAL_EMBED_MODEL", "BAAI/bge-small-en-v1.5"
 
 def get_db_connection():
     """Use the same connection parameters as backend/database.py."""
-    return psycopg2.connect(
-        dbname="postgres",
-        user="CereoAtlas",
-        password="LivingAtlas25$",
-        host="cereo-livingatlas-db.postgres.database.azure.com",
-        port="5432",
-        sslmode="require",
-        connect_timeout=10,
-    )
+    return psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=10)
 
 
 def chunk_markdown(text: str, max_chars: int = MAX_CHARS) -> list[str]:

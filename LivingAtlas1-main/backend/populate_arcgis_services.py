@@ -2,6 +2,12 @@
 Populate ArcGIS services database table with data from JSON files
 This script should be run once to initialize the database with ArcGIS service data
 """
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env.local", override=False)
+
 
 import os
 import json
@@ -11,14 +17,7 @@ from psycopg2.extras import execute_values
 def get_db_connection():
     """Get database connection using the same settings as the main app"""
     try:
-        conn = psycopg2.connect(
-            dbname="postgres", 
-            user="CereoAtlas",
-            password="LivingAtlas25$",
-            host="cereo-livingatlas-db.postgres.database.azure.com",
-            port="5432",
-            sslmode="require"
-        )
+        conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=10)
         return conn
     except Exception as e:
         print(f"Database connection failed: {e}")
